@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SE Radio 节目浏览器</title>
+<style>
+:root{
+  --bg:#f4f6f8; --card:#ffffff; --text:#1f2733; --muted:#667280;
+  --line:#e4e8ee; --accent:#2f6fe4; --accent-soft:#e9effc;
+  --mark-bg:#ffe08a; --mark-fg:#5a4200;
+  --shadow:0 1px 3px rgba(15,23,42,.07);
+}
+html[data-theme="dark"]{
+  --bg:#0f141c; --card:#171d27; --text:#e7ebf3; --muted:#98a3b5;
+  --line:#27303f; --accent:#6b9dff; --accent-soft:#1b2a42;
+  --mark-bg:#8a6d1f; --mark-fg:#ffd97a;
+  --shadow:none;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font:15px/1.55 "Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:0 18px}
+header.hero{background:var(--card);border-bottom:1px solid var(--line)}
+.hero-in{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+h1{font-size:21px;margin:12px 0 2px}
+.sub{font-size:13px;color:var(--muted);margin:0 0 6px}
+.theme-btn{border:1px solid var(--line);background:var(--card);color:var(--text);
+  border-radius:8px;padding:6px 11px;cursor:pointer;font-size:14px;line-height:1}
+#stats{font-size:13px;color:var(--muted);padding:8px 0 0}
+.filters{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:14px 16px;margin:14px 0}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--text);
+  border-radius:999px;padding:5px 12px;cursor:pointer;font-size:13px}
+.chip .n{display:inline-block;min-width:20px;text-align:center;border-radius:10px;
+  background:var(--accent-soft);color:var(--accent);margin-left:5px;font-size:11px}
+.chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.chip.on .n{background:rgba(255,255,255,.25);color:#fff}
+.frow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+#q{flex:1 1 240px;min-width:180px;border:1px solid var(--line);border-radius:8px;
+  padding:7px 10px;background:var(--card);color:var(--text);font-size:14px}
+select{border:1px solid var(--line);border-radius:8px;padding:7px 8px;
+  background:var(--card);color:var(--text);font-size:13px}
+.btn{border:1px solid var(--line);border-radius:8px;padding:7px 12px;
+  background:var(--card);color:var(--accent);cursor:pointer;font-size:13px}
+#info{font-size:13px;color:var(--muted);margin:10px 0 4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:14px 16px;margin:0 0 12px;box-shadow:var(--shadow)}
+.card-top{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.num{font-family:ui-monospace,Consolas,monospace;font-size:12px;font-weight:700;
+  background:var(--accent-soft);color:var(--accent);border-radius:6px;padding:1px 7px}
+.tag{font-size:12px;border-radius:6px;padding:1px 7px;white-space:nowrap}
+.date,.dur{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--muted)}
+h3.title{margin:9px 0 3px;font-size:15.5px;line-height:1.35}
+h3.title a{color:var(--accent);text-decoration:none}
+h3.title a:hover{text-decoration:underline}
+.meta{margin:2px 0 6px;font-size:12.5px;color:var(--muted)}
+.summary{margin:0;font-size:13.5px;color:var(--text);line-height:1.6}
+.detail{margin-top:8px}
+.detail[hidden]{display:none}
+.desc{font-size:13.5px;line-height:1.72;color:var(--text)}
+.desc p{margin:6px 0}
+.desc ul{margin:6px 0 6px 18px;padding:0}
+.desc a{color:var(--accent)}
+.desc-note{font-size:12px;color:var(--muted);font-style:italic}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0}
+.btn-link{border:1px solid var(--line);border-radius:8px;padding:5px 11px;
+  background:var(--card);color:var(--accent);cursor:pointer;font-size:13px;text-decoration:none}
+.btn-link:hover{background:var(--accent-soft)}
+.audio-holder{margin:6px 0 2px}
+.audio-holder audio{width:100%}
+.player-controls{display:flex;gap:6px;align-items:center;margin:6px 0;flex-wrap:wrap}
+.seek-btn{border:1px solid var(--line);border-radius:6px;padding:4px 10px;background:var(--card);color:var(--text);cursor:pointer;font-size:12px;min-width:36px;text-align:center}
+.seek-btn:hover{background:var(--accent-soft)}
+.seek-btn:active{background:var(--accent);color:#fff}
+.time-display{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--muted);min-width:100px;text-align:center;user-select:none}
+.subtitle-area{margin:8px 0;padding:12px 14px;background:var(--accent-soft);border-radius:8px;font-size:14px;line-height:1.7;color:var(--text);text-align:center;min-height:80px;display:flex;flex-direction:column;justify-content:center;gap:4px}
+.subtitle-prev,.subtitle-next{color:var(--muted);font-size:12.5px;opacity:.75}
+.subtitle-current{color:var(--text);font-size:15px;font-weight:600;background:var(--mark-bg);color:var(--mark-fg);border-radius:4px;padding:2px 8px;display:inline-block}
+.subtitle-area:empty::before{content:"（无字幕）";color:var(--muted);font-style:italic}
+.pager{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:8px 0 4px}
+.page-btn{border:1px solid var(--line);background:var(--card);color:var(--text);
+  border-radius:8px;min-width:34px;padding:5px 8px;cursor:pointer;font-size:13px}
+.page-btn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.page-btn:disabled{opacity:.45;cursor:default}
+.page-ell{color:var(--muted);padding:0 2px}
+.empty{background:var(--card);border:1px dashed var(--line);border-radius:12px;
+  padding:28px;text-align:center;color:var(--muted)}
+mark{background:var(--mark-bg);color:var(--mark-fg);border-radius:3px;padding:0 2px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+footer.foot{color:var(--muted);font-size:12.5px;line-height:1.6;margin-top:26px;padding:10px 0 26px}
+@media (max-width:720px){ .wrap{padding:0 10px} #q{width:100%} .card-top{flex-wrap:wrap} }
+</style>
+</head>
+<body>
+<header class="hero wrap">
+  <div class="hero-in">
+    <div style="min-width:0">
+      <h1>SE Radio 节目浏览器</h1>
+      <p class="sub">Software Engineering Radio · 738 集 · 2006-01-21 → 2026-09-09 · 总时长约 688 小时</p>
+    </div>
+    <button id="themeBtn" class="theme-btn" title="切换明暗主题" aria-label="切换明暗主题">🌙</button>
+  </div>
+  <div id="stats"></div>
+</header>
+
+<main class="wrap">
+  <section class="filters">
+    <div class="chips" id="chips"></div>
+    <div class="frow">
+      <input id="q" type="search" placeholder="搜索标题 / 嘉宾 / 简介（空格分隔多个词 = 同时满足）" aria-label="搜索">
+      <select id="year" aria-label="按年份筛选"></select>
+      <select id="dur" aria-label="按时长筛选">
+        <option value="all">时长：全部</option>
+        <option value="lt45">短于 45 分钟</option>
+        <option value="m45">45–60 分钟</option>
+        <option value="gt60">超过 60 分钟</option>
+      </select>
+      <select id="sort" aria-label="排序">
+        <option value="date-desc">最新优先</option>
+        <option value="date-asc">最早优先</option>
+        <option value="ep-desc">期数从大到小</option>
+        <option value="ep-asc">期数从小到大</option>
+        <option value="dur-desc">时长从长到短</option>
+        <option value="dur-asc">时长从短到长</option>
+      </select>
+      <select id="size" aria-label="每页条数">
+        <option value="10">10 条/页</option>
+        <option value="20" selected>20 条/页</option>
+        <option value="50">50 条/页</option>
+        <option value="100">100 条/页</option>
+      </select>
+      <button id="reset" class="btn" type="button">重置筛选</button>
+    </div>
+  </section>
+
+  <p id="info" role="status"></p>
+  <section id="list" class="list" aria-live="polite"></section>
+  <nav id="pager" class="pager" aria-label="分页"></nav>
+</main>
+
+<footer class="foot wrap">
+  <p>数据源：data/se_radio_23379.json（IEEE Software Engineering Radio 播客索引）· 页面生成于 2026-09-14 10:24 · 节目数据（<code>se_radio_data.json</code>）与字幕均不内嵌，使用/播放时动态加载。</p>
+  <p>节目内容版权归 IEEE Computer Society 及原作者所有，本页面仅供个人检索与阅读。</p>
+</footer>
+
+<script>
+"use strict";
+const CATS = [{"id":"ai-ml","zh":"AI 与机器学习","en":"AI & Machine Learning","hue":258},{"id":"ai-agents","zh":"AI 智能体与辅助开发","en":"AI Agents & AI-Assisted Dev","hue":285},{"id":"security","zh":"安全与隐私","en":"Security & Privacy","hue":0},{"id":"languages","zh":"编程语言与运行时","en":"Languages & Runtimes","hue":205},{"id":"data","zh":"数据库与数据工程","en":"Databases & Data","hue":168},{"id":"cloud","zh":"云与基础设施","en":"Cloud & Infrastructure","hue":215},{"id":"architecture","zh":"软件架构与设计","en":"Architecture & Design","hue":32},{"id":"testing","zh":"测试与质量","en":"Testing & Quality","hue":88},{"id":"devops","zh":"DevOps 与可观测性","en":"DevOps & Observability","hue":240},{"id":"practice","zh":"工程实践与职业发展","en":"Practice & Career","hue":342}];
+// 节目数据与字幕一样不内嵌：使用时从本地 JSON 文件动态加载
+const DATA_URL = 'se_radio_data.json';
+const SUB_BASE = '../data/subtitles/';
+let EPISODES = [];   // init() 时从 DATA_URL 加载
+let subCount = 0;    // 含字幕节目数（数据加载后统计）
+</script>
+<script>
+"use strict";
+// ---------- 基础 ----------
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const catById = id => CATS.find(c => c.id === id) || {id:'practice', zh:'工程实践与职业发展', en:'', hue:342};
+
+// ---------- 字幕：SRT 解析与播放时动态加载 ----------
+const srtCache = {};   // srt 文件名 -> cues [{s,e,t}]
+function parseSrt(text) {
+  const lines = String(text).replace(/^\uFEFF/, '').split(/\r?\n/);
+  const tsRe = /(\d{2}):(\d{2}):(\d{2})[,.](\d{3})\s*-->\s*(\d{2}):(\d{2}):(\d{2})[,.](\d{3})/;
+  const sec = (h, m, s, ms) => parseInt(h, 10) * 3600 + parseInt(m, 10) * 60 + parseInt(s, 10) + parseInt(ms, 10) / 1000;
+  const cues = [];
+  let i = 0;
+  while (i < lines.length) {
+    if (!lines[i].trim() || !/^\d+$/.test(lines[i].trim())) { i++; continue; } // 跳过空行/非序号行
+    i++;                                                                       // 跳过序号行
+    if (i >= lines.length) break;
+    const m = lines[i].trim().match(tsRe);
+    if (!m) { i++; continue; }                                                 // 非时间行
+    const s0 = sec(m[1], m[2], m[3], m[4]);
+    const e0 = sec(m[5], m[6], m[7], m[8]);
+    i++;
+    const txt = [];
+    while (i < lines.length && lines[i].trim()) {
+      txt.push(lines[i].replace(/<[^>]+>/g, '').trim());                       // 去内联标签
+      i++;
+    }
+    const t = txt.join(' ').replace(/\s+/g, ' ').trim();
+    if (t) cues.push({ s: s0, e: e0, t });
+  }
+  cues.sort((a, b) => a.s - b.s);
+  // 合并超短字幕块（YouTube 自动字幕滚动清理后常见 10ms 级碎片，且与下一条首尾相接，
+  // 单纯延长 end 会与下一条重叠而仍被跳过）：碎片文本并入紧随其后的正常块
+  const out = [];
+  let carry = '';
+  for (const c of cues) {
+    if (c.e - c.s < 0.25) {
+      carry = carry ? carry + ' ' + c.t : c.t;
+      continue;
+    }
+    if (carry) { c.t = carry + ' ' + c.t; carry = ''; }
+    out.push(c);
+  }
+  if (carry) {
+    if (out.length) out[out.length - 1].t += ' ' + carry;   // 结尾碎片并入前一块
+    else out.push({ s: 0, e: 1, t: carry });
+  }
+  return out;
+}
+async function loadCues(ep) {
+  if (!ep.sub) return [];
+  if (srtCache[ep.sub]) return srtCache[ep.sub];
+  const res = await fetch(SUB_BASE + ep.sub);
+  if (!res.ok) throw new Error('HTTP ' + res.status + '（' + ep.sub + '）');
+  const cues = parseSrt(await res.text());
+  srtCache[ep.sub] = cues;
+  return cues;
+}
+
+let savedTheme = null;
+try { savedTheme = localStorage.getItem('sr-theme'); } catch (e) {}
+if (savedTheme === null) savedTheme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+function applyTheme(d) {
+  document.documentElement.setAttribute('data-theme', d);
+  document.getElementById('themeBtn').textContent = d === 'dark' ? '☀️' : '🌙';
+  try { localStorage.setItem('sr-theme', d); } catch (e) {}
+}
+applyTheme(savedTheme);
+document.getElementById('themeBtn').onclick = () =>
+  applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+
+// ---------- 状态与查询 ----------
+const state = { cat:'all', year:'all', dur:'all', q:'', sort:'date-desc', page:1, size:20 };
+const textCache = {};
+function epText(ep) {
+  if (textCache[ep.idx] === undefined) {
+    const d = document.createElement('div'); d.innerHTML = ep.dh;
+    textCache[ep.idx] = (d.textContent || '').replace(/\s+/g, ' ').trim();
+  }
+  return textCache[ep.idx];
+}
+const terms = () => state.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+const hi = (text, ts) => {
+  const e = esc(text);
+  if (!ts.length) return e;
+  return e.replace(new RegExp('(' + ts.map(escRe).join('|') + ')', 'gi'), '<mark>$1</mark>');
+};
+const summaryOf = ep => {
+  const t = epText(ep);
+  if (!t) return '（源数据无简介）';
+  if (t.length <= 300) return t;
+  const cut = t.lastIndexOf(' ', 300);
+  return t.slice(0, cut > 220 ? cut : 300) + ' …';
+};
+function matches(ep) {
+  if (state.cat !== 'all' && ep.cat !== state.cat) return false;
+  if (state.year !== 'all' && String(ep.y) !== state.year) return false;
+  if (state.dur !== 'all') {
+    const m = ep.du / 60;
+    if (state.dur === 'lt45' && m >= 45) return false;
+    if (state.dur === 'm45' && (m < 45 || m > 60)) return false;
+    if (state.dur === 'gt60' && m <= 60) return false;
+  }
+  const ts = terms();
+  if (ts.length) {
+    const hay = (ep.ti + ' ' + (ep.gu || '') + ' ' + epText(ep)).toLowerCase();
+    for (const t of ts) if (!hay.includes(t)) return false;
+  }
+  return true;
+}
+const CMP = {
+  'date-desc': (a, b) => b.ts - a.ts,
+  'date-asc':  (a, b) => a.ts - b.ts,
+  'ep-desc':   (a, b) => b.n - a.n,
+  'ep-asc':    (a, b) => a.n - b.n,
+  'dur-desc':  (a, b) => b.du - a.du,
+  'dur-asc':   (a, b) => a.du - b.du,
+};
+const getFiltered = () => { const l = EPISODES.filter(matches); l.sort(CMP[state.sort]); return l; };
+
+const statsEl = document.getElementById('stats'), chipsEl = document.getElementById('chips'),
+      listEl = document.getElementById('list'), pagerEl = document.getElementById('pager'),
+      infoEl = document.getElementById('info');
+const catCounts = {};
+const years = [];
+function rebuildFacets() {
+  for (const k in catCounts) delete catCounts[k];
+  years.length = 0;
+  EPISODES.forEach(e => { catCounts[e.cat] = (catCounts[e.cat] || 0) + 1; });
+  [...new Set(EPISODES.map(e => e.y))].filter(y => y).sort((a, b) => b - a).forEach(y => years.push(y));
+}
+
+const chipEls = [];
+function buildChips() {
+  const mk = (cat, label) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip'; b.setAttribute('data-cat', cat);
+    const t = document.createElement('span'); t.textContent = label;
+    const n = document.createElement('span'); n.className = 'n';
+    n.textContent = cat === 'all' ? EPISODES.length : (catCounts[cat] || 0);
+    b.append(t, n);
+    b.onclick = () => { state.cat = cat; state.page = 1; render(); };
+    chipEls.push({ cat, btn: b }); chipsEl.append(b);
+  };
+  mk('all', '全部');
+  CATS.forEach(c => mk(c.id, c.zh));
+}
+function renderChips() {
+  chipEls.forEach(ch => {
+    const on = ch.cat === state.cat;
+    ch.btn.className = 'chip' + (on ? ' on' : '');
+    ch.btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+}
+function buildYearSel() {
+  const sel = document.getElementById('year');
+  const o0 = document.createElement('option'); o0.value = 'all'; o0.textContent = '年份：全部';
+  sel.append(o0);
+  years.forEach(y => {
+    const o = document.createElement('option'); o.value = String(y); o.textContent = String(y);
+    sel.append(o);
+  });
+}
+// ---------- 卡片 ----------
+function cardHTML(ep) {
+  const c = catById(ep.cat), ts = terms();
+  const art = document.createElement('article'); art.className = 'card';
+
+  const top = document.createElement('div'); top.className = 'card-top';
+  const num = document.createElement('span'); num.className = 'num'; num.textContent = '#' + ep.n;
+  const tag = document.createElement('span'); tag.className = 'tag'; tag.textContent = c.zh;
+  tag.style.setProperty('--h', c.hue);
+  const date = document.createElement('span'); date.className = 'date'; date.textContent = ep.d;
+  const dur = document.createElement('span'); dur.className = 'dur'; dur.textContent = ep.dt;
+  top.append(num, tag, date, dur);
+  art.append(top);
+
+  const h3 = document.createElement('h3'); h3.className = 'title';
+  const a = document.createElement('a'); a.href = ep.lk; a.target = '_blank'; a.rel = 'noopener';
+  a.innerHTML = hi(ep.ti, ts);
+  h3.append(a); art.append(h3);
+
+  if (ep.gu) {
+    const meta = document.createElement('p'); meta.className = 'meta';
+    meta.textContent = '嘉宾：' + ep.gu; art.append(meta);
+  }
+
+  const sum = document.createElement('p'); sum.className = 'summary';
+  const btnM = document.createElement('button'); btnM.type = 'button'; btnM.className = 'btn-link';
+  btnM.textContent = '展开全文'; btnM.setAttribute('aria-expanded', 'false');
+  sum.innerHTML = hi(summaryOf(ep), ts) + ' ';
+  sum.append(btnM);
+  art.append(sum);
+
+  const det = document.createElement('div'); det.className = 'detail'; det.hidden = true;
+  const desc = document.createElement('div'); desc.className = 'desc'; desc.innerHTML = ep.dh;
+  const act = document.createElement('div'); act.className = 'actions';
+  const la = document.createElement('a'); la.className = 'btn-link'; la.href = ep.lk;
+  la.target = '_blank'; la.rel = 'noopener'; la.textContent = '原文页 ↗';
+  const lm = document.createElement('a'); lm.className = 'btn-link'; lm.href = ep.mp;
+  lm.target = '_blank'; lm.rel = 'noopener'; lm.textContent = '下载 MP3 ↗';
+  const bl = document.createElement('button'); bl.type = 'button'; bl.className = 'btn-link'; bl.textContent = '试听';
+  const holder = document.createElement('div'); holder.className = 'audio-holder'; holder.hidden = true;
+  act.append(la, lm, bl); det.append(desc, act, holder); art.append(det);
+
+  btnM.onclick = () => {
+    det.hidden = !det.hidden;
+    btnM.textContent = det.hidden ? '展开全文' : '收起全文';
+    btnM.setAttribute('aria-expanded', det.hidden ? 'false' : 'true');
+  };
+  bl.onclick = () => {
+    if (holder.hidden) {
+      holder.hidden = false;
+      // 原生音频播放器（保留进度条）
+      const au = document.createElement('audio'); au.controls = true; au.preload = 'none';
+      au.style.width = '100%'; au.src = ep.mp;
+      holder.appendChild(au);
+
+      // 控制按钮行
+      const ctr = document.createElement('div'); ctr.className = 'player-controls';
+      const bw = document.createElement('button'); bw.type = 'button'; bw.className = 'seek-btn';
+      bw.textContent = '⏪ 5s'; bw.title = '后退 5 秒';
+      const playBtn = document.createElement('button'); playBtn.type = 'button'; playBtn.className = 'seek-btn';
+      playBtn.textContent = '▶'; playBtn.title = '播放/暂停';
+      const fw = document.createElement('button'); fw.type = 'button'; fw.className = 'seek-btn';
+      fw.textContent = '5s ⏩'; fw.title = '前进 5 秒';
+      const timeEl = document.createElement('span'); timeEl.className = 'time-display';
+      timeEl.textContent = '0:00 / 0:00';
+      ctr.append(bw, playBtn, fw, timeEl);
+      holder.appendChild(ctr);
+
+      // 字幕区域
+      const sub = document.createElement('div'); sub.className = 'subtitle-area';
+      holder.appendChild(sub);
+
+      // 字幕数据：播放时动态加载（SRT 在浏览器端解析）
+      let cues = [];
+      let subStatus = 'idle';   // idle | loading | ready | none | error
+      let subErrMsg = '';
+      let rafId = null;
+
+      const fmtTime = (s) => {
+        if (!isFinite(s) || s < 0) s = 0;
+        const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = Math.floor(s % 60);
+        return h > 0 ? `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}` : `${m}:${String(sec).padStart(2,'0')}`;
+      };
+
+      const findCue = (t) => {
+        let lo = 0, hi = cues.length - 1, ans = -1;
+        while (lo <= hi) { const mid = (lo + hi) >> 1; if (cues[mid].s <= t) { ans = mid; lo = mid + 1; } else { hi = mid - 1; } }
+        return ans >= 0 && t <= cues[ans].e ? ans : -1;
+      };
+
+      const renderSub = (idx) => {
+        sub.replaceChildren();
+        if (!cues.length) { sub.textContent = '（无字幕）'; return; }
+        // 前一句
+        if (idx > 0) {
+          const p = document.createElement('div'); p.className = 'subtitle-prev';
+          p.textContent = cues[idx - 1].t; sub.append(p);
+        }
+        // 当前句（高亮）
+        if (idx >= 0) {
+          const c = document.createElement('div'); c.className = 'subtitle-current';
+          c.textContent = cues[idx].t; sub.append(c);
+        }
+        // 后一句
+        if (idx >= 0 && idx < cues.length - 1) {
+          const n = document.createElement('div'); n.className = 'subtitle-next';
+          n.textContent = cues[idx + 1].t; sub.append(n);
+        }
+      };
+
+      const syncSub = () => {
+        if (subStatus !== 'ready') return;
+        const idx = findCue(au.currentTime);
+        // 只在 idx 变化时更新 DOM
+        const prevIdx = parseInt(sub.dataset.idx || '-2', 10);
+        if (idx !== prevIdx) { renderSub(idx); sub.dataset.idx = String(idx); }
+      };
+
+      const renderSubStatus = () => {
+        sub.replaceChildren();
+        sub.dataset.idx = '-2';
+        if (subStatus === 'loading') sub.textContent = '字幕加载中…';
+        else if (subStatus === 'none') sub.textContent = '（无字幕）';
+        else if (subStatus === 'error') sub.textContent =
+          location.protocol === 'file:'
+            ? '字幕加载失败：浏览器禁止 file:// 页面读取本地字幕文件。请在项目根目录运行 “python -m http.server 8000”，然后访问 http://localhost:8000/dist/se_radio_viewer.html'
+            : '字幕加载失败：' + subErrMsg;
+      };
+
+      // 控制按钮事件
+      bw.onclick = () => { au.currentTime = Math.max(0, au.currentTime - 5); };
+      fw.onclick = () => { au.currentTime = Math.min(au.duration || Infinity, au.currentTime + 5); };
+      playBtn.onclick = () => { au.paused ? au.play() : au.pause(); };
+
+      const tick = () => {
+        const cur = au.currentTime, dur = au.duration;
+        timeEl.textContent = fmtTime(cur) + ' / ' + (isFinite(dur) ? fmtTime(dur) : '--:--');
+        syncSub();
+        rafId = requestAnimationFrame(tick);
+      };
+      au.onplay = () => { playBtn.textContent = '⏸'; if (!rafId) tick(); };
+      au.onpause = () => { playBtn.textContent = '▶'; };
+      au.ontimeupdate = () => { /* 由 raf 处理 */ };
+      au.onloadedmetadata = () => { timeEl.textContent = '0:00 / ' + fmtTime(au.duration || 0); };
+      au.onended = () => { playBtn.textContent = '▶'; if (rafId) { cancelAnimationFrame(rafId); rafId = null; } };
+
+      // 动态加载字幕（点开播放器即开始加载；解析结果缓存，二次打开瞬时显示）
+      if (ep.sub) {
+        subStatus = 'loading'; renderSubStatus();
+        loadCues(ep).then(loaded => {
+          cues = loaded;
+          if (!holder.contains(sub)) return;   // 播放器已被关闭
+          subStatus = cues.length ? 'ready' : 'none';
+          renderSubStatus();
+          if (subStatus === 'ready') syncSub();
+        }).catch(err => {
+          if (!holder.contains(sub)) return;
+          subStatus = 'error';
+          subErrMsg = (err && err.message) ? err.message : String(err);
+          renderSubStatus();
+        });
+      } else {
+        subStatus = 'none'; renderSubStatus();
+      }
+
+      bl.textContent = '停止试听';
+    } else {
+      holder.hidden = true; holder.replaceChildren(); bl.textContent = '试听';
+    }
+  };
+  return art;
+}
+// ---------- 分页与渲染 ----------
+function pagesWindow(cur, total) {
+  const s = new Set([1, 2, cur - 1, cur, cur + 1, total - 1, total]);
+  const arr = [...s].filter(p => p >= 1 && p <= total).sort((a, b) => a - b);
+  const out = []; let prev = 0;
+  for (const p of arr) { if (p - prev > 1) out.push(null); out.push(p); prev = p; }
+  return out;
+}
+function renderPager(totalPages) {
+  pagerEl.replaceChildren();
+  if (totalPages <= 1) return;
+  const mk = (label, page, opts) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'page-btn';
+    b.textContent = label; b.disabled = !!opts.dis;
+    if (opts.on) b.className += ' on';
+    if (!opts.dis) b.onclick = () => { state.page = page; render(); pagerEl.scrollIntoView({ block: 'start' }); };
+    return b;
+  };
+  pagerEl.append(mk('‹ 上一页', state.page - 1, { dis: state.page <= 1 }));
+  pagesWindow(state.page, totalPages).forEach(p => {
+    if (p === null) {
+      const sp = document.createElement('span'); sp.className = 'page-ell'; sp.textContent = '…';
+      pagerEl.append(sp);
+    } else {
+      pagerEl.append(mk(String(p), p, { dis: false, on: p === state.page }));
+    }
+  });
+  pagerEl.append(mk('下一页 ›', state.page + 1, { dis: state.page >= totalPages }));
+}
+function render() {
+  const list = getFiltered();
+  const totalPages = Math.max(1, Math.ceil(list.length / state.size));
+  state.page = Math.min(state.page, totalPages);
+  const start = (state.page - 1) * state.size;
+  const page = list.slice(start, start + state.size);
+
+  renderChips();
+  statsEl.textContent = '共 ' + EPISODES.length + ' 集 · ' + CATS.length + ' 个分类' +
+    (subCount ? ' · 字幕 ' + subCount + ' 集' : '');
+  const filtered = state.q !== '' || state.cat !== 'all' || state.year !== 'all' || state.dur !== 'all';
+  infoEl.textContent = filtered
+    ? '筛选结果 ' + list.length + ' / ' + EPISODES.length + ' 集（第 ' + state.page + ' / ' + totalPages + ' 页）'
+    : '共 ' + list.length + ' 集 · ' + totalPages + ' 页';
+
+  listEl.replaceChildren();
+  if (!page.length) {
+    const e = document.createElement('div'); e.className = 'empty';
+    const p = document.createElement('p'); p.textContent = '没有符合条件的节目。';
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = '重置全部筛选';
+    b.onclick = reset;
+    e.append(p, b); listEl.append(e); renderPager(1);
+    return;
+  }
+  page.forEach(ep => listEl.append(cardHTML(ep)));
+  renderPager(totalPages);
+}
+function reset() {
+  state.cat = 'all'; state.year = 'all'; state.dur = 'all'; state.q = ''; state.page = 1;
+  document.getElementById('q').value = '';
+  document.getElementById('year').value = 'all';
+  document.getElementById('dur').value = 'all';
+  render();
+}
+
+// ---------- 初始化：先动态加载节目数据 ----------
+(async function init() {
+  statsEl.textContent = '数据加载中…';
+  try {
+    const res = await fetch(DATA_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status + '（' + DATA_URL + '）');
+    EPISODES = await res.json();
+    subCount = EPISODES.filter(e => e.sub).length;
+  } catch (err) {
+    statsEl.textContent = '数据加载失败';
+    infoEl.textContent = '';
+    listEl.replaceChildren();
+    const box = document.createElement('div'); box.className = 'empty';
+    const p = document.createElement('p');
+    p.textContent = location.protocol === 'file:'
+      ? '数据加载失败：浏览器禁止 file:// 页面读取本地数据文件。请在项目根目录运行 “python -m http.server 8000”，然后访问 http://localhost:8000/dist/se_radio_viewer.html'
+      : '数据加载失败：' + ((err && err.message) || err);
+    box.append(p); listEl.append(box);
+    return;
+  }
+
+  rebuildFacets();
+  buildChips(); buildYearSel();
+  let deb = null;
+  document.getElementById('q').oninput = () => {
+    clearTimeout(deb);
+    deb = setTimeout(() => { state.q = document.getElementById('q').value; state.page = 1; render(); }, 250);
+  };
+  document.getElementById('q').onsearch = () => { state.q = document.getElementById('q').value; state.page = 1; render(); };
+  document.getElementById('year').onchange = () => { state.year = document.getElementById('year').value; state.page = 1; render(); };
+  document.getElementById('dur').onchange = () => { state.dur = document.getElementById('dur').value; state.page = 1; render(); };
+  document.getElementById('sort').onchange = () => { state.sort = document.getElementById('sort').value; state.page = 1; render(); };
+  document.getElementById('size').onchange = () => { state.size = parseInt(document.getElementById('size').value, 10); state.page = 1; render(); };
+  document.getElementById('reset').onclick = reset;
+  render();
+})();
+</script>
+</body>
+</html>
