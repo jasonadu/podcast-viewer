@@ -1,0 +1,5967 @@
+1
+00:00:00,950 --> 00:00:00,960
+[Music]
+
+2
+00:00:00,960 --> 00:00:02,869
+this is software engineering radio the
+
+3
+00:00:02,879 --> 00:00:04,789
+podcast for professional developers on
+
+4
+00:00:04,799 --> 00:00:06,710
+the web at se-
+
+5
+00:00:06,720 --> 00:00:09,110
+radio.net se radio is brought to you by
+
+6
+00:00:09,120 --> 00:00:11,509
+the it computer society and by It
+
+7
+00:00:11,519 --> 00:00:15,710
+software Magazine online at computer.org
+
+8
+00:00:15,720 --> 00:00:18,189
+[Music]
+
+9
+00:00:18,199 --> 00:00:20,910
+software welcome to software engineering
+
+10
+00:00:20,920 --> 00:00:24,109
+radio I'm your host Gregory cap Hammer
+
+11
+00:00:24,119 --> 00:00:26,990
+today's guest is Goran petrovich a staff
+
+12
+00:00:27,000 --> 00:00:29,470
+software engineer at Google Goran
+
+13
+00:00:29,480 --> 00:00:30,830
+focuses on on software quality
+
+14
+00:00:30,840 --> 00:00:32,549
+improvement through the development and
+
+15
+00:00:32,559 --> 00:00:35,310
+evaluation of new software tools and
+
+16
+00:00:35,320 --> 00:00:38,270
+processes welcome to the show thanks
+
+17
+00:00:38,280 --> 00:00:40,750
+Greg it's good to be here today during
+
+18
+00:00:40,760 --> 00:00:42,430
+our episode we're going to be talking
+
+19
+00:00:42,440 --> 00:00:44,670
+about goran's effort to introduce
+
+20
+00:00:44,680 --> 00:00:47,029
+mutation testing at Google we're going
+
+21
+00:00:47,039 --> 00:00:48,950
+to start by exploring what mutation
+
+22
+00:00:48,960 --> 00:00:51,110
+testing is and the ways in which
+
+23
+00:00:51,120 --> 00:00:52,990
+Google's software Engineers tend to use
+
+24
+00:00:53,000 --> 00:00:55,029
+it now Goran I know you published a
+
+25
+00:00:55,039 --> 00:00:57,229
+paper called state of mutation testing
+
+26
+00:00:57,239 --> 00:00:59,430
+at Google and if you won't mind I'm
+
+27
+00:00:59,440 --> 00:01:01,150
+going to read you a sentence from the
+
+28
+00:01:01,160 --> 00:01:03,470
+paper and then invite you to comment on
+
+29
+00:01:03,480 --> 00:01:05,950
+it does that sound cool sounds great
+
+30
+00:01:05,960 --> 00:01:08,149
+okay so the paper was called the state
+
+31
+00:01:08,159 --> 00:01:10,710
+of mutation testing at Google and the
+
+32
+00:01:10,720 --> 00:01:13,749
+sentence was mutation testing assesses
+
+33
+00:01:13,759 --> 00:01:16,670
+test Suite efficacy by inserting small
+
+34
+00:01:16,680 --> 00:01:19,350
+faults into programs and measuring the
+
+35
+00:01:19,360 --> 00:01:22,069
+ability of the test Suite to detect them
+
+36
+00:01:22,079 --> 00:01:24,069
+so at a high level can you tell us what
+
+37
+00:01:24,079 --> 00:01:27,069
+is mutation testing and how does it work
+
+38
+00:01:27,079 --> 00:01:29,510
+sure so everyone is familiar with the
+
+39
+00:01:29,520 --> 00:01:32,550
+standard criteria like line coverage and
+
+40
+00:01:32,560 --> 00:01:34,429
+it's been in standard in the industry
+
+41
+00:01:34,439 --> 00:01:37,350
+for many years and mutation testing is
+
+42
+00:01:37,360 --> 00:01:39,510
+just a step further in this to ensure
+
+43
+00:01:39,520 --> 00:01:41,550
+that the code is not only covered with
+
+44
+00:01:41,560 --> 00:01:44,590
+tests but actually properly tested in
+
+45
+00:01:44,600 --> 00:01:46,910
+terms of assertions you could imagine
+
+46
+00:01:46,920 --> 00:01:48,709
+that you can have a function that you
+
+47
+00:01:48,719 --> 00:01:50,670
+call from a test and don't assert
+
+48
+00:01:50,680 --> 00:01:53,910
+anything it can have 100% coverage but
+
+49
+00:01:53,920 --> 00:01:56,830
+it will never catch any real bugs and
+
+50
+00:01:56,840 --> 00:01:59,270
+mutation testing comes to help in terms
+
+51
+00:01:59,280 --> 00:02:01,310
+of actually validating that these tests
+
+52
+00:02:01,320 --> 00:02:03,429
+do something useful the big picture is
+
+53
+00:02:03,439 --> 00:02:05,950
+that why do we even write tests maybe 20
+
+54
+00:02:05,960 --> 00:02:07,550
+years ago or 10 years ago people were
+
+55
+00:02:07,560 --> 00:02:09,150
+complaining that they had to do it and
+
+56
+00:02:09,160 --> 00:02:11,150
+they they said we don't need that now
+
+57
+00:02:11,160 --> 00:02:13,470
+it's more or less a standard but the
+
+58
+00:02:13,480 --> 00:02:15,470
+real question is why do you do it and
+
+59
+00:02:15,480 --> 00:02:17,550
+the reason is we don't want bug to be
+
+60
+00:02:17,560 --> 00:02:19,509
+introduced into the code and then pushed
+
+61
+00:02:19,519 --> 00:02:22,670
+to our users so the best way to do that
+
+62
+00:02:22,680 --> 00:02:24,550
+is to actually have tests that can catch
+
+63
+00:02:24,560 --> 00:02:26,990
+these bugs not only that cover certain
+
+64
+00:02:27,000 --> 00:02:29,509
+lines of code so mutation testing is a
+
+65
+00:02:29,519 --> 00:02:32,190
+system where you can just change the
+
+66
+00:02:32,200 --> 00:02:33,869
+code change the implementation by
+
+67
+00:02:33,879 --> 00:02:36,110
+mimicking a bug in a way let's say
+
+68
+00:02:36,120 --> 00:02:39,149
+replace a plus b with a minus B and then
+
+69
+00:02:39,159 --> 00:02:42,470
+run all the tests if no tests fail
+
+70
+00:02:42,480 --> 00:02:44,390
+there's something wrong there so you
+
+71
+00:02:44,400 --> 00:02:46,390
+might have coverage but this is not a
+
+72
+00:02:46,400 --> 00:02:49,110
+good test and mutation testing is a way
+
+73
+00:02:49,120 --> 00:02:51,190
+of generating many of these different
+
+74
+00:02:51,200 --> 00:02:52,790
+code versions with slight changes they
+
+75
+00:02:52,800 --> 00:02:54,589
+are called mutants and then running all
+
+76
+00:02:54,599 --> 00:02:56,910
+the tests on all of them and calculating
+
+77
+00:02:56,920 --> 00:02:59,070
+the score mutation testing score which
+
+78
+00:02:59,080 --> 00:03:00,990
+tells you how many many of these mutants
+
+79
+00:03:01,000 --> 00:03:03,830
+your tests were able to detect and then
+
+80
+00:03:03,840 --> 00:03:05,110
+that's another number along with
+
+81
+00:03:05,120 --> 00:03:07,789
+coverage that can help you understand
+
+82
+00:03:07,799 --> 00:03:10,110
+the quality of your tests even better so
+
+83
+00:03:10,120 --> 00:03:11,869
+what you're explaining is interesting
+
+84
+00:03:11,879 --> 00:03:13,350
+and yet it may sound somewhat
+
+85
+00:03:13,360 --> 00:03:15,309
+counterintuitive because normally we
+
+86
+00:03:15,319 --> 00:03:17,710
+associate testing with the process of
+
+87
+00:03:17,720 --> 00:03:20,270
+getting bugs out of our code but you've
+
+88
+00:03:20,280 --> 00:03:21,789
+explained that mutation testing is
+
+89
+00:03:21,799 --> 00:03:24,229
+putting bugs into our code can you
+
+90
+00:03:24,239 --> 00:03:26,030
+unpack that a little bit further why
+
+91
+00:03:26,040 --> 00:03:29,149
+would we want to put a bug into our code
+
+92
+00:03:29,159 --> 00:03:31,949
+sure I do that every day programming is
+
+93
+00:03:31,959 --> 00:03:33,910
+an art of adding bugs to your code and
+
+94
+00:03:33,920 --> 00:03:36,429
+then removing them and probably you
+
+95
+00:03:36,439 --> 00:03:38,070
+never remove all of them there's some
+
+96
+00:03:38,080 --> 00:03:40,509
+remaining so you could say that
+
+97
+00:03:40,519 --> 00:03:43,309
+99.99% of code that I write is full of
+
+98
+00:03:43,319 --> 00:03:45,750
+bugs and eventually it will have so few
+
+99
+00:03:45,760 --> 00:03:47,710
+bugs that they won't be so important so
+
+100
+00:03:47,720 --> 00:03:49,990
+I can actually release my code and
+
+101
+00:03:50,000 --> 00:03:51,949
+that's a good reason to try to insert
+
+102
+00:03:51,959 --> 00:03:53,229
+bugs into the code because it's
+
+103
+00:03:53,239 --> 00:03:55,110
+inevitable that we will do it as human
+
+104
+00:03:55,120 --> 00:03:57,309
+beings we are not evolved to write
+
+105
+00:03:57,319 --> 00:03:58,949
+complicated code we are evolved to run
+
+106
+00:03:58,959 --> 00:04:01,509
+around in the the woods so this is very
+
+107
+00:04:01,519 --> 00:04:03,750
+hard to hold concentration and the bugs
+
+108
+00:04:03,760 --> 00:04:06,390
+will definitely happen so mutation
+
+109
+00:04:06,400 --> 00:04:08,789
+testing is just a natural way of
+
+110
+00:04:08,799 --> 00:04:11,149
+simulating that you just say imagine if
+
+111
+00:04:11,159 --> 00:04:13,270
+you make a bug here imagine if you if
+
+112
+00:04:13,280 --> 00:04:15,270
+you inserted a bug here what would
+
+113
+00:04:15,280 --> 00:04:17,229
+happen and people sometimes ask like but
+
+114
+00:04:17,239 --> 00:04:19,629
+I I didn't so my code is correct why
+
+115
+00:04:19,639 --> 00:04:22,390
+should I care but software engineering
+
+116
+00:04:22,400 --> 00:04:25,430
+is uh integrated programming over time
+
+117
+00:04:25,440 --> 00:04:27,950
+so usually if you just write a code for
+
+118
+00:04:27,960 --> 00:04:30,070
+like a one-off script or a competition
+
+119
+00:04:30,080 --> 00:04:32,070
+that that's okay but most of the code
+
+120
+00:04:32,080 --> 00:04:34,230
+that the compan write will live for
+
+121
+00:04:34,240 --> 00:04:37,670
+years and years decades even and you as
+
+122
+00:04:37,680 --> 00:04:39,590
+an author are just the first author
+
+123
+00:04:39,600 --> 00:04:41,550
+there will be countless changes
+
+124
+00:04:41,560 --> 00:04:43,189
+happening to the code some from your
+
+125
+00:04:43,199 --> 00:04:44,950
+team with the people who are familiar
+
+126
+00:04:44,960 --> 00:04:46,790
+with the code but some from completely
+
+127
+00:04:46,800 --> 00:04:47,950
+different people who want to add a
+
+128
+00:04:47,960 --> 00:04:50,510
+feature or want to do a refactoring and
+
+129
+00:04:50,520 --> 00:04:52,070
+even I don't understand most of the
+
+130
+00:04:52,080 --> 00:04:54,230
+things that I'm writing about let alone
+
+131
+00:04:54,240 --> 00:04:56,350
+if I'm editing someone else's code so
+
+132
+00:04:56,360 --> 00:04:58,350
+the chance of me introducing a bug is is
+
+133
+00:04:58,360 --> 00:05:00,150
+huge and that's why we want to protect
+
+134
+00:05:00,160 --> 00:05:02,469
+against that so if I'm understanding you
+
+135
+00:05:02,479 --> 00:05:04,670
+correctly when I put these small faults
+
+136
+00:05:04,680 --> 00:05:07,390
+or mutants in the program and my test
+
+137
+00:05:07,400 --> 00:05:10,270
+Suite detects them then I know that if I
+
+138
+00:05:10,280 --> 00:05:12,670
+later put that into my program the test
+
+139
+00:05:12,680 --> 00:05:14,870
+Suite would still detect it is that the
+
+140
+00:05:14,880 --> 00:05:18,029
+right idea it is and of course a student
+
+141
+00:05:18,039 --> 00:05:20,550
+might ask I'm not going to write in a
+
+142
+00:05:20,560 --> 00:05:22,670
+function of sum a minus b instead of a
+
+143
+00:05:22,680 --> 00:05:25,670
+plus b but the idea is that these small
+
+144
+00:05:25,680 --> 00:05:28,150
+changes these mutants they might not
+
+145
+00:05:28,160 --> 00:05:30,830
+look like real bugs but then they are
+
+146
+00:05:30,840 --> 00:05:33,710
+correlated with real bugs so this is the
+
+147
+00:05:33,720 --> 00:05:35,990
+core assumption if that doesn't hold
+
+148
+00:05:36,000 --> 00:05:37,670
+then mutation testing doesn't make any
+
+149
+00:05:37,680 --> 00:05:39,830
+sense but it happens to hold so that's
+
+150
+00:05:39,840 --> 00:05:41,670
+the reason why inserting these small
+
+151
+00:05:41,680 --> 00:05:44,550
+non- buug looking changes actually if
+
+152
+00:05:44,560 --> 00:05:46,590
+you prevent them you can also prevent
+
+153
+00:05:46,600 --> 00:05:49,110
+bugs by tests you made a really good
+
+154
+00:05:49,120 --> 00:05:51,070
+point about the correlation between
+
+155
+00:05:51,080 --> 00:05:52,990
+these mutants and real bugs and we're
+
+156
+00:05:53,000 --> 00:05:54,790
+going to talk about your experience at
+
+157
+00:05:54,800 --> 00:05:57,350
+Google later in the episode specifically
+
+158
+00:05:57,360 --> 00:05:59,950
+in that area before we move on I wanted
+
+159
+00:05:59,960 --> 00:06:01,430
+to pick up on something you said a
+
+160
+00:06:01,440 --> 00:06:04,270
+moment ago you were talking about like a
+
+161
+00:06:04,280 --> 00:06:07,950
+plus b and then you mentioned a minus B
+
+162
+00:06:07,960 --> 00:06:10,390
+if I remember correctly is that what you
+
+163
+00:06:10,400 --> 00:06:12,350
+mean when you talk about the concept of
+
+164
+00:06:12,360 --> 00:06:15,309
+a mutant yes that's one example of it
+
+165
+00:06:15,319 --> 00:06:17,070
+there have been many many different
+
+166
+00:06:17,080 --> 00:06:19,230
+mutant operators developed over the
+
+167
+00:06:19,240 --> 00:06:21,589
+years and the mutant operator is just a
+
+168
+00:06:21,599 --> 00:06:23,350
+fensive way of saying how do I change
+
+169
+00:06:23,360 --> 00:06:26,070
+your code to insert a bug into it so
+
+170
+00:06:26,080 --> 00:06:27,950
+when you encounter any binary operator
+
+171
+00:06:27,960 --> 00:06:29,749
+Like A Plus or a minus you you can
+
+172
+00:06:29,759 --> 00:06:31,830
+replace it with a division or or a
+
+173
+00:06:31,840 --> 00:06:34,070
+subsumption of any other operator that
+
+174
+00:06:34,080 --> 00:06:36,230
+would fit in that code so that's an
+
+175
+00:06:36,240 --> 00:06:38,189
+example of a mutant yes or you can just
+
+176
+00:06:38,199 --> 00:06:40,270
+say if a equals B you can just say if a
+
+177
+00:06:40,280 --> 00:06:42,909
+not equals B you can negate the operator
+
+178
+00:06:42,919 --> 00:06:45,110
+so you given an example of not equals
+
+179
+00:06:45,120 --> 00:06:47,629
+and equals and plus and minus can you
+
+180
+00:06:47,639 --> 00:06:50,189
+give one or two more concrete examples
+
+181
+00:06:50,199 --> 00:06:54,629
+of mutants sure the most boring mutant
+
+182
+00:06:54,639 --> 00:06:56,710
+is deleting statements let's say delete
+
+183
+00:06:56,720 --> 00:06:58,950
+a line but because of the structure of
+
+184
+00:06:58,960 --> 00:07:01,390
+the code they are the most prevalent
+
+185
+00:07:01,400 --> 00:07:03,589
+because you cannot replace a plus with a
+
+186
+00:07:03,599 --> 00:07:05,510
+minus in every line of code it might not
+
+187
+00:07:05,520 --> 00:07:08,270
+even have a plus you cannot negate a
+
+188
+00:07:08,280 --> 00:07:09,430
+condition because not every line
+
+189
+00:07:09,440 --> 00:07:12,150
+contains a condition but almost every
+
+190
+00:07:12,160 --> 00:07:14,350
+line can be deleted so while it is
+
+191
+00:07:14,360 --> 00:07:16,749
+boring it is the most common mutant just
+
+192
+00:07:16,759 --> 00:07:18,629
+delete a statement delete a line delete
+
+193
+00:07:18,639 --> 00:07:20,110
+a block let's say you have an if
+
+194
+00:07:20,120 --> 00:07:21,390
+statement and you just delete the whole
+
+195
+00:07:21,400 --> 00:07:23,230
+else block that's one of the mutants
+
+196
+00:07:23,240 --> 00:07:25,469
+that you could do others are just
+
+197
+00:07:25,479 --> 00:07:27,749
+changing numbers from 0o to one changing
+
+198
+00:07:27,759 --> 00:07:29,510
+strings from whatever the string
+
+199
+00:07:29,520 --> 00:07:31,749
+literally is to an empty string you can
+
+200
+00:07:31,759 --> 00:07:34,350
+always change the do an absolute of and
+
+201
+00:07:34,360 --> 00:07:36,070
+then negate the number this is one of
+
+202
+00:07:36,080 --> 00:07:38,990
+the mutants that in Google we don't do
+
+203
+00:07:39,000 --> 00:07:40,710
+because it turned out to be the least
+
+204
+00:07:40,720 --> 00:07:43,189
+useful of all mutant classes that's an
+
+205
+00:07:43,199 --> 00:07:45,469
+interesting consequence of of doing this
+
+206
+00:07:45,479 --> 00:07:47,869
+research but yeah whatever type of
+
+207
+00:07:47,879 --> 00:07:49,629
+change you can imagine there have been
+
+208
+00:07:49,639 --> 00:07:51,070
+mutation operators proposed and
+
+209
+00:07:51,080 --> 00:07:52,869
+implemented for that those are very
+
+210
+00:07:52,879 --> 00:07:54,990
+simple that I've been describing but
+
+211
+00:07:55,000 --> 00:07:56,710
+they are more complicated mutants you
+
+212
+00:07:56,720 --> 00:07:59,070
+could just cast a pointer into a base
+
+213
+00:07:59,080 --> 00:07:59,950
+class
+
+214
+00:07:59,960 --> 00:08:01,790
+or do something strange with
+
+215
+00:08:01,800 --> 00:08:04,149
+objectoriented mutations or for each
+
+216
+00:08:04,159 --> 00:08:05,749
+language for example lisp you can do
+
+217
+00:08:05,759 --> 00:08:07,309
+multiple other different things and so
+
+218
+00:08:07,319 --> 00:08:09,189
+on one of the things that I heard you
+
+219
+00:08:09,199 --> 00:08:11,189
+say a moment ago is that mutation
+
+220
+00:08:11,199 --> 00:08:14,149
+testing is this strong test adequacy
+
+221
+00:08:14,159 --> 00:08:16,510
+Criterion and if I remember correctly I
+
+222
+00:08:16,520 --> 00:08:18,550
+think you said it was stronger than code
+
+223
+00:08:18,560 --> 00:08:20,909
+coverage criteria like statement
+
+224
+00:08:20,919 --> 00:08:23,710
+coverage or Branch coverage can you tell
+
+225
+00:08:23,720 --> 00:08:25,550
+us a little bit more what is a test
+
+226
+00:08:25,560 --> 00:08:28,110
+adequacy Criterion and then why is
+
+227
+00:08:28,120 --> 00:08:30,790
+mutation testing quote quote stronger
+
+228
+00:08:30,800 --> 00:08:33,269
+than these code coverage criteria sure
+
+229
+00:08:33,279 --> 00:08:35,630
+Greg so it's very simple you can define
+
+230
+00:08:35,640 --> 00:08:38,110
+a criteria let's say coverage of lines
+
+231
+00:08:38,120 --> 00:08:39,389
+and just count the lines that are
+
+232
+00:08:39,399 --> 00:08:41,070
+covered overall lines and you get a
+
+233
+00:08:41,080 --> 00:08:43,550
+percentage and this is your Criterion
+
+234
+00:08:43,560 --> 00:08:46,269
+and test Suite you can say it's adequate
+
+235
+00:08:46,279 --> 00:08:48,310
+according to this Criterion if it covers
+
+236
+00:08:48,320 --> 00:08:51,110
+100% of lines and so on for mutants it's
+
+237
+00:08:51,120 --> 00:08:53,829
+a bit different because you generate all
+
+238
+00:08:53,839 --> 00:08:55,910
+the mutants that you can in the code and
+
+239
+00:08:55,920 --> 00:08:57,710
+then run all the test Suites and all of
+
+240
+00:08:57,720 --> 00:08:59,470
+them and you calculate the percentage of
+
+241
+00:08:59,480 --> 00:09:02,069
+of the killed mutants and this is your
+
+242
+00:09:02,079 --> 00:09:04,350
+your your mutation score or mutation
+
+243
+00:09:04,360 --> 00:09:07,150
+adequacy score and if it's 100% which
+
+244
+00:09:07,160 --> 00:09:09,310
+I've never seen it means that all the
+
+245
+00:09:09,320 --> 00:09:12,030
+mutants in the code have been killed the
+
+246
+00:09:12,040 --> 00:09:14,110
+issue with the with this is that it's
+
+247
+00:09:14,120 --> 00:09:16,470
+while coverage is very well defined each
+
+248
+00:09:16,480 --> 00:09:18,310
+line is either covered or not Branch
+
+249
+00:09:18,320 --> 00:09:19,990
+coverage as well each branch taken or
+
+250
+00:09:20,000 --> 00:09:22,829
+not mutation testing is defined in a
+
+251
+00:09:22,839 --> 00:09:24,470
+sense that either a mutant is killed or
+
+252
+00:09:24,480 --> 00:09:26,670
+not but it is not defined in the domain
+
+253
+00:09:26,680 --> 00:09:28,630
+of mutants I have yet to see two
+
+254
+00:09:28,640 --> 00:09:30,389
+different mutations testing tools that
+
+255
+00:09:30,399 --> 00:09:32,269
+can generate exactly the same mutants on
+
+256
+00:09:32,279 --> 00:09:34,790
+the same piece of code there are
+
+257
+00:09:34,800 --> 00:09:36,230
+different optimizations there are
+
+258
+00:09:36,240 --> 00:09:38,829
+different underlying Technologies used
+
+259
+00:09:38,839 --> 00:09:40,350
+that will yield different results and
+
+260
+00:09:40,360 --> 00:09:42,150
+that's why when you cannot compare these
+
+261
+00:09:42,160 --> 00:09:43,829
+numbers across across tools or
+
+262
+00:09:43,839 --> 00:09:45,710
+programming languages or even your own
+
+263
+00:09:45,720 --> 00:09:47,470
+invocations of the same tool on the same
+
+264
+00:09:47,480 --> 00:09:49,750
+code I noticed you mentioned the idea of
+
+265
+00:09:49,760 --> 00:09:52,230
+a mutant being killed can you explain
+
+266
+00:09:52,240 --> 00:09:55,949
+what that concept is all about sure so
+
+267
+00:09:55,959 --> 00:09:58,030
+when you have mutated code let's say
+
+268
+00:09:58,040 --> 00:09:59,509
+that the function sum that I talked
+
+269
+00:09:59,519 --> 00:10:01,949
+about before that is just returning a
+
+270
+00:10:01,959 --> 00:10:04,550
+plus b suddenly it's changed into a
+
+271
+00:10:04,560 --> 00:10:06,910
+minus B that constitutes a mutant
+
+272
+00:10:06,920 --> 00:10:08,269
+hopefully there will be some kind of a
+
+273
+00:10:08,279 --> 00:10:10,069
+unit test that will fail when you do
+
+274
+00:10:10,079 --> 00:10:12,790
+this if you assert that 2 plus 2 is four
+
+275
+00:10:12,800 --> 00:10:14,350
+suddenly these mutants will return as
+
+276
+00:10:14,360 --> 00:10:16,829
+zero and this is not good hopefully
+
+277
+00:10:16,839 --> 00:10:19,110
+there's a test that test is and if the
+
+278
+00:10:19,120 --> 00:10:21,389
+test fails any test covering this line
+
+279
+00:10:21,399 --> 00:10:24,870
+fails we say that this mutant is killed
+
+280
+00:10:24,880 --> 00:10:27,509
+by this unit test and the tests that are
+
+281
+00:10:27,519 --> 00:10:29,509
+not killed are called living orive live
+
+282
+00:10:29,519 --> 00:10:30,910
+mutants and they are more interesting
+
+283
+00:10:30,920 --> 00:10:32,430
+than the killed ones because they are
+
+284
+00:10:32,440 --> 00:10:34,230
+the ones where you can actually add
+
+285
+00:10:34,240 --> 00:10:36,030
+stuff to your test to make them better
+
+286
+00:10:36,040 --> 00:10:37,470
+all right that makes a lot of sense I
+
+287
+00:10:37,480 --> 00:10:39,829
+have two more quick questions before we
+
+288
+00:10:39,839 --> 00:10:42,550
+go to the next part of our show I
+
+289
+00:10:42,560 --> 00:10:44,150
+noticed that you've been mentioning a
+
+290
+00:10:44,160 --> 00:10:46,629
+process for mutation testing what I'd
+
+291
+00:10:46,639 --> 00:10:48,870
+like you to explore a little bit further
+
+292
+00:10:48,880 --> 00:10:51,310
+is whether this process is manual or
+
+293
+00:10:51,320 --> 00:10:54,030
+automated for example does the software
+
+294
+00:10:54,040 --> 00:10:56,590
+engineer actually insert these mutants
+
+295
+00:10:56,600 --> 00:10:58,670
+themselves or is there tool support for
+
+296
+00:10:58,680 --> 00:11:00,110
+this process
+
+297
+00:11:00,120 --> 00:11:02,190
+sure there is widespread tool support
+
+298
+00:11:02,200 --> 00:11:04,190
+and it's all completely automated as a
+
+299
+00:11:04,200 --> 00:11:05,910
+developer you don't have to do anything
+
+300
+00:11:05,920 --> 00:11:08,870
+just wait until the system reports the
+
+301
+00:11:08,880 --> 00:11:10,550
+living mutants in your code and then you
+
+302
+00:11:10,560 --> 00:11:12,870
+can react on them this sounds like
+
+303
+00:11:12,880 --> 00:11:15,389
+really an exciting thing and I can
+
+304
+00:11:15,399 --> 00:11:17,590
+imagine why software engineers at Google
+
+305
+00:11:17,600 --> 00:11:20,310
+would be interested in using it however
+
+306
+00:11:20,320 --> 00:11:22,790
+with that said I remember that in one of
+
+307
+00:11:22,800 --> 00:11:26,269
+the articles that you wrote you said in
+
+308
+00:11:26,279 --> 00:11:29,310
+2016 that mutation testing was only used
+
+309
+00:11:29,320 --> 00:11:32,269
+used as a part of 93 code reviews at
+
+310
+00:11:32,279 --> 00:11:36,310
+Google and then it grew to roughly 2,500
+
+311
+00:11:36,320 --> 00:11:37,470
+users in
+
+312
+00:11:37,480 --> 00:11:40,550
+2017 and by 2021 there were tens of
+
+313
+00:11:40,560 --> 00:11:42,790
+thousands of Engineers at Google who
+
+314
+00:11:42,800 --> 00:11:45,629
+were using mutation testing so now that
+
+315
+00:11:45,639 --> 00:11:47,190
+we understand the basics of what
+
+316
+00:11:47,200 --> 00:11:49,990
+mutation testing is my question is as
+
+317
+00:11:50,000 --> 00:11:52,670
+follows why was it initially hard to
+
+318
+00:11:52,680 --> 00:11:55,150
+convince Engineers to use mutation
+
+319
+00:11:55,160 --> 00:11:57,670
+testing because they're smart people by
+
+320
+00:11:57,680 --> 00:12:00,389
+Design mutation testing generates a huge
+
+321
+00:12:00,399 --> 00:12:02,870
+amount of mutants and then shoves them
+
+322
+00:12:02,880 --> 00:12:04,550
+down your throat when I started
+
+323
+00:12:04,560 --> 00:12:06,870
+implementing this what I did is I read a
+
+324
+00:12:06,880 --> 00:12:08,590
+bunch of research papers I was really
+
+325
+00:12:08,600 --> 00:12:11,069
+excited I started coding and in a few
+
+326
+00:12:11,079 --> 00:12:12,829
+weeks I had something that worked
+
+327
+00:12:12,839 --> 00:12:15,710
+originally for C++ and then I started
+
+328
+00:12:15,720 --> 00:12:17,389
+generating these mutants the basic
+
+329
+00:12:17,399 --> 00:12:19,670
+system was just reporting those mutants
+
+330
+00:12:19,680 --> 00:12:21,710
+that were alive in the command line and
+
+331
+00:12:21,720 --> 00:12:23,310
+you could just look at them and you can
+
+332
+00:12:23,320 --> 00:12:25,269
+save them into a file and go one by one
+
+333
+00:12:25,279 --> 00:12:27,110
+and my first run I remember it took a
+
+334
+00:12:27,120 --> 00:12:29,790
+few hours to run I ran it on on a small
+
+335
+00:12:29,800 --> 00:12:31,629
+code base of my team I was back then in
+
+336
+00:12:31,639 --> 00:12:33,910
+Google shopping when it finished I
+
+337
+00:12:33,920 --> 00:12:35,629
+looked at the file and could barely open
+
+338
+00:12:35,639 --> 00:12:38,150
+it in Vim it was huge there were
+
+339
+00:12:38,160 --> 00:12:40,069
+thousands tens of thousands of mutants
+
+340
+00:12:40,079 --> 00:12:42,590
+and after three pages and two coffees I
+
+341
+00:12:42,600 --> 00:12:44,310
+was so tired that I just closed the file
+
+342
+00:12:44,320 --> 00:12:46,150
+and forgot about it for a few weeks
+
+343
+00:12:46,160 --> 00:12:48,710
+because there was huge amount of mutants
+
+344
+00:12:48,720 --> 00:12:50,430
+and most of them were not things that I
+
+345
+00:12:50,440 --> 00:12:52,350
+would actually be adding tests for I
+
+346
+00:12:52,360 --> 00:12:54,629
+wouldn't want to have that tested
+
+347
+00:12:54,639 --> 00:12:56,870
+against we call these unproductive
+
+348
+00:12:56,880 --> 00:12:59,230
+mutants but that was the first stage and
+
+349
+00:12:59,240 --> 00:13:01,550
+then of course because I this was my 20%
+
+350
+00:13:01,560 --> 00:13:02,790
+project something that I would do on
+
+351
+00:13:02,800 --> 00:13:05,470
+Fridays only and I forgot about it for a
+
+352
+00:13:05,480 --> 00:13:07,350
+few weeks and then later when I
+
+353
+00:13:07,360 --> 00:13:10,150
+continued I realized this doesn't work
+
+354
+00:13:10,160 --> 00:13:12,710
+like I cannot even myself who is excited
+
+355
+00:13:12,720 --> 00:13:14,389
+about mutation testing I cannot convince
+
+356
+00:13:14,399 --> 00:13:16,030
+myself to look at this for more than 10
+
+357
+00:13:16,040 --> 00:13:18,670
+minutes so I just decided at that point
+
+358
+00:13:18,680 --> 00:13:21,269
+that we have to prune this somehow and
+
+359
+00:13:21,279 --> 00:13:23,230
+the first step was just to figure out
+
+360
+00:13:23,240 --> 00:13:25,110
+what these unproductive mutants were
+
+361
+00:13:25,120 --> 00:13:26,710
+let's say you have a log line and you
+
+362
+00:13:26,720 --> 00:13:28,590
+delete the log line of course the test
+
+363
+00:13:28,600 --> 00:13:30,150
+doesn't fail because it doesn't catch
+
+364
+00:13:30,160 --> 00:13:32,150
+that and you would be surprised but
+
+365
+00:13:32,160 --> 00:13:34,389
+there are thousands of categories of of
+
+366
+00:13:34,399 --> 00:13:36,670
+of mutants like this that are not
+
+367
+00:13:36,680 --> 00:13:38,910
+interesting some of them might look good
+
+368
+00:13:38,920 --> 00:13:40,110
+at the beginning but then you quickly
+
+369
+00:13:40,120 --> 00:13:41,590
+realize this is not something that the
+
+370
+00:13:41,600 --> 00:13:43,910
+developers would want to write tests for
+
+371
+00:13:43,920 --> 00:13:46,550
+so slowly but surely I started adding
+
+372
+00:13:46,560 --> 00:13:49,629
+this encoding these heuristics as a
+
+373
+00:13:49,639 --> 00:13:51,710
+filter so I would not consider these
+
+374
+00:13:51,720 --> 00:13:54,550
+lines of code to mutate at all the log
+
+375
+00:13:54,560 --> 00:13:56,269
+line is the simplest one you can do it
+
+376
+00:13:56,279 --> 00:13:58,030
+in 10 minutes but as I said there are
+
+377
+00:13:58,040 --> 00:14:00,110
+thousands so it took it a long time but
+
+378
+00:14:00,120 --> 00:14:01,430
+once I was happy with the number of
+
+379
+00:14:01,440 --> 00:14:04,269
+mutants in the output I started getting
+
+380
+00:14:04,279 --> 00:14:06,910
+my team to use it that's the 97 full
+
+381
+00:14:06,920 --> 00:14:08,949
+request in Google that you see it's all
+
+382
+00:14:08,959 --> 00:14:11,389
+my friends who who did it because I
+
+383
+00:14:11,399 --> 00:14:13,150
+asked them to they probably didn't like
+
+384
+00:14:13,160 --> 00:14:14,710
+the tool because it still it wasn't the
+
+385
+00:14:14,720 --> 00:14:17,550
+quality wasn't High the number of useful
+
+386
+00:14:17,560 --> 00:14:19,949
+mutants the percentage was like 12% I
+
+387
+00:14:19,959 --> 00:14:22,550
+think at that point not very useful but
+
+388
+00:14:22,560 --> 00:14:24,310
+with their feedback they would be
+
+389
+00:14:24,320 --> 00:14:26,110
+labeling my set for me they would just
+
+390
+00:14:26,120 --> 00:14:28,030
+say this mutant is useful this isn't and
+
+391
+00:14:28,040 --> 00:14:30,030
+then over time could encode more and
+
+392
+00:14:30,040 --> 00:14:32,069
+more of these heuristics that's how we
+
+393
+00:14:32,079 --> 00:14:33,749
+got to a much better number I think now
+
+394
+00:14:33,759 --> 00:14:36,350
+it's around 90% useful 10% not useful
+
+395
+00:14:36,360 --> 00:14:38,430
+mutants that's why it took a long time
+
+396
+00:14:38,440 --> 00:14:40,389
+and that was the first big Improvement
+
+397
+00:14:40,399 --> 00:14:42,509
+huge amounts of these heuristics and
+
+398
+00:14:42,519 --> 00:14:45,870
+then the second was I realized that
+
+399
+00:14:45,880 --> 00:14:47,550
+while when you have these automatically
+
+400
+00:14:47,560 --> 00:14:49,749
+generated tests probably using some kind
+
+401
+00:14:49,759 --> 00:14:52,150
+of a genetic algorithm that is trying to
+
+402
+00:14:52,160 --> 00:14:54,269
+fit some criteria let's say killing
+
+403
+00:14:54,279 --> 00:14:57,629
+mutants the test that they generate will
+
+404
+00:14:57,639 --> 00:14:59,269
+probably kill just one mutant in in that
+
+405
+00:14:59,279 --> 00:15:00,629
+line because that's what they do they
+
+406
+00:15:00,639 --> 00:15:03,389
+evolve to do it but humans are
+
+407
+00:15:03,399 --> 00:15:05,189
+sufficiently evolved to not write such
+
+408
+00:15:05,199 --> 00:15:07,949
+tests so you wouldn't test half of a
+
+409
+00:15:07,959 --> 00:15:09,749
+line or a third of the line or even like
+
+410
+00:15:09,759 --> 00:15:12,230
+some kind of a ve subcondition we try to
+
+411
+00:15:12,240 --> 00:15:14,629
+write good tests that are useful and
+
+412
+00:15:14,639 --> 00:15:16,230
+they usually kill all the mutants in
+
+413
+00:15:16,240 --> 00:15:19,670
+that line so I realized if I wanted to
+
+414
+00:15:19,680 --> 00:15:21,870
+run this for more than just my team I
+
+415
+00:15:21,880 --> 00:15:23,870
+calculated once back of the envelope it
+
+416
+00:15:23,880 --> 00:15:25,470
+would take seven billion years with all
+
+417
+00:15:25,480 --> 00:15:27,670
+the computing power currently available
+
+418
+00:15:27,680 --> 00:15:30,309
+in for All Humans to do one iteration of
+
+419
+00:15:30,319 --> 00:15:32,629
+our two billion lines of code to
+
+420
+00:15:32,639 --> 00:15:34,749
+calculate the mutation score so
+
+421
+00:15:34,759 --> 00:15:37,069
+obviously the universe didn't like what
+
+422
+00:15:37,079 --> 00:15:38,790
+I was doing but I wasn't discouraged by
+
+423
+00:15:38,800 --> 00:15:40,670
+that I just decided I'm not going to
+
+424
+00:15:40,680 --> 00:15:42,389
+generate any of the mutants in a line
+
+425
+00:15:42,399 --> 00:15:43,910
+more than one and then I'm going to pick
+
+426
+00:15:43,920 --> 00:15:46,309
+that one at random and that was the
+
+427
+00:15:46,319 --> 00:15:48,949
+second that second hurdle once we got
+
+428
+00:15:48,959 --> 00:15:50,949
+past that we could start opening
+
+429
+00:15:50,959 --> 00:15:52,670
+mutation testing to other teams because
+
+430
+00:15:52,680 --> 00:15:54,470
+it wasn't as annoying and it wasn't as
+
+431
+00:15:54,480 --> 00:15:56,509
+useless thank you those were some
+
+432
+00:15:56,519 --> 00:15:59,189
+incredible insights and I can absolutely
+
+433
+00:15:59,199 --> 00:16:01,230
+see why you had to limit the number of
+
+434
+00:16:01,240 --> 00:16:03,309
+mutants that you would actually present
+
+435
+00:16:03,319 --> 00:16:05,710
+to a software engineer I noticed a
+
+436
+00:16:05,720 --> 00:16:07,430
+moment ago you talked about mutants that
+
+437
+00:16:07,440 --> 00:16:10,189
+are not useful like for example mutating
+
+438
+00:16:10,199 --> 00:16:12,949
+a logging statement can you give us an
+
+439
+00:16:12,959 --> 00:16:14,710
+example of a mutant that you would
+
+440
+00:16:14,720 --> 00:16:17,110
+consider useful and then explain why
+
+441
+00:16:17,120 --> 00:16:21,030
+it's useful sure let's say that in this
+
+442
+00:16:21,040 --> 00:16:24,189
+simple summation example A plus b most
+
+443
+00:16:24,199 --> 00:16:25,790
+mutants are useful if you replace that
+
+444
+00:16:25,800 --> 00:16:28,470
+with return zero then that's a useful
+
+445
+00:16:28,480 --> 00:16:29,870
+mutant it means that you're not really
+
+446
+00:16:29,880 --> 00:16:31,910
+testing anything another example would
+
+447
+00:16:31,920 --> 00:16:33,430
+be a function that determines whether
+
+448
+00:16:33,440 --> 00:16:35,470
+user is of age or not something for your
+
+449
+00:16:35,480 --> 00:16:37,790
+website so you would have something like
+
+450
+00:16:37,800 --> 00:16:40,470
+return user age greater equal 18
+
+451
+00:16:40,480 --> 00:16:44,269
+depending on the country and uh this
+
+452
+00:16:44,279 --> 00:16:46,110
+mutant that replaces this with true or
+
+453
+00:16:46,120 --> 00:16:48,949
+false is useful but I mean coverage can
+
+454
+00:16:48,959 --> 00:16:51,269
+tell you that you probably did not just
+
+455
+00:16:51,279 --> 00:16:53,509
+return false in that in that function B
+
+456
+00:16:53,519 --> 00:16:55,829
+user is always under age you probably
+
+457
+00:16:55,839 --> 00:16:57,949
+have something there so those are less
+
+458
+00:16:57,959 --> 00:17:00,069
+useful but still can indicate coverage
+
+459
+00:17:00,079 --> 00:17:01,309
+but coverage is much cheaper to
+
+460
+00:17:01,319 --> 00:17:02,749
+calculate and then you should be using
+
+461
+00:17:02,759 --> 00:17:04,990
+that instead but if you change that to
+
+462
+00:17:05,000 --> 00:17:06,829
+greater than instead of greater equal
+
+463
+00:17:06,839 --> 00:17:11,069
+than 18 then it might catch a corner
+
+464
+00:17:11,079 --> 00:17:13,510
+case if you're not implementing that the
+
+465
+00:17:13,520 --> 00:17:16,590
+the user of 18 is still not of age so
+
+466
+00:17:16,600 --> 00:17:18,590
+that's that's a very useful mutant there
+
+467
+00:17:18,600 --> 00:17:20,429
+and if it survives it will just detect a
+
+468
+00:17:20,439 --> 00:17:22,630
+bug immediately in your code hopefully
+
+469
+00:17:22,640 --> 00:17:24,309
+it will not because you implemented it
+
+470
+00:17:24,319 --> 00:17:25,590
+perfectly the first time but these are
+
+471
+00:17:25,600 --> 00:17:27,829
+just small examples there are billions
+
+472
+00:17:27,839 --> 00:17:29,830
+of lines of code and any kind of this
+
+473
+00:17:29,840 --> 00:17:31,510
+Edge case where you do greater than
+
+474
+00:17:31,520 --> 00:17:33,950
+equal or greater than is very useful
+
+475
+00:17:33,960 --> 00:17:36,150
+especially with iterators and the
+
+476
+00:17:36,160 --> 00:17:38,510
+inclusive exclusive intervals and so on
+
+477
+00:17:38,520 --> 00:17:40,789
+these are really tricky to get right and
+
+478
+00:17:40,799 --> 00:17:42,669
+mutation testing helps there a lot
+
+479
+00:17:42,679 --> 00:17:44,029
+thanks for sharing those concrete
+
+480
+00:17:44,039 --> 00:17:46,430
+examples those made a lot of sense one
+
+481
+00:17:46,440 --> 00:17:48,230
+of the things that I've heard is that
+
+482
+00:17:48,240 --> 00:17:50,909
+sometimes a specific type of mutant
+
+483
+00:17:50,919 --> 00:17:52,630
+might motivate a software engineer to
+
+484
+00:17:52,640 --> 00:17:54,710
+write something called a change detector
+
+485
+00:17:54,720 --> 00:17:56,830
+test can you tell us what a change
+
+486
+00:17:56,840 --> 00:17:59,110
+detector test is and whether whether or
+
+487
+00:17:59,120 --> 00:18:01,510
+not that's a good or bad type of test to
+
+488
+00:18:01,520 --> 00:18:03,909
+write and how that connects to mutation
+
+489
+00:18:03,919 --> 00:18:07,149
+testing sure change detector test is a
+
+490
+00:18:07,159 --> 00:18:10,630
+test that will fail most of the time
+
+491
+00:18:10,640 --> 00:18:12,590
+whenever you change anything in the code
+
+492
+00:18:12,600 --> 00:18:13,870
+so you're not really testing the
+
+493
+00:18:13,880 --> 00:18:15,789
+implementation you're testing some kind
+
+494
+00:18:15,799 --> 00:18:17,549
+of implementation detail or the
+
+495
+00:18:17,559 --> 00:18:19,430
+specifics an example might be that
+
+496
+00:18:19,440 --> 00:18:21,510
+you're catching an exception and
+
+497
+00:18:21,520 --> 00:18:23,669
+asserting the exact contents of that
+
+498
+00:18:23,679 --> 00:18:26,830
+exception and that's usually a bad
+
+499
+00:18:26,840 --> 00:18:28,510
+strategy because you might be changing
+
+500
+00:18:28,520 --> 00:18:30,549
+that messaging you should be asserting
+
+501
+00:18:30,559 --> 00:18:32,590
+on the type of the exception and in
+
+502
+00:18:32,600 --> 00:18:34,390
+these kinds of Errors it should return
+
+503
+00:18:34,400 --> 00:18:36,310
+this type of exception but you shouldn't
+
+504
+00:18:36,320 --> 00:18:38,110
+care about the contents or you could
+
+505
+00:18:38,120 --> 00:18:39,630
+assert of the subset of the contents
+
+506
+00:18:39,640 --> 00:18:41,669
+that you're more or less certain are not
+
+507
+00:18:41,679 --> 00:18:43,070
+going to change you don't want to depend
+
+508
+00:18:43,080 --> 00:18:45,230
+on like a the debugging output of some
+
+509
+00:18:45,240 --> 00:18:46,789
+kind of a function that is represented
+
+510
+00:18:46,799 --> 00:18:48,070
+in the exception because that might
+
+511
+00:18:48,080 --> 00:18:50,270
+change an underlying object might change
+
+512
+00:18:50,280 --> 00:18:51,830
+its own representation and then you're
+
+513
+00:18:51,840 --> 00:18:53,789
+going to be have to fix your test
+
+514
+00:18:53,799 --> 00:18:56,430
+ideally well- written test Suite you
+
+515
+00:18:56,440 --> 00:18:57,990
+could completely reimplement your
+
+516
+00:18:58,000 --> 00:18:59,390
+feature your code
+
+517
+00:18:59,400 --> 00:19:01,270
+everything based on everything new and
+
+518
+00:19:01,280 --> 00:19:02,630
+you just rerun the test and they all
+
+519
+00:19:02,640 --> 00:19:04,230
+pass that's that that means that you
+
+520
+00:19:04,240 --> 00:19:06,590
+have mastered the art of testing but I'm
+
+521
+00:19:06,600 --> 00:19:08,750
+not there yet are there examples of
+
+522
+00:19:08,760 --> 00:19:10,990
+certain types of mutants that tend to
+
+523
+00:19:11,000 --> 00:19:13,190
+motivate an engineer to make this type
+
+524
+00:19:13,200 --> 00:19:15,870
+of negative change detector test
+
+525
+00:19:15,880 --> 00:19:17,750
+definitely so we have tried over the
+
+526
+00:19:17,760 --> 00:19:20,590
+years to suppress them using these heris
+
+527
+00:19:20,600 --> 00:19:22,950
+sixs so we wouldn't report these and we
+
+528
+00:19:22,960 --> 00:19:25,590
+always say in our findings please don't
+
+529
+00:19:25,600 --> 00:19:27,270
+add a test unless you actually think
+
+530
+00:19:27,280 --> 00:19:29,270
+it's useful and then we have the code
+
+531
+00:19:29,280 --> 00:19:31,190
+reviewers that probably would not let
+
+532
+00:19:31,200 --> 00:19:32,789
+you at the change detector test because
+
+533
+00:19:32,799 --> 00:19:34,350
+they would say this is not a useful Test
+
+534
+00:19:34,360 --> 00:19:36,070
+please don't do that and so there we
+
+535
+00:19:36,080 --> 00:19:38,549
+have a lot of guard rails for this but
+
+536
+00:19:38,559 --> 00:19:40,270
+the types of mutants that that usually
+
+537
+00:19:40,280 --> 00:19:43,310
+produce this are things that for example
+
+538
+00:19:43,320 --> 00:19:45,549
+will change the exception message let's
+
+539
+00:19:45,559 --> 00:19:48,909
+say or add a one or a minus one
+
+540
+00:19:48,919 --> 00:19:50,669
+somewhere where it's but it's not being
+
+541
+00:19:50,679 --> 00:19:52,669
+used arithmetically but it's being used
+
+542
+00:19:52,679 --> 00:19:54,950
+for let's say metrics or logging or
+
+543
+00:19:54,960 --> 00:19:57,310
+sleep or whatever and then people might
+
+544
+00:19:57,320 --> 00:19:58,990
+be
+
+545
+00:19:59,000 --> 00:20:00,789
+to kill that mutant but that's not a
+
+546
+00:20:00,799 --> 00:20:02,190
+productive mutant they shouldn't they
+
+547
+00:20:02,200 --> 00:20:04,070
+shouldn't do that but I think with all
+
+548
+00:20:04,080 --> 00:20:05,909
+the guardrails I think we're doing well
+
+549
+00:20:05,919 --> 00:20:08,430
+there okay that example makes a lot of
+
+550
+00:20:08,440 --> 00:20:10,470
+sense in a moment we're going to start
+
+551
+00:20:10,480 --> 00:20:11,950
+talking about the tools that you're
+
+552
+00:20:11,960 --> 00:20:14,470
+building at Google in order to actually
+
+553
+00:20:14,480 --> 00:20:17,390
+perform mutation testing however before
+
+554
+00:20:17,400 --> 00:20:19,070
+we get there I'm wondering could you
+
+555
+00:20:19,080 --> 00:20:22,070
+tell us a highlevel story about how
+
+556
+00:20:22,080 --> 00:20:24,149
+mutation testing has improved the
+
+557
+00:20:24,159 --> 00:20:26,270
+quality of some software product at
+
+558
+00:20:26,280 --> 00:20:29,110
+Google sure so those numbers are always
+
+559
+00:20:29,120 --> 00:20:32,070
+hard to get but many people will send us
+
+560
+00:20:32,080 --> 00:20:34,750
+emails Thanking us that the team that we
+
+561
+00:20:34,760 --> 00:20:36,750
+have found prevented bugs and we have
+
+562
+00:20:36,760 --> 00:20:38,350
+gathered a lot of examples like this
+
+563
+00:20:38,360 --> 00:20:41,549
+over time it's always something like
+
+564
+00:20:41,559 --> 00:20:43,870
+there is a small bug in the code and
+
+565
+00:20:43,880 --> 00:20:46,230
+then people with the mutant they notice
+
+566
+00:20:46,240 --> 00:20:49,390
+this but if they just add a test to fix
+
+567
+00:20:49,400 --> 00:20:50,830
+that that's that's one thing that's a
+
+568
+00:20:50,840 --> 00:20:52,710
+small Improvement maybe you never
+
+569
+00:20:52,720 --> 00:20:54,470
+introduced this kind of a bug so it's
+
+570
+00:20:54,480 --> 00:20:56,350
+it's very hard to try to guess the
+
+571
+00:20:56,360 --> 00:20:59,390
+future value of this new test case
+
+572
+00:20:59,400 --> 00:21:01,789
+but often people would just say this is
+
+573
+00:21:01,799 --> 00:21:04,270
+an equivalent mutant meaning that mutant
+
+574
+00:21:04,280 --> 00:21:06,669
+it does the same thing as the one as the
+
+575
+00:21:06,679 --> 00:21:08,990
+original code so you cannot kill it
+
+576
+00:21:09,000 --> 00:21:10,350
+because it's equivalent to the original
+
+577
+00:21:10,360 --> 00:21:13,630
+code but it makes them see something in
+
+578
+00:21:13,640 --> 00:21:15,430
+their design and they just say oh yeah
+
+579
+00:21:15,440 --> 00:21:16,870
+we need to completely change this and
+
+580
+00:21:16,880 --> 00:21:19,510
+then they they they refactor the code
+
+581
+00:21:19,520 --> 00:21:21,909
+and they are much happier with it and
+
+582
+00:21:21,919 --> 00:21:23,310
+sometimes it can be something that is
+
+583
+00:21:23,320 --> 00:21:25,470
+not testable at all and because of this
+
+584
+00:21:25,480 --> 00:21:27,590
+mutant while trying to kill the mutant
+
+585
+00:21:27,600 --> 00:21:29,350
+they have to change the code make it
+
+586
+00:21:29,360 --> 00:21:31,510
+testable make it better and then there
+
+587
+00:21:31,520 --> 00:21:33,510
+are secondary improvements I would say
+
+588
+00:21:33,520 --> 00:21:35,029
+even Primary in this case where this
+
+589
+00:21:35,039 --> 00:21:37,590
+refactoring comes into play okay that's
+
+590
+00:21:37,600 --> 00:21:39,750
+interesting so it sounds like sometimes
+
+591
+00:21:39,760 --> 00:21:41,510
+mutation testing might help you to
+
+592
+00:21:41,520 --> 00:21:43,909
+improve your test Suite but in other
+
+593
+00:21:43,919 --> 00:21:45,710
+occasions it may actually help you to
+
+594
+00:21:45,720 --> 00:21:47,870
+refactor your program and improve its
+
+595
+00:21:47,880 --> 00:21:49,710
+design is that the right way to think
+
+596
+00:21:49,720 --> 00:21:52,950
+about it yes and we have a paper that
+
+597
+00:21:52,960 --> 00:21:55,269
+looks into this and we have found that
+
+598
+00:21:55,279 --> 00:21:57,430
+this is the case there's a lot of mutant
+
+599
+00:21:57,440 --> 00:21:59,710
+that are resolved by changing the code
+
+600
+00:21:59,720 --> 00:22:02,630
+not adding tests usually both okay
+
+601
+00:22:02,640 --> 00:22:04,149
+that's incredible we'll make sure to
+
+602
+00:22:04,159 --> 00:22:06,470
+link to that paper in the show notes
+
+603
+00:22:06,480 --> 00:22:08,750
+before we move on two quick additional
+
+604
+00:22:08,760 --> 00:22:10,830
+comments first of all can you tell us
+
+605
+00:22:10,840 --> 00:22:12,549
+anything about the prevalence of
+
+606
+00:22:12,559 --> 00:22:15,190
+mutation testing at Google today I
+
+607
+00:22:15,200 --> 00:22:16,750
+haven't looked in a while but I would
+
+608
+00:22:16,760 --> 00:22:19,590
+guess more than 50% of Engineers are
+
+609
+00:22:19,600 --> 00:22:21,870
+exposed to mutants during their normal
+
+610
+00:22:21,880 --> 00:22:24,149
+development cycle okay thank you that's
+
+611
+00:22:24,159 --> 00:22:26,230
+really helpful and then finally before
+
+612
+00:22:26,240 --> 00:22:28,510
+we move on I know that sometimes people
+
+613
+00:22:28,520 --> 00:22:30,590
+people talk about mutation testing and
+
+614
+00:22:30,600 --> 00:22:33,190
+then they also use an Affiliated phrase
+
+615
+00:22:33,200 --> 00:22:35,830
+which is mutation analysis what are the
+
+616
+00:22:35,840 --> 00:22:37,470
+similarities and differences between
+
+617
+00:22:37,480 --> 00:22:40,750
+mutation testing and mutation analysis I
+
+618
+00:22:40,760 --> 00:22:42,590
+was also first confused by this because
+
+619
+00:22:42,600 --> 00:22:44,590
+when I when I came to mutation testing I
+
+620
+00:22:44,600 --> 00:22:46,750
+came to it directly as an engineer not
+
+621
+00:22:46,760 --> 00:22:49,430
+as a as a researcher of any kind so for
+
+622
+00:22:49,440 --> 00:22:51,909
+me what I wanted is to take this idea
+
+623
+00:22:51,919 --> 00:22:55,269
+and make it useful to the developers and
+
+624
+00:22:55,279 --> 00:22:57,430
+that's why there's this differentiation
+
+625
+00:22:57,440 --> 00:23:00,950
+mutation analysis is is just this
+
+626
+00:23:00,960 --> 00:23:02,510
+adequacy thing that we talked about
+
+627
+00:23:02,520 --> 00:23:04,510
+before just getting the ratio of killed
+
+628
+00:23:04,520 --> 00:23:07,029
+mutants over all mutants and then you
+
+629
+00:23:07,039 --> 00:23:09,230
+have this number while mutation testing
+
+630
+00:23:09,240 --> 00:23:11,269
+is an attempt to capitalize on that on
+
+631
+00:23:11,279 --> 00:23:14,149
+that technique and get improvements in
+
+632
+00:23:14,159 --> 00:23:17,149
+the code base mostly in tests from these
+
+633
+00:23:17,159 --> 00:23:20,070
+developers and in the end it's very hard
+
+634
+00:23:20,080 --> 00:23:22,149
+to try to convince developers to look at
+
+635
+00:23:22,159 --> 00:23:24,149
+100,000 mutants in their project and
+
+636
+00:23:24,159 --> 00:23:26,830
+then most of them are not actionable
+
+637
+00:23:26,840 --> 00:23:29,149
+they will just not do it it's a reality
+
+638
+00:23:29,159 --> 00:23:31,950
+that we have to face and during code
+
+639
+00:23:31,960 --> 00:23:34,470
+review it was the best location for
+
+640
+00:23:34,480 --> 00:23:36,269
+actual mutation testing where you where
+
+641
+00:23:36,279 --> 00:23:38,669
+you have a already an attention of a
+
+642
+00:23:38,679 --> 00:23:40,630
+developer and you you can present some
+
+643
+00:23:40,640 --> 00:23:43,070
+hints how they can improve code while
+
+644
+00:23:43,080 --> 00:23:44,510
+all the other tools are doing that as
+
+645
+00:23:44,520 --> 00:23:46,830
+well like coverage or testing Frameworks
+
+646
+00:23:46,840 --> 00:23:50,669
+or linters and so on other analyzers and
+
+647
+00:23:50,679 --> 00:23:52,830
+this is the best place to try to smuggle
+
+648
+00:23:52,840 --> 00:23:55,310
+some kind of extra information for them
+
+649
+00:23:55,320 --> 00:23:56,909
+so they might act on it and then
+
+650
+00:23:56,919 --> 00:23:59,750
+Implement new tests okay thanks for that
+
+651
+00:23:59,760 --> 00:24:01,669
+response I think it is helpful to know
+
+652
+00:24:01,679 --> 00:24:04,430
+that these mutation testing results are
+
+653
+00:24:04,440 --> 00:24:06,190
+presented to a developer at Google
+
+654
+00:24:06,200 --> 00:24:09,070
+during the code review process if our
+
+655
+00:24:09,080 --> 00:24:10,510
+listeners want to learn a little bit
+
+656
+00:24:10,520 --> 00:24:12,230
+more about how software engineering at
+
+657
+00:24:12,240 --> 00:24:14,149
+Google works they're welcome to check
+
+658
+00:24:14,159 --> 00:24:16,390
+out software engineering radio episode
+
+659
+00:24:16,400 --> 00:24:19,310
+609 where we talked with hyam Wright all
+
+660
+00:24:19,320 --> 00:24:21,430
+about software engineering practices and
+
+661
+00:24:21,440 --> 00:24:23,950
+processes at Google Now what I'd like to
+
+662
+00:24:23,960 --> 00:24:25,830
+do is to turn our attention to the
+
+663
+00:24:25,840 --> 00:24:27,870
+implementation of the tools that you've
+
+664
+00:24:27,880 --> 00:24:29,190
+created
+
+665
+00:24:29,200 --> 00:24:31,190
+the overall system seems to be called
+
+666
+00:24:31,200 --> 00:24:33,269
+mutagenesis if I'm pronouncing that
+
+667
+00:24:33,279 --> 00:24:35,470
+correctly and as you mentioned a moment
+
+668
+00:24:35,480 --> 00:24:38,149
+ago it's a part of the analysis and code
+
+669
+00:24:38,159 --> 00:24:40,990
+review process can you tell us a little
+
+670
+00:24:41,000 --> 00:24:43,269
+bit about some of the specific
+
+671
+00:24:43,279 --> 00:24:45,230
+components or features of this
+
+672
+00:24:45,240 --> 00:24:47,269
+mutagenesis tool that I mentioned a
+
+673
+00:24:47,279 --> 00:24:50,710
+moment ago sure so the best way to get
+
+674
+00:24:50,720 --> 00:24:53,070
+developers to do something and to act on
+
+675
+00:24:53,080 --> 00:24:54,750
+on some results is to introduce the
+
+676
+00:24:54,760 --> 00:24:56,269
+least amount of friction in their
+
+677
+00:24:56,279 --> 00:24:58,590
+workflow so you should integrate either
+
+678
+00:24:58,600 --> 00:25:01,870
+in the IDE shifting left if you can or
+
+679
+00:25:01,880 --> 00:25:04,149
+in the code review tool or in the
+
+680
+00:25:04,159 --> 00:25:05,510
+release tool or any other
+
+681
+00:25:05,520 --> 00:25:06,750
+wellestablished process that they're
+
+682
+00:25:06,760 --> 00:25:09,590
+used to already so for mutation testing
+
+683
+00:25:09,600 --> 00:25:11,669
+it made sense that it's introduced into
+
+684
+00:25:11,679 --> 00:25:14,630
+the code review because it depends on
+
+685
+00:25:14,640 --> 00:25:17,029
+test results and coverage and this is
+
+686
+00:25:17,039 --> 00:25:19,389
+where all of that happens anyway so this
+
+687
+00:25:19,399 --> 00:25:22,750
+was just a natural extension and the way
+
+688
+00:25:22,760 --> 00:25:24,830
+mutation testing works is that it waits
+
+689
+00:25:24,840 --> 00:25:26,789
+until coverage is calculated for a given
+
+690
+00:25:26,799 --> 00:25:28,350
+pull request when it's sent for review
+
+691
+00:25:28,360 --> 00:25:31,549
+View and then it calculates a map from
+
+692
+00:25:31,559 --> 00:25:34,070
+each covered line to a set of tests that
+
+693
+00:25:34,080 --> 00:25:36,350
+actually test this line This is critical
+
+694
+00:25:36,360 --> 00:25:37,789
+because if you didn't have coverage
+
+695
+00:25:37,799 --> 00:25:39,230
+information you would just have to run
+
+696
+00:25:39,240 --> 00:25:41,430
+all tests for each mutant and that would
+
+697
+00:25:41,440 --> 00:25:44,470
+be very very expensive so we have to
+
+698
+00:25:44,480 --> 00:25:46,310
+just wait until coverage is complete and
+
+699
+00:25:46,320 --> 00:25:48,310
+then filter all the tests by those that
+
+700
+00:25:48,320 --> 00:25:51,070
+cover the line making it much cheaper so
+
+701
+00:25:51,080 --> 00:25:53,669
+the next step is then this analyzer will
+
+702
+00:25:53,679 --> 00:25:55,870
+take this information and it will
+
+703
+00:25:55,880 --> 00:25:58,350
+generate mutants using this mutagenesis
+
+704
+00:25:58,360 --> 00:26:01,389
+this process in all of the eligible line
+
+705
+00:26:01,399 --> 00:26:03,669
+lines of code so it will take the
+
+706
+00:26:03,679 --> 00:26:06,310
+covered lines of code and it will filter
+
+707
+00:26:06,320 --> 00:26:07,909
+from the heuristics that we talked about
+
+708
+00:26:07,919 --> 00:26:09,710
+before the mutants that we don't
+
+709
+00:26:09,720 --> 00:26:11,950
+consider productive and then the
+
+710
+00:26:11,960 --> 00:26:14,350
+remaining lines will be mutated only a
+
+711
+00:26:14,360 --> 00:26:16,590
+single mutation as I said and then the
+
+712
+00:26:16,600 --> 00:26:18,909
+set of mutants will be actually created
+
+713
+00:26:18,919 --> 00:26:21,470
+and test run executed against them and
+
+714
+00:26:21,480 --> 00:26:23,149
+then finally you will have a report if
+
+715
+00:26:23,159 --> 00:26:24,590
+there are any living mutants in your
+
+716
+00:26:24,600 --> 00:26:27,269
+code you will get a finding in the code
+
+717
+00:26:27,279 --> 00:26:29,710
+review on that line saying something
+
+718
+00:26:29,720 --> 00:26:32,710
+like if your code is changed like this
+
+719
+00:26:32,720 --> 00:26:35,149
+let's say a plus b to a minus B then no
+
+720
+00:26:35,159 --> 00:26:37,870
+tests pass please consider adding tests
+
+721
+00:26:37,880 --> 00:26:40,310
+uh to cover this if I'm understanding
+
+722
+00:26:40,320 --> 00:26:42,510
+correctly there's a mut Genesis server
+
+723
+00:26:42,520 --> 00:26:44,870
+for the various programming languages
+
+724
+00:26:44,880 --> 00:26:47,110
+that you supported Google can you give
+
+725
+00:26:47,120 --> 00:26:48,789
+us some examples of programming
+
+726
+00:26:48,799 --> 00:26:50,549
+languages for which you're able to
+
+727
+00:26:50,559 --> 00:26:53,269
+perform this kind of automated mutation
+
+728
+00:26:53,279 --> 00:26:56,950
+testing sure what we support is C++
+
+729
+00:26:56,960 --> 00:26:59,070
+python Java
+
+730
+00:26:59,080 --> 00:27:04,710
+go typescript JavaScript cotlin Dart
+
+731
+00:27:04,720 --> 00:27:09,430
+common lisp SQL and most recently rust
+
+732
+00:27:09,440 --> 00:27:11,549
+wow that's really cool so if there's a
+
+733
+00:27:11,559 --> 00:27:14,750
+mutagenesis server for each language do
+
+734
+00:27:14,760 --> 00:27:16,950
+you implement that server in the
+
+735
+00:27:16,960 --> 00:27:19,029
+language that it is targeting can you
+
+736
+00:27:19,039 --> 00:27:20,630
+explore that process a little bit
+
+737
+00:27:20,640 --> 00:27:22,789
+further and explain how you actually
+
+738
+00:27:22,799 --> 00:27:25,350
+build this mutation testing tool support
+
+739
+00:27:25,360 --> 00:27:26,830
+sure that's the most interesting part
+
+740
+00:27:26,840 --> 00:27:29,430
+for me I always like compiler Theory and
+
+741
+00:27:29,440 --> 00:27:31,149
+playing around with the abstract syntax
+
+742
+00:27:31,159 --> 00:27:34,310
+trees so that's the most fun for sure it
+
+743
+00:27:34,320 --> 00:27:37,269
+depends on the language so for C++ we
+
+744
+00:27:37,279 --> 00:27:39,549
+use clang because it can give us type
+
+745
+00:27:39,559 --> 00:27:42,590
+information it is slower than the simple
+
+746
+00:27:42,600 --> 00:27:44,630
+pares you would use but C++ is so
+
+747
+00:27:44,640 --> 00:27:47,190
+complicated that I think clang is the
+
+748
+00:27:47,200 --> 00:27:49,230
+only way to do it properly a light
+
+749
+00:27:49,240 --> 00:27:51,509
+weiter system might just parse it using
+
+750
+00:27:51,519 --> 00:27:53,389
+some kind of a parser generator and that
+
+751
+00:27:53,399 --> 00:27:54,950
+would be fine but you wouldn't be able
+
+752
+00:27:54,960 --> 00:27:57,350
+to do all the kinds of suppressions that
+
+753
+00:27:57,360 --> 00:27:59,549
+we do detecting pointer types for
+
+754
+00:27:59,559 --> 00:28:01,750
+example and comparisons with zero or
+
+755
+00:28:01,760 --> 00:28:03,710
+null pointer they cannot be done without
+
+756
+00:28:03,720 --> 00:28:06,789
+a proper compiler front end for Java use
+
+757
+00:28:06,799 --> 00:28:09,990
+an open source Java parser in Java for
+
+758
+00:28:10,000 --> 00:28:11,990
+go we just use its own and python their
+
+759
+00:28:12,000 --> 00:28:14,909
+own internal ASD libraries that I have
+
+760
+00:28:14,919 --> 00:28:16,830
+well for python we don't have too much
+
+761
+00:28:16,840 --> 00:28:18,269
+type information but python doesn't
+
+762
+00:28:18,279 --> 00:28:20,230
+really have type information anyway so
+
+763
+00:28:20,240 --> 00:28:22,669
+it's I think it's good enough Lis is
+
+764
+00:28:22,679 --> 00:28:25,509
+interesting lisp is its own parser and
+
+765
+00:28:25,519 --> 00:28:28,190
+compiler so everything is done in lisp
+
+766
+00:28:28,200 --> 00:28:30,029
+rust is in Rust using the macro
+
+767
+00:28:30,039 --> 00:28:32,549
+framework which is quite nice it's
+
+768
+00:28:32,559 --> 00:28:35,029
+strong enough that you don't need to use
+
+769
+00:28:35,039 --> 00:28:36,830
+the actual compiler you can just use its
+
+770
+00:28:36,840 --> 00:28:40,350
+own internal macro as it works quite
+
+771
+00:28:40,360 --> 00:28:43,149
+well JavaScript is interesting because
+
+772
+00:28:43,159 --> 00:28:45,230
+that's done in Java because our compiler
+
+773
+00:28:45,240 --> 00:28:48,549
+for JavaScript is in Java historically
+
+774
+00:28:48,559 --> 00:28:50,310
+so that's done that closure so it's done
+
+775
+00:28:50,320 --> 00:28:53,350
+in Java for typescript it's done in
+
+776
+00:28:53,360 --> 00:28:55,750
+typescript itself and it's quite nice
+
+777
+00:28:55,760 --> 00:28:58,990
+and no problems there cotlin and dart as
+
+778
+00:28:59,000 --> 00:29:00,750
+well are done in cotlin and dart so it's
+
+779
+00:29:00,760 --> 00:29:02,789
+mostly in their own the only ones are
+
+780
+00:29:02,799 --> 00:29:05,149
+like the nodejs and for typescript I
+
+781
+00:29:05,159 --> 00:29:08,029
+think that's and SQL is done in C++ it
+
+782
+00:29:08,039 --> 00:29:10,070
+would be even I'm not crazy enough to
+
+783
+00:29:10,080 --> 00:29:12,230
+try to implement an ASD parser in SQL
+
+784
+00:29:12,240 --> 00:29:14,870
+itself so it could be maybe done but
+
+785
+00:29:14,880 --> 00:29:17,470
+that's done in C++ okay that makes a lot
+
+786
+00:29:17,480 --> 00:29:19,590
+of sense I remember a moment ago you
+
+787
+00:29:19,600 --> 00:29:22,230
+referred to something called the a or
+
+788
+00:29:22,240 --> 00:29:24,750
+the abstract syntax tree and that made
+
+789
+00:29:24,760 --> 00:29:27,190
+me think and in fact I'm wondering when
+
+790
+00:29:27,200 --> 00:29:29,830
+you're doing this parsing of the C++
+
+791
+00:29:29,840 --> 00:29:32,470
+codee or the dart code or the python
+
+792
+00:29:32,480 --> 00:29:35,110
+code do you parse that to some type of
+
+793
+00:29:35,120 --> 00:29:38,070
+common intermediate representation that
+
+794
+00:29:38,080 --> 00:29:41,310
+all mutagenesis servers understand or do
+
+795
+00:29:41,320 --> 00:29:46,669
+they use the python as or the C++ a that
+
+796
+00:29:46,679 --> 00:29:49,590
+comes from that specific parser can you
+
+797
+00:29:49,600 --> 00:29:51,549
+explore that a little bit further
+
+798
+00:29:51,559 --> 00:29:54,830
+definitely that's a very good question I
+
+799
+00:29:54,840 --> 00:29:57,190
+don't have a good answer what the best
+
+800
+00:29:57,200 --> 00:29:59,310
+strategy is but I can tell you what we
+
+801
+00:29:59,320 --> 00:30:01,990
+do and we have a different as and
+
+802
+00:30:02,000 --> 00:30:04,909
+different framework for each of these
+
+803
+00:30:04,919 --> 00:30:07,310
+languages there are some some things
+
+804
+00:30:07,320 --> 00:30:09,470
+like the treer and the whatever it's
+
+805
+00:30:09,480 --> 00:30:12,029
+called parser generator libraries that
+
+806
+00:30:12,039 --> 00:30:14,710
+can parse everything to a degree they
+
+807
+00:30:14,720 --> 00:30:17,269
+don't give you type information for all
+
+808
+00:30:17,279 --> 00:30:19,110
+languages some are supported I think
+
+809
+00:30:19,120 --> 00:30:21,190
+like go and Java are usually supported
+
+810
+00:30:21,200 --> 00:30:22,630
+there is a compiler frontend for them
+
+811
+00:30:22,640 --> 00:30:25,630
+even in these generic as Frameworks but
+
+812
+00:30:25,640 --> 00:30:27,310
+in the beginning I just hacked it and I
+
+813
+00:30:27,320 --> 00:30:29,310
+liked cing lvm I liked playing with it
+
+814
+00:30:29,320 --> 00:30:31,230
+it was was nasty it was very hard to
+
+815
+00:30:31,240 --> 00:30:33,830
+make any progress but that's what makes
+
+816
+00:30:33,840 --> 00:30:36,310
+it fun I suppose I think now for most of
+
+817
+00:30:36,320 --> 00:30:38,029
+the mutators it takes me a week to
+
+818
+00:30:38,039 --> 00:30:39,990
+implement them first two days to figure
+
+819
+00:30:40,000 --> 00:30:42,310
+out how to do recursive visits of the
+
+820
+00:30:42,320 --> 00:30:44,549
+tree and then it takes me two or three
+
+821
+00:30:44,559 --> 00:30:46,269
+days to implement all the mutators like
+
+822
+00:30:46,279 --> 00:30:49,149
+for changing plus to minus for negating
+
+823
+00:30:49,159 --> 00:30:51,590
+things for deleting lines and so on but
+
+824
+00:30:51,600 --> 00:30:53,590
+yeah I tried once to migrate everything
+
+825
+00:30:53,600 --> 00:30:56,950
+to this common infrastructure but I gave
+
+826
+00:30:56,960 --> 00:30:59,070
+up quickly because I couldn't get this
+
+827
+00:30:59,080 --> 00:31:01,269
+pointer type information for C++ which
+
+828
+00:31:01,279 --> 00:31:04,310
+is used in few heris that are important
+
+829
+00:31:04,320 --> 00:31:05,789
+although I would like to to finish that
+
+830
+00:31:05,799 --> 00:31:07,669
+project one day and then compare because
+
+831
+00:31:07,679 --> 00:31:09,190
+I don't really know what the impact
+
+832
+00:31:09,200 --> 00:31:11,190
+would be of not having it but I know I
+
+833
+00:31:11,200 --> 00:31:13,230
+give up there okay you mentioned a
+
+834
+00:31:13,240 --> 00:31:14,870
+moment ago something called a treesitter
+
+835
+00:31:14,880 --> 00:31:17,389
+parser and although we won't investigate
+
+836
+00:31:17,399 --> 00:31:19,110
+that during our discussion today we'll
+
+837
+00:31:19,120 --> 00:31:21,389
+put a link in the show notes to the
+
+838
+00:31:21,399 --> 00:31:23,590
+treesitter parser and what it is and how
+
+839
+00:31:23,600 --> 00:31:25,830
+it works many people have probably used
+
+840
+00:31:25,840 --> 00:31:27,389
+that because it's integrated into their
+
+841
+00:31:27,399 --> 00:31:28,549
+text editor
+
+842
+00:31:28,559 --> 00:31:29,909
+and it helps them with syntax
+
+843
+00:31:29,919 --> 00:31:32,149
+highlighting but to be clear you're not
+
+844
+00:31:32,159 --> 00:31:34,070
+using treesitter in your current
+
+845
+00:31:34,080 --> 00:31:36,110
+implementation is that the right way to
+
+846
+00:31:36,120 --> 00:31:37,990
+understand it yes in each language we
+
+847
+00:31:38,000 --> 00:31:40,870
+use its own native support for parsing
+
+848
+00:31:40,880 --> 00:31:43,190
+except for SQL and JavaScript where we
+
+849
+00:31:43,200 --> 00:31:45,310
+use Java and C++ libraries that
+
+850
+00:31:45,320 --> 00:31:47,710
+implement the parser so the idea of a
+
+851
+00:31:47,720 --> 00:31:49,830
+mutator is that roughly speaking it
+
+852
+00:31:49,840 --> 00:31:52,909
+takes as input an abstract syntax tree
+
+853
+00:31:52,919 --> 00:31:55,549
+and it produces as output a mutated
+
+854
+00:31:55,559 --> 00:31:58,029
+abstract syntax tree that has this
+
+855
+00:31:58,039 --> 00:32:00,669
+synthetic bug inside of it at a high
+
+856
+00:32:00,679 --> 00:32:02,310
+level is that the right way to think
+
+857
+00:32:02,320 --> 00:32:05,470
+about the tool I think so yeah practical
+
+858
+00:32:05,480 --> 00:32:07,549
+implementations are usually simpler you
+
+859
+00:32:07,559 --> 00:32:09,509
+don't have to mutate the actual tree
+
+860
+00:32:09,519 --> 00:32:11,389
+because that's sometimes hard what you
+
+861
+00:32:11,399 --> 00:32:13,230
+do is you just find let's say you find
+
+862
+00:32:13,240 --> 00:32:16,029
+an A plus b somewhere or if a plus b
+
+863
+00:32:16,039 --> 00:32:18,310
+greater than five you first check that
+
+864
+00:32:18,320 --> 00:32:20,310
+it is in a line that's been covered then
+
+865
+00:32:20,320 --> 00:32:21,590
+you check that it's not in an
+
+866
+00:32:21,600 --> 00:32:24,310
+unproductive line let's say a log line
+
+867
+00:32:24,320 --> 00:32:26,629
+and if that works out then you can just
+
+868
+00:32:26,639 --> 00:32:28,710
+remember I am in this line from this
+
+869
+00:32:28,720 --> 00:32:30,350
+bite offset to that bite offset from
+
+870
+00:32:30,360 --> 00:32:32,269
+this character to this character I have
+
+871
+00:32:32,279 --> 00:32:34,149
+to change this width and you can just
+
+872
+00:32:34,159 --> 00:32:36,350
+throw a die and say I'm going to change
+
+873
+00:32:36,360 --> 00:32:38,470
+it to a minus B and then you just
+
+874
+00:32:38,480 --> 00:32:40,789
+remember that the plus is at this offset
+
+875
+00:32:40,799 --> 00:32:42,230
+and you just replace it with a minus and
+
+876
+00:32:42,240 --> 00:32:44,190
+you just have to remember the edit when
+
+877
+00:32:44,200 --> 00:32:46,470
+generating mutants that's enough to take
+
+878
+00:32:46,480 --> 00:32:49,230
+the original code and just do a simple
+
+879
+00:32:49,240 --> 00:32:51,909
+substring operation on it that's much
+
+880
+00:32:51,919 --> 00:32:53,669
+easier than actually mutating the whole
+
+881
+00:32:53,679 --> 00:32:56,590
+tree okay that makes a lot of sense now
+
+882
+00:32:56,600 --> 00:32:58,389
+I know you mentioned a moment code that
+
+883
+00:32:58,399 --> 00:33:00,549
+you're focusing on like a specific part
+
+884
+00:33:00,559 --> 00:33:02,750
+of the change in the code so I'm
+
+885
+00:33:02,760 --> 00:33:04,549
+guessing that means that when someone
+
+886
+00:33:04,559 --> 00:33:07,470
+commits code you don't do mutation
+
+887
+00:33:07,480 --> 00:33:09,269
+outside of the region that they're
+
+888
+00:33:09,279 --> 00:33:12,269
+committing is that correct it is and the
+
+889
+00:33:12,279 --> 00:33:14,149
+original design was always like that
+
+890
+00:33:14,159 --> 00:33:15,870
+because this was very natural for us
+
+891
+00:33:15,880 --> 00:33:18,230
+like everything is done there anyway so
+
+892
+00:33:18,240 --> 00:33:20,029
+I never really thought about doing
+
+893
+00:33:20,039 --> 00:33:22,470
+anything more it was only when I started
+
+894
+00:33:22,480 --> 00:33:24,310
+talking to researchers and going to
+
+895
+00:33:24,320 --> 00:33:26,029
+conferences reading papers that I
+
+896
+00:33:26,039 --> 00:33:27,590
+realized that I was the outlier I
+
+897
+00:33:27,600 --> 00:33:30,230
+thought that this was how it's done but
+
+898
+00:33:30,240 --> 00:33:32,110
+yeah for us you can imagine this
+
+899
+00:33:32,120 --> 00:33:33,830
+yourself if someone sends you a pool
+
+900
+00:33:33,840 --> 00:33:35,990
+request to review why would you care
+
+901
+00:33:36,000 --> 00:33:37,750
+about a file that is in seven
+
+902
+00:33:37,760 --> 00:33:39,549
+directories away that you don't know
+
+903
+00:33:39,559 --> 00:33:41,590
+about that you are not an owner of you
+
+904
+00:33:41,600 --> 00:33:43,389
+have never seen before and there is a
+
+905
+00:33:43,399 --> 00:33:46,990
+mutant there like it is not let's say
+
+906
+00:33:47,000 --> 00:33:48,990
+useful information in terms of the
+
+907
+00:33:49,000 --> 00:33:50,909
+probability of you actually reacting on
+
+908
+00:33:50,919 --> 00:33:54,350
+it so we want to the developer attention
+
+909
+00:33:54,360 --> 00:33:56,710
+is the most precious resource we have we
+
+910
+00:33:56,720 --> 00:33:58,269
+don't want to
+
+911
+00:33:58,279 --> 00:33:59,950
+annoy them in a sense because mutation
+
+912
+00:33:59,960 --> 00:34:01,950
+testing very few Tools in Google are
+
+913
+00:34:01,960 --> 00:34:03,750
+mandated most of the things people can
+
+914
+00:34:03,760 --> 00:34:05,909
+use it if they want to and they can opt
+
+915
+00:34:05,919 --> 00:34:07,310
+out if they want to if they don't like
+
+916
+00:34:07,320 --> 00:34:09,270
+your tool in the two days they will just
+
+917
+00:34:09,280 --> 00:34:11,430
+disable it for them and then you lost
+
+918
+00:34:11,440 --> 00:34:13,829
+the user so we have to be very careful
+
+919
+00:34:13,839 --> 00:34:15,470
+in how we present the information we
+
+920
+00:34:15,480 --> 00:34:18,909
+have to filter a lot we have to even
+
+921
+00:34:18,919 --> 00:34:20,829
+lower the number of mutants per let's
+
+922
+00:34:20,839 --> 00:34:23,190
+say per 100 files lines we can have at
+
+923
+00:34:23,200 --> 00:34:25,909
+most let's say 10 or five we have to we
+
+924
+00:34:25,919 --> 00:34:27,869
+be played with that number historically
+
+925
+00:34:27,879 --> 00:34:29,750
+because you don't want to overwhelm the
+
+926
+00:34:29,760 --> 00:34:31,470
+developer as well because you have to
+
+927
+00:34:31,480 --> 00:34:34,230
+remember this is just a small tiny
+
+928
+00:34:34,240 --> 00:34:36,470
+analyzer tool in the whole sea of
+
+929
+00:34:36,480 --> 00:34:38,030
+hundreds of analyzers that are running
+
+930
+00:34:38,040 --> 00:34:40,510
+all the time and the developer just
+
+931
+00:34:40,520 --> 00:34:42,190
+wants to get done with their work they
+
+932
+00:34:42,200 --> 00:34:44,750
+want to submit their pull request and
+
+933
+00:34:44,760 --> 00:34:48,909
+unless you're most often on the spot you
+
+934
+00:34:48,919 --> 00:34:51,470
+will lose a user you mentioned that the
+
+935
+00:34:51,480 --> 00:34:53,669
+engineer is a precious resource at
+
+936
+00:34:53,679 --> 00:34:55,909
+Google and certainly that makes sense
+
+937
+00:34:55,919 --> 00:34:57,470
+your comment though also made me think
+
+938
+00:34:57,480 --> 00:34:59,710
+of the fact that mutation testing is
+
+939
+00:34:59,720 --> 00:35:02,069
+associated with something that's very
+
+940
+00:35:02,079 --> 00:35:04,349
+expensive and I remember in one of your
+
+941
+00:35:04,359 --> 00:35:05,910
+papers you mentioned something like
+
+942
+00:35:05,920 --> 00:35:07,990
+there are 500 million tests that are
+
+943
+00:35:08,000 --> 00:35:10,470
+being executed at Google every day and
+
+944
+00:35:10,480 --> 00:35:12,150
+that it's gatekeeping something like
+
+945
+00:35:12,160 --> 00:35:15,630
+60,000 code changes and yet somehow
+
+946
+00:35:15,640 --> 00:35:18,950
+mutation testing is still scalable even
+
+947
+00:35:18,960 --> 00:35:21,430
+though you're running 500 million tests
+
+948
+00:35:21,440 --> 00:35:24,750
+every day so Goran that's astonishing
+
+949
+00:35:24,760 --> 00:35:26,750
+what is it that allowed you to make
+
+950
+00:35:26,760 --> 00:35:30,069
+mutation test scalable at Google even
+
+951
+00:35:30,079 --> 00:35:31,870
+though it's something that's associated
+
+952
+00:35:31,880 --> 00:35:34,710
+with being very very computationally
+
+953
+00:35:34,720 --> 00:35:36,950
+expensive that's a very good question as
+
+954
+00:35:36,960 --> 00:35:38,790
+I said before the universe doesn't like
+
+955
+00:35:38,800 --> 00:35:40,430
+us running all of these tests if you
+
+956
+00:35:40,440 --> 00:35:42,230
+want to get the mutation score for a
+
+957
+00:35:42,240 --> 00:35:45,750
+repository it's not possible but if you
+
+958
+00:35:45,760 --> 00:35:48,630
+filter out most of the mutants we call
+
+959
+00:35:48,640 --> 00:35:51,190
+it aggressive suppression her istics if
+
+960
+00:35:51,200 --> 00:35:53,750
+you mutate only lines of code that have
+
+961
+00:35:53,760 --> 00:35:55,950
+changed in the code review in the pull
+
+962
+00:35:55,960 --> 00:35:58,550
+request that have been covered within it
+
+963
+00:35:58,560 --> 00:36:00,589
+and then filter aggressively and then
+
+964
+00:36:00,599 --> 00:36:02,750
+generate only one mutant per line and
+
+965
+00:36:02,760 --> 00:36:06,150
+not more and then even have additional
+
+966
+00:36:06,160 --> 00:36:08,829
+limits in the number of mutants per file
+
+967
+00:36:08,839 --> 00:36:11,270
+or per line changed then you have
+
+968
+00:36:11,280 --> 00:36:13,230
+reduced number of mutants by 90
+
+969
+00:36:13,240 --> 00:36:15,710
+something per that you have to evaluate
+
+970
+00:36:15,720 --> 00:36:18,510
+and this makes it feasible and Google
+
+971
+00:36:18,520 --> 00:36:20,430
+has a very cool infrastructure for
+
+972
+00:36:20,440 --> 00:36:22,190
+building and testing and evaluating
+
+973
+00:36:22,200 --> 00:36:24,030
+stuff so there's a lot of caching
+
+974
+00:36:24,040 --> 00:36:25,790
+involved when you compile a piece of
+
+975
+00:36:25,800 --> 00:36:28,190
+code and you just change one line you're
+
+976
+00:36:28,200 --> 00:36:31,950
+going to get 99% or higher of compiled
+
+977
+00:36:31,960 --> 00:36:34,710
+cache object cache so mutants are always
+
+978
+00:36:34,720 --> 00:36:36,349
+compiled in such a way that you compile
+
+979
+00:36:36,359 --> 00:36:38,430
+once and then all the mutants each is
+
+980
+00:36:38,440 --> 00:36:40,190
+just a small change on top of the
+
+981
+00:36:40,200 --> 00:36:42,430
+previously compiled blob so it's it's
+
+982
+00:36:42,440 --> 00:36:44,630
+quite efficient in doing that so if a
+
+983
+00:36:44,640 --> 00:36:46,870
+software engineer is making a change to
+
+984
+00:36:46,880 --> 00:36:49,069
+the Google code base if you could give
+
+985
+00:36:49,079 --> 00:36:51,270
+an example how long does it take to run
+
+986
+00:36:51,280 --> 00:36:54,270
+mutation testing on that code change it
+
+987
+00:36:54,280 --> 00:36:55,910
+usually takes a few minutes but that
+
+988
+00:36:55,920 --> 00:36:58,190
+depends on a few things one is of course
+
+989
+00:36:58,200 --> 00:37:00,550
+the size of the change we don't for
+
+990
+00:37:00,560 --> 00:37:02,670
+example run mutation testing on very
+
+991
+00:37:02,680 --> 00:37:05,270
+large changes especially the lscs the
+
+992
+00:37:05,280 --> 00:37:08,069
+large scale cleanups that are automated
+
+993
+00:37:08,079 --> 00:37:10,030
+we don't run them on any automated or
+
+994
+00:37:10,040 --> 00:37:11,990
+autogenerated pull requests only on
+
+995
+00:37:12,000 --> 00:37:14,430
+human generated pull requests and
+
+996
+00:37:14,440 --> 00:37:16,349
+usually takes a few minutes but as you
+
+997
+00:37:16,359 --> 00:37:18,150
+remember you have to wait until tests
+
+998
+00:37:18,160 --> 00:37:20,470
+are done and then coverage is done which
+
+999
+00:37:20,480 --> 00:37:23,109
+is whatever it takes for that before we
+
+1000
+00:37:23,119 --> 00:37:24,870
+only start running mutation testing
+
+1001
+00:37:24,880 --> 00:37:27,270
+after those two things are done but most
+
+1002
+00:37:27,280 --> 00:37:28,950
+of the the time I think it's done before
+
+1003
+00:37:28,960 --> 00:37:31,510
+of course the request is submitted okay
+
+1004
+00:37:31,520 --> 00:37:33,150
+thanks that's really helpful if
+
+1005
+00:37:33,160 --> 00:37:34,790
+listeners want to learn more about some
+
+1006
+00:37:34,800 --> 00:37:36,510
+of the things that we mentioned they
+
+1007
+00:37:36,520 --> 00:37:38,790
+could check out episode 59 which is
+
+1008
+00:37:38,800 --> 00:37:41,230
+about static analysis or check out
+
+1009
+00:37:41,240 --> 00:37:43,829
+episode 324 which connects to code
+
+1010
+00:37:43,839 --> 00:37:46,430
+coverage analysis Goran before we go on
+
+1011
+00:37:46,440 --> 00:37:48,349
+to the ways in which you've evaluated
+
+1012
+00:37:48,359 --> 00:37:50,670
+mutation testing tools at Google is
+
+1013
+00:37:50,680 --> 00:37:52,190
+there anything else that you'd like to
+
+1014
+00:37:52,200 --> 00:37:54,150
+highlight about the implementation of
+
+1015
+00:37:54,160 --> 00:37:57,230
+the tooling that you've created well I I
+
+1016
+00:37:57,240 --> 00:37:59,190
+think the only interesting difference
+
+1017
+00:37:59,200 --> 00:38:01,470
+from the open- source implementations of
+
+1018
+00:38:01,480 --> 00:38:05,309
+mutation testing and what we have is
+
+1019
+00:38:05,319 --> 00:38:08,109
+that we actually generate the mutants
+
+1020
+00:38:08,119 --> 00:38:10,430
+based on the ASDS there are some open
+
+1021
+00:38:10,440 --> 00:38:12,030
+source tools that do that as well but
+
+1022
+00:38:12,040 --> 00:38:14,150
+it's usually prevalent to change the
+
+1023
+00:38:14,160 --> 00:38:16,990
+bite code in Java or the intermediate
+
+1024
+00:38:17,000 --> 00:38:20,790
+representation of llvm in C++ and I
+
+1025
+00:38:20,800 --> 00:38:22,790
+think the main reason for that is that
+
+1026
+00:38:22,800 --> 00:38:24,589
+for us it's very important to be able to
+
+1027
+00:38:24,599 --> 00:38:27,750
+show the developer exactly how the m
+
+1028
+00:38:27,760 --> 00:38:29,270
+would go they have to actually look at
+
+1029
+00:38:29,280 --> 00:38:30,870
+it and you have to show them and that's
+
+1030
+00:38:30,880 --> 00:38:32,470
+very hard to do if it's based on the
+
+1031
+00:38:32,480 --> 00:38:34,550
+bite code I think that those tools are
+
+1032
+00:38:34,560 --> 00:38:36,510
+great and I use them but it's just
+
+1033
+00:38:36,520 --> 00:38:38,390
+sometimes impractical to show to render
+
+1034
+00:38:38,400 --> 00:38:40,630
+the actual diff okay and I'm glad you
+
+1035
+00:38:40,640 --> 00:38:42,069
+brought that up so you're saying you
+
+1036
+00:38:42,079 --> 00:38:43,589
+actually changed the source code
+
+1037
+00:38:43,599 --> 00:38:45,950
+directly one of the mutation testing
+
+1038
+00:38:45,960 --> 00:38:47,349
+techniques that other people have
+
+1039
+00:38:47,359 --> 00:38:49,589
+developed to achieve scale is by
+
+1040
+00:38:49,599 --> 00:38:51,510
+embedding all of the mutants into
+
+1041
+00:38:51,520 --> 00:38:53,790
+something called a metam mutant do you
+
+1042
+00:38:53,800 --> 00:38:55,950
+use metam mutants in the tooling that
+
+1043
+00:38:55,960 --> 00:38:57,670
+you've built at Google or did did you
+
+1044
+00:38:57,680 --> 00:39:00,390
+adopt a different approach so I think
+
+1045
+00:39:00,400 --> 00:39:02,069
+the reason why we don't have the mega
+
+1046
+00:39:02,079 --> 00:39:04,030
+mutants is that I was lazy and this was
+
+1047
+00:39:04,040 --> 00:39:06,069
+easier to do I think they are a great
+
+1048
+00:39:06,079 --> 00:39:07,910
+idea but you have to compile everything
+
+1049
+00:39:07,920 --> 00:39:10,470
+only once but as I said before the
+
+1050
+00:39:10,480 --> 00:39:12,670
+compilation overhead is not too big when
+
+1051
+00:39:12,680 --> 00:39:15,030
+you have very good object caching so
+
+1052
+00:39:15,040 --> 00:39:17,589
+that wasn't such a big deal for us
+
+1053
+00:39:17,599 --> 00:39:20,589
+because to evaluate one mutant it takes
+
+1054
+00:39:20,599 --> 00:39:24,150
+let's say 100,000 compilation actions
+
+1055
+00:39:24,160 --> 00:39:26,270
+but then for the every subsequent one it
+
+1056
+00:39:26,280 --> 00:39:28,550
+only takes a single one so that makes it
+
+1057
+00:39:28,560 --> 00:39:30,670
+cheaper and I also wanted to do the
+
+1058
+00:39:30,680 --> 00:39:33,109
+metam mutant implementation but I didn't
+
+1059
+00:39:33,119 --> 00:39:34,790
+just have the time yet hopefully in the
+
+1060
+00:39:34,800 --> 00:39:37,309
+future okay that makes a lot of sense
+
+1061
+00:39:37,319 --> 00:39:38,710
+we've covered a lot of cool
+
+1062
+00:39:38,720 --> 00:39:40,990
+implementation details but what I want
+
+1063
+00:39:41,000 --> 00:39:43,470
+to do now is to dive into a discussion
+
+1064
+00:39:43,480 --> 00:39:45,670
+about how you actually evaluate these
+
+1065
+00:39:45,680 --> 00:39:48,790
+tools and whether or not you can sense
+
+1066
+00:39:48,800 --> 00:39:51,190
+that they're giving clear value to the
+
+1067
+00:39:51,200 --> 00:39:53,230
+engineers at Google so one of the
+
+1068
+00:39:53,240 --> 00:39:55,390
+studies that you ran said that you had
+
+1069
+00:39:55,400 --> 00:39:57,829
+almost 15 million mutants
+
+1070
+00:39:57,839 --> 00:39:59,589
+and you had collected data about
+
+1071
+00:39:59,599 --> 00:40:01,990
+mutation testing at Google over a
+
+1072
+00:40:02,000 --> 00:40:05,670
+duration of an entire 6-year period so
+
+1073
+00:40:05,680 --> 00:40:07,670
+first of all I got to say wow that is
+
+1074
+00:40:07,680 --> 00:40:10,270
+super exciting and then second of all
+
+1075
+00:40:10,280 --> 00:40:11,990
+I'm just wondering do developers
+
+1076
+00:40:12,000 --> 00:40:14,710
+actually write more test cases when they
+
+1077
+00:40:14,720 --> 00:40:17,750
+are shown these 15 million mutants
+
+1078
+00:40:17,760 --> 00:40:19,910
+that's a very good question so we also
+
+1079
+00:40:19,920 --> 00:40:21,069
+asked that question of course our
+
+1080
+00:40:21,079 --> 00:40:23,069
+intuition was they of course did because
+
+1081
+00:40:23,079 --> 00:40:26,109
+we did but working with research you
+
+1082
+00:40:26,119 --> 00:40:27,510
+always have to measure things and you
+
+1083
+00:40:27,520 --> 00:40:28,950
+have to show that they're true which I
+
+1084
+00:40:28,960 --> 00:40:30,790
+think is a very very very good strategy
+
+1085
+00:40:30,800 --> 00:40:32,109
+because we've also found things that
+
+1086
+00:40:32,119 --> 00:40:34,910
+were not true here luckily it turns out
+
+1087
+00:40:34,920 --> 00:40:36,750
+that if you present mutants to
+
+1088
+00:40:36,760 --> 00:40:39,790
+developers they will add more tests and
+
+1089
+00:40:39,800 --> 00:40:41,750
+how we measured this was when you send a
+
+1090
+00:40:41,760 --> 00:40:43,790
+pool request for review there's a
+
+1091
+00:40:43,800 --> 00:40:45,270
+certain amount of code in it and a
+
+1092
+00:40:45,280 --> 00:40:47,190
+certain amount of testing in it right
+
+1093
+00:40:47,200 --> 00:40:49,230
+and you have sent it for review when you
+
+1094
+00:40:49,240 --> 00:40:51,870
+submit it this will again contain the
+
+1095
+00:40:51,880 --> 00:40:53,990
+submitted pull request will contain some
+
+1096
+00:40:54,000 --> 00:40:55,270
+amount of code and some amount of
+
+1097
+00:40:55,280 --> 00:40:57,870
+testing in it if the approv was given
+
+1098
+00:40:57,880 --> 00:40:59,510
+immediately and there's no feedback and
+
+1099
+00:40:59,520 --> 00:41:00,829
+there are no comments and there's no
+
+1100
+00:41:00,839 --> 00:41:02,910
+mutants it would probably be the same it
+
+1101
+00:41:02,920 --> 00:41:04,670
+would just be as is you sent it for
+
+1102
+00:41:04,680 --> 00:41:07,630
+review no comments let's submit fine but
+
+1103
+00:41:07,640 --> 00:41:09,750
+when you have mutation testing comments
+
+1104
+00:41:09,760 --> 00:41:12,550
+saying please add a test to kill this
+
+1105
+00:41:12,560 --> 00:41:13,990
+mutant please add a test to kill that
+
+1106
+00:41:14,000 --> 00:41:17,230
+mutant we find that the submitted code
+
+1107
+00:41:17,240 --> 00:41:19,550
+has more tests than they do in the
+
+1108
+00:41:19,560 --> 00:41:21,589
+control which is everything else that
+
+1109
+00:41:21,599 --> 00:41:24,190
+doesn't have the mutants in them and
+
+1110
+00:41:24,200 --> 00:41:26,390
+furthermore this in itself is not too
+
+1111
+00:41:26,400 --> 00:41:28,470
+exciting you could have more tests that
+
+1112
+00:41:28,480 --> 00:41:30,470
+don't really contribute to catching bugs
+
+1113
+00:41:30,480 --> 00:41:33,710
+to having high quality because as I said
+
+1114
+00:41:33,720 --> 00:41:35,270
+before you could just call a function
+
+1115
+00:41:35,280 --> 00:41:38,670
+from a test and cover it completely 100%
+
+1116
+00:41:38,680 --> 00:41:40,990
+but have zero assertions in your test
+
+1117
+00:41:41,000 --> 00:41:42,990
+meaning that you have 100% coverage you
+
+1118
+00:41:43,000 --> 00:41:44,950
+have added more tests we have detected
+
+1119
+00:41:44,960 --> 00:41:47,430
+you adding more tests but it doesn't
+
+1120
+00:41:47,440 --> 00:41:49,390
+really serve in catching any bugs
+
+1121
+00:41:49,400 --> 00:41:52,750
+preventing outages so we also looked at
+
+1122
+00:41:52,760 --> 00:41:54,630
+the correlations of these bugs like the
+
+1123
+00:41:54,640 --> 00:41:56,790
+mutants that are alive when you send a
+
+1124
+00:41:56,800 --> 00:41:57,750
+pool request
+
+1125
+00:41:57,760 --> 00:41:59,750
+and the mutants that are alive when you
+
+1126
+00:41:59,760 --> 00:42:01,710
+actually submit the code and we have
+
+1127
+00:42:01,720 --> 00:42:03,790
+detected these consistently going down
+
+1128
+00:42:03,800 --> 00:42:06,710
+for the C's pull request within Google
+
+1129
+00:42:06,720 --> 00:42:09,630
+it's a perforce changelist name we have
+
+1130
+00:42:09,640 --> 00:42:12,069
+noticed that these pull requests that
+
+1131
+00:42:12,079 --> 00:42:15,750
+had mutants now have less live mutants
+
+1132
+00:42:15,760 --> 00:42:17,870
+so the test actually killed them which
+
+1133
+00:42:17,880 --> 00:42:20,309
+is great news because if they just added
+
+1134
+00:42:20,319 --> 00:42:22,549
+coverage and not kill detect mutants
+
+1135
+00:42:22,559 --> 00:42:24,670
+they would not be as useful okay so it
+
+1136
+00:42:24,680 --> 00:42:26,230
+sounds like what you're saying is that
+
+1137
+00:42:26,240 --> 00:42:28,309
+the developers are not only writing more
+
+1138
+00:42:28,319 --> 00:42:30,670
+test cases but they're writing better
+
+1139
+00:42:30,680 --> 00:42:32,910
+test cases because they can detect more
+
+1140
+00:42:32,920 --> 00:42:35,870
+of these synthetically seeded mutants is
+
+1141
+00:42:35,880 --> 00:42:38,069
+that the right way to understand it
+
+1142
+00:42:38,079 --> 00:42:40,710
+exactly okay now we mentioned this
+
+1143
+00:42:40,720 --> 00:42:42,549
+earlier in our conversation and I want
+
+1144
+00:42:42,559 --> 00:42:45,470
+to revisit it now you talked previously
+
+1145
+00:42:45,480 --> 00:42:46,750
+about something that's called the
+
+1146
+00:42:46,760 --> 00:42:49,349
+coupling effect Goran can you explain
+
+1147
+00:42:49,359 --> 00:42:51,670
+what the coupling effect is and how you
+
+1148
+00:42:51,680 --> 00:42:54,309
+studied it in your experiments at Google
+
+1149
+00:42:54,319 --> 00:42:57,750
+sure so as I said before the mutants
+
+1150
+00:42:57,760 --> 00:43:00,309
+that we insert don't really look like
+
+1151
+00:43:00,319 --> 00:43:02,630
+real bugs that humans do no one is going
+
+1152
+00:43:02,640 --> 00:43:04,589
+to just return false from the whole
+
+1153
+00:43:04,599 --> 00:43:07,430
+function that has to do some logic but
+
+1154
+00:43:07,440 --> 00:43:10,510
+the coupling hypothesis says that these
+
+1155
+00:43:10,520 --> 00:43:14,030
+mutants are similar to bugs in a way
+
+1156
+00:43:14,040 --> 00:43:16,549
+that they actually the test cases that
+
+1157
+00:43:16,559 --> 00:43:19,150
+catch these mutants will also likely
+
+1158
+00:43:19,160 --> 00:43:22,109
+catch the real bugs and the coupling
+
+1159
+00:43:22,119 --> 00:43:25,190
+measurement you could say is that if you
+
+1160
+00:43:25,200 --> 00:43:28,150
+had 100 bugs you could see see how many
+
+1161
+00:43:28,160 --> 00:43:30,870
+times there would also be a live mutant
+
+1162
+00:43:30,880 --> 00:43:32,790
+that would correspond to it and then of
+
+1163
+00:43:32,800 --> 00:43:34,430
+course if you write a test to kill this
+
+1164
+00:43:34,440 --> 00:43:37,630
+mutant it also should detect it bug and
+
+1165
+00:43:37,640 --> 00:43:40,109
+this is the coupling ratio that's really
+
+1166
+00:43:40,119 --> 00:43:41,950
+interesting so have you done any
+
+1167
+00:43:41,960 --> 00:43:44,710
+experimental studies that show if you
+
+1168
+00:43:44,720 --> 00:43:47,309
+detect this type of mutant it helps to
+
+1169
+00:43:47,319 --> 00:43:49,270
+avoid this type of bug going into
+
+1170
+00:43:49,280 --> 00:43:51,430
+production at Google do you have a story
+
+1171
+00:43:51,440 --> 00:43:53,790
+that you could tell about that sure we
+
+1172
+00:43:53,800 --> 00:43:56,390
+have done this analysis of taking
+
+1173
+00:43:56,400 --> 00:43:58,430
+hundreds or even thousands of actual
+
+1174
+00:43:58,440 --> 00:44:01,430
+bugs and this is not easy because mining
+
+1175
+00:44:01,440 --> 00:44:04,309
+bug repositories is very very hard if
+
+1176
+00:44:04,319 --> 00:44:05,950
+you don't look at each bug the
+
+1177
+00:44:05,960 --> 00:44:07,630
+distribution is going to be completely
+
+1178
+00:44:07,640 --> 00:44:10,270
+wrong because no project keeps a
+
+1179
+00:44:10,280 --> 00:44:13,150
+consistent let's say bug hygiene so it's
+
+1180
+00:44:13,160 --> 00:44:14,470
+very hard so we had to actually look
+
+1181
+00:44:14,480 --> 00:44:16,069
+into each of these bugs and make sure
+
+1182
+00:44:16,079 --> 00:44:18,230
+that they are real bugs that happened in
+
+1183
+00:44:18,240 --> 00:44:20,750
+code and we found an Associated fix to
+
+1184
+00:44:20,760 --> 00:44:24,109
+this bug so what we did there is just
+
+1185
+00:44:24,119 --> 00:44:26,390
+analyzed whether when this bug was
+
+1186
+00:44:26,400 --> 00:44:27,589
+introduced
+
+1187
+00:44:27,599 --> 00:44:29,030
+there would have been a mutant had
+
+1188
+00:44:29,040 --> 00:44:30,790
+mutation testing been enabled for this
+
+1189
+00:44:30,800 --> 00:44:33,910
+project and if so would the fix usually
+
+1190
+00:44:33,920 --> 00:44:36,950
+adds a test as well would the added test
+
+1191
+00:44:36,960 --> 00:44:39,870
+to the fix also kill this mutant and in
+
+1192
+00:44:39,880 --> 00:44:42,870
+I think 69% of cases it was the case
+
+1193
+00:44:42,880 --> 00:44:46,549
+that the bug and the mutant were coupled
+
+1194
+00:44:46,559 --> 00:44:48,390
+so that means that if these test had
+
+1195
+00:44:48,400 --> 00:44:50,030
+been written had mutation testing been
+
+1196
+00:44:50,040 --> 00:44:51,630
+enabled these bugs would have been
+
+1197
+00:44:51,640 --> 00:44:53,710
+prevented so that sounds like it's an
+
+1198
+00:44:53,720 --> 00:44:56,589
+easy way to make a clear win argument
+
+1199
+00:44:56,599 --> 00:44:59,190
+for the introduction of mutation testing
+
+1200
+00:44:59,200 --> 00:45:01,030
+sure but it was very expensive to
+
+1201
+00:45:01,040 --> 00:45:03,710
+calculate okay that makes a lot of sense
+
+1202
+00:45:03,720 --> 00:45:05,230
+I'm wondering if we could take a quick
+
+1203
+00:45:05,240 --> 00:45:08,069
+step back there are many different ways
+
+1204
+00:45:08,079 --> 00:45:10,309
+that we could improve the overall
+
+1205
+00:45:10,319 --> 00:45:12,230
+quality of our software and you've
+
+1206
+00:45:12,240 --> 00:45:14,069
+mentioned test coverage analysis and
+
+1207
+00:45:14,079 --> 00:45:16,670
+we're talking about mutation testing now
+
+1208
+00:45:16,680 --> 00:45:18,109
+I'm wondering can you give us your
+
+1209
+00:45:18,119 --> 00:45:20,349
+intuition how did you know that it was
+
+1210
+00:45:20,359 --> 00:45:23,230
+the right time to introduce mutation
+
+1211
+00:45:23,240 --> 00:45:25,950
+testing at Google given the analysis
+
+1212
+00:45:25,960 --> 00:45:27,750
+pipeline that you already already had in
+
+1213
+00:45:27,760 --> 00:45:30,549
+place well that's a funny story I had no
+
+1214
+00:45:30,559 --> 00:45:32,390
+idea I joined the team in Google
+
+1215
+00:45:32,400 --> 00:45:35,190
+shopping and as it used to be the case
+
+1216
+00:45:35,200 --> 00:45:37,710
+everyone had a 20% project and my
+
+1217
+00:45:37,720 --> 00:45:40,109
+manager said oh we started dismutation
+
+1218
+00:45:40,119 --> 00:45:42,190
+testing last hackathon maybe you can
+
+1219
+00:45:42,200 --> 00:45:44,150
+inherit it and I'm like oh I have no
+
+1220
+00:45:44,160 --> 00:45:45,710
+idea what this is I've never heard of
+
+1221
+00:45:45,720 --> 00:45:47,750
+this but I will inherit it because I
+
+1222
+00:45:47,760 --> 00:45:49,870
+don't really have a choice right so I
+
+1223
+00:45:49,880 --> 00:45:51,870
+started reading those papers and
+
+1224
+00:45:51,880 --> 00:45:53,430
+eventually rewrote all of their code
+
+1225
+00:45:53,440 --> 00:45:55,309
+because it was a hackathon project one
+
+1226
+00:45:55,319 --> 00:45:57,309
+week of like just try to get a proof of
+
+1227
+00:45:57,319 --> 00:45:59,990
+concept working and then it became my
+
+1228
+00:46:00,000 --> 00:46:03,109
+project over time so it was their idea
+
+1229
+00:46:03,119 --> 00:46:04,470
+and I don't know where it came from
+
+1230
+00:46:04,480 --> 00:46:06,790
+because it was before I joined the team
+
+1231
+00:46:06,800 --> 00:46:08,670
+but I just pushed and pushed for years
+
+1232
+00:46:08,680 --> 00:46:11,190
+to get it done and I mean most things
+
+1233
+00:46:11,200 --> 00:46:13,589
+you can get done the question is how
+
+1234
+00:46:13,599 --> 00:46:15,910
+much you have to change the original
+
+1235
+00:46:15,920 --> 00:46:18,030
+idea for it to be feasible and I mean I
+
+1236
+00:46:18,040 --> 00:46:20,829
+call this it's a capacity-driven
+
+1237
+00:46:20,839 --> 00:46:22,870
+development like if you cannot run all
+
+1238
+00:46:22,880 --> 00:46:24,950
+the mutants then choose a subset that
+
+1239
+00:46:24,960 --> 00:46:27,069
+makes sense if you cannot evaluate at
+
+1240
+00:46:27,079 --> 00:46:29,430
+all lines well drop some and I mean you
+
+1241
+00:46:29,440 --> 00:46:31,430
+have to eventually come to a workable
+
+1242
+00:46:31,440 --> 00:46:32,990
+thing that still brings value you don't
+
+1243
+00:46:33,000 --> 00:46:34,870
+have to implement whatever was Invision
+
+1244
+00:46:34,880 --> 00:46:37,470
+50 years ago on paper right so I think
+
+1245
+00:46:37,480 --> 00:46:39,510
+for many project like this good enough
+
+1246
+00:46:39,520 --> 00:46:41,950
+is good enough those are several very
+
+1247
+00:46:41,960 --> 00:46:44,150
+interesting examples so again focusing
+
+1248
+00:46:44,160 --> 00:46:46,510
+on a specific line or maybe even
+
+1249
+00:46:46,520 --> 00:46:49,270
+randomly selecting a specific mutant are
+
+1250
+00:46:49,280 --> 00:46:51,510
+there any other experimental results
+
+1251
+00:46:51,520 --> 00:46:53,510
+that you have discovered that have
+
+1252
+00:46:53,520 --> 00:46:55,589
+ultimately helped you to enhance the
+
+1253
+00:46:55,599 --> 00:46:58,150
+mutation testing tools at Google there
+
+1254
+00:46:58,160 --> 00:47:00,630
+was one idea we had but we finally
+
+1255
+00:47:00,640 --> 00:47:02,630
+didn't do it because we didn't think it
+
+1256
+00:47:02,640 --> 00:47:05,190
+was ethical but it was just like a
+
+1257
+00:47:05,200 --> 00:47:06,990
+random analyzer that would pick a random
+
+1258
+00:47:07,000 --> 00:47:08,829
+line in the code and said oh maybe you
+
+1259
+00:47:08,839 --> 00:47:10,589
+should look at this line again and think
+
+1260
+00:47:10,599 --> 00:47:12,430
+about it in the end we didn't do it but
+
+1261
+00:47:12,440 --> 00:47:14,510
+it was a fun experiment but in mutation
+
+1262
+00:47:14,520 --> 00:47:16,790
+testing yeah many improvements that
+
+1263
+00:47:16,800 --> 00:47:18,710
+we've done over the years for the
+
+1264
+00:47:18,720 --> 00:47:20,750
+framework some of them are just these
+
+1265
+00:47:20,760 --> 00:47:23,109
+eristics I added one today I still get
+
+1266
+00:47:23,119 --> 00:47:25,430
+after I think it's been 9 years people
+
+1267
+00:47:25,440 --> 00:47:27,510
+still will say this is not ause mutant
+
+1268
+00:47:27,520 --> 00:47:28,790
+and then I will go and look and I will
+
+1269
+00:47:28,800 --> 00:47:31,510
+try to figure out how I can suppress
+
+1270
+00:47:31,520 --> 00:47:33,630
+those kinds of mutants you cannot
+
+1271
+00:47:33,640 --> 00:47:35,390
+imagine how many logging Frameworks we
+
+1272
+00:47:35,400 --> 00:47:36,750
+have how many wrappers of logging
+
+1273
+00:47:36,760 --> 00:47:38,790
+Frameworks we have and all the other
+
+1274
+00:47:38,800 --> 00:47:40,710
+things like caching mechanisms because
+
+1275
+00:47:40,720 --> 00:47:42,990
+if you look at it the caching mechanism
+
+1276
+00:47:43,000 --> 00:47:45,270
+if you remove it it doesn't change the
+
+1277
+00:47:45,280 --> 00:47:47,549
+functionality it just makes your thing
+
+1278
+00:47:47,559 --> 00:47:50,349
+go slower if it's uncached so any Mutant
+
+1279
+00:47:50,359 --> 00:47:52,069
+around caching will be an equivalent
+
+1280
+00:47:52,079 --> 00:47:54,910
+mutant and learning about this from our
+
+1281
+00:47:54,920 --> 00:47:56,990
+users and just implementing the support
+
+1282
+00:47:57,000 --> 00:47:58,990
+for that is the way we have improved the
+
+1283
+00:47:59,000 --> 00:48:01,190
+tool the most I think this sounds like
+
+1284
+00:48:01,200 --> 00:48:02,870
+an awesome experience and you've been
+
+1285
+00:48:02,880 --> 00:48:05,670
+mentioning these various heris from a
+
+1286
+00:48:05,680 --> 00:48:07,750
+back of the envelope perspective are we
+
+1287
+00:48:07,760 --> 00:48:10,910
+talking about 20 heuristics or hundreds
+
+1288
+00:48:10,920 --> 00:48:13,589
+of heuristics what kinds of heuristics
+
+1289
+00:48:13,599 --> 00:48:15,390
+are built in and roughly speaking how
+
+1290
+00:48:15,400 --> 00:48:17,470
+many are there so considering there are
+
+1291
+00:48:17,480 --> 00:48:20,150
+11 languages there are thousands of
+
+1292
+00:48:20,160 --> 00:48:22,349
+heuristics but many of them fall into
+
+1293
+00:48:22,359 --> 00:48:25,630
+the same group let's say don't mutate
+
+1294
+00:48:25,640 --> 00:48:27,790
+calls to these kinds of functions so
+
+1295
+00:48:27,800 --> 00:48:28,790
+logging
+
+1296
+00:48:28,800 --> 00:48:30,829
+functions things like let's say
+
+1297
+00:48:30,839 --> 00:48:32,670
+collection capacity let's say you
+
+1298
+00:48:32,680 --> 00:48:34,109
+construct a vector you can give it an
+
+1299
+00:48:34,119 --> 00:48:36,829
+initial capacity but you can reduce it
+
+1300
+00:48:36,839 --> 00:48:38,670
+by one and nothing's going to happen
+
+1301
+00:48:38,680 --> 00:48:40,109
+because the vector is going to grow
+
+1302
+00:48:40,119 --> 00:48:42,109
+there is no change the same goes with
+
+1303
+00:48:42,119 --> 00:48:44,030
+the Java Collections if you just
+
+1304
+00:48:44,040 --> 00:48:45,670
+increase the capacity of a collection it
+
+1305
+00:48:45,680 --> 00:48:47,430
+will just grow or Shrink as it needs to
+
+1306
+00:48:47,440 --> 00:48:49,390
+it won't change the behavior so all of
+
+1307
+00:48:49,400 --> 00:48:51,950
+these are you could say there are 50
+
+1308
+00:48:51,960 --> 00:48:53,990
+different containers with five different
+
+1309
+00:48:54,000 --> 00:48:56,470
+initialization methods I would call them
+
+1310
+00:48:56,480 --> 00:48:58,789
+a single heuristic but there are like 50
+
+1311
+00:48:58,799 --> 00:49:01,030
+instances of each of those so in in that
+
+1312
+00:49:01,040 --> 00:49:03,710
+terms I would say there are like five or
+
+1313
+00:49:03,720 --> 00:49:05,750
+six groups of her istics and then
+
+1314
+00:49:05,760 --> 00:49:07,910
+thousands of instances of them and we
+
+1315
+00:49:07,920 --> 00:49:09,789
+have a tsse extension that has an
+
+1316
+00:49:09,799 --> 00:49:11,789
+appendix that is like 10 pages long
+
+1317
+00:49:11,799 --> 00:49:14,309
+listing examples from these okay we'll
+
+1318
+00:49:14,319 --> 00:49:16,030
+make sure to reference that in the show
+
+1319
+00:49:16,040 --> 00:49:18,430
+notes so other people can pick it up I
+
+1320
+00:49:18,440 --> 00:49:20,349
+have to say this has been a fascinating
+
+1321
+00:49:20,359 --> 00:49:22,710
+and thought-provoking conversation what
+
+1322
+00:49:22,720 --> 00:49:24,510
+I'd like to do now is to turn our
+
+1323
+00:49:24,520 --> 00:49:26,750
+attention to some of the broader lessons
+
+1324
+00:49:26,760 --> 00:49:28,829
+that you've learned from introducing
+
+1325
+00:49:28,839 --> 00:49:31,430
+mutation testing to the engineers at
+
+1326
+00:49:31,440 --> 00:49:33,230
+Google the first thing that I've heard
+
+1327
+00:49:33,240 --> 00:49:35,030
+you mention more than once during our
+
+1328
+00:49:35,040 --> 00:49:37,069
+discussion today is that sometimes
+
+1329
+00:49:37,079 --> 00:49:39,470
+you're taking ideas from research papers
+
+1330
+00:49:39,480 --> 00:49:41,309
+on mutation testing and then you're
+
+1331
+00:49:41,319 --> 00:49:43,589
+trying to introduce them into practice
+
+1332
+00:49:43,599 --> 00:49:45,910
+and studies at Google what have you
+
+1333
+00:49:45,920 --> 00:49:47,710
+learned from that process can you tell
+
+1334
+00:49:47,720 --> 00:49:50,270
+us a little bit more definitely that's
+
+1335
+00:49:50,280 --> 00:49:52,990
+been a very interesting Journey so what
+
+1336
+00:49:53,000 --> 00:49:54,789
+I've learned is that as I said before
+
+1337
+00:49:54,799 --> 00:49:56,710
+developer attention not only at Google
+
+1338
+00:49:56,720 --> 00:49:58,549
+not only developer just human attention
+
+1339
+00:49:58,559 --> 00:50:00,589
+is the only resource in the universe
+
+1340
+00:50:00,599 --> 00:50:03,470
+that's worth thinking about so wasting
+
+1341
+00:50:03,480 --> 00:50:06,670
+it is always a bad idea I think so just
+
+1342
+00:50:06,680 --> 00:50:10,150
+thinking about how you can improve the
+
+1343
+00:50:10,160 --> 00:50:12,750
+product and the development process is
+
+1344
+00:50:12,760 --> 00:50:15,030
+the best way to start so people are
+
+1345
+00:50:15,040 --> 00:50:16,829
+sometimes if you have an idea you you
+
+1346
+00:50:16,839 --> 00:50:18,349
+read the paper you just want to present
+
+1347
+00:50:18,359 --> 00:50:20,470
+it as it is and build it in and any
+
+1348
+00:50:20,480 --> 00:50:23,390
+deviation from it gives you resistance
+
+1349
+00:50:23,400 --> 00:50:25,109
+that's I think a bad approach you just
+
+1350
+00:50:25,119 --> 00:50:27,870
+think how we can help our product or our
+
+1351
+00:50:27,880 --> 00:50:30,109
+teams how can they be more efficient how
+
+1352
+00:50:30,119 --> 00:50:32,549
+can they have less bux in production and
+
+1353
+00:50:32,559 --> 00:50:34,990
+then work backwards from there and then
+
+1354
+00:50:35,000 --> 00:50:37,470
+I think that way things fall into place
+
+1355
+00:50:37,480 --> 00:50:39,589
+you've invested significant effort and
+
+1356
+00:50:39,599 --> 00:50:41,870
+time in building these tools and I'm
+
+1357
+00:50:41,880 --> 00:50:43,630
+assuming you're using the tools on a
+
+1358
+00:50:43,640 --> 00:50:46,150
+regular basis as well can you tell us
+
+1359
+00:50:46,160 --> 00:50:48,150
+what have you learned and how are you a
+
+1360
+00:50:48,160 --> 00:50:50,309
+better software engineer after you've
+
+1361
+00:50:50,319 --> 00:50:52,589
+built and started to use these mutation
+
+1362
+00:50:52,599 --> 00:50:55,230
+testing tools they are annoying as hell
+
+1363
+00:50:55,240 --> 00:50:57,789
+I know when I send a pull request for
+
+1364
+00:50:57,799 --> 00:50:59,990
+review I know I'm going to get a mutant
+
+1365
+00:51:00,000 --> 00:51:02,910
+and I know exactly where because because
+
+1366
+00:51:02,920 --> 00:51:04,589
+I've implemented it and I already start
+
+1367
+00:51:04,599 --> 00:51:06,150
+writing an extra test for it because
+
+1368
+00:51:06,160 --> 00:51:08,789
+it's it's so annoying and then sure it's
+
+1369
+00:51:08,799 --> 00:51:10,710
+there and it's in that line the most
+
+1370
+00:51:10,720 --> 00:51:12,470
+annoying thing is even when I fixed that
+
+1371
+00:51:12,480 --> 00:51:14,549
+there's another that I didn't see coming
+
+1372
+00:51:14,559 --> 00:51:16,750
+so I think people learn to anticipate
+
+1373
+00:51:16,760 --> 00:51:18,230
+them and immediately when they write
+
+1374
+00:51:18,240 --> 00:51:20,670
+code they see oh this test only covers
+
+1375
+00:51:20,680 --> 00:51:22,230
+this left Branch I need to add something
+
+1376
+00:51:22,240 --> 00:51:24,030
+for the other Branch as well so they I
+
+1377
+00:51:24,040 --> 00:51:26,109
+think I have certainly started writing
+
+1378
+00:51:26,119 --> 00:51:28,870
+more more tests to cover more cases and
+
+1379
+00:51:28,880 --> 00:51:31,190
+we have measured this as well that over
+
+1380
+00:51:31,200 --> 00:51:33,109
+time there's this thing that we called
+
+1381
+00:51:33,119 --> 00:51:35,670
+exposure I think over time as you have
+
+1382
+00:51:35,680 --> 00:51:37,870
+been using mutation testing for a longer
+
+1383
+00:51:37,880 --> 00:51:41,030
+time you tend to write more tests
+
+1384
+00:51:41,040 --> 00:51:42,750
+proactively even in the beginning when
+
+1385
+00:51:42,760 --> 00:51:44,549
+you send your initial pull request you
+
+1386
+00:51:44,559 --> 00:51:47,109
+tend to have less live mutants over time
+
+1387
+00:51:47,119 --> 00:51:48,990
+and more added Code test and I've
+
+1388
+00:51:49,000 --> 00:51:51,349
+definitely noticed this in myself H
+
+1389
+00:51:51,359 --> 00:51:53,430
+that's a fascinating result as we draw
+
+1390
+00:51:53,440 --> 00:51:55,789
+our conversation to a conclusion I want
+
+1391
+00:51:55,799 --> 00:51:57,589
+to pick up on several things that you've
+
+1392
+00:51:57,599 --> 00:52:00,829
+said and ask you to give advice to two
+
+1393
+00:52:00,839 --> 00:52:03,230
+different groups of individuals so first
+
+1394
+00:52:03,240 --> 00:52:04,829
+of all do you have advice for
+
+1395
+00:52:04,839 --> 00:52:06,789
+researchers who are building mutation
+
+1396
+00:52:06,799 --> 00:52:09,270
+testing tools or studying their
+
+1397
+00:52:09,280 --> 00:52:11,230
+effectiveness and then additionally
+
+1398
+00:52:11,240 --> 00:52:12,950
+there are many listeners who want to
+
+1399
+00:52:12,960 --> 00:52:14,750
+know how they can get started with
+
+1400
+00:52:14,760 --> 00:52:16,990
+mutation testing so can you give some
+
+1401
+00:52:17,000 --> 00:52:21,030
+advice to both of those groups sure so I
+
+1402
+00:52:21,040 --> 00:52:24,230
+have to admit my bias of a large company
+
+1403
+00:52:24,240 --> 00:52:26,510
+Viewpoint the way to start using
+
+1404
+00:52:26,520 --> 00:52:29,309
+mutation testing is very simple just
+
+1405
+00:52:29,319 --> 00:52:31,150
+Google mutation testing you will find
+
+1406
+00:52:31,160 --> 00:52:33,710
+for your language a tool that is good
+
+1407
+00:52:33,720 --> 00:52:36,109
+and you can try and try and run it my
+
+1408
+00:52:36,119 --> 00:52:38,670
+main advice would be initially integrate
+
+1409
+00:52:38,680 --> 00:52:40,829
+it immediately into the workflow
+
+1410
+00:52:40,839 --> 00:52:43,109
+whatever it is GitHub workflows or what
+
+1411
+00:52:43,119 --> 00:52:45,430
+whatever you have Jenkins Hudson no
+
+1412
+00:52:45,440 --> 00:52:47,630
+matter what because asking people to do
+
+1413
+00:52:47,640 --> 00:52:49,630
+an extra thing a day is probably not a
+
+1414
+00:52:49,640 --> 00:52:51,710
+good idea and no matter if it's at work
+
+1415
+00:52:51,720 --> 00:52:53,710
+or at home and of course suppress
+
+1416
+00:52:53,720 --> 00:52:55,549
+mutants as much as you can find a tool
+
+1417
+00:52:55,559 --> 00:52:57,349
+where you can just ignore most of them
+
+1418
+00:52:57,359 --> 00:52:58,870
+because otherwise no one is going to
+
+1419
+00:52:58,880 --> 00:53:00,750
+look at thousands of them that would be
+
+1420
+00:53:00,760 --> 00:53:03,670
+my advice okay that will be helpful and
+
+1421
+00:53:03,680 --> 00:53:06,150
+will in fact link to some of the GitHub
+
+1422
+00:53:06,160 --> 00:53:09,190
+repos for various tools like pit for the
+
+1423
+00:53:09,200 --> 00:53:12,030
+Java programming language or mut mut for
+
+1424
+00:53:12,040 --> 00:53:14,950
+python or striker for JavaScript I think
+
+1425
+00:53:14,960 --> 00:53:17,030
+those are all helpful ways for people to
+
+1426
+00:53:17,040 --> 00:53:19,390
+get started are there any other things
+
+1427
+00:53:19,400 --> 00:53:21,190
+that you would like to share as an
+
+1428
+00:53:21,200 --> 00:53:23,710
+advice to a software engineer who wants
+
+1429
+00:53:23,720 --> 00:53:26,190
+to learn mutation testing and maybe try
+
+1430
+00:53:26,200 --> 00:53:29,349
+it out for the first time definitely I
+
+1431
+00:53:29,359 --> 00:53:30,829
+think also as you asked before for
+
+1432
+00:53:30,839 --> 00:53:33,069
+researchers what we all would like is to
+
+1433
+00:53:33,079 --> 00:53:36,750
+have I would say user Centric view of
+
+1434
+00:53:36,760 --> 00:53:39,349
+mutation testing or analysis just think
+
+1435
+00:53:39,359 --> 00:53:41,670
+in terms of something that someone in
+
+1436
+00:53:41,680 --> 00:53:43,750
+some company can pick up a paper read it
+
+1437
+00:53:43,760 --> 00:53:45,349
+and then sit down and Implement that and
+
+1438
+00:53:45,359 --> 00:53:47,710
+then get some benefit from it I think I
+
+1439
+00:53:47,720 --> 00:53:49,789
+find those papers the most interesting
+
+1440
+00:53:49,799 --> 00:53:51,710
+and for people starting out I think
+
+1441
+00:53:51,720 --> 00:53:54,710
+patience and also keeping in mind that
+
+1442
+00:53:54,720 --> 00:53:57,150
+the end goal is not to to kill mutants
+
+1443
+00:53:57,160 --> 00:53:58,990
+it's not to write tests it's to make
+
+1444
+00:53:59,000 --> 00:54:01,430
+better products wow that's a great point
+
+1445
+00:54:01,440 --> 00:54:03,789
+to conclude on in our conversation today
+
+1446
+00:54:03,799 --> 00:54:05,950
+we've talked about mutation testing and
+
+1447
+00:54:05,960 --> 00:54:07,990
+you've hinted at the key idea which is
+
+1448
+00:54:08,000 --> 00:54:10,510
+that ultimately mutation testing helps
+
+1449
+00:54:10,520 --> 00:54:13,589
+us to achieve higher quality software I
+
+1450
+00:54:13,599 --> 00:54:14,950
+know that there may be something we've
+
+1451
+00:54:14,960 --> 00:54:16,870
+overlooked are there any additional
+
+1452
+00:54:16,880 --> 00:54:18,789
+topics that we should briefly discuss
+
+1453
+00:54:18,799 --> 00:54:20,589
+before drawing our discussion to a
+
+1454
+00:54:20,599 --> 00:54:22,630
+conclusion the only one that comes to
+
+1455
+00:54:22,640 --> 00:54:24,430
+mind it would take us 10 years to I
+
+1456
+00:54:24,440 --> 00:54:26,470
+think conclude so we can skip it but and
+
+1457
+00:54:26,480 --> 00:54:28,270
+that is the question of quality we don't
+
+1458
+00:54:28,280 --> 00:54:30,309
+know what quality is we cannot measure
+
+1459
+00:54:30,319 --> 00:54:33,309
+it okay now for those of you who are
+
+1460
+00:54:33,319 --> 00:54:35,430
+interested in investigating the idea of
+
+1461
+00:54:35,440 --> 00:54:37,069
+quality you might want to read the book
+
+1462
+00:54:37,079 --> 00:54:39,670
+Zen In The Art of Motorcycle Maintenance
+
+1463
+00:54:39,680 --> 00:54:41,349
+but we'll leave that discussion for a
+
+1464
+00:54:41,359 --> 00:54:44,190
+later time Goran thank you so much for
+
+1465
+00:54:44,200 --> 00:54:46,309
+being on the show it was a great
+
+1466
+00:54:46,319 --> 00:54:48,589
+pleasure to chat with you today is there
+
+1467
+00:54:48,599 --> 00:54:51,030
+any final call to action that you would
+
+1468
+00:54:51,040 --> 00:54:53,309
+like to share with our listeners no I
+
+1469
+00:54:53,319 --> 00:54:55,510
+think that's it thank you Greg thank you
+
+1470
+00:54:55,520 --> 00:54:57,589
+Goran for those of you who are listening
+
+1471
+00:54:57,599 --> 00:54:59,309
+and interested in learning more I hope
+
+1472
+00:54:59,319 --> 00:55:01,309
+you'll check the show notes so that you
+
+1473
+00:55:01,319 --> 00:55:03,950
+can explore mutation testing and learn
+
+1474
+00:55:03,960 --> 00:55:06,430
+how to use goran's insights and tools
+
+1475
+00:55:06,440 --> 00:55:08,309
+inside of your own software development
+
+1476
+00:55:08,319 --> 00:55:10,349
+Adventure thanks Goran talk with you
+
+1477
+00:55:10,359 --> 00:55:12,789
+again soon
+
+1478
+00:55:12,799 --> 00:55:15,270
+ciao thanks for listening to SC radio an
+
+1479
+00:55:15,280 --> 00:55:17,430
+educational program brought to you by It
+
+1480
+00:55:17,440 --> 00:55:19,430
+software magazine for more about the
+
+1481
+00:55:19,440 --> 00:55:21,270
+podcast including other episodes visit
+
+1482
+00:55:21,280 --> 00:55:23,710
+our website at se-
+
+1483
+00:55:23,720 --> 00:55:25,870
+radio.net to provide feedback you can
+
+1484
+00:55:25,880 --> 00:55:27,230
+comment on on each episode on the
+
+1485
+00:55:27,240 --> 00:55:29,990
+website or reach us on LinkedIn Facebook
+
+1486
+00:55:30,000 --> 00:55:32,710
+Twitter or through our slack Channel at
+
+1487
+00:55:32,720 --> 00:55:36,630
+seo. slack.com you can also email us at
+
+1488
+00:55:36,640 --> 00:55:39,069
+team
+
+1489
+00:55:39,079 --> 00:55:41,670
+e-r. this and all other episodes of SC
+
+1490
+00:55:41,680 --> 00:55:43,510
+radio is licens under Creative Commons
+
+1491
+00:55:43,520 --> 00:55:44,510
+license
+
+1492
+00:55:44,520 --> 00:55:48,880
+2.5 thanks for listening

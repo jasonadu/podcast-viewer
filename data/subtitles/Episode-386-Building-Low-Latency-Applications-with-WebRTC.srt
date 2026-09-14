@@ -1,0 +1,7343 @@
+1
+00:00:02,240 --> 00:00:02,250
+this is software engineering radio the
+
+2
+00:00:02,250 --> 00:00:04,280
+podcast for professional developers on
+
+3
+00:00:04,290 --> 00:00:08,030
+the web at SC - radio dotnet SC radio is
+
+4
+00:00:08,040 --> 00:00:09,169
+brought to you by the I Triple E
+
+5
+00:00:09,179 --> 00:00:11,360
+Computer Society I Triple E software
+
+6
+00:00:11,370 --> 00:00:14,270
+magazine online at computer org slash
+
+7
+00:00:14,280 --> 00:00:20,840
+software hey this is Jeremy Jung for a
+
+8
+00:00:20,850 --> 00:00:22,519
+software engineering radio today I'm
+
+9
+00:00:22,529 --> 00:00:24,950
+speaking with Spencer Dixon Spencer has
+
+10
+00:00:24,960 --> 00:00:26,929
+been building websites for over 10 years
+
+11
+00:00:26,939 --> 00:00:29,300
+and is the CTO at touple a screen
+
+12
+00:00:29,310 --> 00:00:31,160
+sharing application for pair programming
+
+13
+00:00:31,170 --> 00:00:32,990
+I'll be speaking with Spencer about
+
+14
+00:00:33,000 --> 00:00:35,810
+building tuple using WebRTC and the many
+
+15
+00:00:35,820 --> 00:00:37,340
+challenges that come from building a
+
+16
+00:00:37,350 --> 00:00:39,440
+native application that requires low
+
+17
+00:00:39,450 --> 00:00:42,200
+latency and video communication Spencer
+
+18
+00:00:42,210 --> 00:00:43,819
+welcome to software engineering radio
+
+19
+00:00:43,829 --> 00:00:46,010
+thanks Jeremy I'm really excited to be
+
+20
+00:00:46,020 --> 00:00:48,319
+here first could you give a quick
+
+21
+00:00:48,329 --> 00:00:50,119
+introduction to what tuple is for our
+
+22
+00:00:50,129 --> 00:00:51,590
+listeners sure
+
+23
+00:00:51,600 --> 00:00:54,590
+so tuple is a remote screen sharing
+
+24
+00:00:54,600 --> 00:00:57,799
+application somewhat similar to Skype or
+
+25
+00:00:57,809 --> 00:00:59,150
+zoom or slack calls
+
+26
+00:00:59,160 --> 00:01:02,000
+however it's purpose-built for remote
+
+27
+00:01:02,010 --> 00:01:04,579
+pair programming specifically so all of
+
+28
+00:01:04,589 --> 00:01:06,980
+our design decisions rely around making
+
+29
+00:01:06,990 --> 00:01:09,020
+the best possible pair programming
+
+30
+00:01:09,030 --> 00:01:11,090
+experience that we can one of the things
+
+31
+00:01:11,100 --> 00:01:14,590
+about tuple is that you used web RTC to
+
+32
+00:01:14,600 --> 00:01:17,120
+allow for the screen sharing - in order
+
+33
+00:01:17,130 --> 00:01:19,609
+to see each person in order to see each
+
+34
+00:01:19,619 --> 00:01:21,320
+person's screen and all that before we
+
+35
+00:01:21,330 --> 00:01:23,420
+go into the specifics of building - boy
+
+36
+00:01:23,430 --> 00:01:24,980
+I kind of wanted to set up what are the
+
+37
+00:01:24,990 --> 00:01:27,109
+pieces that are in it so to start what
+
+38
+00:01:27,119 --> 00:01:28,910
+makes web RTC different and what is it
+
+39
+00:01:28,920 --> 00:01:31,760
+used for sure so it probably makes sense
+
+40
+00:01:31,770 --> 00:01:33,560
+to give a high-level view of like what
+
+41
+00:01:33,570 --> 00:01:35,810
+WebRTC is before going into what it's
+
+42
+00:01:35,820 --> 00:01:38,780
+used for it's really three things it's
+
+43
+00:01:38,790 --> 00:01:41,510
+less spec which provides information on
+
+44
+00:01:41,520 --> 00:01:43,639
+specific api's and then there's also the
+
+45
+00:01:43,649 --> 00:01:45,830
+implementation side of it which can be
+
+46
+00:01:45,840 --> 00:01:48,410
+found in Lib web RTC which is this
+
+47
+00:01:48,420 --> 00:01:51,649
+massive you know 5 million plus line C++
+
+48
+00:01:51,659 --> 00:01:55,280
+code base and all the major browsers use
+
+49
+00:01:55,290 --> 00:01:58,520
+that lib WebRTC to implement the spec in
+
+50
+00:01:58,530 --> 00:02:00,080
+their respective browsers so Google
+
+51
+00:02:00,090 --> 00:02:03,230
+Mozilla opera and those API is allow you
+
+52
+00:02:03,240 --> 00:02:06,770
+to share any sort of real-time media but
+
+53
+00:02:06,780 --> 00:02:08,839
+it doesn't have to just be media so one
+
+54
+00:02:08,849 --> 00:02:11,330
+aspect of WebRTC that's pretty useful is
+
+55
+00:02:11,340 --> 00:02:13,699
+the concept of creating data channels
+
+56
+00:02:13,709 --> 00:02:15,979
+so you can establish this connection
+
+57
+00:02:15,989 --> 00:02:18,319
+between two peers and then really send
+
+58
+00:02:18,329 --> 00:02:20,240
+whatever bytes of information you want
+
+59
+00:02:20,250 --> 00:02:22,670
+from point A to point B which has some
+
+60
+00:02:22,680 --> 00:02:24,140
+interesting use cases I know people have
+
+61
+00:02:24,150 --> 00:02:25,880
+built like BitTorrent clients using
+
+62
+00:02:25,890 --> 00:02:28,940
+WebRTC and but its primary uses for
+
+63
+00:02:28,950 --> 00:02:33,110
+capturing frames from the webcam or you
+
+64
+00:02:33,120 --> 00:02:34,940
+know your screen buffer and sending them
+
+65
+00:02:34,950 --> 00:02:37,490
+over to the other pier for the the data
+
+66
+00:02:37,500 --> 00:02:39,890
+channel you referred to is that for
+
+67
+00:02:39,900 --> 00:02:42,440
+everything that goes over web RTC or is
+
+68
+00:02:42,450 --> 00:02:44,990
+that only for specific types of data
+
+69
+00:02:45,000 --> 00:02:47,330
+yeah the data channels will send data
+
+70
+00:02:47,340 --> 00:02:50,449
+through SCTP and the audio and visual
+
+71
+00:02:50,459 --> 00:02:53,030
+audio and video data gets sent over RTP
+
+72
+00:02:53,040 --> 00:02:56,539
+and our TV actually is really two things
+
+73
+00:02:56,549 --> 00:03:00,440
+it's RTP and rtcp so there's the
+
+74
+00:03:00,450 --> 00:03:01,849
+real-time protocol and in the real-time
+
+75
+00:03:01,859 --> 00:03:06,740
+control protocol and rtcp allows the two
+
+76
+00:03:06,750 --> 00:03:08,420
+peers to kind of send diagnostic
+
+77
+00:03:08,430 --> 00:03:10,729
+information as to how the stream is
+
+78
+00:03:10,739 --> 00:03:12,170
+going so that way they can update in
+
+79
+00:03:12,180 --> 00:03:14,830
+real-time and I believe that WebRTC
+
+80
+00:03:14,840 --> 00:03:18,379
+actually uses some sort of extension to
+
+81
+00:03:18,389 --> 00:03:21,469
+RTP which allows it to send both those
+
+82
+00:03:21,479 --> 00:03:24,020
+two protocols on one port instead of I
+
+83
+00:03:24,030 --> 00:03:26,330
+think traditionally RTP you know you use
+
+84
+00:03:26,340 --> 00:03:27,920
+one port for the RTP and then you
+
+85
+00:03:27,930 --> 00:03:29,629
+increment it by one and that's what our
+
+86
+00:03:29,639 --> 00:03:32,149
+TCP gets sent on you said they allows
+
+87
+00:03:32,159 --> 00:03:33,920
+you to use the same port so then are
+
+88
+00:03:33,930 --> 00:03:36,649
+those two separate connections then to
+
+89
+00:03:36,659 --> 00:03:38,569
+the same port nope so it's one
+
+90
+00:03:38,579 --> 00:03:40,580
+connection that all this kind of gets
+
+91
+00:03:40,590 --> 00:03:43,580
+multiplexed over I believe you mentioned
+
+92
+00:03:43,590 --> 00:03:47,659
+how so our TCP that's once two clients
+
+93
+00:03:47,669 --> 00:03:49,399
+are connected to one another kind of
+
+94
+00:03:49,409 --> 00:03:51,469
+updating on how the stream is going
+
+95
+00:03:51,479 --> 00:03:53,929
+would that allow for things such as like
+
+96
+00:03:53,939 --> 00:03:55,789
+if one client is is getting a little
+
+97
+00:03:55,799 --> 00:03:58,039
+slow that it could talk they could talk
+
+98
+00:03:58,049 --> 00:03:59,539
+to one another to say like oh I'm gonna
+
+99
+00:03:59,549 --> 00:04:01,399
+lower the video quality or is it more
+
+100
+00:04:01,409 --> 00:04:03,319
+for just like hey things are going bad
+
+101
+00:04:03,329 --> 00:04:05,059
+but it doesn't really there's not much
+
+102
+00:04:05,069 --> 00:04:07,099
+you can do about it yeah it's a good
+
+103
+00:04:07,109 --> 00:04:09,319
+question I think at that level of the
+
+104
+00:04:09,329 --> 00:04:11,749
+stack it's not making any intelligent
+
+105
+00:04:11,759 --> 00:04:13,280
+decisions like that most of those
+
+106
+00:04:13,290 --> 00:04:15,619
+decisions are happening a bit higher and
+
+107
+00:04:15,629 --> 00:04:18,080
+that's part of you know the magic of the
+
+108
+00:04:18,090 --> 00:04:21,110
+WebRTC video and audio pipelines they're
+
+109
+00:04:21,120 --> 00:04:24,409
+listening into those are TCP responses
+
+110
+00:04:24,419 --> 00:04:25,940
+to kind of get an idea of how much
+
+111
+00:04:25,950 --> 00:04:27,620
+jitter it there is in the network
+
+112
+00:04:27,630 --> 00:04:31,160
+how the packet loss is and adjusting the
+
+113
+00:04:31,170 --> 00:04:34,280
+situation to be optimal for that cool
+
+114
+00:04:34,290 --> 00:04:37,040
+and you were saying that RTP that's
+
+115
+00:04:37,050 --> 00:04:39,830
+where the actual video and audio data is
+
+116
+00:04:39,840 --> 00:04:42,200
+that's how that's being transmitted yep
+
+117
+00:04:42,210 --> 00:04:44,870
+and that's built on top of UDP which is
+
+118
+00:04:44,880 --> 00:04:49,580
+oh so it's UDP and then DTLS so d TLS is
+
+119
+00:04:49,590 --> 00:04:52,190
+Datagram transport security layer or
+
+120
+00:04:52,200 --> 00:04:54,800
+layer security it's the equivalent of
+
+121
+00:04:54,810 --> 00:04:58,280
+TLS in the TCP world but for UDP so it's
+
+122
+00:04:58,290 --> 00:04:59,450
+very important that you know all the
+
+123
+00:04:59,460 --> 00:05:01,400
+packets are encrypted and somebody can't
+
+124
+00:05:01,410 --> 00:05:04,430
+you know listen in and then the packets
+
+125
+00:05:04,440 --> 00:05:07,910
+after DTLS go through s RTP and s are
+
+126
+00:05:07,920 --> 00:05:10,040
+tcp which is just the secure version of
+
+127
+00:05:10,050 --> 00:05:14,300
+those a lot of protocols yeah and so
+
+128
+00:05:14,310 --> 00:05:17,480
+like UDP it has like no guarantees in
+
+129
+00:05:17,490 --> 00:05:20,090
+terms of you send a packet via UDP and
+
+130
+00:05:20,100 --> 00:05:22,760
+the other right so there's no
+
+131
+00:05:22,770 --> 00:05:25,610
+reliability and the order that packets
+
+132
+00:05:25,620 --> 00:05:27,140
+are going to be received so they can be
+
+133
+00:05:27,150 --> 00:05:29,720
+in an in order out of order and then you
+
+134
+00:05:29,730 --> 00:05:32,120
+also no longer get certainty that the
+
+135
+00:05:32,130 --> 00:05:35,180
+packet will have arrived in TCP you do
+
+136
+00:05:35,190 --> 00:05:36,800
+get those things you're guaranteed to
+
+137
+00:05:36,810 --> 00:05:39,440
+get packets in order and if they're
+
+138
+00:05:39,450 --> 00:05:41,030
+packet gets lost it'll do a
+
+139
+00:05:41,040 --> 00:05:42,710
+retransmission and you'll receive the
+
+140
+00:05:42,720 --> 00:05:45,740
+packet the real reason that UDP is much
+
+141
+00:05:45,750 --> 00:05:47,300
+better for this situation is because
+
+142
+00:05:47,310 --> 00:05:49,280
+it's a lot lower latency but it also
+
+143
+00:05:49,290 --> 00:05:51,500
+means that the WebRTC pipeline has to do
+
+144
+00:05:51,510 --> 00:05:53,630
+a tremendous amount of work to make up
+
+145
+00:05:53,640 --> 00:05:56,570
+for error correction or in some cases it
+
+146
+00:05:56,580 --> 00:05:58,700
+even will ask for a retransmission of
+
+147
+00:05:58,710 --> 00:06:00,920
+packets given the current context like
+
+148
+00:06:00,930 --> 00:06:03,170
+if it's going to be cheaper to ask for
+
+149
+00:06:03,180 --> 00:06:04,910
+the retransmission so let's say the the
+
+150
+00:06:04,920 --> 00:06:07,370
+round-trip time between p1 and p2 is
+
+151
+00:06:07,380 --> 00:06:10,100
+very low oftentimes it'll be cheaper to
+
+152
+00:06:10,110 --> 00:06:12,050
+just ask to retransmit the packet then
+
+153
+00:06:12,060 --> 00:06:13,550
+do something else
+
+154
+00:06:13,560 --> 00:06:17,660
+so the data channels which use SCTP the
+
+155
+00:06:17,670 --> 00:06:19,910
+that's the main reason why they use SCTP
+
+156
+00:06:19,920 --> 00:06:22,580
+is to be able to kind of configure the
+
+157
+00:06:22,590 --> 00:06:25,190
+data channels to be in a row viable
+
+158
+00:06:25,200 --> 00:06:27,020
+state if you wanted them to be so I
+
+159
+00:06:27,030 --> 00:06:28,100
+don't actually know too much about
+
+160
+00:06:28,110 --> 00:06:30,830
+stream control transmission protocol but
+
+161
+00:06:30,840 --> 00:06:32,930
+the easiest way to think about it is it
+
+162
+00:06:32,940 --> 00:06:35,960
+allows you to simulate a TCP or TLS
+
+163
+00:06:35,970 --> 00:06:40,540
+environment using underlying UDP packets
+
+164
+00:06:40,550 --> 00:06:44,140
+okay SCTP that would be something that
+
+165
+00:06:44,150 --> 00:06:45,910
+you would use maybe if you didn't have
+
+166
+00:06:45,920 --> 00:06:48,070
+such a low latency requirement or when
+
+167
+00:06:48,080 --> 00:06:49,780
+would you use that instead of using RTP
+
+168
+00:06:49,790 --> 00:06:53,530
+yep that'd be one example or you know
+
+169
+00:06:53,540 --> 00:06:56,380
+4-tuple there are certain messages that
+
+170
+00:06:56,390 --> 00:06:58,810
+we want to make sure no matter what they
+
+171
+00:06:58,820 --> 00:07:01,210
+go from point A to point B and so our
+
+172
+00:07:01,220 --> 00:07:02,710
+data channels are configured to be
+
+173
+00:07:02,720 --> 00:07:05,170
+reliable and and send those messages in
+
+174
+00:07:05,180 --> 00:07:07,690
+order for example I mean imagine if you
+
+175
+00:07:07,700 --> 00:07:10,450
+were moving your cursor on the hosts
+
+176
+00:07:10,460 --> 00:07:12,760
+machine and the packets started coming
+
+177
+00:07:12,770 --> 00:07:14,590
+in out of order that would look super
+
+178
+00:07:14,600 --> 00:07:16,900
+wonky if you saw that cursor jumping all
+
+179
+00:07:16,910 --> 00:07:19,090
+over the place from you know point A to
+
+180
+00:07:19,100 --> 00:07:21,070
+point B so we want to make sure that
+
+181
+00:07:21,080 --> 00:07:23,140
+those messages are getting sent in order
+
+182
+00:07:23,150 --> 00:07:25,210
+and the fact that they're reliable is
+
+183
+00:07:25,220 --> 00:07:27,130
+maybe a little bit less important but
+
+184
+00:07:27,140 --> 00:07:29,320
+the end order aspect for that use case
+
+185
+00:07:29,330 --> 00:07:31,330
+for example would be something that we
+
+186
+00:07:31,340 --> 00:07:33,880
+care a lot about and is that because in
+
+187
+00:07:33,890 --> 00:07:36,700
+the case of audio and video there is
+
+188
+00:07:36,710 --> 00:07:38,770
+sort of something higher in the stack
+
+189
+00:07:38,780 --> 00:07:40,930
+that's taking care of things that are
+
+190
+00:07:40,940 --> 00:07:42,100
+out of order or things that are being
+
+191
+00:07:42,110 --> 00:07:44,320
+dropped whereas in the case of the
+
+192
+00:07:44,330 --> 00:07:46,630
+moving someone else's cursor example
+
+193
+00:07:46,640 --> 00:07:48,760
+there isn't that sort of thing in place
+
+194
+00:07:48,770 --> 00:07:50,740
+is that kind of the thinking yeah I
+
+195
+00:07:50,750 --> 00:07:51,730
+think that's the right way to think
+
+196
+00:07:51,740 --> 00:07:54,640
+about it so the cursor example that's
+
+197
+00:07:54,650 --> 00:07:56,920
+very much at the application level so
+
+198
+00:07:56,930 --> 00:07:59,350
+tuple we've come up with our own
+
+199
+00:07:59,360 --> 00:08:01,630
+protocol for how we want to send cursor
+
+200
+00:08:01,640 --> 00:08:04,540
+data we do some fancy stuff like caching
+
+201
+00:08:04,550 --> 00:08:06,700
+to make things a little bit quicker but
+
+202
+00:08:06,710 --> 00:08:08,650
+for the most part that's all defined by
+
+203
+00:08:08,660 --> 00:08:10,750
+us where the audio and video stuff
+
+204
+00:08:10,760 --> 00:08:13,500
+that's all being handled by WebRTC and
+
+205
+00:08:13,510 --> 00:08:16,090
+Webber TC has a number of different
+
+206
+00:08:16,100 --> 00:08:18,910
+buffers along the pipeline that enable
+
+207
+00:08:18,920 --> 00:08:21,400
+it to fix out of order packets and then
+
+208
+00:08:21,410 --> 00:08:24,670
+also allow for smooth play out so for
+
+209
+00:08:24,680 --> 00:08:26,410
+example like one of the core
+
+210
+00:08:26,420 --> 00:08:28,900
+abstractions in WebRTC is the concept of
+
+211
+00:08:28,910 --> 00:08:31,330
+a track like a media track and a track
+
+212
+00:08:31,340 --> 00:08:33,850
+could be audio it could be video it
+
+213
+00:08:33,860 --> 00:08:37,360
+could be the screen and if you associate
+
+214
+00:08:37,370 --> 00:08:40,450
+an audio track with a webcam track into
+
+215
+00:08:40,460 --> 00:08:43,660
+a stream then WebRTC does all this magic
+
+216
+00:08:43,670 --> 00:08:45,670
+for you where it'll properly buffer the
+
+217
+00:08:45,680 --> 00:08:47,740
+audio and the webcam and then the play
+
+218
+00:08:47,750 --> 00:08:49,960
+out will occur so that way you know the
+
+219
+00:08:49,970 --> 00:08:51,310
+person's mouth actually looks like
+
+220
+00:08:51,320 --> 00:08:53,410
+they're talking instead of being totally
+
+221
+00:08:53,420 --> 00:08:54,340
+off so
+
+222
+00:08:54,350 --> 00:08:56,500
+somewhat of a double-edged sword like is
+
+223
+00:08:56,510 --> 00:08:57,850
+sometimes you don't want that right
+
+224
+00:08:57,860 --> 00:08:58,480
+4-tuple
+
+225
+00:08:58,490 --> 00:09:00,820
+for example we actually don't care if
+
+226
+00:09:00,830 --> 00:09:03,340
+the audio is synced to the screen care
+
+227
+00:09:03,350 --> 00:09:05,020
+more about low or latency and we want
+
+228
+00:09:05,030 --> 00:09:07,060
+that as soon as you click a button on
+
+229
+00:09:07,070 --> 00:09:08,800
+someone's screen you know you see that
+
+230
+00:09:08,810 --> 00:09:11,550
+the feedback so we intentionally
+
+231
+00:09:11,560 --> 00:09:13,900
+disassociate the audio track with that
+
+232
+00:09:13,910 --> 00:09:15,910
+with that specific video track and tuple
+
+233
+00:09:15,920 --> 00:09:18,070
+in order to get some latency benefits
+
+234
+00:09:18,080 --> 00:09:20,170
+from there the other thing like when
+
+235
+00:09:20,180 --> 00:09:21,760
+we're talking about audio and video
+
+236
+00:09:21,770 --> 00:09:24,130
+being handled by WebRTC there's a
+
+237
+00:09:24,140 --> 00:09:26,770
+concept of a codec so could you explain
+
+238
+00:09:26,780 --> 00:09:29,350
+like what a codec is sure yeah codec
+
+239
+00:09:29,360 --> 00:09:32,890
+takes in a raw image and compresses it
+
+240
+00:09:32,900 --> 00:09:35,620
+to as best as it can based on different
+
+241
+00:09:35,630 --> 00:09:37,300
+parameters you kind of specify what you
+
+242
+00:09:37,310 --> 00:09:39,820
+care about and then part of the codec is
+
+243
+00:09:39,830 --> 00:09:41,800
+decoding so that's the end coding stage
+
+244
+00:09:41,810 --> 00:09:43,870
+then then it gets sent across the
+
+245
+00:09:43,880 --> 00:09:45,700
+network through Webber to see and then
+
+246
+00:09:45,710 --> 00:09:47,560
+then there's the decoding stage where it
+
+247
+00:09:47,570 --> 00:09:49,990
+takes that encoded frame and brings it
+
+248
+00:09:50,000 --> 00:09:51,460
+back to its original form
+
+249
+00:09:51,470 --> 00:09:53,440
+sometimes they're lossy sometimes
+
+250
+00:09:53,450 --> 00:09:55,480
+they're lossless depending on what
+
+251
+00:09:55,490 --> 00:09:57,460
+settings you have in different codecs
+
+252
+00:09:57,470 --> 00:10:00,010
+are better at different things for
+
+253
+00:10:00,020 --> 00:10:03,820
+example like h.264 is not as good at
+
+254
+00:10:03,830 --> 00:10:06,280
+encoding very very large frames like 4k
+
+255
+00:10:06,290 --> 00:10:08,730
+displays compared to something like vp9
+
+256
+00:10:08,740 --> 00:10:11,920
+so how did you decide which codec to
+
+257
+00:10:11,930 --> 00:10:13,450
+choose when you were working on tuple
+
+258
+00:10:13,460 --> 00:10:16,750
+that's a good question so WebRTC already
+
+259
+00:10:16,760 --> 00:10:19,390
+has a number of codecs built in or
+
+260
+00:10:19,400 --> 00:10:21,880
+rather like implementations of using the
+
+261
+00:10:21,890 --> 00:10:26,920
+codecs and we tested out vp8 vp9 h.264
+
+262
+00:10:26,930 --> 00:10:30,040
+with all sorts of different settings one
+
+263
+00:10:30,050 --> 00:10:32,170
+of the big value-adds 4-tuple is we
+
+264
+00:10:32,180 --> 00:10:34,900
+allow you to send the full resolution of
+
+265
+00:10:34,910 --> 00:10:37,210
+your display if you want to which turns
+
+266
+00:10:37,220 --> 00:10:38,860
+out to be very useful when you're
+
+267
+00:10:38,870 --> 00:10:41,890
+reading small text in text editor for
+
+268
+00:10:41,900 --> 00:10:44,440
+example so in doing those performance
+
+269
+00:10:44,450 --> 00:10:47,260
+tests vp9 just outperformed all of the
+
+270
+00:10:47,270 --> 00:10:50,260
+other ones like significantly on these
+
+271
+00:10:50,270 --> 00:10:52,690
+higher resolutions screens and so that's
+
+272
+00:10:52,700 --> 00:10:55,510
+why we went with that vp9 is just a
+
+273
+00:10:55,520 --> 00:10:58,990
+newer version of vp8 and then the V p10
+
+274
+00:10:59,000 --> 00:11:01,210
+actually got merged into what's called a
+
+275
+00:11:01,220 --> 00:11:03,880
+v1 there's a whole bunch of big
+
+276
+00:11:03,890 --> 00:11:05,650
+companies who've kind of merged together
+
+277
+00:11:05,660 --> 00:11:07,750
+to build the next generation
+
+278
+00:11:07,760 --> 00:11:10,780
+of codex because codex are one of the
+
+279
+00:11:10,790 --> 00:11:12,550
+most complicated pieces of software and
+
+280
+00:11:12,560 --> 00:11:15,610
+computer science probably and any one
+
+281
+00:11:15,620 --> 00:11:18,880
+company doing it by itself it like it's
+
+282
+00:11:18,890 --> 00:11:21,190
+just a lot of work and so Google was
+
+283
+00:11:21,200 --> 00:11:22,720
+generous enough to kind of offer you
+
+284
+00:11:22,730 --> 00:11:25,240
+know their resources and the current
+
+285
+00:11:25,250 --> 00:11:27,190
+work they had going for vp9 to merge it
+
+286
+00:11:27,200 --> 00:11:29,170
+into this new like consortium we are
+
+287
+00:11:29,180 --> 00:11:30,850
+actually in the process or I am in the
+
+288
+00:11:30,860 --> 00:11:33,520
+process of looking into using h.264
+
+289
+00:11:33,530 --> 00:11:36,700
+hardware accelerated encoding so that
+
+290
+00:11:36,710 --> 00:11:38,050
+whole process I was just explaining
+
+291
+00:11:38,060 --> 00:11:40,060
+there's a built-in assumption in my
+
+292
+00:11:40,070 --> 00:11:41,170
+explanation that this was all happening
+
+293
+00:11:41,180 --> 00:11:43,920
+at the software layer but a lot of
+
+294
+00:11:43,930 --> 00:11:46,150
+devices actually have hardware
+
+295
+00:11:46,160 --> 00:11:49,180
+implementations of that encoding step or
+
+296
+00:11:49,190 --> 00:11:53,850
+or the decoding step and so max do have
+
+297
+00:11:53,860 --> 00:11:56,680
+h.264 hardware encoders built into them
+
+298
+00:11:56,690 --> 00:12:00,130
+and so now that we have introduced the
+
+299
+00:12:00,140 --> 00:12:02,320
+webcam into two-pole which for a long
+
+300
+00:12:02,330 --> 00:12:04,330
+long time it was just the screen there's
+
+301
+00:12:04,340 --> 00:12:06,130
+definitely a lot of optimizations we can
+
+302
+00:12:06,140 --> 00:12:08,770
+do by pushing some of that load from CPU
+
+303
+00:12:08,780 --> 00:12:11,620
+over to the GPU and the plan is to
+
+304
+00:12:11,630 --> 00:12:13,360
+hopefully get hardware accelerated and
+
+305
+00:12:13,370 --> 00:12:15,580
+encoding working for those webcam
+
+306
+00:12:15,590 --> 00:12:17,920
+streams because those we don't let get
+
+307
+00:12:17,930 --> 00:12:19,960
+very big I think the max resolution on
+
+308
+00:12:19,970 --> 00:12:23,290
+those is like 320 by something 240 it's
+
+309
+00:12:23,300 --> 00:12:25,900
+small we only have a small little webcam
+
+310
+00:12:25,910 --> 00:12:30,310
+so if I understand correctly then you
+
+311
+00:12:30,320 --> 00:12:32,530
+would capture someone's video from say a
+
+312
+00:12:32,540 --> 00:12:35,590
+camera and that that imagery is it
+
+313
+00:12:35,600 --> 00:12:37,810
+originally in an uncompressed format and
+
+314
+00:12:37,820 --> 00:12:40,330
+then you have to take that uncompressed
+
+315
+00:12:40,340 --> 00:12:43,330
+imagery and compress it using a codec
+
+316
+00:12:43,340 --> 00:12:45,550
+but if the hardware of the machine like
+
+317
+00:12:45,560 --> 00:12:47,970
+say on a Mac has hardware support for
+
+318
+00:12:47,980 --> 00:12:51,940
+h.264 or something else then the GPU can
+
+319
+00:12:51,950 --> 00:12:53,770
+actually perform the encoding and
+
+320
+00:12:53,780 --> 00:12:56,800
+decoding instead of the CPU yeah you got
+
+321
+00:12:56,810 --> 00:12:58,720
+it so in some of the webcams they
+
+322
+00:12:58,730 --> 00:13:01,300
+actually will have encoding built into
+
+323
+00:13:01,310 --> 00:13:03,220
+the webcam so you get an encoded frame
+
+324
+00:13:03,230 --> 00:13:06,250
+already I believe but that's not like a
+
+325
+00:13:06,260 --> 00:13:08,140
+use case that were worried about at all
+
+326
+00:13:08,150 --> 00:13:11,340
+what you explained is exactly right and
+
+327
+00:13:11,350 --> 00:13:14,290
+for example on most iPhones and phones
+
+328
+00:13:14,300 --> 00:13:16,870
+they all have h.264 hardware decoding
+
+329
+00:13:16,880 --> 00:13:19,180
+and it's very useful for extending
+
+330
+00:13:19,190 --> 00:13:21,580
+battery life which is partially
+
+331
+00:13:21,590 --> 00:13:22,830
+part of the reason why they do it and
+
+332
+00:13:22,840 --> 00:13:26,769
+does that apply also to desktop capture
+
+333
+00:13:26,779 --> 00:13:28,480
+as well when you capture the screen and
+
+334
+00:13:28,490 --> 00:13:30,790
+you send it over the wire that's also
+
+335
+00:13:30,800 --> 00:13:32,680
+going through that same encoding process
+
+336
+00:13:32,690 --> 00:13:35,940
+yep yep same same general concept
+
+337
+00:13:35,950 --> 00:13:38,740
+capturing the frame that the capturing
+
+338
+00:13:38,750 --> 00:13:41,200
+step is there's a tremendous amount of
+
+339
+00:13:41,210 --> 00:13:43,600
+optimizations that occur there as well
+
+340
+00:13:43,610 --> 00:13:46,690
+luckily WebRTC actually already had a
+
+341
+00:13:46,700 --> 00:13:47,530
+pretty good
+
+342
+00:13:47,540 --> 00:13:50,380
+capturing set up which I believe they
+
+343
+00:13:50,390 --> 00:13:52,690
+actually grabbed from chromium and there
+
+344
+00:13:52,700 --> 00:13:54,220
+was a couple bugs in it we had to work
+
+345
+00:13:54,230 --> 00:13:57,060
+out but instead of capturing the entire
+
+346
+00:13:57,070 --> 00:14:00,519
+frame buffer what it does is it listens
+
+347
+00:14:00,529 --> 00:14:03,730
+for like diffs so it'll only it'll keep
+
+348
+00:14:03,740 --> 00:14:05,230
+like a local version of what the frame
+
+349
+00:14:05,240 --> 00:14:06,460
+buffer is and then whenever things
+
+350
+00:14:06,470 --> 00:14:08,800
+change on the screen it'll receive a
+
+351
+00:14:08,810 --> 00:14:11,140
+callback like this is a low-level
+
+352
+00:14:11,150 --> 00:14:14,280
+display stream callback in Mac OS and
+
+353
+00:14:14,290 --> 00:14:16,480
+it'll get that diff and then it'll
+
+354
+00:14:16,490 --> 00:14:18,550
+update it's it's representation of what
+
+355
+00:14:18,560 --> 00:14:20,320
+the frame buffer looks like and then
+
+356
+00:14:20,330 --> 00:14:22,150
+it'll pass that along to the next step
+
+357
+00:14:22,160 --> 00:14:24,820
+which then goes to the encoder to be
+
+358
+00:14:24,830 --> 00:14:26,490
+encoded and sent across the wire
+
+359
+00:14:26,500 --> 00:14:29,590
+interesting so in web the web RTC
+
+360
+00:14:29,600 --> 00:14:32,410
+libraries implementation they have sort
+
+361
+00:14:32,420 --> 00:14:35,050
+of already done the work to hook into
+
+362
+00:14:35,060 --> 00:14:36,730
+all these different operating systems
+
+363
+00:14:36,740 --> 00:14:39,040
+and have the operating system tell them
+
+364
+00:14:39,050 --> 00:14:40,990
+what's changed on the screen so that's
+
+365
+00:14:41,000 --> 00:14:42,670
+the only part they have to send is that
+
+366
+00:14:42,680 --> 00:14:45,579
+is that right not entirely right so
+
+367
+00:14:45,589 --> 00:14:48,070
+let's kind of break that down so yes
+
+368
+00:14:48,080 --> 00:14:50,200
+WebRTC provides lots of default
+
+369
+00:14:50,210 --> 00:14:51,970
+implementations for a lot of the big
+
+370
+00:14:51,980 --> 00:14:53,710
+core components that you end up needing
+
+371
+00:14:53,720 --> 00:14:56,020
+and that capturing part specifically
+
+372
+00:14:56,030 --> 00:14:57,640
+which you were just talking about it
+
+373
+00:14:57,650 --> 00:14:59,560
+does send the whole frame to the encoder
+
+374
+00:14:59,570 --> 00:15:01,210
+and then the encoder actually is in
+
+375
+00:15:01,220 --> 00:15:03,070
+charge of doing lots of very intelligent
+
+376
+00:15:03,080 --> 00:15:05,410
+temporal and spatial diffs to figure out
+
+377
+00:15:05,420 --> 00:15:07,449
+what's changed and then only send the
+
+378
+00:15:07,459 --> 00:15:09,460
+pieces over that have changed but more
+
+379
+00:15:09,470 --> 00:15:11,160
+what I mean is in the capturing phase
+
+380
+00:15:11,170 --> 00:15:13,870
+instead of it'll just look for the
+
+381
+00:15:13,880 --> 00:15:15,730
+screen updates and update the diffs in
+
+382
+00:15:15,740 --> 00:15:18,850
+that specific part of the pipeline if
+
+383
+00:15:18,860 --> 00:15:19,600
+that makes sense
+
+384
+00:15:19,610 --> 00:15:20,890
+I don't know I'm doing a bad job of
+
+385
+00:15:20,900 --> 00:15:23,949
+explaining it I think I well let's see
+
+386
+00:15:23,959 --> 00:15:27,010
+if I was understanding correctly so the
+
+387
+00:15:27,020 --> 00:15:28,990
+part words checking for the diffs that's
+
+388
+00:15:29,000 --> 00:15:31,360
+specifically at the capturing stage so
+
+389
+00:15:31,370 --> 00:15:34,420
+that's it has like I guess a frame that
+
+390
+00:15:34,430 --> 00:15:34,840
+it know
+
+391
+00:15:34,850 --> 00:15:36,340
+like okay this is what's currently on
+
+392
+00:15:36,350 --> 00:15:38,379
+the person's screen and in order to
+
+393
+00:15:38,389 --> 00:15:40,569
+update that capture and it's hooking
+
+394
+00:15:40,579 --> 00:15:42,639
+into the operating system is is that
+
+395
+00:15:42,649 --> 00:15:45,069
+correct yeah that's right so that allows
+
+396
+00:15:45,079 --> 00:15:47,019
+the capture times to go from you know
+
+397
+00:15:47,029 --> 00:15:49,120
+tens of milliseconds to sub ten
+
+398
+00:15:49,130 --> 00:15:51,249
+milliseconds because if you had to
+
+399
+00:15:51,259 --> 00:15:53,800
+capture a very big 5k display the
+
+400
+00:15:53,810 --> 00:15:56,139
+original display stream API is that Mac
+
+401
+00:15:56,149 --> 00:15:57,879
+provided didn't have this sort of
+
+402
+00:15:57,889 --> 00:15:59,769
+dipping available and it might just take
+
+403
+00:15:59,779 --> 00:16:02,230
+a significant chunk of time to do to do
+
+404
+00:16:02,240 --> 00:16:03,850
+that like give me everything that's on
+
+405
+00:16:03,860 --> 00:16:06,189
+the screen right now we're third capture
+
+406
+00:16:06,199 --> 00:16:07,990
+kinda have some intelligence built into
+
+407
+00:16:08,000 --> 00:16:10,180
+to not need to do that which is nice we
+
+408
+00:16:10,190 --> 00:16:11,740
+there were some things in their capture
+
+409
+00:16:11,750 --> 00:16:14,590
+actually in the early days that really
+
+410
+00:16:14,600 --> 00:16:16,720
+hurt us from a latency perspective so
+
+411
+00:16:16,730 --> 00:16:18,550
+they have this concept of like window
+
+412
+00:16:18,560 --> 00:16:21,220
+exclusion so let's say I want to capture
+
+413
+00:16:21,230 --> 00:16:22,960
+the entire screen but I don't want to
+
+414
+00:16:22,970 --> 00:16:25,480
+capture you know the window that has the
+
+415
+00:16:25,490 --> 00:16:27,309
+webcam on it so the other person's face
+
+416
+00:16:27,319 --> 00:16:29,559
+well though their exclusion code was
+
+417
+00:16:29,569 --> 00:16:31,540
+somewhat naive in the sense that it
+
+418
+00:16:31,550 --> 00:16:33,939
+would iterate over all of the windows in
+
+419
+00:16:33,949 --> 00:16:36,400
+on the screen and kind of like recreate
+
+420
+00:16:36,410 --> 00:16:38,410
+the pixels that would be behind that
+
+421
+00:16:38,420 --> 00:16:41,379
+screen that you want to exclude and that
+
+422
+00:16:41,389 --> 00:16:43,150
+actually ended up being very slow
+
+423
+00:16:43,160 --> 00:16:45,550
+depending on the size of the exclusion
+
+424
+00:16:45,560 --> 00:16:47,139
+and and how many windows were on your
+
+425
+00:16:47,149 --> 00:16:49,059
+display so we've had to do some things
+
+426
+00:16:49,069 --> 00:16:51,610
+to kind of tweak and optimize that in
+
+427
+00:16:51,620 --> 00:16:54,340
+the specific webcam instance what I do
+
+428
+00:16:54,350 --> 00:16:56,889
+is I actually capture the frame as
+
+429
+00:16:56,899 --> 00:16:59,800
+normal with the webcam on it and then I
+
+430
+00:16:59,810 --> 00:17:02,740
+go to that pixel buffer which is just
+
+431
+00:17:02,750 --> 00:17:04,569
+you know a big array of the the bytes of
+
+432
+00:17:04,579 --> 00:17:08,230
+the pixels and I I just turn all of the
+
+433
+00:17:08,240 --> 00:17:10,600
+ones that the you know the square where
+
+434
+00:17:10,610 --> 00:17:12,189
+the webcam is I just turned them all to
+
+435
+00:17:12,199 --> 00:17:14,289
+a different color and so that way that I
+
+436
+00:17:14,299 --> 00:17:16,029
+do this before even going into the
+
+437
+00:17:16,039 --> 00:17:17,829
+encoder so that way the encoder is not
+
+438
+00:17:17,839 --> 00:17:20,169
+worried about trying to encode two
+
+439
+00:17:20,179 --> 00:17:22,390
+different types of video right like
+
+440
+00:17:22,400 --> 00:17:24,279
+there's the screen video and then the
+
+441
+00:17:24,289 --> 00:17:25,689
+webcam video and there's lots of
+
+442
+00:17:25,699 --> 00:17:27,279
+different optimizations that encoders
+
+443
+00:17:27,289 --> 00:17:29,560
+can be tuned to to do well in one
+
+444
+00:17:29,570 --> 00:17:31,270
+scenario versus the other scenario and
+
+445
+00:17:31,280 --> 00:17:33,340
+we've spent all of our time and like
+
+446
+00:17:33,350 --> 00:17:35,409
+testing and trying to get the our vp9
+
+447
+00:17:35,419 --> 00:17:37,180
+implementation to do very well for the
+
+448
+00:17:37,190 --> 00:17:40,450
+screens and so by by you know sending in
+
+449
+00:17:40,460 --> 00:17:43,570
+a video on top of that it does us a
+
+450
+00:17:43,580 --> 00:17:46,330
+disservice so I kind of like get around
+
+451
+00:17:46,340 --> 00:17:48,820
+that problem by writing out those
+
+452
+00:17:48,830 --> 00:17:50,950
+those pixels before feeding it into the
+
+453
+00:17:50,960 --> 00:17:54,730
+encoder right so the the WebRTC I guess
+
+454
+00:17:54,740 --> 00:17:58,810
+screen capture part is your allowing it
+
+455
+00:17:58,820 --> 00:18:00,880
+to capture the whole screen and capture
+
+456
+00:18:00,890 --> 00:18:03,460
+the sort of webcam video and then you're
+
+457
+00:18:03,470 --> 00:18:05,950
+sort of going into there blanking out
+
+458
+00:18:05,960 --> 00:18:08,560
+all the pixels where you know the webcam
+
+459
+00:18:08,570 --> 00:18:11,800
+window is showing and then then you send
+
+460
+00:18:11,810 --> 00:18:13,600
+that over to the encoder and to the
+
+461
+00:18:13,610 --> 00:18:15,580
+encoder it looks like nothing has a
+
+462
+00:18:15,590 --> 00:18:18,040
+change it's just change just this box
+
+463
+00:18:18,050 --> 00:18:20,440
+and yeah white box black box whatever
+
+464
+00:18:20,450 --> 00:18:22,210
+colour we actually I actually changed
+
+465
+00:18:22,220 --> 00:18:24,460
+the colour based on if they're on Mojave
+
+466
+00:18:24,470 --> 00:18:26,020
+if they're in darker light mode so I try
+
+467
+00:18:26,030 --> 00:18:27,910
+and make it look you know good for
+
+468
+00:18:27,920 --> 00:18:30,460
+whatever mode they're in oh nice it's
+
+469
+00:18:30,470 --> 00:18:33,100
+pretty slick another part of web RTC I
+
+470
+00:18:33,110 --> 00:18:34,900
+want to kind of go into is there's this
+
+471
+00:18:34,910 --> 00:18:37,630
+idea of a session description protocol
+
+472
+00:18:37,640 --> 00:18:39,550
+could you kind of describe a little bit
+
+473
+00:18:39,560 --> 00:18:40,390
+about what that is
+
+474
+00:18:40,400 --> 00:18:42,550
+yeah really this gets down to like the
+
+475
+00:18:42,560 --> 00:18:44,590
+establishing a connection between two
+
+476
+00:18:44,600 --> 00:18:47,350
+peers and the overall protocol is called
+
+477
+00:18:47,360 --> 00:18:49,270
+ice so it stands for interactive
+
+478
+00:18:49,280 --> 00:18:52,030
+connectivity establishment it might make
+
+479
+00:18:52,040 --> 00:18:53,500
+sense to go through an example of like
+
+480
+00:18:53,510 --> 00:18:56,740
+how a normal call would would start I
+
+481
+00:18:56,750 --> 00:18:58,510
+haven't used the JavaScript API is in
+
+482
+00:18:58,520 --> 00:19:00,460
+like over a year since when we first
+
+483
+00:19:00,470 --> 00:19:02,770
+started working at tuple so I might get
+
+484
+00:19:02,780 --> 00:19:04,900
+this a little bit wrong but do my best
+
+485
+00:19:04,910 --> 00:19:07,720
+so initially you want to create a peer
+
+486
+00:19:07,730 --> 00:19:09,670
+connection and you pass into that peer
+
+487
+00:19:09,680 --> 00:19:12,070
+connection constraints and so the
+
+488
+00:19:12,080 --> 00:19:14,440
+constraints are you know I want audio or
+
+489
+00:19:14,450 --> 00:19:16,360
+I want video and this is really the
+
+490
+00:19:16,370 --> 00:19:17,680
+power of web right you see the fact that
+
+491
+00:19:17,690 --> 00:19:19,960
+you can just say video true at the
+
+492
+00:19:19,970 --> 00:19:21,940
+JavaScript JavaScript layer and it just
+
+493
+00:19:21,950 --> 00:19:23,650
+does all this magic to figure out how to
+
+494
+00:19:23,660 --> 00:19:26,170
+capture the video and set up the encoder
+
+495
+00:19:26,180 --> 00:19:27,580
+for you you don't need to do any of that
+
+496
+00:19:27,590 --> 00:19:30,220
+in the JavaScript API so once you have
+
+497
+00:19:30,230 --> 00:19:32,530
+your peer connection before even that
+
+498
+00:19:32,540 --> 00:19:34,540
+you need some sort of what I like to
+
+499
+00:19:34,550 --> 00:19:37,270
+call application signaling and that's a
+
+500
+00:19:37,280 --> 00:19:39,070
+process where you know let's say we have
+
+501
+00:19:39,080 --> 00:19:41,260
+Alice and Bob and Alice sees that Bob is
+
+502
+00:19:41,270 --> 00:19:43,930
+online she needs some way to ask Bob if
+
+503
+00:19:43,940 --> 00:19:45,460
+he's ready for a call right now and
+
+504
+00:19:45,470 --> 00:19:48,250
+however she wants to do that is fine
+
+505
+00:19:48,260 --> 00:19:50,260
+like most people end up using a
+
+506
+00:19:50,270 --> 00:19:52,600
+WebSocket server and she just sends a
+
+507
+00:19:52,610 --> 00:19:54,400
+message over to Bob and Bob can accept
+
+508
+00:19:54,410 --> 00:19:56,500
+her decline but assuming you know Bob is
+
+509
+00:19:56,510 --> 00:19:59,620
+ready to go and he accepts then Alice
+
+510
+00:19:59,630 --> 00:20:02,590
+will show you call navigator
+
+511
+00:20:02,600 --> 00:20:04,330
+get user media given those constraints
+
+512
+00:20:04,340 --> 00:20:07,900
+so this will signify to the browser like
+
+513
+00:20:07,910 --> 00:20:09,669
+hey go ahead and get those capturers
+
+514
+00:20:09,679 --> 00:20:11,650
+going you know start getting frames from
+
+515
+00:20:11,660 --> 00:20:13,840
+the screen or start getting frames from
+
+516
+00:20:13,850 --> 00:20:15,850
+the webcam and once it's got those
+
+517
+00:20:15,860 --> 00:20:18,580
+frames it'll give back some some media
+
+518
+00:20:18,590 --> 00:20:21,130
+tracks and then Alice can add those
+
+519
+00:20:21,140 --> 00:20:23,200
+media tracks to her peer connection and
+
+520
+00:20:23,210 --> 00:20:26,680
+then create the initial offer so when
+
+521
+00:20:26,690 --> 00:20:28,630
+she creates the initial offer that's
+
+522
+00:20:28,640 --> 00:20:32,049
+when the SDP gets created I know there's
+
+523
+00:20:32,059 --> 00:20:35,350
+a million acronyms I'm sorry but um the
+
+524
+00:20:35,360 --> 00:20:38,049
+the SDP is is basically just this really
+
+525
+00:20:38,059 --> 00:20:41,799
+big string of super esoteric like
+
+526
+00:20:41,809 --> 00:20:44,740
+letters and colons and magic numbers
+
+527
+00:20:44,750 --> 00:20:47,320
+that will tell Bob you know what
+
+528
+00:20:47,330 --> 00:20:49,419
+capabilities Alice is looking for in the
+
+529
+00:20:49,429 --> 00:20:51,549
+call so for example things that are on
+
+530
+00:20:51,559 --> 00:20:53,320
+there might be you know she's trying to
+
+531
+00:20:53,330 --> 00:20:56,010
+do video she's trying to do audio and
+
+532
+00:20:56,020 --> 00:20:58,330
+inside the video section it might say
+
+533
+00:20:58,340 --> 00:21:02,110
+her computer is capable of doing vp9 vp8
+
+534
+00:21:02,120 --> 00:21:06,010
+or h.264 so if Bob only has the ability
+
+535
+00:21:06,020 --> 00:21:08,260
+to do h.264 maybe he's on like a phone
+
+536
+00:21:08,270 --> 00:21:11,470
+or something then the web Weber TC will
+
+537
+00:21:11,480 --> 00:21:13,149
+allow them to negotiate this session
+
+538
+00:21:13,159 --> 00:21:16,000
+with just h.264 so that's really the
+
+539
+00:21:16,010 --> 00:21:18,279
+whole point of the STP is for the two
+
+540
+00:21:18,289 --> 00:21:19,930
+peers to be able to share like what
+
+541
+00:21:19,940 --> 00:21:22,149
+their capabilities are and preferences
+
+542
+00:21:22,159 --> 00:21:25,180
+so you can also explicitly say like in
+
+543
+00:21:25,190 --> 00:21:26,950
+this call I want to use you know this
+
+544
+00:21:26,960 --> 00:21:29,740
+encoder implementation she calls create
+
+545
+00:21:29,750 --> 00:21:32,560
+offer that STP gets generated and pretty
+
+546
+00:21:32,570 --> 00:21:34,149
+much every single step in this process
+
+547
+00:21:34,159 --> 00:21:36,159
+is async so you kinda have to wait for
+
+548
+00:21:36,169 --> 00:21:37,960
+callbacks to get called once she gets
+
+549
+00:21:37,970 --> 00:21:39,580
+that offer she then needs to send it to
+
+550
+00:21:39,590 --> 00:21:41,620
+Bob and how she does that again doesn't
+
+551
+00:21:41,630 --> 00:21:43,539
+really matter she could write it down on
+
+552
+00:21:43,549 --> 00:21:45,010
+a piece of paper and send it to him and
+
+553
+00:21:45,020 --> 00:21:46,630
+this process would still technically
+
+554
+00:21:46,640 --> 00:21:49,720
+work I've messed around with some WebRTC
+
+555
+00:21:49,730 --> 00:21:51,669
+stuff where I just copy and paste this
+
+556
+00:21:51,679 --> 00:21:54,130
+STP from one computer to the other so
+
+557
+00:21:54,140 --> 00:21:56,649
+this this part is totally left up to you
+
+558
+00:21:56,659 --> 00:21:58,750
+as the developer and an application
+
+559
+00:21:58,760 --> 00:22:02,950
+builder sends that to Bob Bob will set
+
+560
+00:22:02,960 --> 00:22:06,760
+that SDP as his remote description and
+
+561
+00:22:06,770 --> 00:22:08,919
+then he will create an answer
+
+562
+00:22:08,929 --> 00:22:11,980
+given that STP and once that answer gets
+
+563
+00:22:11,990 --> 00:22:14,470
+created another STP is generated on
+
+564
+00:22:14,480 --> 00:22:15,919
+Bob's side
+
+565
+00:22:15,929 --> 00:22:17,690
+Bob will set that as his local
+
+566
+00:22:17,700 --> 00:22:20,269
+description and then send that back to
+
+567
+00:22:20,279 --> 00:22:23,690
+Alice and then once Alice receives Bob's
+
+568
+00:22:23,700 --> 00:22:27,230
+STP then the process enters into this
+
+569
+00:22:27,240 --> 00:22:30,859
+ice interactive connectivity stage and
+
+570
+00:22:30,869 --> 00:22:34,299
+yeah so what happens there is on each
+
+571
+00:22:34,309 --> 00:22:36,980
+WebRTC client there's what's called an
+
+572
+00:22:36,990 --> 00:22:39,470
+ice agent and the ice agent is
+
+573
+00:22:39,480 --> 00:22:41,659
+responsible for gathering what are
+
+574
+00:22:41,669 --> 00:22:43,940
+called ice candidates so an ice
+
+575
+00:22:43,950 --> 00:22:47,869
+candidate is just a IP port pair and the
+
+576
+00:22:47,879 --> 00:22:49,820
+first thing that the ice agent will do
+
+577
+00:22:49,830 --> 00:22:51,259
+is it'll gather all of its local
+
+578
+00:22:51,269 --> 00:22:53,690
+candidates and then it uses a process
+
+579
+00:22:53,700 --> 00:22:56,570
+called stun to gather any remote
+
+580
+00:22:56,580 --> 00:22:59,989
+candidates so stun servers are stands
+
+581
+00:22:59,999 --> 00:23:03,169
+for session traversal utility is for NAT
+
+582
+00:23:03,179 --> 00:23:05,720
+and it's really a tool for NAT hole
+
+583
+00:23:05,730 --> 00:23:08,629
+punching which I think was originally
+
+584
+00:23:08,639 --> 00:23:10,639
+created by like video game developers
+
+585
+00:23:10,649 --> 00:23:12,769
+but could be wrong but stun servers are
+
+586
+00:23:12,779 --> 00:23:14,509
+very simple you're basically just making
+
+587
+00:23:14,519 --> 00:23:16,759
+a request to this server that's publicly
+
+588
+00:23:16,769 --> 00:23:17,960
+available on the Internet and that's
+
+589
+00:23:17,970 --> 00:23:19,639
+very important like that server has to
+
+590
+00:23:19,649 --> 00:23:21,080
+be publicly available on the Internet
+
+591
+00:23:21,090 --> 00:23:22,940
+and the server just responds back with
+
+592
+00:23:22,950 --> 00:23:25,810
+with IP and port you made that request
+
+593
+00:23:25,820 --> 00:23:29,359
+with and Google actually hosts a stun
+
+594
+00:23:29,369 --> 00:23:31,639
+server that most people use in the early
+
+595
+00:23:31,649 --> 00:23:34,879
+days to get going with WebRTC it's very
+
+596
+00:23:34,889 --> 00:23:36,769
+highly recommended to not use Google
+
+597
+00:23:36,779 --> 00:23:38,539
+stun server in a production environment
+
+598
+00:23:38,549 --> 00:23:40,879
+because for all you know it could go
+
+599
+00:23:40,889 --> 00:23:42,499
+down one day and then none of your users
+
+600
+00:23:42,509 --> 00:23:44,440
+will be able to connect and make calls
+
+601
+00:23:44,450 --> 00:23:48,080
+for two-pole we actually pay Twilio for
+
+602
+00:23:48,090 --> 00:23:50,840
+access to a stun and turn server all
+
+603
+00:23:50,850 --> 00:23:53,450
+right so the ice agent on each peer has
+
+604
+00:23:53,460 --> 00:23:54,950
+gathered the local candidates they've
+
+605
+00:23:54,960 --> 00:23:56,480
+gathered the remote candidates through
+
+606
+00:23:56,490 --> 00:23:58,399
+making requests to the stun server and
+
+607
+00:23:58,409 --> 00:24:00,560
+then the final step is like what's
+
+608
+00:24:00,570 --> 00:24:03,529
+called connectivity checks so you have
+
+609
+00:24:03,539 --> 00:24:05,960
+this array of these ice candidates which
+
+610
+00:24:05,970 --> 00:24:08,600
+are those IP port pairs and it organizes
+
+611
+00:24:08,610 --> 00:24:11,690
+them based on a set of priorities and as
+
+612
+00:24:11,700 --> 00:24:13,999
+a developer you do have some say and
+
+613
+00:24:14,009 --> 00:24:15,739
+that priority if you want or you can
+
+614
+00:24:15,749 --> 00:24:17,359
+just let WebRTC you make an intelligent
+
+615
+00:24:17,369 --> 00:24:19,970
+decision generally it's going to try and
+
+616
+00:24:19,980 --> 00:24:21,470
+start with the local candidates first
+
+617
+00:24:21,480 --> 00:24:22,909
+and it's going to fall back to the
+
+618
+00:24:22,919 --> 00:24:24,859
+remote and then the final candidates
+
+619
+00:24:24,869 --> 00:24:26,899
+that we'll use are what are called turn
+
+620
+00:24:26,909 --> 00:24:29,720
+candidates so
+
+621
+00:24:29,730 --> 00:24:34,220
+sorry this is so much but turn is a way
+
+622
+00:24:34,230 --> 00:24:37,460
+for the two peers to still have a call
+
+623
+00:24:37,470 --> 00:24:40,100
+if for some reason they can't establish
+
+624
+00:24:40,110 --> 00:24:43,070
+a connection peer to peer so a turn
+
+625
+00:24:43,080 --> 00:24:45,140
+server just relays packets from point A
+
+626
+00:24:45,150 --> 00:24:47,660
+to point B and for the most part I think
+
+627
+00:24:47,670 --> 00:24:50,390
+all turn servers are also stun servers
+
+628
+00:24:50,400 --> 00:24:51,650
+like I think it'd be weird to have a
+
+629
+00:24:51,660 --> 00:24:53,360
+turn server that didn't also implement
+
+630
+00:24:53,370 --> 00:24:55,190
+the stun protocol it does those
+
+631
+00:24:55,200 --> 00:24:57,530
+connectivity checks where the two peers
+
+632
+00:24:57,540 --> 00:24:58,940
+try and communicate with each other
+
+633
+00:24:58,950 --> 00:25:01,670
+based on that ordered list of vise
+
+634
+00:25:01,680 --> 00:25:04,010
+candidates and as soon as one is
+
+635
+00:25:04,020 --> 00:25:05,780
+successful then the connection gets
+
+636
+00:25:05,790 --> 00:25:08,600
+established and throughout the call you
+
+637
+00:25:08,610 --> 00:25:10,190
+know that might change maybe the the
+
+638
+00:25:10,200 --> 00:25:12,050
+network path that was chosen ends up
+
+639
+00:25:12,060 --> 00:25:14,240
+being no good anymore and so ice the ice
+
+640
+00:25:14,250 --> 00:25:15,980
+state will change throughout the course
+
+641
+00:25:15,990 --> 00:25:18,650
+of a call to disconnecting for example
+
+642
+00:25:18,660 --> 00:25:20,630
+and as an application developer it's
+
+643
+00:25:20,640 --> 00:25:22,730
+your responsibility to you know pop open
+
+644
+00:25:22,740 --> 00:25:24,620
+a reconnecting window or let the user
+
+645
+00:25:24,630 --> 00:25:27,650
+know that the call is not connected and
+
+646
+00:25:27,660 --> 00:25:30,800
+oftentimes ice will recorrect itself so
+
+647
+00:25:30,810 --> 00:25:32,660
+it'll just keep going down you know that
+
+648
+00:25:32,670 --> 00:25:34,670
+prioritized list of candidates until it
+
+649
+00:25:34,680 --> 00:25:37,040
+finds one that's good and if you have
+
+650
+00:25:37,050 --> 00:25:39,230
+turns setup it's it is optional you
+
+651
+00:25:39,240 --> 00:25:41,630
+don't have to have turn setup and it
+
+652
+00:25:41,640 --> 00:25:43,340
+does cost a lot of money because you
+
+653
+00:25:43,350 --> 00:25:44,810
+have a lot of bandwidth going through
+
+654
+00:25:44,820 --> 00:25:46,940
+these turn servers relaying you know
+
+655
+00:25:46,950 --> 00:25:50,300
+potentially big frames of media data but
+
+656
+00:25:50,310 --> 00:25:51,830
+eventually if you have turn it should
+
+657
+00:25:51,840 --> 00:25:54,350
+always connect because the turn server
+
+658
+00:25:54,360 --> 00:25:55,760
+is always publicly available in the
+
+659
+00:25:55,770 --> 00:25:57,650
+internet so if a peer can't connect with
+
+660
+00:25:57,660 --> 00:25:59,090
+turn it means they have other issues
+
+661
+00:25:59,100 --> 00:26:02,420
+going on most likely so let me see if I
+
+662
+00:26:02,430 --> 00:26:07,340
+can unpack this so to start you have the
+
+663
+00:26:07,350 --> 00:26:10,430
+sort of initial file that describes what
+
+664
+00:26:10,440 --> 00:26:12,530
+kind of codec and what kind of bandwidth
+
+665
+00:26:12,540 --> 00:26:14,840
+is available to each client and Duke
+
+666
+00:26:14,850 --> 00:26:17,120
+what sort of IPs and ports they have
+
+667
+00:26:17,130 --> 00:26:21,080
+available and so that's both you know
+
+668
+00:26:21,090 --> 00:26:23,030
+both peers have to create a file that
+
+669
+00:26:23,040 --> 00:26:25,490
+has this information and then you need
+
+670
+00:26:25,500 --> 00:26:28,130
+some way of sharing this file outside of
+
+671
+00:26:28,140 --> 00:26:30,080
+WebRTC so you said that could be through
+
+672
+00:26:30,090 --> 00:26:32,120
+WebSocket or like you said you could
+
+673
+00:26:32,130 --> 00:26:33,890
+even just copy and paste the text right
+
+674
+00:26:33,900 --> 00:26:36,530
+yep and then you mentioned how there is
+
+675
+00:26:36,540 --> 00:26:40,040
+a there's a stun server and that is
+
+676
+00:26:40,050 --> 00:26:42,890
+because it sometimes
+
+677
+00:26:42,900 --> 00:26:44,710
+machines can't connect to one another
+
+678
+00:26:44,720 --> 00:26:47,660
+directly and you have to find some way
+
+679
+00:26:47,670 --> 00:26:51,020
+of going through the NAT of each user
+
+680
+00:26:51,030 --> 00:26:53,150
+and I guess the stun server helps to
+
+681
+00:26:53,160 --> 00:26:55,490
+negotiate that yep that's right
+
+682
+00:26:55,500 --> 00:26:58,760
+and then you said there's a turn and I
+
+683
+00:26:58,770 --> 00:27:00,410
+don't remember what that acronym is but
+
+684
+00:27:00,420 --> 00:27:03,470
+oh it's traversal using relays around
+
+685
+00:27:03,480 --> 00:27:07,460
+NAT okay and so if the two users are
+
+686
+00:27:07,470 --> 00:27:09,920
+unable to establish a direct connection
+
+687
+00:27:09,930 --> 00:27:14,150
+through the stun server then the video
+
+688
+00:27:14,160 --> 00:27:17,090
+or the audio data will go to the turn
+
+689
+00:27:17,100 --> 00:27:19,220
+server and then will be streamed from
+
+690
+00:27:19,230 --> 00:27:21,680
+the other client from the turn server so
+
+691
+00:27:21,690 --> 00:27:23,780
+it's no longer a peer-to-peer connection
+
+692
+00:27:23,790 --> 00:27:25,130
+yep yeah you got it
+
+693
+00:27:25,140 --> 00:27:26,720
+and the turn servers are pretty dumb
+
+694
+00:27:26,730 --> 00:27:28,220
+they just relay you know the packets
+
+695
+00:27:28,230 --> 00:27:30,470
+from point A to point B so in the case
+
+696
+00:27:30,480 --> 00:27:33,580
+of tuple do you establish a peer-to-peer
+
+697
+00:27:33,590 --> 00:27:36,560
+connection first and then fall back to a
+
+698
+00:27:36,570 --> 00:27:38,180
+turn server or what does that look like
+
+699
+00:27:38,190 --> 00:27:40,700
+in tuple yeah that that's always the
+
+700
+00:27:40,710 --> 00:27:42,590
+ideal case and and for you know
+
+701
+00:27:42,600 --> 00:27:45,800
+real-world metrics I would say anywhere
+
+702
+00:27:45,810 --> 00:27:49,520
+in the range of 88 94 percent of the
+
+703
+00:27:49,530 --> 00:27:52,010
+connections can can be established
+
+704
+00:27:52,020 --> 00:27:54,560
+without turn so it's very low percentage
+
+705
+00:27:54,570 --> 00:27:56,750
+that end up actually needing turn in the
+
+706
+00:27:56,760 --> 00:27:58,580
+early days we actually did not support
+
+707
+00:27:58,590 --> 00:28:00,830
+turn but then occasionally you know we'd
+
+708
+00:28:00,840 --> 00:28:02,270
+get support tickets with people saying
+
+709
+00:28:02,280 --> 00:28:04,010
+we weren't able to connect and to be
+
+710
+00:28:04,020 --> 00:28:05,780
+honest the experience when you're using
+
+711
+00:28:05,790 --> 00:28:07,340
+turn it's just it's not fantastic
+
+712
+00:28:07,350 --> 00:28:08,570
+because you're adding all this
+
+713
+00:28:08,580 --> 00:28:10,850
+additional latency but there is a
+
+714
+00:28:10,860 --> 00:28:12,920
+certain level of importance and just
+
+715
+00:28:12,930 --> 00:28:14,600
+being able to let the clients connect
+
+716
+00:28:14,610 --> 00:28:15,890
+even if it isn't going to be the
+
+717
+00:28:15,900 --> 00:28:18,050
+greatest experience at least they're
+
+718
+00:28:18,060 --> 00:28:20,720
+able to collaborate a little bit or even
+
+719
+00:28:20,730 --> 00:28:22,820
+like have some audio going so we use
+
+720
+00:28:22,830 --> 00:28:24,530
+Twilio for that service we don't manage
+
+721
+00:28:24,540 --> 00:28:26,780
+our own turn servers there are very
+
+722
+00:28:26,790 --> 00:28:28,730
+popular open source libraries I think Co
+
+723
+00:28:28,740 --> 00:28:31,340
+turn is the is the big one and then
+
+724
+00:28:31,350 --> 00:28:32,720
+there's there are other companies that
+
+725
+00:28:32,730 --> 00:28:34,790
+do hosted turn servers for you I think
+
+726
+00:28:34,800 --> 00:28:37,640
+Dirk C's is one of the other big names
+
+727
+00:28:37,650 --> 00:28:40,400
+but we've we had all used Twilio in the
+
+728
+00:28:40,410 --> 00:28:42,230
+past for other companies and we're
+
+729
+00:28:42,240 --> 00:28:43,910
+familiar with their Docs and ap is and
+
+730
+00:28:43,920 --> 00:28:46,880
+stuff so we set that up and as far as
+
+731
+00:28:46,890 --> 00:28:49,160
+when in the process you need to
+
+732
+00:28:49,170 --> 00:28:51,860
+configure turn when you go to create a
+
+733
+00:28:51,870 --> 00:28:54,350
+peer connection you you can pass in a
+
+734
+00:28:54,360 --> 00:28:56,150
+configuration object and
+
+735
+00:28:56,160 --> 00:28:58,250
+configuration object will have the URLs
+
+736
+00:28:58,260 --> 00:29:00,140
+of the stun servers that you want to use
+
+737
+00:29:00,150 --> 00:29:01,940
+and you can use multiple stun servers so
+
+738
+00:29:01,950 --> 00:29:04,430
+it can you know backup to one if one is
+
+739
+00:29:04,440 --> 00:29:06,440
+not reachable and you also provide it
+
+740
+00:29:06,450 --> 00:29:09,980
+with the turn URL and so when we go to
+
+741
+00:29:09,990 --> 00:29:11,330
+create a call first we have to make a
+
+742
+00:29:11,340 --> 00:29:13,070
+request to Twilio and get you know a new
+
+743
+00:29:13,080 --> 00:29:15,980
+auth token to then pass in for that turn
+
+744
+00:29:15,990 --> 00:29:19,190
+URL and this information about stun and
+
+745
+00:29:19,200 --> 00:29:21,890
+turn is this embedded into that text
+
+746
+00:29:21,900 --> 00:29:24,110
+file you're talking about that has the
+
+747
+00:29:24,120 --> 00:29:26,510
+codec metadata and so on no so there's
+
+748
+00:29:26,520 --> 00:29:28,880
+actually two two parts of it so the SDP
+
+749
+00:29:28,890 --> 00:29:31,040
+gets created that has all the media
+
+750
+00:29:31,050 --> 00:29:33,770
+information and then once you've set I
+
+751
+00:29:33,780 --> 00:29:35,660
+believe I'm not high person certain but
+
+752
+00:29:35,670 --> 00:29:36,980
+I think once you set the remote
+
+753
+00:29:36,990 --> 00:29:39,140
+description that's when the ice agent
+
+754
+00:29:39,150 --> 00:29:40,880
+kicks in and starts generating these ice
+
+755
+00:29:40,890 --> 00:29:42,620
+candidates and so you'll have this
+
+756
+00:29:42,630 --> 00:29:45,290
+callback that's like on on ice Candidate
+
+757
+00:29:45,300 --> 00:29:47,570
+essentially and you are also responsible
+
+758
+00:29:47,580 --> 00:29:49,730
+for sending each of those ice candidates
+
+759
+00:29:49,740 --> 00:29:52,340
+over to the other pier because they both
+
+760
+00:29:52,350 --> 00:29:55,310
+need to have that list in order to do
+
+761
+00:29:55,320 --> 00:29:58,040
+the the connectivity checks and there is
+
+762
+00:29:58,050 --> 00:30:00,380
+another thing just to make this even
+
+763
+00:30:00,390 --> 00:30:03,920
+more confusing called trickle ice where
+
+764
+00:30:03,930 --> 00:30:06,380
+in the original ice implementation and
+
+765
+00:30:06,390 --> 00:30:10,130
+the early days of WebRTC it the time to
+
+766
+00:30:10,140 --> 00:30:12,650
+connect calls was very slow because it
+
+767
+00:30:12,660 --> 00:30:14,540
+both the ice agents needed to collect
+
+768
+00:30:14,550 --> 00:30:16,970
+all of the possible ice candidates
+
+769
+00:30:16,980 --> 00:30:19,250
+before starting to test them and see if
+
+770
+00:30:19,260 --> 00:30:21,080
+things were if they were able to connect
+
+771
+00:30:21,090 --> 00:30:23,900
+but there was a new spec released a
+
+772
+00:30:23,910 --> 00:30:25,460
+couple years ago i at this point i think
+
+773
+00:30:25,470 --> 00:30:27,770
+that allowed the ice candidates to start
+
+774
+00:30:27,780 --> 00:30:29,300
+checking a little bit sooner like kind
+
+775
+00:30:29,310 --> 00:30:31,040
+of like just in time like as they're
+
+776
+00:30:31,050 --> 00:30:33,950
+coming in and so that speeds up the
+
+777
+00:30:33,960 --> 00:30:36,740
+connection process significantly and we
+
+778
+00:30:36,750 --> 00:30:38,210
+do that with so we do what's called
+
+779
+00:30:38,220 --> 00:30:40,370
+trickle ice so as soon as we get that
+
+780
+00:30:40,380 --> 00:30:41,990
+ice candidate we send it to the other
+
+781
+00:30:42,000 --> 00:30:44,090
+peer so that way they can start testing
+
+782
+00:30:44,100 --> 00:30:45,380
+them out and seeing if they're able to
+
+783
+00:30:45,390 --> 00:30:46,790
+establish a connection with each other
+
+784
+00:30:46,800 --> 00:30:49,010
+cool I think that's like we've got a
+
+785
+00:30:49,020 --> 00:30:51,950
+pretty good overview of sort of what
+
+786
+00:30:51,960 --> 00:30:54,080
+WebRTC is and sort of what the different
+
+787
+00:30:54,090 --> 00:30:56,630
+pieces are so next I want to sort of go
+
+788
+00:30:56,640 --> 00:30:59,240
+more into building tuples specifically
+
+789
+00:30:59,250 --> 00:31:01,550
+tuple is like you said it's a pair
+
+790
+00:31:01,560 --> 00:31:04,180
+programming application so you have the
+
+791
+00:31:04,190 --> 00:31:06,920
+webcam capture you have the desktop
+
+792
+00:31:06,930 --> 00:31:08,960
+capture you have remote control of each
+
+793
+00:31:08,970 --> 00:31:09,700
+other's machine
+
+794
+00:31:09,710 --> 00:31:12,580
+and then of course as with any SAS
+
+795
+00:31:12,590 --> 00:31:14,830
+application you have billing and
+
+796
+00:31:14,840 --> 00:31:17,590
+accounts and so on and so forth so when
+
+797
+00:31:17,600 --> 00:31:19,960
+you first started working on tuple how
+
+798
+00:31:19,970 --> 00:31:22,110
+did you decide what to build first
+
+799
+00:31:22,120 --> 00:31:25,000
+mm-hmm it's a good question I think in
+
+800
+00:31:25,010 --> 00:31:26,920
+the very early days it was a lot about
+
+801
+00:31:26,930 --> 00:31:29,290
+just validating if we could do certain
+
+802
+00:31:29,300 --> 00:31:32,680
+things so for example one thing that was
+
+803
+00:31:32,690 --> 00:31:35,530
+very important to us is as a developer I
+
+804
+00:31:35,540 --> 00:31:38,350
+constantly use command tab to cycle
+
+805
+00:31:38,360 --> 00:31:40,930
+through my various applications and so
+
+806
+00:31:40,940 --> 00:31:42,670
+we wanted to validate like can we
+
+807
+00:31:42,680 --> 00:31:45,280
+remotely send a command tab from machine
+
+808
+00:31:45,290 --> 00:31:47,650
+1 to Machine 2 it's that way they can
+
+809
+00:31:47,660 --> 00:31:49,240
+feel as if they're local so that was
+
+810
+00:31:49,250 --> 00:31:50,470
+like something we wanted to validate
+
+811
+00:31:50,480 --> 00:31:53,440
+very early on and even before that was
+
+812
+00:31:53,450 --> 00:31:55,150
+can we even you know establish a
+
+813
+00:31:55,160 --> 00:31:57,040
+connection between the two the two peers
+
+814
+00:31:57,050 --> 00:31:59,650
+luckily WebRTC actually makes that that
+
+815
+00:31:59,660 --> 00:32:03,040
+initial spike phase very fast like I
+
+816
+00:32:03,050 --> 00:32:04,990
+think the within our first weekend of
+
+817
+00:32:05,000 --> 00:32:06,970
+kind of getting going on to pool we had
+
+818
+00:32:06,980 --> 00:32:09,610
+like a real screen sharing app that sent
+
+819
+00:32:09,620 --> 00:32:11,500
+the screen from A to B and you could
+
+820
+00:32:11,510 --> 00:32:13,000
+move the mouse around the thing was that
+
+821
+00:32:13,010 --> 00:32:14,890
+was all an electron in these very high
+
+822
+00:32:14,900 --> 00:32:16,990
+level of JavaScript API s and the
+
+823
+00:32:17,000 --> 00:32:19,750
+performance was not nearly as good as
+
+824
+00:32:19,760 --> 00:32:21,850
+what we what we wanted when you're
+
+825
+00:32:21,860 --> 00:32:23,910
+referring to the performance is that the
+
+826
+00:32:23,920 --> 00:32:26,320
+latency or what what was the part that
+
+827
+00:32:26,330 --> 00:32:28,630
+was an issue in the browser yeah latency
+
+828
+00:32:28,640 --> 00:32:30,580
+and quality there's a lot of constraints
+
+829
+00:32:30,590 --> 00:32:32,380
+that let's see what's a good way of
+
+830
+00:32:32,390 --> 00:32:35,290
+explaining it so WebRTC like I said is
+
+831
+00:32:35,300 --> 00:32:37,660
+this you know very very large code base
+
+832
+00:32:37,670 --> 00:32:40,570
+and they expose a lot of things with
+
+833
+00:32:40,580 --> 00:32:42,520
+their api's which allow you to hook into
+
+834
+00:32:42,530 --> 00:32:45,220
+the system for example like creating
+
+835
+00:32:45,230 --> 00:32:47,440
+your own video encoder or doing the
+
+836
+00:32:47,450 --> 00:32:49,570
+capturing on your own but there's also a
+
+837
+00:32:49,580 --> 00:32:51,610
+lot of parameters that are built into
+
+838
+00:32:51,620 --> 00:32:53,620
+that video pipeline and that audio
+
+839
+00:32:53,630 --> 00:32:56,860
+pipeline where the browser just made
+
+840
+00:32:56,870 --> 00:32:58,870
+certain decisions because the browser
+
+841
+00:32:58,880 --> 00:33:00,940
+has its own goals right like the browser
+
+842
+00:33:00,950 --> 00:33:02,050
+doesn't want to use up all your
+
+843
+00:33:02,060 --> 00:33:04,390
+resources people already complain about
+
+844
+00:33:04,400 --> 00:33:06,610
+you know chrome using up a high
+
+845
+00:33:06,620 --> 00:33:08,770
+percentage of their CPU well there are
+
+846
+00:33:08,780 --> 00:33:11,380
+certain things that chrome though in the
+
+847
+00:33:11,390 --> 00:33:13,540
+way that they use lib WebRTC they ensure
+
+848
+00:33:13,550 --> 00:33:15,730
+that you know the CPU gets throttled and
+
+849
+00:33:15,740 --> 00:33:17,260
+if it's using a certain amount then it's
+
+850
+00:33:17,270 --> 00:33:18,640
+going to downgrade the quality of the
+
+851
+00:33:18,650 --> 00:33:20,080
+stream or you know make certain
+
+852
+00:33:20,090 --> 00:33:23,080
+trade-offs and we recognized very early
+
+853
+00:33:23,090 --> 00:33:23,419
+on
+
+854
+00:33:23,429 --> 00:33:25,489
+like if we were going to use WebRTC in
+
+855
+00:33:25,499 --> 00:33:27,680
+the context of electron we just weren't
+
+856
+00:33:27,690 --> 00:33:29,119
+going to be able to push the needle as
+
+857
+00:33:29,129 --> 00:33:31,009
+far and as fast as we wanted to and
+
+858
+00:33:31,019 --> 00:33:34,060
+that's really what kind of led to us
+
+859
+00:33:34,070 --> 00:33:36,369
+extracting out you know that initial
+
+860
+00:33:36,379 --> 00:33:40,060
+spike into C++ and a swift
+
+861
+00:33:40,070 --> 00:33:43,700
+implementation so it's basically Chrome
+
+862
+00:33:43,710 --> 00:33:45,829
+or the web browser is they have their
+
+863
+00:33:45,839 --> 00:33:47,959
+own web RTC implementation or they're
+
+864
+00:33:47,969 --> 00:33:50,239
+using the the library I guess that was
+
+865
+00:33:50,249 --> 00:33:52,849
+created in C++ is that correct yeah so
+
+866
+00:33:52,859 --> 00:33:55,159
+chromium will use lib WebRTC and then
+
+867
+00:33:55,169 --> 00:33:56,919
+they'll kind of tweak certain settings
+
+868
+00:33:56,929 --> 00:34:00,259
+and like for example a classic one is
+
+869
+00:34:00,269 --> 00:34:01,879
+they have a bandwidth cap like each peer
+
+870
+00:34:01,889 --> 00:34:03,320
+connection I think can only have two
+
+871
+00:34:03,330 --> 00:34:06,019
+megabits per second or bandwidth so like
+
+872
+00:34:06,029 --> 00:34:07,609
+we we the first thing we did was
+
+873
+00:34:07,619 --> 00:34:09,619
+increase that cap and just doing that
+
+874
+00:34:09,629 --> 00:34:11,539
+allows us to send a higher quality frame
+
+875
+00:34:11,549 --> 00:34:13,909
+and most of the time that's just fine
+
+876
+00:34:13,919 --> 00:34:15,349
+because people are at least for our
+
+877
+00:34:15,359 --> 00:34:17,269
+target market they have good internet so
+
+878
+00:34:17,279 --> 00:34:19,339
+that cap doesn't necessarily they don't
+
+879
+00:34:19,349 --> 00:34:22,099
+care about that right is that something
+
+880
+00:34:22,109 --> 00:34:24,470
+that you don't have control over when
+
+881
+00:34:24,480 --> 00:34:27,139
+you're running and say chromium yeah or
+
+882
+00:34:27,149 --> 00:34:28,789
+just the JavaScript API so the
+
+883
+00:34:28,799 --> 00:34:30,889
+JavaScript API is our very high level
+
+884
+00:34:30,899 --> 00:34:34,669
+you don't really get much control I mean
+
+885
+00:34:34,679 --> 00:34:36,139
+it's it's it's the blessing and a curse
+
+886
+00:34:36,149 --> 00:34:37,730
+like you're able to get something going
+
+887
+00:34:37,740 --> 00:34:40,220
+very quickly but as soon as you start
+
+888
+00:34:40,230 --> 00:34:42,079
+wanting to do something very specific
+
+889
+00:34:42,089 --> 00:34:44,210
+you run into these pain points where
+
+890
+00:34:44,220 --> 00:34:46,549
+like if we wanted to continue down the
+
+891
+00:34:46,559 --> 00:34:48,079
+electron route we probably would have
+
+892
+00:34:48,089 --> 00:34:50,210
+had to build a custom version of
+
+893
+00:34:50,220 --> 00:34:52,129
+chromium with our custom version of
+
+894
+00:34:52,139 --> 00:34:54,649
+WebRTC that then we built a custom
+
+895
+00:34:54,659 --> 00:34:56,119
+version of electron with that custom
+
+896
+00:34:56,129 --> 00:34:57,829
+version of chromium if that makes sense
+
+897
+00:34:57,839 --> 00:34:59,779
+which we could have done and looking
+
+898
+00:34:59,789 --> 00:35:01,130
+back at it now you know it'd be
+
+899
+00:35:01,140 --> 00:35:02,269
+interesting to see what that would look
+
+900
+00:35:02,279 --> 00:35:04,490
+like but I would have taken along too it
+
+901
+00:35:04,500 --> 00:35:07,690
+was been a real big pain to do honestly
+
+902
+00:35:07,700 --> 00:35:10,099
+yeah I mean I guess it's sort of the
+
+903
+00:35:10,109 --> 00:35:11,960
+sort of thing where you start going down
+
+904
+00:35:11,970 --> 00:35:14,150
+that road and you're not sure what you
+
+905
+00:35:14,160 --> 00:35:16,010
+can or can't do or whether it was a good
+
+906
+00:35:16,020 --> 00:35:18,920
+idea until you really try it right yeah
+
+907
+00:35:18,930 --> 00:35:21,140
+and then I know chromium has this whole
+
+908
+00:35:21,150 --> 00:35:24,079
+concept of sandboxing and so I imagine
+
+909
+00:35:24,089 --> 00:35:25,849
+if we had gone down that route there
+
+910
+00:35:25,859 --> 00:35:27,260
+would be a lot of fighting with that
+
+911
+00:35:27,270 --> 00:35:29,390
+sandbox environment like there's a lot
+
+912
+00:35:29,400 --> 00:35:32,180
+of things that we need access to and API
+
+913
+00:35:32,190 --> 00:35:33,500
+is that you know we wouldn't be able to
+
+914
+00:35:33,510 --> 00:35:34,970
+distribute our app on the App Store
+
+915
+00:35:34,980 --> 00:35:36,680
+because even just to do that like
+
+916
+00:35:36,690 --> 00:35:37,190
+command
+
+917
+00:35:37,200 --> 00:35:39,200
+tab thing you need sudo privileges
+
+918
+00:35:39,210 --> 00:35:41,329
+essentially to be able to do that yeah I
+
+919
+00:35:41,339 --> 00:35:44,810
+think I remembered hearing that screen
+
+920
+00:35:44,820 --> 00:35:46,250
+here which was a screen sharing
+
+921
+00:35:46,260 --> 00:35:48,859
+application that came before when they
+
+922
+00:35:48,869 --> 00:35:51,349
+were acquired by slack they were kind of
+
+923
+00:35:51,359 --> 00:35:53,720
+asked to like try and make it work as an
+
+924
+00:35:53,730 --> 00:35:55,819
+electron app and it sounded like they
+
+925
+00:35:55,829 --> 00:35:57,560
+had a lot of difficulties a lot of
+
+926
+00:35:57,570 --> 00:35:59,720
+struggles with doing that so so maybe
+
+927
+00:35:59,730 --> 00:36:02,440
+maybe native is the way to go ya know
+
+928
+00:36:02,450 --> 00:36:05,329
+for sure we talked to those guys like we
+
+929
+00:36:05,339 --> 00:36:06,560
+definitely think of ourselves as the
+
+930
+00:36:06,570 --> 00:36:08,420
+spiritual successor to screen here like
+
+931
+00:36:08,430 --> 00:36:11,660
+we were 100% inspired by them to build
+
+932
+00:36:11,670 --> 00:36:13,370
+this company and we're very friendly
+
+933
+00:36:13,380 --> 00:36:15,380
+with their founders and they've given us
+
+934
+00:36:15,390 --> 00:36:17,540
+a lot of tips and advice over over the
+
+935
+00:36:17,550 --> 00:36:19,130
+year or so and we're very grateful for
+
+936
+00:36:19,140 --> 00:36:19,640
+that
+
+937
+00:36:19,650 --> 00:36:22,370
+Don's helped me with some of my mouse
+
+938
+00:36:22,380 --> 00:36:24,410
+implementation stuff and fras has given
+
+939
+00:36:24,420 --> 00:36:26,329
+us good tips on other things so very
+
+940
+00:36:26,339 --> 00:36:28,819
+cool kind of after all this you you
+
+941
+00:36:28,829 --> 00:36:30,920
+first started you experimented with
+
+942
+00:36:30,930 --> 00:36:33,829
+using chromium using the JavaScript API
+
+943
+00:36:33,839 --> 00:36:37,040
+s and then ultimately decided to to move
+
+944
+00:36:37,050 --> 00:36:38,630
+towards building a native app yeah it's
+
+945
+00:36:38,640 --> 00:36:40,940
+just it's interesting like from going
+
+946
+00:36:40,950 --> 00:36:42,440
+from electron the first step was
+
+947
+00:36:42,450 --> 00:36:44,120
+actually going there the next step was
+
+948
+00:36:44,130 --> 00:36:46,220
+going to Swift we actually didn't want
+
+949
+00:36:46,230 --> 00:36:50,210
+to do any C++ stuff so at the time we
+
+950
+00:36:50,220 --> 00:36:54,430
+hired somebody to help us fix the WebRTC
+
+951
+00:36:54,440 --> 00:36:57,710
+Mac SDK so there was actually already
+
+952
+00:36:57,720 --> 00:37:01,160
+like pretty pretty well built out SDK
+
+953
+00:37:01,170 --> 00:37:03,980
+and Swift an objective-c for interacting
+
+954
+00:37:03,990 --> 00:37:07,309
+with these low-level C++ WebRTC API is
+
+955
+00:37:07,319 --> 00:37:08,839
+but it wasn't working like it wasn't
+
+956
+00:37:08,849 --> 00:37:12,109
+compiling that's a been a common thread
+
+957
+00:37:12,119 --> 00:37:14,480
+unfortunately and my usage of WebRTC is
+
+958
+00:37:14,490 --> 00:37:16,910
+oftentimes the Mac the Mac stuff kind of
+
+959
+00:37:16,920 --> 00:37:18,650
+gets they don't really ensure it's
+
+960
+00:37:18,660 --> 00:37:20,690
+always up-to-date or gonna work properly
+
+961
+00:37:20,700 --> 00:37:23,390
+there's a lot of like a lot of that kind
+
+962
+00:37:23,400 --> 00:37:25,640
+of been put on us yeah so we originally
+
+963
+00:37:25,650 --> 00:37:28,010
+hired him - his name was Sam he was the
+
+964
+00:37:28,020 --> 00:37:29,569
+one of the first engineers that sketch
+
+965
+00:37:29,579 --> 00:37:31,819
+actually sketched out the prototyping
+
+966
+00:37:31,829 --> 00:37:34,099
+tool and he built like a web RTC
+
+967
+00:37:34,109 --> 00:37:36,230
+framework for us which we then used for
+
+968
+00:37:36,240 --> 00:37:38,930
+awhile and even that we decided we
+
+969
+00:37:38,940 --> 00:37:40,819
+didn't have enough customization over
+
+970
+00:37:40,829 --> 00:37:42,200
+the different parameters that we wanted
+
+971
+00:37:42,210 --> 00:37:43,790
+and that we'd have to go and another
+
+972
+00:37:43,800 --> 00:37:47,660
+layer deeper the web RTC Mac SDK is that
+
+973
+00:37:47,670 --> 00:37:49,490
+something that is
+
+974
+00:37:49,500 --> 00:37:51,650
+built into the operating system or is
+
+975
+00:37:51,660 --> 00:37:53,660
+that a open source project like where's
+
+976
+00:37:53,670 --> 00:37:54,440
+that coming from
+
+977
+00:37:54,450 --> 00:37:57,140
+that's coming from lib WebRTC so they
+
+978
+00:37:57,150 --> 00:38:00,020
+have Objective C bindings to all their
+
+979
+00:38:00,030 --> 00:38:02,359
+C++ code and one of the beauties of
+
+980
+00:38:02,369 --> 00:38:05,630
+Swift is you can bridge Objective C to
+
+981
+00:38:05,640 --> 00:38:08,480
+Swift relatively easily and so we were
+
+982
+00:38:08,490 --> 00:38:10,910
+able to call into those C++ api's
+
+983
+00:38:10,920 --> 00:38:14,180
+through Swift doing that in Swift and
+
+984
+00:38:14,190 --> 00:38:15,829
+Mac development cocoa development in
+
+985
+00:38:15,839 --> 00:38:17,510
+general their libraries are called
+
+986
+00:38:17,520 --> 00:38:20,270
+frameworks and so Sam basically built us
+
+987
+00:38:20,280 --> 00:38:22,819
+this like web web RTC framework that we
+
+988
+00:38:22,829 --> 00:38:25,849
+were able to to use to to get going in
+
+989
+00:38:25,859 --> 00:38:27,500
+the early days and I'm honestly very
+
+990
+00:38:27,510 --> 00:38:29,599
+grateful looking back that that was the
+
+991
+00:38:29,609 --> 00:38:31,640
+progression because you know prior to
+
+992
+00:38:31,650 --> 00:38:33,620
+tuple I've only been building websites
+
+993
+00:38:33,630 --> 00:38:35,089
+my entire life I never built
+
+994
+00:38:35,099 --> 00:38:37,160
+you know native application before and
+
+995
+00:38:37,170 --> 00:38:39,470
+there's a whole lot of stuff to learn in
+
+996
+00:38:39,480 --> 00:38:41,540
+just building cocoa applications and Mac
+
+997
+00:38:41,550 --> 00:38:43,790
+development in general and so by getting
+
+998
+00:38:43,800 --> 00:38:45,290
+this opportunity to kind of like ease
+
+999
+00:38:45,300 --> 00:38:47,540
+into it I mean I was definitely very
+
+1000
+00:38:47,550 --> 00:38:51,140
+stressed at the time and I've but if I
+
+1001
+00:38:51,150 --> 00:38:53,750
+had had to jump into the C++ at that
+
+1002
+00:38:53,760 --> 00:38:55,370
+point I don't like I would have been way
+
+1003
+00:38:55,380 --> 00:38:57,020
+too stressed I don't know what would
+
+1004
+00:38:57,030 --> 00:38:58,940
+have happened so getting a comfortable
+
+1005
+00:38:58,950 --> 00:39:00,440
+with the Mac development first and then
+
+1006
+00:39:00,450 --> 00:39:02,990
+going into the C++ stuff was a good
+
+1007
+00:39:03,000 --> 00:39:05,450
+progression I would say yeah so let's
+
+1008
+00:39:05,460 --> 00:39:08,089
+see there's the Lib web RTC which is a
+
+1009
+00:39:08,099 --> 00:39:11,750
+C++ API and they provided an objective-c
+
+1010
+00:39:11,760 --> 00:39:13,880
+wrapper for that as a part of the
+
+1011
+00:39:13,890 --> 00:39:15,920
+official project yeah but it sounded
+
+1012
+00:39:15,930 --> 00:39:18,530
+like that wrapper was somewhat out of
+
+1013
+00:39:18,540 --> 00:39:22,040
+date yeah okay so for perspective WebRTC
+
+1014
+00:39:22,050 --> 00:39:24,829
+has like 200 commits a week on the
+
+1015
+00:39:24,839 --> 00:39:27,200
+project and it moves really really fast
+
+1016
+00:39:27,210 --> 00:39:29,270
+especially I think in the early days is
+
+1017
+00:39:29,280 --> 00:39:31,069
+moving even faster than it is now but
+
+1018
+00:39:31,079 --> 00:39:32,839
+they'll often change like the correct
+
+1019
+00:39:32,849 --> 00:39:34,579
+way of doing things so even in the one
+
+1020
+00:39:34,589 --> 00:39:35,900
+year that I've been working in it
+
+1021
+00:39:35,910 --> 00:39:38,150
+they've changed how to do some of the
+
+1022
+00:39:38,160 --> 00:39:41,420
+like track and stream management um so
+
+1023
+00:39:41,430 --> 00:39:42,740
+like we've had to kind of like you know
+
+1024
+00:39:42,750 --> 00:39:45,170
+adopt the new practices for that and and
+
+1025
+00:39:45,180 --> 00:39:47,000
+a byproduct of that is if they're
+
+1026
+00:39:47,010 --> 00:39:49,579
+changing things a lot the SDKs don't
+
+1027
+00:39:49,589 --> 00:39:52,460
+always stay up-to-date so Sam who was
+
+1028
+00:39:52,470 --> 00:39:54,620
+already an expert in Objective C and
+
+1029
+00:39:54,630 --> 00:39:56,750
+Swift helped us kind of get that caught
+
+1030
+00:39:56,760 --> 00:39:59,089
+up for our needs essentially just
+
+1031
+00:39:59,099 --> 00:40:01,370
+porting over the specific API as we knew
+
+1032
+00:40:01,380 --> 00:40:02,900
+we we needed at the time
+
+1033
+00:40:02,910 --> 00:40:04,789
+to be able to get the calls going and
+
+1034
+00:40:04,799 --> 00:40:07,069
+everything looking back at it like there
+
+1035
+00:40:07,079 --> 00:40:10,250
+was a ton of things that we now use from
+
+1036
+00:40:10,260 --> 00:40:12,440
+WebRTC that he didn't pour it over so
+
+1037
+00:40:12,450 --> 00:40:14,720
+you know it's good that we now are just
+
+1038
+00:40:14,730 --> 00:40:16,520
+able to do that ourselves and whenever
+
+1039
+00:40:16,530 --> 00:40:19,010
+we need new stuff we kind of rewrite all
+
+1040
+00:40:19,020 --> 00:40:21,710
+this glue code to make it work there's a
+
+1041
+00:40:21,720 --> 00:40:24,440
+surprisingly large amount of glue code
+
+1042
+00:40:24,450 --> 00:40:26,480
+between different languages and tuple I
+
+1043
+00:40:26,490 --> 00:40:29,120
+think altogether we have seven different
+
+1044
+00:40:29,130 --> 00:40:31,609
+languages that we use which can get
+
+1045
+00:40:31,619 --> 00:40:33,410
+somewhat confusing for my brain
+
+1046
+00:40:33,420 --> 00:40:36,620
+sometimes so that's yeah I mean that's
+
+1047
+00:40:36,630 --> 00:40:39,589
+pretty pretty wild so you said you you
+
+1048
+00:40:39,599 --> 00:40:41,690
+had a background just in building
+
+1049
+00:40:41,700 --> 00:40:44,000
+websites and web development and now
+
+1050
+00:40:44,010 --> 00:40:45,319
+you're in an environment where you're
+
+1051
+00:40:45,329 --> 00:40:47,660
+working with seven different languages
+
+1052
+00:40:47,670 --> 00:40:50,569
+so I guess how did you how did you
+
+1053
+00:40:50,579 --> 00:40:52,130
+tackle that how did you start piecing
+
+1054
+00:40:52,140 --> 00:40:53,930
+together you know what to learn and how
+
+1055
+00:40:53,940 --> 00:40:55,910
+to do that for me
+
+1056
+00:40:55,920 --> 00:40:57,650
+the way I learned best is through
+
+1057
+00:40:57,660 --> 00:41:00,980
+reading books and building little sample
+
+1058
+00:41:00,990 --> 00:41:03,260
+projects that test the knowledge of the
+
+1059
+00:41:03,270 --> 00:41:05,299
+books that I read and then I'll often go
+
+1060
+00:41:05,309 --> 00:41:07,880
+back and reread the sections that we're
+
+1061
+00:41:07,890 --> 00:41:09,920
+confusing to me or that I think are
+
+1062
+00:41:09,930 --> 00:41:12,230
+important for me to know better so a lot
+
+1063
+00:41:12,240 --> 00:41:14,480
+of that I probably read like 50 or 60
+
+1064
+00:41:14,490 --> 00:41:16,370
+books this last year Wow I've like
+
+1065
+00:41:16,380 --> 00:41:18,680
+stacks and stacks of C++ books Coco
+
+1066
+00:41:18,690 --> 00:41:21,109
+books objective-c books Swift books and
+
+1067
+00:41:21,119 --> 00:41:23,210
+as I was reading them I would I would
+
+1068
+00:41:23,220 --> 00:41:25,269
+build static site generator and
+
+1069
+00:41:25,279 --> 00:41:27,859
+blackjack were usually my my first two
+
+1070
+00:41:27,869 --> 00:41:29,269
+projects in each language
+
+1071
+00:41:29,279 --> 00:41:31,279
+I think static site generators are
+
+1072
+00:41:31,289 --> 00:41:33,440
+actually like a very good like get your
+
+1073
+00:41:33,450 --> 00:41:35,089
+feet wet into a new language type of
+
+1074
+00:41:35,099 --> 00:41:37,250
+project because in walls networking and
+
+1075
+00:41:37,260 --> 00:41:39,200
+async stuff involves reading the file
+
+1076
+00:41:39,210 --> 00:41:42,319
+system involves templates and basically
+
+1077
+00:41:42,329 --> 00:41:44,029
+all the main things you touch in a
+
+1078
+00:41:44,039 --> 00:41:46,370
+language you kind of get by building a
+
+1079
+00:41:46,380 --> 00:41:47,779
+static site generator especially if you
+
+1080
+00:41:47,789 --> 00:41:49,549
+you you get like you know parsing
+
+1081
+00:41:49,559 --> 00:41:50,720
+command line argh
+
+1082
+00:41:50,730 --> 00:41:54,079
+and all of that so that was my main
+
+1083
+00:41:54,089 --> 00:41:56,809
+strategy then we did once we started
+
+1084
+00:41:56,819 --> 00:41:58,519
+getting some revenue which was awesome
+
+1085
+00:41:58,529 --> 00:42:01,010
+Ben did an amazing job of actually pre
+
+1086
+00:42:01,020 --> 00:42:02,870
+selling some tuple before we even had
+
+1087
+00:42:02,880 --> 00:42:05,089
+the product we used a lot of that money
+
+1088
+00:42:05,099 --> 00:42:07,039
+in the early days to consult with
+
+1089
+00:42:07,049 --> 00:42:09,829
+experts so a couple people that Sam guy
+
+1090
+00:42:09,839 --> 00:42:12,769
+told you about who worked at sketch he
+
+1091
+00:42:12,779 --> 00:42:14,539
+kind of helped get the initial Xcode
+
+1092
+00:42:14,549 --> 00:42:16,220
+project set up and
+
+1093
+00:42:16,230 --> 00:42:18,770
+you know there's this there's this thing
+
+1094
+00:42:18,780 --> 00:42:20,510
+whenever you change languages after
+
+1095
+00:42:20,520 --> 00:42:21,710
+you've done a project or two in that
+
+1096
+00:42:21,720 --> 00:42:23,780
+language you have you know more opinions
+
+1097
+00:42:23,790 --> 00:42:25,700
+on how you would set up the structure of
+
+1098
+00:42:25,710 --> 00:42:28,430
+the projects no and you know once you
+
+1099
+00:42:28,440 --> 00:42:31,069
+know the ecosystem better and one thing
+
+1100
+00:42:31,079 --> 00:42:32,900
+I just didn't know anything about was
+
+1101
+00:42:32,910 --> 00:42:35,839
+Xcode or how to properly set up you know
+
+1102
+00:42:35,849 --> 00:42:37,640
+packages to be libraries and stuff like
+
+1103
+00:42:37,650 --> 00:42:40,130
+that and so Sam kind of helped guide us
+
+1104
+00:42:40,140 --> 00:42:42,680
+in that which it seems so simple and
+
+1105
+00:42:42,690 --> 00:42:43,849
+silly to have paid someone for that
+
+1106
+00:42:43,859 --> 00:42:46,370
+looking back but like now I know all
+
+1107
+00:42:46,380 --> 00:42:48,559
+that stuff very well but it gave us a
+
+1108
+00:42:48,569 --> 00:42:49,910
+lot of confidence knowing that we had a
+
+1109
+00:42:49,920 --> 00:42:51,470
+strong foundation and that you know the
+
+1110
+00:42:51,480 --> 00:42:53,030
+frameworks we were building to be
+
+1111
+00:42:53,040 --> 00:42:55,190
+reusable and stuff were set up properly
+
+1112
+00:42:55,200 --> 00:42:57,859
+yeah lots of YouTube videos talking to
+
+1113
+00:42:57,869 --> 00:42:59,809
+experts building lots of side projects
+
+1114
+00:42:59,819 --> 00:43:02,240
+and kind of taking like one topic at a
+
+1115
+00:43:02,250 --> 00:43:04,130
+time and trying to isolate it from the
+
+1116
+00:43:04,140 --> 00:43:06,319
+rest of the parts that that was very
+
+1117
+00:43:06,329 --> 00:43:08,920
+useful basically reading a ton of books
+
+1118
+00:43:08,930 --> 00:43:12,130
+building small projects having some
+
+1119
+00:43:12,140 --> 00:43:14,690
+consulting help one thing I did want to
+
+1120
+00:43:14,700 --> 00:43:18,140
+ask too is is about WebRTC specifically
+
+1121
+00:43:18,150 --> 00:43:20,180
+were there any specific resources you
+
+1122
+00:43:20,190 --> 00:43:21,890
+used or did you have someone you
+
+1123
+00:43:21,900 --> 00:43:24,440
+consulted with to learn about that yeah
+
+1124
+00:43:24,450 --> 00:43:26,599
+unfortunately the the resources for
+
+1125
+00:43:26,609 --> 00:43:29,450
+learning WebRTC are not the greatest I
+
+1126
+00:43:29,460 --> 00:43:30,950
+would say compared especially if you're
+
+1127
+00:43:30,960 --> 00:43:33,109
+coming from the web world where you know
+
+1128
+00:43:33,119 --> 00:43:34,670
+there's somebody who has written some
+
+1129
+00:43:34,680 --> 00:43:36,410
+sort of ebook or tutorial series that
+
+1130
+00:43:36,420 --> 00:43:38,210
+you could just buy for X dollars and
+
+1131
+00:43:38,220 --> 00:43:39,789
+kind of level up on that topic quickly
+
+1132
+00:43:39,799 --> 00:43:43,549
+for WebRTC the best source the source of
+
+1133
+00:43:43,559 --> 00:43:45,430
+truth is just reading the header files
+
+1134
+00:43:45,440 --> 00:43:47,690
+really like most of what I know about
+
+1135
+00:43:47,700 --> 00:43:50,030
+native WebRTC has been from reading the
+
+1136
+00:43:50,040 --> 00:43:52,099
+code that's not a great answer and I
+
+1137
+00:43:52,109 --> 00:43:53,299
+hate when people give me an answer like
+
+1138
+00:43:53,309 --> 00:43:55,730
+that so some other good resources are
+
+1139
+00:43:55,740 --> 00:43:58,640
+WebRTC hacks that's forget the gentleman
+
+1140
+00:43:58,650 --> 00:44:00,410
+who runs that but we had lunch with him
+
+1141
+00:44:00,420 --> 00:44:02,510
+I won't plant in the early days and he
+
+1142
+00:44:02,520 --> 00:44:04,819
+gave us some good tips and resources as
+
+1143
+00:44:04,829 --> 00:44:08,870
+well cosmos software dr. Alex he's a PhD
+
+1144
+00:44:08,880 --> 00:44:10,819
+in video encoder and he's like multiple
+
+1145
+00:44:10,829 --> 00:44:13,640
+PhDs and he's been in doing WebRTC since
+
+1146
+00:44:13,650 --> 00:44:16,309
+the early days like 2012-2013 something
+
+1147
+00:44:16,319 --> 00:44:18,289
+like that he's extremely knowledgeable
+
+1148
+00:44:18,299 --> 00:44:21,079
+he's very prolific in the Google Groups
+
+1149
+00:44:21,089 --> 00:44:24,079
+there's a was like a WebRTC Google group
+
+1150
+00:44:24,089 --> 00:44:25,579
+and he's always answering questions and
+
+1151
+00:44:25,589 --> 00:44:27,380
+helping beginners and so I would
+
+1152
+00:44:27,390 --> 00:44:28,880
+definitely recommend you know not being
+
+1153
+00:44:28,890 --> 00:44:30,020
+shy and that goo
+
+1154
+00:44:30,030 --> 00:44:31,730
+group and people are generally pretty
+
+1155
+00:44:31,740 --> 00:44:33,140
+nice as long as you've done your
+
+1156
+00:44:33,150 --> 00:44:35,350
+research and/or provide you know good
+
+1157
+00:44:35,360 --> 00:44:37,310
+examples of what you've tried and what
+
+1158
+00:44:37,320 --> 00:44:39,200
+hasn't worked then people are you know
+
+1159
+00:44:39,210 --> 00:44:41,480
+very very willing to give you some tips
+
+1160
+00:44:41,490 --> 00:44:43,970
+and yeah the I guess just if you're if
+
+1161
+00:44:43,980 --> 00:44:45,230
+you're working at the higher level of
+
+1162
+00:44:45,240 --> 00:44:47,180
+abstraction the Mozilla Doc's are really
+
+1163
+00:44:47,190 --> 00:44:49,700
+good so the Mozilla Doc's have some
+
+1164
+00:44:49,710 --> 00:44:51,320
+great examples of how to use the various
+
+1165
+00:44:51,330 --> 00:44:54,650
+JavaScript API is there's a fantastic
+
+1166
+00:44:54,660 --> 00:44:56,090
+book called high-performance browser
+
+1167
+00:44:56,100 --> 00:44:57,830
+networking I forget the author's name I
+
+1168
+00:44:57,840 --> 00:44:59,690
+think it's like Igor or something that
+
+1169
+00:44:59,700 --> 00:45:01,820
+has a good section on WebRTC and just in
+
+1170
+00:45:01,830 --> 00:45:03,500
+general is a great book for anybody
+
+1171
+00:45:03,510 --> 00:45:05,210
+who's doing networking or web
+
+1172
+00:45:05,220 --> 00:45:07,100
+development talks a lot about you know
+
+1173
+00:45:07,110 --> 00:45:09,350
+tcp slow-start and various things to
+
+1174
+00:45:09,360 --> 00:45:11,710
+improve the performance of your web apps
+
+1175
+00:45:11,720 --> 00:45:14,360
+cool yeah those would be my go-to that's
+
+1176
+00:45:14,370 --> 00:45:16,070
+a lot yeah you know honestly just
+
+1177
+00:45:16,080 --> 00:45:17,930
+building building stuff to just build
+
+1178
+00:45:17,940 --> 00:45:19,820
+some little side projects it's a great
+
+1179
+00:45:19,830 --> 00:45:22,490
+way to learn yeah well we'll be sure to
+
+1180
+00:45:22,500 --> 00:45:24,140
+get all these links into the show notes
+
+1181
+00:45:24,150 --> 00:45:26,180
+definitely the other thing I guess I
+
+1182
+00:45:26,190 --> 00:45:27,350
+wanted to ask about is you mentioned
+
+1183
+00:45:27,360 --> 00:45:29,720
+that you're using seven languages so I
+
+1184
+00:45:29,730 --> 00:45:31,490
+kind of wanted to get a better picture
+
+1185
+00:45:31,500 --> 00:45:33,410
+of why are there so many languages
+
+1186
+00:45:33,420 --> 00:45:36,170
+involved in the project I think that the
+
+1187
+00:45:36,180 --> 00:45:37,910
+main reason why we have so many
+
+1188
+00:45:37,920 --> 00:45:41,840
+languages is because we had certain
+
+1189
+00:45:41,850 --> 00:45:44,570
+expertise --is in Prior languages and
+
+1190
+00:45:44,580 --> 00:45:46,640
+therefore we were a lot more effective
+
+1191
+00:45:46,650 --> 00:45:49,220
+at building parts of the application in
+
+1192
+00:45:49,230 --> 00:45:52,280
+those languages a lot of the decisions
+
+1193
+00:45:52,290 --> 00:45:54,650
+we made like it it's very clear that
+
+1194
+00:45:54,660 --> 00:45:56,150
+like this language is the best for doing
+
+1195
+00:45:56,160 --> 00:45:57,380
+this type of thing and therefore that's
+
+1196
+00:45:57,390 --> 00:45:59,360
+why we should be using it for this but
+
+1197
+00:45:59,370 --> 00:46:00,770
+there are like some situations I would
+
+1198
+00:46:00,780 --> 00:46:02,510
+say where if we if I had just already
+
+1199
+00:46:02,520 --> 00:46:05,120
+been an expert C++ developer like maybe
+
+1200
+00:46:05,130 --> 00:46:08,030
+I wouldn't have done so much in Swift or
+
+1201
+00:46:08,040 --> 00:46:09,230
+objective-c right
+
+1202
+00:46:09,240 --> 00:46:11,390
+but yeah so like we have Ruby for our
+
+1203
+00:46:11,400 --> 00:46:14,870
+back-end api's Ruby in rails and we were
+
+1204
+00:46:14,880 --> 00:46:16,370
+all rails developers so that made sense
+
+1205
+00:46:16,380 --> 00:46:19,640
+we can move quickly we have JavaScript
+
+1206
+00:46:19,650 --> 00:46:21,830
+for our partially on the backend side
+
+1207
+00:46:21,840 --> 00:46:22,940
+there's a little JavaScript and then
+
+1208
+00:46:22,950 --> 00:46:25,520
+also our UI inside the application I
+
+1209
+00:46:25,530 --> 00:46:28,160
+basically ended up building a electron
+
+1210
+00:46:28,170 --> 00:46:30,380
+inside of our app that lets me call
+
+1211
+00:46:30,390 --> 00:46:33,080
+JavaScript code and Swift code together
+
+1212
+00:46:33,090 --> 00:46:35,750
+it's kind of bridges those and the
+
+1213
+00:46:35,760 --> 00:46:37,520
+primary motivator behind that was I
+
+1214
+00:46:37,530 --> 00:46:38,990
+originally started off building all
+
+1215
+00:46:39,000 --> 00:46:41,380
+these native NS views and
+
+1216
+00:46:41,390 --> 00:46:43,540
+it takes a long time like if you're
+
+1217
+00:46:43,550 --> 00:46:45,430
+coming from a web background where you
+
+1218
+00:46:45,440 --> 00:46:47,290
+can spin up you know a basic website
+
+1219
+00:46:47,300 --> 00:46:50,560
+with some CSS and an hour or 15 minutes
+
+1220
+00:46:50,570 --> 00:46:52,000
+and then you go to this native world
+
+1221
+00:46:52,010 --> 00:46:54,040
+where it might take me an entire day
+
+1222
+00:46:54,050 --> 00:46:55,780
+just to build a button that like kind of
+
+1223
+00:46:55,790 --> 00:46:57,430
+looks not like what I actually want it
+
+1224
+00:46:57,440 --> 00:46:59,770
+to look the difference in that time is
+
+1225
+00:46:59,780 --> 00:47:02,080
+is drastic like I I do think that one
+
+1226
+00:47:02,090 --> 00:47:05,140
+day tuples entire UI will probably be
+
+1227
+00:47:05,150 --> 00:47:08,560
+native but we went to we I mean I don't
+
+1228
+00:47:08,570 --> 00:47:09,790
+want to say we wouldn't have survived as
+
+1229
+00:47:09,800 --> 00:47:11,890
+a start-up but it would have taken so
+
+1230
+00:47:11,900 --> 00:47:14,080
+long to get to the UI to where it is
+
+1231
+00:47:14,090 --> 00:47:16,420
+right now if I hadn't just written it
+
+1232
+00:47:16,430 --> 00:47:18,700
+all in JavaScript which I and I'm very
+
+1233
+00:47:18,710 --> 00:47:20,800
+fast and like our current UI probably
+
+1234
+00:47:20,810 --> 00:47:22,390
+took me like a weekend to do that was
+
+1235
+00:47:22,400 --> 00:47:24,940
+like the least time sync out of the
+
+1236
+00:47:24,950 --> 00:47:27,610
+entire project hmm and then the Swift
+
+1237
+00:47:27,620 --> 00:47:31,420
+because it's a lot more fun and fast to
+
+1238
+00:47:31,430 --> 00:47:33,070
+develop in Swift than it is Objective C
+
+1239
+00:47:33,080 --> 00:47:36,520
+or C++ so we try and do like the minimal
+
+1240
+00:47:36,530 --> 00:47:39,790
+amount of C++ and C code that we need to
+
+1241
+00:47:39,800 --> 00:47:41,380
+interface with these low-level API is
+
+1242
+00:47:41,390 --> 00:47:43,420
+because a lot of api's are just easier
+
+1243
+00:47:43,430 --> 00:47:46,120
+to interface with and C++ or C or were
+
+1244
+00:47:46,130 --> 00:47:48,520
+communicating a lot with WebRTC so it
+
+1245
+00:47:48,530 --> 00:47:50,380
+makes sense to kind of keep that code
+
+1246
+00:47:50,390 --> 00:47:53,800
+all co-located and then Objective C and
+
+1247
+00:47:53,810 --> 00:47:56,350
+Objective C plus plus are what allow us
+
+1248
+00:47:56,360 --> 00:47:59,560
+to call into the C++ libraries that we
+
+1249
+00:47:59,570 --> 00:48:02,050
+have in Objective C and then that
+
+1250
+00:48:02,060 --> 00:48:03,940
+Objective C gets bridged over to the
+
+1251
+00:48:03,950 --> 00:48:04,390
+Swift
+
+1252
+00:48:04,400 --> 00:48:07,450
+so I think that's all the languages C
+
+1253
+00:48:07,460 --> 00:48:09,970
+Swift Ruby JavaScript Objective C
+
+1254
+00:48:09,980 --> 00:48:13,450
+Objective C plus plus C++ and C and then
+
+1255
+00:48:13,460 --> 00:48:16,540
+you know like CSS and all that right so
+
+1256
+00:48:16,550 --> 00:48:18,880
+that's kind of interesting so it's the
+
+1257
+00:48:18,890 --> 00:48:22,530
+the actual UI of tuple is primarily a
+
+1258
+00:48:22,540 --> 00:48:26,080
+webview then it sounds like and then yep
+
+1259
+00:48:26,090 --> 00:48:29,070
+you're using Swift I guess to
+
+1260
+00:48:29,080 --> 00:48:31,540
+communicate I guess with the operating
+
+1261
+00:48:31,550 --> 00:48:35,530
+system level api's when possible and if
+
+1262
+00:48:35,540 --> 00:48:37,270
+it's not possible then you kind of go
+
+1263
+00:48:37,280 --> 00:48:42,070
+down into Objective C or C or C++ just
+
+1264
+00:48:42,080 --> 00:48:45,100
+based on whether or not the API you're
+
+1265
+00:48:45,110 --> 00:48:48,130
+talking to is written and C or C++ yep
+
+1266
+00:48:48,140 --> 00:48:49,720
+that's essentially how I would think
+
+1267
+00:48:49,730 --> 00:48:51,850
+about it and sort of I guess in the end
+
+1268
+00:48:51,860 --> 00:48:53,650
+like when you look at all the code that
+
+1269
+00:48:53,660 --> 00:48:54,620
+you've written for the
+
+1270
+00:48:54,630 --> 00:48:56,779
+project you know is what is most of the
+
+1271
+00:48:56,789 --> 00:48:58,220
+project written in it's a good question
+
+1272
+00:48:58,230 --> 00:49:00,710
+I can probably have github just tell me
+
+1273
+00:49:00,720 --> 00:49:01,819
+when I look at the thing
+
+1274
+00:49:01,829 --> 00:49:07,930
+alright so 40% Swift 20% C++ 20 % CSS
+
+1275
+00:49:07,940 --> 00:49:11,900
+10% JavaScript 10% objective-c 5%
+
+1276
+00:49:11,910 --> 00:49:14,690
+objective c plus plus 1% other so
+
+1277
+00:49:14,700 --> 00:49:16,940
+probably like like text files readme
+
+1278
+00:49:16,950 --> 00:49:19,099
+files documentation stuff like that mmm
+
+1279
+00:49:19,109 --> 00:49:21,799
+interesting it's a big break down it and
+
+1280
+00:49:21,809 --> 00:49:23,839
+that's just the that's just the client
+
+1281
+00:49:23,849 --> 00:49:25,190
+app that by the way like there's there's
+
+1282
+00:49:25,200 --> 00:49:26,870
+also the backend app which is the Ruby
+
+1283
+00:49:26,880 --> 00:49:28,730
+and rails app and stuff that's right
+
+1284
+00:49:28,740 --> 00:49:30,079
+that's just the one that I'm you know
+
+1285
+00:49:30,089 --> 00:49:32,240
+working in most the time so the the
+
+1286
+00:49:32,250 --> 00:49:34,220
+parts that are written in swift versus
+
+1287
+00:49:34,230 --> 00:49:37,549
+in C++ I would guess the C++ parts it's
+
+1288
+00:49:37,559 --> 00:49:41,599
+probably working with the Lib web RTC is
+
+1289
+00:49:41,609 --> 00:49:44,839
+that correct yep web RTC in there and
+
+1290
+00:49:44,849 --> 00:49:48,079
+there's another C++ library used to help
+
+1291
+00:49:48,089 --> 00:49:49,490
+out with some like Mouse coordinate
+
+1292
+00:49:49,500 --> 00:49:52,819
+stuff that I also use C++ for now yeah
+
+1293
+00:49:52,829 --> 00:49:54,740
+you're right primarily most of the C++
+
+1294
+00:49:54,750 --> 00:49:58,359
+is us creating our own utilities around
+
+1295
+00:49:58,369 --> 00:50:01,880
+WebRTC and then you said 40 percent is
+
+1296
+00:50:01,890 --> 00:50:04,460
+Swift so like what is what is most of
+
+1297
+00:50:04,470 --> 00:50:06,410
+that Swift code doing rendering
+
+1298
+00:50:06,420 --> 00:50:08,990
+rendering the UI doing Diagnostics
+
+1299
+00:50:09,000 --> 00:50:12,319
+handling different mouse modes so in the
+
+1300
+00:50:12,329 --> 00:50:13,880
+app we have different cursor modes which
+
+1301
+00:50:13,890 --> 00:50:15,859
+allow people to you know point out
+
+1302
+00:50:15,869 --> 00:50:20,089
+specific things yeah just like all the
+
+1303
+00:50:20,099 --> 00:50:22,099
+normal things involved with getting an
+
+1304
+00:50:22,109 --> 00:50:25,009
+app like a native mac OS app running
+
+1305
+00:50:25,019 --> 00:50:27,349
+there is a lot like authentication you
+
+1306
+00:50:27,359 --> 00:50:29,390
+know talking to our API doing it
+
+1307
+00:50:29,400 --> 00:50:31,099
+handling feature flags so only showing
+
+1308
+00:50:31,109 --> 00:50:32,900
+certain features to certain people until
+
+1309
+00:50:32,910 --> 00:50:34,549
+we've kind of validated that they're
+
+1310
+00:50:34,559 --> 00:50:36,980
+gonna be good handling like deep linking
+
+1311
+00:50:36,990 --> 00:50:38,749
+is the most recent thing I've been
+
+1312
+00:50:38,759 --> 00:50:40,849
+working on so being able to you know
+
+1313
+00:50:40,859 --> 00:50:43,549
+start a call using a special tuple URL
+
+1314
+00:50:43,559 --> 00:50:45,440
+which enables things like Alfred
+
+1315
+00:50:45,450 --> 00:50:48,049
+integrations or slack call integrations
+
+1316
+00:50:48,059 --> 00:50:50,150
+talking to our analytic service to get
+
+1317
+00:50:50,160 --> 00:50:51,529
+an idea of you know what features people
+
+1318
+00:50:51,539 --> 00:50:53,660
+are using and what you know what we
+
+1319
+00:50:53,670 --> 00:50:55,430
+should be focusing on I think that's
+
+1320
+00:50:55,440 --> 00:50:56,960
+that's most of the stuff I can think of
+
+1321
+00:50:56,970 --> 00:50:58,970
+that Swift layers doing I mean there's
+
+1322
+00:50:58,980 --> 00:51:01,370
+also the Swift layer manages like the
+
+1323
+00:51:01,380 --> 00:51:03,710
+state of what the UI should look like
+
+1324
+00:51:03,720 --> 00:51:05,870
+and then it just sends that state across
+
+1325
+00:51:05,880 --> 00:51:07,339
+the JavaScript and the JavaScript
+
+1326
+00:51:07,349 --> 00:51:08,010
+renders it
+
+1327
+00:51:08,020 --> 00:51:10,320
+appropriately so there's a good amount
+
+1328
+00:51:10,330 --> 00:51:12,210
+of code dealing with that and there are
+
+1329
+00:51:12,220 --> 00:51:15,060
+like a lot of windows that aren't WebKit
+
+1330
+00:51:15,070 --> 00:51:16,859
+used that are native windows like the
+
+1331
+00:51:16,869 --> 00:51:19,590
+Preferences window for like changing
+
+1332
+00:51:19,600 --> 00:51:20,580
+various things throughout the
+
+1333
+00:51:20,590 --> 00:51:22,950
+application so when we can we you know
+
+1334
+00:51:22,960 --> 00:51:24,660
+we want to use the native API s and when
+
+1335
+00:51:24,670 --> 00:51:26,190
+we think it really makes a difference or
+
+1336
+00:51:26,200 --> 00:51:28,620
+it matters so for example when you're
+
+1337
+00:51:28,630 --> 00:51:30,660
+guesting and you you're looking at the
+
+1338
+00:51:30,670 --> 00:51:33,000
+screen of someone else's computer we use
+
+1339
+00:51:33,010 --> 00:51:35,910
+the native mac OS toolbar that lets you
+
+1340
+00:51:35,920 --> 00:51:37,530
+change all the different cursor modes
+
+1341
+00:51:37,540 --> 00:51:40,530
+and the screen resolution and we use all
+
+1342
+00:51:40,540 --> 00:51:42,600
+native controls for that yeah so it
+
+1343
+00:51:42,610 --> 00:51:45,240
+seems like swift is really it almost
+
+1344
+00:51:45,250 --> 00:51:47,340
+feels like it's sort of the part of the
+
+1345
+00:51:47,350 --> 00:51:49,410
+application with the exception of the
+
+1346
+00:51:49,420 --> 00:51:53,280
+c++ for the WebRTC interaction and then
+
+1347
+00:51:53,290 --> 00:51:54,960
+you've got some of the web views for
+
+1348
+00:51:54,970 --> 00:51:57,270
+some of your UI components but those are
+
+1349
+00:51:57,280 --> 00:51:59,640
+kind of like the maybe the three main
+
+1350
+00:51:59,650 --> 00:52:02,370
+parts yep yeah that's that's a good
+
+1351
+00:52:02,380 --> 00:52:05,280
+break down cool I guess my next question
+
+1352
+00:52:05,290 --> 00:52:08,070
+would be when you were working on the
+
+1353
+00:52:08,080 --> 00:52:10,320
+project was there anything you found
+
+1354
+00:52:10,330 --> 00:52:12,260
+much easier than you thought it would be
+
+1355
+00:52:12,270 --> 00:52:16,650
+mm-hmm yeah I think that the call stats
+
+1356
+00:52:16,660 --> 00:52:18,780
+ended up being a lot quicker so for some
+
+1357
+00:52:18,790 --> 00:52:21,390
+context in the tuple application you
+
+1358
+00:52:21,400 --> 00:52:23,790
+know one of the unique opportunities we
+
+1359
+00:52:23,800 --> 00:52:25,440
+have because our user base is primarily
+
+1360
+00:52:25,450 --> 00:52:27,270
+developers they're somewhat technical
+
+1361
+00:52:27,280 --> 00:52:30,000
+and so we actually exposed the stats of
+
+1362
+00:52:30,010 --> 00:52:32,609
+the call well to pool session is going
+
+1363
+00:52:32,619 --> 00:52:34,170
+so you can see things like the frame
+
+1364
+00:52:34,180 --> 00:52:36,330
+rate that's being sent the frame rate
+
+1365
+00:52:36,340 --> 00:52:37,920
+that's being output how long it's taken
+
+1366
+00:52:37,930 --> 00:52:39,599
+to encode or frame or decode a frame
+
+1367
+00:52:39,609 --> 00:52:42,359
+what the available bandwidth is and all
+
+1368
+00:52:42,369 --> 00:52:45,180
+these stats that are very useful if you
+
+1369
+00:52:45,190 --> 00:52:48,150
+kind of know this space and are somewhat
+
+1370
+00:52:48,160 --> 00:52:50,040
+technical we I created like a little
+
+1371
+00:52:50,050 --> 00:52:52,710
+dashboard interface to to show that
+
+1372
+00:52:52,720 --> 00:52:54,570
+stuff and it ended up being a lot
+
+1373
+00:52:54,580 --> 00:52:56,400
+quicker than I anticipated primarily
+
+1374
+00:52:56,410 --> 00:52:58,859
+because WebRTC is so great like they
+
+1375
+00:52:58,869 --> 00:53:01,380
+provide these raw stat reports that that
+
+1376
+00:53:01,390 --> 00:53:03,300
+they're getting from the rtcp which we
+
+1377
+00:53:03,310 --> 00:53:05,160
+talked about at the very beginning of
+
+1378
+00:53:05,170 --> 00:53:07,770
+the call and yeah that ended up being a
+
+1379
+00:53:07,780 --> 00:53:09,900
+lot quicker then I I mean that honestly
+
+1380
+00:53:09,910 --> 00:53:11,580
+I didn't even talk to Ben and roll about
+
+1381
+00:53:11,590 --> 00:53:13,200
+doing that just one weekend I was like
+
+1382
+00:53:13,210 --> 00:53:15,270
+it'd be really nice if I had some
+
+1383
+00:53:15,280 --> 00:53:16,950
+dashboards to be able to look at what's
+
+1384
+00:53:16,960 --> 00:53:18,720
+going on in a call so when I'm debugging
+
+1385
+00:53:18,730 --> 00:53:21,000
+things I can figure out you know when I
+
+1386
+00:53:21,010 --> 00:53:21,780
+changed this
+
+1387
+00:53:21,790 --> 00:53:24,680
+does this get faster or slower and so
+
+1388
+00:53:24,690 --> 00:53:26,790
+that would be one thing that took a lot
+
+1389
+00:53:26,800 --> 00:53:28,080
+quicker and that another thing I would
+
+1390
+00:53:28,090 --> 00:53:30,840
+say is the webcam I was very scared
+
+1391
+00:53:30,850 --> 00:53:33,120
+about introducing the webcam after we
+
+1392
+00:53:33,130 --> 00:53:35,700
+spent whatever it was ten months working
+
+1393
+00:53:35,710 --> 00:53:38,040
+on only screens but it ended up being
+
+1394
+00:53:38,050 --> 00:53:39,750
+very quick and painless and that's
+
+1395
+00:53:39,760 --> 00:53:41,700
+definitely a testament to you know the
+
+1396
+00:53:41,710 --> 00:53:43,830
+Google engineers and WebRTC as a whole
+
+1397
+00:53:43,840 --> 00:53:46,740
+and I think it definitely helped that I
+
+1398
+00:53:46,750 --> 00:53:48,510
+knew web work to see a lot more
+
+1399
+00:53:48,520 --> 00:53:49,950
+intimately when I did that
+
+1400
+00:53:49,960 --> 00:53:51,720
+implementation and I guess I should have
+
+1401
+00:53:51,730 --> 00:53:53,190
+realized that at the time that like oh
+
+1402
+00:53:53,200 --> 00:53:55,200
+man I actually know a lot about this now
+
+1403
+00:53:55,210 --> 00:53:57,330
+and it probably won't be too bad but I
+
+1404
+00:53:57,340 --> 00:53:59,070
+was very scared at the prospect of
+
+1405
+00:53:59,080 --> 00:54:01,680
+having to add that into the application
+
+1406
+00:54:01,690 --> 00:54:03,960
+yeah was the the main thing you were
+
+1407
+00:54:03,970 --> 00:54:06,540
+worried about was it like the capturing
+
+1408
+00:54:06,550 --> 00:54:08,520
+from the webcam like he kind of weren't
+
+1409
+00:54:08,530 --> 00:54:10,350
+sure what that was gonna be like or what
+
+1410
+00:54:10,360 --> 00:54:12,600
+were you thinking I guess I was worried
+
+1411
+00:54:12,610 --> 00:54:14,490
+about the UX of it so how it would
+
+1412
+00:54:14,500 --> 00:54:17,070
+affect the current call experience I was
+
+1413
+00:54:17,080 --> 00:54:18,810
+worried about the bandwidth concerns so
+
+1414
+00:54:18,820 --> 00:54:20,520
+webcam eating up a lot of bandwidth
+
+1415
+00:54:20,530 --> 00:54:23,460
+making the screen less reliable or even
+
+1416
+00:54:23,470 --> 00:54:25,080
+eating up so much bandwidth that you
+
+1417
+00:54:25,090 --> 00:54:26,850
+know data channel messages get delayed
+
+1418
+00:54:26,860 --> 00:54:29,580
+and and then that experience like the
+
+1419
+00:54:29,590 --> 00:54:31,620
+remote control experience gets
+
+1420
+00:54:31,630 --> 00:54:34,290
+downgraded because of it I was worried I
+
+1421
+00:54:34,300 --> 00:54:36,120
+was worried about just even the very
+
+1422
+00:54:36,130 --> 00:54:38,790
+basic things like making adding the
+
+1423
+00:54:38,800 --> 00:54:40,380
+additional stream and getting it all set
+
+1424
+00:54:40,390 --> 00:54:42,900
+up correctly at that time I was using
+
+1425
+00:54:42,910 --> 00:54:45,240
+WebRTC in a little bit more of a naive
+
+1426
+00:54:45,250 --> 00:54:47,190
+way when it came to like establishing
+
+1427
+00:54:47,200 --> 00:54:49,740
+the connection there's what's called a
+
+1428
+00:54:49,750 --> 00:54:51,780
+transceiver API which you can get a
+
+1429
+00:54:51,790 --> 00:54:53,820
+little bit deep into most tutorials
+
+1430
+00:54:53,830 --> 00:54:55,800
+don't really talk about it but basically
+
+1431
+00:54:55,810 --> 00:54:58,410
+a transceiver is an RTP sender and an
+
+1432
+00:54:58,420 --> 00:55:00,870
+RTP receiver and you can set those
+
+1433
+00:55:00,880 --> 00:55:02,550
+transceivers up to be like
+
+1434
+00:55:02,560 --> 00:55:04,800
+bi-directional or one-way so you can
+
+1435
+00:55:04,810 --> 00:55:06,720
+either you know just receive audio or
+
+1436
+00:55:06,730 --> 00:55:08,850
+can send and receive audio and I had to
+
+1437
+00:55:08,860 --> 00:55:11,190
+do a pretty major refactor of how our
+
+1438
+00:55:11,200 --> 00:55:13,890
+web RTC code worked in order to use
+
+1439
+00:55:13,900 --> 00:55:16,620
+those newer api's that had been like
+
+1440
+00:55:16,630 --> 00:55:18,180
+when we originally had set it up like
+
+1441
+00:55:18,190 --> 00:55:20,070
+there wasn't really any push to be using
+
+1442
+00:55:20,080 --> 00:55:21,600
+those API is like it was fine to use the
+
+1443
+00:55:21,610 --> 00:55:24,600
+old stream based API so yeah basically
+
+1444
+00:55:24,610 --> 00:55:26,640
+there was a big refactor that was going
+
+1445
+00:55:26,650 --> 00:55:28,440
+to touch major critical pieces of the
+
+1446
+00:55:28,450 --> 00:55:30,780
+code base that was really worth a big
+
+1447
+00:55:30,790 --> 00:55:32,670
+part of the concern was but it ended up
+
+1448
+00:55:32,680 --> 00:55:34,020
+working out great and you know web
+
+1449
+00:55:34,030 --> 00:55:35,400
+receipts doing what would it
+
+1450
+00:55:35,410 --> 00:55:37,950
+says it's gonna do so very grateful nice
+
+1451
+00:55:37,960 --> 00:55:40,170
+yeah I mean it's sort of like like
+
+1452
+00:55:40,180 --> 00:55:41,400
+you've you've kind of been talking about
+
+1453
+00:55:41,410 --> 00:55:43,289
+how there's so many things built into
+
+1454
+00:55:43,299 --> 00:55:46,589
+website RTC that if the way they do it
+
+1455
+00:55:46,599 --> 00:55:48,150
+meets your use case then it's kind of
+
+1456
+00:55:48,160 --> 00:55:50,490
+like you know boom you just kind of use
+
+1457
+00:55:50,500 --> 00:55:52,740
+it and you're good and it's only when
+
+1458
+00:55:52,750 --> 00:55:55,140
+you're a little bit outside of what they
+
+1459
+00:55:55,150 --> 00:55:56,670
+do in the browser or whatnot that you
+
+1460
+00:55:56,680 --> 00:55:58,019
+have to kind of dive in and start doing
+
+1461
+00:55:58,029 --> 00:56:00,480
+something custom yeah definitely and and
+
+1462
+00:56:00,490 --> 00:56:02,190
+one day and you know I very much hope to
+
+1463
+00:56:02,200 --> 00:56:04,950
+actually not use the video pipeline and
+
+1464
+00:56:04,960 --> 00:56:07,559
+WebRTC and build a completely custom to
+
+1465
+00:56:07,569 --> 00:56:10,289
+pool pipeline I honestly like don't know
+
+1466
+00:56:10,299 --> 00:56:12,420
+I have some ideas on how I would go
+
+1467
+00:56:12,430 --> 00:56:14,249
+about doing it but I'm not confident
+
+1468
+00:56:14,259 --> 00:56:16,019
+enough in my abilities to like think
+
+1469
+00:56:16,029 --> 00:56:18,329
+that I could do better than WebRTC is
+
+1470
+00:56:18,339 --> 00:56:20,249
+doing right now for us I do think that
+
+1471
+00:56:20,259 --> 00:56:22,049
+there are a lot of trade-offs that Weber
+
+1472
+00:56:22,059 --> 00:56:24,569
+TC is making which in our specific use
+
+1473
+00:56:24,579 --> 00:56:26,759
+case we might not really want so for
+
+1474
+00:56:26,769 --> 00:56:28,710
+example like they have a pretty big
+
+1475
+00:56:28,720 --> 00:56:31,670
+jitter buffer which will ensure that if
+
+1476
+00:56:31,680 --> 00:56:34,410
+packets are missing or get lost like
+
+1477
+00:56:34,420 --> 00:56:36,930
+it'll it'll just wait until it gets them
+
+1478
+00:56:36,940 --> 00:56:38,759
+but in two bowl like what we prefer to
+
+1479
+00:56:38,769 --> 00:56:40,470
+do is just drop the frame completely at
+
+1480
+00:56:40,480 --> 00:56:42,029
+a set rate and so it's like if I'm not
+
+1481
+00:56:42,039 --> 00:56:43,829
+getting all the packets I need by you
+
+1482
+00:56:43,839 --> 00:56:46,859
+know whatever my target FPS is then like
+
+1483
+00:56:46,869 --> 00:56:48,029
+just don't even wait in the jitter
+
+1484
+00:56:48,039 --> 00:56:49,529
+buffer just like forget about it and
+
+1485
+00:56:49,539 --> 00:56:52,170
+there are there are like knobs and
+
+1486
+00:56:52,180 --> 00:56:53,970
+whistles you can tune in WebRTC to kind
+
+1487
+00:56:53,980 --> 00:56:56,039
+of make those decisions but having
+
+1488
+00:56:56,049 --> 00:56:58,440
+complete control over it all seems
+
+1489
+00:56:58,450 --> 00:57:01,470
+appealing to me so one day maybe we'll
+
+1490
+00:57:01,480 --> 00:57:03,059
+we'll kind of get more in that direction
+
+1491
+00:57:03,069 --> 00:57:05,190
+which would be awesome I think there's a
+
+1492
+00:57:05,200 --> 00:57:06,630
+lot of low-hanging fruit in the
+
+1493
+00:57:06,640 --> 00:57:08,819
+performance of to pool still it's just
+
+1494
+00:57:08,829 --> 00:57:10,740
+like this last year has been so much of
+
+1495
+00:57:10,750 --> 00:57:13,019
+just leveling up all the skills we need
+
+1496
+00:57:13,029 --> 00:57:15,630
+it as a team in order to execute like
+
+1497
+00:57:15,640 --> 00:57:18,120
+the v1 and now you know next year is
+
+1498
+00:57:18,130 --> 00:57:19,470
+going to be a lot of improving the
+
+1499
+00:57:19,480 --> 00:57:21,450
+performance and adding in more and more
+
+1500
+00:57:21,460 --> 00:57:23,009
+unique features that just make the
+
+1501
+00:57:23,019 --> 00:57:25,650
+pairing experience even better yeah it
+
+1502
+00:57:25,660 --> 00:57:27,329
+sounds like you've built up this really
+
+1503
+00:57:27,339 --> 00:57:29,400
+solid base of knowledge you know both in
+
+1504
+00:57:29,410 --> 00:57:32,339
+native development and in WebRTC and all
+
+1505
+00:57:32,349 --> 00:57:33,779
+that and so it sounds like you guys are
+
+1506
+00:57:33,789 --> 00:57:36,359
+in a really good position to kind of go
+
+1507
+00:57:36,369 --> 00:57:38,190
+into what's next yeah thanks definitely
+
+1508
+00:57:38,200 --> 00:57:39,630
+feels that way I feel like a week worth
+
+1509
+00:57:39,640 --> 00:57:42,450
+of work right now is was like multiple
+
+1510
+00:57:42,460 --> 00:57:44,519
+weeks of work even just six months ago
+
+1511
+00:57:44,529 --> 00:57:46,559
+Thanks it's a the the growth is
+
+1512
+00:57:46,569 --> 00:57:48,299
+compounding for sure one of the things
+
+1513
+00:57:48,309 --> 00:57:48,960
+that
+
+1514
+00:57:48,970 --> 00:57:50,760
+I believe you've mentioned before is
+
+1515
+00:57:50,770 --> 00:57:53,490
+that you have to use some level of
+
+1516
+00:57:53,500 --> 00:57:55,140
+low-level graphics rendering or learned
+
+1517
+00:57:55,150 --> 00:57:57,690
+a little bit about metal on Mac OS why
+
+1518
+00:57:57,700 --> 00:57:59,940
+was this necessary is this for like the
+
+1519
+00:57:59,950 --> 00:58:02,190
+screen capture or what was that for
+
+1520
+00:58:02,200 --> 00:58:04,319
+no so the metal part is actually on the
+
+1521
+00:58:04,329 --> 00:58:06,540
+the render phase so the core reason why
+
+1522
+00:58:06,550 --> 00:58:08,490
+I wanted to learn about how that whole
+
+1523
+00:58:08,500 --> 00:58:11,910
+like section of of the the process works
+
+1524
+00:58:11,920 --> 00:58:13,800
+is just because think it's important to
+
+1525
+00:58:13,810 --> 00:58:15,630
+not like have everything be a black box
+
+1526
+00:58:15,640 --> 00:58:18,180
+and getting a basic understanding into
+
+1527
+00:58:18,190 --> 00:58:19,980
+how like graphics and OpenGL works the
+
+1528
+00:58:19,990 --> 00:58:21,450
+difference between a vertex shader and a
+
+1529
+00:58:21,460 --> 00:58:23,400
+fragment shader how to send you know
+
+1530
+00:58:23,410 --> 00:58:25,170
+those shaders and that your compiled
+
+1531
+00:58:25,180 --> 00:58:27,270
+program to the GPU like that's all stuff
+
+1532
+00:58:27,280 --> 00:58:29,010
+that I didn't I wanted to know enough
+
+1533
+00:58:29,020 --> 00:58:30,900
+about that it wasn't just this like
+
+1534
+00:58:30,910 --> 00:58:32,880
+scary black box to me if that makes
+
+1535
+00:58:32,890 --> 00:58:37,109
+sense and so WebRTC provided a metal
+
+1536
+00:58:37,119 --> 00:58:40,650
+renderer already and it's it's good it
+
+1537
+00:58:40,660 --> 00:58:43,319
+works there's I know for a fact like
+
+1538
+00:58:43,329 --> 00:58:44,700
+when reading through the code there's
+
+1539
+00:58:44,710 --> 00:58:46,200
+things I can do to optimize it a bit
+
+1540
+00:58:46,210 --> 00:58:48,240
+there's some pixel conversions that
+
+1541
+00:58:48,250 --> 00:58:49,620
+don't need to be happening like they're
+
+1542
+00:58:49,630 --> 00:58:51,780
+happening twice type of thing but for
+
+1543
+00:58:51,790 --> 00:58:53,010
+the most part there was only like one
+
+1544
+00:58:53,020 --> 00:58:54,540
+bug with it that we have to fix for
+
+1545
+00:58:54,550 --> 00:58:56,309
+Catalina so I haven't had to do too much
+
+1546
+00:58:56,319 --> 00:58:57,630
+work on that but the most important
+
+1547
+00:58:57,640 --> 00:58:58,980
+thing for me was being able to read that
+
+1548
+00:58:58,990 --> 00:59:00,390
+code and understand what was going on
+
+1549
+00:59:00,400 --> 00:59:02,430
+and then also I probably have somewhat
+
+1550
+00:59:02,440 --> 00:59:04,170
+of a selfish reason to want to learn it
+
+1551
+00:59:04,180 --> 00:59:05,910
+because one day I want to build a game
+
+1552
+00:59:05,920 --> 00:59:07,829
+engine and that's a big part of building
+
+1553
+00:59:07,839 --> 00:59:09,390
+a game engine is figuring out how to do
+
+1554
+00:59:09,400 --> 00:59:12,089
+the rendering piece so nice yeah I mean
+
+1555
+00:59:12,099 --> 00:59:14,760
+I think like just in general not even on
+
+1556
+00:59:14,770 --> 00:59:16,559
+specifically with WebRTC like it's
+
+1557
+00:59:16,569 --> 00:59:19,230
+always good I think to go like maybe one
+
+1558
+00:59:19,240 --> 00:59:21,150
+level deeper than kind of where you're
+
+1559
+00:59:21,160 --> 00:59:23,430
+at like at one level of abstraction you
+
+1560
+00:59:23,440 --> 00:59:25,650
+know lower and that way if things are
+
+1561
+00:59:25,660 --> 00:59:27,510
+not working the way that you expect at
+
+1562
+00:59:27,520 --> 00:59:28,890
+the higher level you kind of have a
+
+1563
+00:59:28,900 --> 00:59:30,809
+little bit of insight into to what to do
+
+1564
+00:59:30,819 --> 00:59:32,970
+next yeah definitely and I think
+
+1565
+00:59:32,980 --> 00:59:34,859
+learning about the whole rendering
+
+1566
+00:59:34,869 --> 00:59:37,170
+process and how metal works enabled me
+
+1567
+00:59:37,180 --> 00:59:38,819
+to be able to do that piece of code
+
+1568
+00:59:38,829 --> 00:59:40,680
+where I white out or black out the
+
+1569
+00:59:40,690 --> 00:59:42,540
+screen where the webcam is like I
+
+1570
+00:59:42,550 --> 00:59:43,380
+probably could have figured that out
+
+1571
+00:59:43,390 --> 00:59:45,930
+without that knowledge but understanding
+
+1572
+00:59:45,940 --> 00:59:47,430
+at least a little bit more about how
+
+1573
+00:59:47,440 --> 00:59:49,079
+that whole subsystem works definitely
+
+1574
+00:59:49,089 --> 00:59:51,420
+made that be like a one-hour thing
+
+1575
+00:59:51,430 --> 00:59:53,099
+instead of a one-week type of thing
+
+1576
+00:59:53,109 --> 00:59:55,920
+for sure if you were starting over
+
+1577
+00:59:55,930 --> 00:59:58,260
+knowing what you know now are they are
+
+1578
+00:59:58,270 --> 00:59:59,370
+there any things that you would have
+
+1579
+00:59:59,380 --> 01:00:00,780
+done differently
+
+1580
+01:00:00,790 --> 01:00:02,280
+I think it would be less inclined to
+
+1581
+01:00:02,290 --> 01:00:04,710
+want to use action cable we've been
+
+1582
+01:00:04,720 --> 01:00:06,330
+using action cable as our signaling
+
+1583
+01:00:06,340 --> 01:00:09,360
+service and there's been a lot of like
+
+1584
+01:00:09,370 --> 01:00:12,120
+weird wonky things with it and it's very
+
+1585
+01:00:12,130 --> 01:00:13,950
+hard to debug and I don't know I think I
+
+1586
+01:00:13,960 --> 01:00:15,420
+would have preferred to just use like
+
+1587
+01:00:15,430 --> 01:00:17,850
+socket IO or some some other service
+
+1588
+01:00:17,860 --> 01:00:20,250
+that's maybe a little bit more mature in
+
+1589
+01:00:20,260 --> 01:00:21,960
+the wild or it's been used in the wild
+
+1590
+01:00:21,970 --> 01:00:24,600
+longer but that seems like relatively
+
+1591
+01:00:24,610 --> 01:00:25,890
+small thing in the grand scheme of
+
+1592
+01:00:25,900 --> 01:00:28,950
+things I mean in an ideal world I wish I
+
+1593
+01:00:28,960 --> 01:00:30,690
+could start over and have all the
+
+1594
+01:00:30,700 --> 01:00:32,220
+knowledge I have right now about the
+
+1595
+01:00:32,230 --> 01:00:35,010
+space and the programming languages the
+
+1596
+01:00:35,020 --> 01:00:35,880
+one thing I would say is I'm very
+
+1597
+01:00:35,890 --> 01:00:38,400
+grateful like Swift and makes it very
+
+1598
+01:00:38,410 --> 01:00:41,310
+easy to refactor like safely which is
+
+1599
+01:00:41,320 --> 01:00:43,140
+great so like as I've learned more about
+
+1600
+01:00:43,150 --> 01:00:45,480
+Swift development and Mac OS development
+
+1601
+01:00:45,490 --> 01:00:48,150
+I've been able to kind of rejigger some
+
+1602
+01:00:48,160 --> 01:00:50,460
+of the application to be architected a
+
+1603
+01:00:50,470 --> 01:00:53,100
+little bit more effectively without you
+
+1604
+01:00:53,110 --> 01:00:54,750
+know too much pain like if I was using
+
+1605
+01:00:54,760 --> 01:00:56,160
+something like Ruby for that it would
+
+1606
+01:00:56,170 --> 01:00:58,020
+have been a lot more painful but that's
+
+1607
+01:00:58,030 --> 01:01:01,140
+I don't know it started to say yeah yeah
+
+1608
+01:01:01,150 --> 01:01:03,030
+don't don't have a good answer right I
+
+1609
+01:01:03,040 --> 01:01:06,570
+mean hindsight is yeah hindsight's 20/20
+
+1610
+01:01:06,580 --> 01:01:10,710
+so and also for the listeners action
+
+1611
+01:01:10,720 --> 01:01:14,430
+cable being the WebSocket I guess
+
+1612
+01:01:14,440 --> 01:01:16,590
+implementation for Ruby on Rails right
+
+1613
+01:01:16,600 --> 01:01:18,570
+yep thanks for clarifying that and
+
+1614
+01:01:18,580 --> 01:01:21,090
+socket IO being the equivalent for
+
+1615
+01:01:21,100 --> 01:01:24,330
+nodejs yep yeah I don't know I'm pretty
+
+1616
+01:01:24,340 --> 01:01:26,010
+happy with the decisions we made there's
+
+1617
+01:01:26,020 --> 01:01:28,500
+nothing like super bad that stands out
+
+1618
+01:01:28,510 --> 01:01:29,910
+like man if we had done this one thing
+
+1619
+01:01:29,920 --> 01:01:31,950
+differently our life would be a lot
+
+1620
+01:01:31,960 --> 01:01:35,280
+easier right now I guess the the way
+
+1621
+01:01:35,290 --> 01:01:38,370
+that we set up the calls so early on you
+
+1622
+01:01:38,380 --> 01:01:39,780
+know we kind of had this idea that it
+
+1623
+01:01:39,790 --> 01:01:42,030
+would always be peer to peer one-to-one
+
+1624
+01:01:42,040 --> 01:01:43,680
+like your pair programming with someone
+
+1625
+01:01:43,690 --> 01:01:45,480
+well we didn't fully realize is that a
+
+1626
+01:01:45,490 --> 01:01:47,280
+lot of people do what's called mob pair
+
+1627
+01:01:47,290 --> 01:01:48,810
+programming where they have multiple
+
+1628
+01:01:48,820 --> 01:01:51,330
+people in a session but both Ben and I
+
+1629
+01:01:51,340 --> 01:01:53,340
+who like have more of a background in
+
+1630
+01:01:53,350 --> 01:01:54,900
+pairing like we never did that we've
+
+1631
+01:01:54,910 --> 01:01:56,730
+always only paired like one to one right
+
+1632
+01:01:56,740 --> 01:01:59,400
+and so a lot of the internals of tuple
+
+1633
+01:01:59,410 --> 01:02:01,800
+where it was like very much set up in a
+
+1634
+01:02:01,810 --> 01:02:03,930
+way where it was only meant for two
+
+1635
+01:02:03,940 --> 01:02:07,950
+people and I don't fully regret that
+
+1636
+01:02:07,960 --> 01:02:10,470
+decision because I would say that the
+
+1637
+01:02:10,480 --> 01:02:13,050
+code base was less complex by by doing
+
+1638
+01:02:13,060 --> 01:02:14,250
+it that way like there were
+
+1639
+01:02:14,260 --> 01:02:16,920
+less that we had to think about and it
+
+1640
+01:02:16,930 --> 01:02:18,900
+allowed us to get the app going a lot
+
+1641
+01:02:18,910 --> 01:02:20,760
+faster and we were able to get to market
+
+1642
+01:02:20,770 --> 01:02:22,710
+we were able to course-correct and make
+
+1643
+01:02:22,720 --> 01:02:24,300
+these small changes that people wanted
+
+1644
+01:02:24,310 --> 01:02:26,880
+in order for us to become profitable and
+
+1645
+01:02:26,890 --> 01:02:28,290
+be able to do this as like a full-time
+
+1646
+01:02:28,300 --> 01:02:30,990
+thing but if we had had funding and
+
+1647
+01:02:31,000 --> 01:02:33,120
+unlimited time I probably would have bit
+
+1648
+01:02:33,130 --> 01:02:34,530
+the bullet and you know added that
+
+1649
+01:02:34,540 --> 01:02:36,150
+complexity into the app right from the
+
+1650
+01:02:36,160 --> 01:02:39,120
+start and the complexity part being just
+
+1651
+01:02:39,130 --> 01:02:40,830
+the ability to start a call with like n
+
+1652
+01:02:40,840 --> 01:02:43,950
+number of people but yeah now we're kind
+
+1653
+01:02:43,960 --> 01:02:46,230
+of past that like we the code base is
+
+1654
+01:02:46,240 --> 01:02:48,540
+set up in a way where that's no longer
+
+1655
+01:02:48,550 --> 01:02:50,340
+that much of an issue so I don't feel
+
+1656
+01:02:50,350 --> 01:02:51,930
+too too bad about it anymore
+
+1657
+01:02:51,940 --> 01:02:53,970
+but I remember at the time dreading
+
+1658
+01:02:53,980 --> 01:02:57,240
+dreading that having to do that yeah I
+
+1659
+01:02:57,250 --> 01:02:59,510
+mean in some ways though it's probably
+
+1660
+01:02:59,520 --> 01:03:01,980
+it may have been good to start with just
+
+1661
+01:03:01,990 --> 01:03:03,930
+one on one because then it really helped
+
+1662
+01:03:03,940 --> 01:03:05,940
+you guys focus right just on the one use
+
+1663
+01:03:05,950 --> 01:03:07,770
+case make sure that use case is really
+
+1664
+01:03:07,780 --> 01:03:09,510
+solid and not kind of get distracted
+
+1665
+01:03:09,520 --> 01:03:11,730
+with you know things that not as many
+
+1666
+01:03:11,740 --> 01:03:14,070
+people use yeah a hundred percent also
+
+1667
+01:03:14,080 --> 01:03:17,010
+this is such a great example of you know
+
+1668
+01:03:17,020 --> 01:03:19,530
+I don't know product development but so
+
+1669
+01:03:19,540 --> 01:03:20,850
+we felt like we were getting so many
+
+1670
+01:03:20,860 --> 01:03:23,340
+requests for doing n number calls and
+
+1671
+01:03:23,350 --> 01:03:25,080
+back in the early days when we didn't
+
+1672
+01:03:25,090 --> 01:03:27,510
+support that and then since supporting
+
+1673
+01:03:27,520 --> 01:03:28,980
+it like the percentage of people that
+
+1674
+01:03:28,990 --> 01:03:30,990
+actually do it is probably less than ten
+
+1675
+01:03:31,000 --> 01:03:33,900
+percent it's tiny yeah and so like I bet
+
+1676
+01:03:33,910 --> 01:03:35,370
+if we just didn't have that feature it
+
+1677
+01:03:35,380 --> 01:03:36,480
+would still just be fine
+
+1678
+01:03:36,490 --> 01:03:39,180
+right yeah but we would probably get
+
+1679
+01:03:39,190 --> 01:03:40,860
+some complaints about it and really it
+
+1680
+01:03:40,870 --> 01:03:43,020
+like the the challenge would be to keep
+
+1681
+01:03:43,030 --> 01:03:44,760
+a good psychological state and know that
+
+1682
+01:03:44,770 --> 01:03:46,860
+people are requesting something you know
+
+1683
+01:03:46,870 --> 01:03:48,240
+they don't actually want or use that
+
+1684
+01:03:48,250 --> 01:03:50,580
+often but yeah it's it's funny how that
+
+1685
+01:03:50,590 --> 01:03:52,830
+works like people a lot of people be
+
+1686
+01:03:52,840 --> 01:03:54,900
+very loud about a certain thing but then
+
+1687
+01:03:54,910 --> 01:03:56,760
+not a lot of your users actually end up
+
+1688
+01:03:56,770 --> 01:03:58,500
+getting value from that or wanting to or
+
+1689
+01:03:58,510 --> 01:04:01,200
+needing that feature so right it's yeah
+
+1690
+01:04:01,210 --> 01:04:03,210
+that's tricky cuz you don't know until
+
+1691
+01:04:03,220 --> 01:04:04,740
+you actually give it to them right
+
+1692
+01:04:04,750 --> 01:04:05,880
+totally
+
+1693
+01:04:05,890 --> 01:04:08,430
+so finally is there anything you wish
+
+1694
+01:04:08,440 --> 01:04:10,740
+you had while developing the application
+
+1695
+01:04:10,750 --> 01:04:13,290
+that could be a feature in WebRTC that
+
+1696
+01:04:13,300 --> 01:04:15,390
+could be an open source library is there
+
+1697
+01:04:15,400 --> 01:04:16,830
+anything that would have made things a
+
+1698
+01:04:16,840 --> 01:04:21,390
+lot easier for you yeah I mean this is
+
+1699
+01:04:21,400 --> 01:04:24,920
+not code related but I wish I had had
+
+1700
+01:04:24,930 --> 01:04:27,940
+multiple powerful machines soon
+
+1701
+01:04:27,950 --> 01:04:30,099
+hmm this sounds ridiculous but like I
+
+1702
+01:04:30,109 --> 01:04:32,530
+had my one main laptop for programming
+
+1703
+01:04:32,540 --> 01:04:34,240
+on and for a while I was just using
+
+1704
+01:04:34,250 --> 01:04:36,250
+these old laptops as like my Pierre
+
+1705
+01:04:36,260 --> 01:04:37,630
+number two pure number three was
+
+1706
+01:04:37,640 --> 01:04:39,970
+developing the app and for a while I
+
+1707
+01:04:39,980 --> 01:04:41,740
+only just had like my one monitor and
+
+1708
+01:04:41,750 --> 01:04:44,290
+then they used laptop screens and like I
+
+1709
+01:04:44,300 --> 01:04:46,660
+don't know why I guess I was so worried
+
+1710
+01:04:46,670 --> 01:04:48,700
+about running out of runway because we
+
+1711
+01:04:48,710 --> 01:04:50,800
+weren't making money for a while that I
+
+1712
+01:04:50,810 --> 01:04:52,839
+didn't just invest in having you know
+
+1713
+01:04:52,849 --> 01:04:55,510
+multiple monitors and like multiple new
+
+1714
+01:04:55,520 --> 01:04:57,760
+brand new machines that are powerful and
+
+1715
+01:04:57,770 --> 01:04:59,410
+it's just like my dev life now is
+
+1716
+01:04:59,420 --> 01:05:01,270
+significantly improved now that I have
+
+1717
+01:05:01,280 --> 01:05:03,520
+that so that's definitely a big regret
+
+1718
+01:05:03,530 --> 01:05:05,500
+something I wish I had had as far as
+
+1719
+01:05:05,510 --> 01:05:08,470
+code goes you know I really wish that if
+
+1720
+01:05:08,480 --> 01:05:10,720
+I didn't need to learn C++ to have made
+
+1721
+01:05:10,730 --> 01:05:12,430
+tuple I would think I would be a happier
+
+1722
+01:05:12,440 --> 01:05:16,480
+person that maybe sounds somewhat
+
+1723
+01:05:16,490 --> 01:05:19,300
+cynical but I imagine C++ is great if
+
+1724
+01:05:19,310 --> 01:05:20,950
+you're really good at it and even doing
+
+1725
+01:05:20,960 --> 01:05:23,050
+it for a really long time but the one
+
+1726
+01:05:23,060 --> 01:05:25,030
+thing I know about myself is like I'm I
+
+1727
+01:05:25,040 --> 01:05:27,069
+don't know I it's very easy for you to
+
+1728
+01:05:27,079 --> 01:05:28,780
+shoot yourself in the foot in C++ and I
+
+1729
+01:05:28,790 --> 01:05:30,550
+have made like all of the classic
+
+1730
+01:05:30,560 --> 01:05:32,890
+mistakes in C++ and it definitely makes
+
+1731
+01:05:32,900 --> 01:05:34,390
+me wish that there was like a rust
+
+1732
+01:05:34,400 --> 01:05:37,480
+implementation of WebRTC or you know
+
+1733
+01:05:37,490 --> 01:05:39,940
+some other language there is actually a
+
+1734
+01:05:39,950 --> 01:05:42,760
+go implementation of web RTC called peon
+
+1735
+01:05:42,770 --> 01:05:45,010
+or PI on not sure how to pronounce it
+
+1736
+01:05:45,020 --> 01:05:47,319
+which is very exciting to me definitely
+
+1737
+01:05:47,329 --> 01:05:49,150
+worth checking out if you're looking for
+
+1738
+01:05:49,160 --> 01:05:51,430
+you know trying to get your feet wet and
+
+1739
+01:05:51,440 --> 01:05:53,470
+more like a side project D type of thing
+
+1740
+01:05:53,480 --> 01:05:55,960
+with WebRTC and you know go or you like
+
+1741
+01:05:55,970 --> 01:05:56,440
+go
+
+1742
+01:05:56,450 --> 01:05:57,940
+I would I would check that out because
+
+1743
+01:05:57,950 --> 01:06:00,670
+it seems very cool to me but it
+
+1744
+01:06:00,680 --> 01:06:03,430
+obviously it had it's not as robust as
+
+1745
+01:06:03,440 --> 01:06:04,960
+the C++ implementation that's been
+
+1746
+01:06:04,970 --> 01:06:06,700
+around for you know 10 years or whatever
+
+1747
+01:06:06,710 --> 01:06:08,680
+yeah it'll be interesting to see if
+
+1748
+01:06:08,690 --> 01:06:11,290
+there's because I think like when people
+
+1749
+01:06:11,300 --> 01:06:13,690
+hear WebRTC they're usually thinking of
+
+1750
+01:06:13,700 --> 01:06:16,270
+sort of the browser use cases you know
+
+1751
+01:06:16,280 --> 01:06:19,059
+someone doing video chat or sure audio
+
+1752
+01:06:19,069 --> 01:06:21,130
+chat that sort of thing and so and yeah
+
+1753
+01:06:21,140 --> 01:06:22,569
+it'll be interesting to see if more
+
+1754
+01:06:22,579 --> 01:06:24,339
+people are using it in kind of the
+
+1755
+01:06:24,349 --> 01:06:26,079
+native space and if that sort of
+
+1756
+01:06:26,089 --> 01:06:28,690
+encourages the use of a binding in rust
+
+1757
+01:06:28,700 --> 01:06:31,120
+or like you said building out more and
+
+1758
+01:06:31,130 --> 01:06:33,640
+go that sort of thing yeah I mean even a
+
+1759
+01:06:33,650 --> 01:06:35,410
+full implementation and rest not just a
+
+1760
+01:06:35,420 --> 01:06:37,240
+binding would be would be cool you know
+
+1761
+01:06:37,250 --> 01:06:38,859
+I think that if the if the Google
+
+1762
+01:06:38,869 --> 01:06:40,540
+engineers and I mean I know there's a
+
+1763
+01:06:40,550 --> 01:06:41,720
+lot of Mozilla engineers that
+
+1764
+01:06:41,730 --> 01:06:45,560
+on WebRTC as well I bet if rust was you
+
+1765
+01:06:45,570 --> 01:06:47,240
+know what it is now but back then when
+
+1766
+01:06:47,250 --> 01:06:48,530
+they started they probably would have
+
+1767
+01:06:48,540 --> 01:06:51,580
+chosen rust but you know is what it is
+
+1768
+01:06:51,590 --> 01:06:53,480
+maybe not I mean they interface with
+
+1769
+01:06:53,490 --> 01:06:55,820
+chromium so maybe they wouldn't have
+
+1770
+01:06:55,830 --> 01:06:57,320
+made that decision but that's true
+
+1771
+01:06:57,330 --> 01:06:58,849
+trying to think of other things that I
+
+1772
+01:06:58,859 --> 01:07:00,650
+wish I had had I wish I had been more
+
+1773
+01:07:00,660 --> 01:07:04,609
+open to talking to experts early on so I
+
+1774
+01:07:04,619 --> 01:07:06,440
+think there was a little bit of pride
+
+1775
+01:07:06,450 --> 01:07:08,780
+involved in like me not wanting to just
+
+1776
+01:07:08,790 --> 01:07:11,030
+use these resources like oh I need to
+
+1777
+01:07:11,040 --> 01:07:12,050
+figure it out myself
+
+1778
+01:07:12,060 --> 01:07:14,359
+and every single time that we did a call
+
+1779
+01:07:14,369 --> 01:07:16,430
+with an expert on some specific area
+
+1780
+01:07:16,440 --> 01:07:18,410
+that I was interested in the value that
+
+1781
+01:07:18,420 --> 01:07:19,880
+we got from that in the amount I learned
+
+1782
+01:07:19,890 --> 01:07:22,820
+was you know 10 or 20 X how much we
+
+1783
+01:07:22,830 --> 01:07:25,430
+spent on it and I think the next company
+
+1784
+01:07:25,440 --> 01:07:27,530
+that I do if there is ever another one
+
+1785
+01:07:27,540 --> 01:07:30,140
+outside of to pool I'm gonna allocate a
+
+1786
+01:07:30,150 --> 01:07:32,930
+budget towards talking to experts but
+
+1787
+01:07:32,940 --> 01:07:34,430
+it's gonna be a budget that I have to
+
+1788
+01:07:34,440 --> 01:07:36,410
+spend right so it's like there's this
+
+1789
+01:07:36,420 --> 01:07:37,760
+much money in the bank account each
+
+1790
+01:07:37,770 --> 01:07:40,220
+month like you it needs to be spent on
+
+1791
+01:07:40,230 --> 01:07:42,380
+somebody giving me some information and
+
+1792
+01:07:42,390 --> 01:07:44,030
+the crazy thing is a lot of people just
+
+1793
+01:07:44,040 --> 01:07:45,530
+ended up helping us for free even though
+
+1794
+01:07:45,540 --> 01:07:48,020
+we offered to pay them and that's
+
+1795
+01:07:48,030 --> 01:07:49,010
+definitely something I've been very
+
+1796
+01:07:49,020 --> 01:07:50,210
+grateful for I can't believe how many
+
+1797
+01:07:50,220 --> 01:07:52,190
+people in the community of like just
+
+1798
+01:07:52,200 --> 01:07:54,470
+offered their help or their expertise so
+
+1799
+01:07:54,480 --> 01:07:56,030
+so I guess a lot of people just want to
+
+1800
+01:07:56,040 --> 01:07:57,710
+see this exist in the world and that's
+
+1801
+01:07:57,720 --> 01:08:00,620
+been fantastic but yeah a dedicated
+
+1802
+01:08:00,630 --> 01:08:03,770
+budget to experts would be another one
+
+1803
+01:08:03,780 --> 01:08:05,810
+that's awesome if you're stuck on
+
+1804
+01:08:05,820 --> 01:08:07,130
+something you know sometimes just
+
+1805
+01:08:07,140 --> 01:08:09,230
+talking to an expert is like you know
+
+1806
+01:08:09,240 --> 01:08:10,790
+makes such a huge difference it could
+
+1807
+01:08:10,800 --> 01:08:12,680
+cut out like a week of time you would
+
+1808
+01:08:12,690 --> 01:08:15,200
+have spent struggling with something so
+
+1809
+01:08:15,210 --> 01:08:16,729
+yeah yeah and when it when you're
+
+1810
+01:08:16,739 --> 01:08:19,280
+pre-revenue like a week feels so long
+
+1811
+01:08:19,290 --> 01:08:23,260
+it's so interesting cool time is trippy
+
+1812
+01:08:23,270 --> 01:08:26,420
+well I think kind of ready to wrap up
+
+1813
+01:08:26,430 --> 01:08:28,729
+but is there anything else that you
+
+1814
+01:08:28,739 --> 01:08:30,170
+think I should have asked and I think
+
+1815
+01:08:30,180 --> 01:08:31,789
+you did an awesome job if if people want
+
+1816
+01:08:31,799 --> 01:08:32,960
+to check out to pool they can get a
+
+1817
+01:08:32,970 --> 01:08:35,630
+two-pole tap it's our website and yeah
+
+1818
+01:08:35,640 --> 01:08:38,390
+my twitter is my name Spencer C Dixon so
+
+1819
+01:08:38,400 --> 01:08:40,190
+definitely reach out if people have
+
+1820
+01:08:40,200 --> 01:08:41,809
+questions or anything like that
+
+1821
+01:08:41,819 --> 01:08:44,510
+fantastic so Spencer thank you so much
+
+1822
+01:08:44,520 --> 01:08:46,930
+for coming on the show no problem
+
+1823
+01:08:46,940 --> 01:08:48,760
+thanks for listening to se Radio an
+
+1824
+01:08:48,770 --> 01:08:50,350
+educational program brought to you by
+
+1825
+01:08:50,360 --> 01:08:52,630
+Triple E software magazine for more
+
+1826
+01:08:52,640 --> 01:08:53,950
+about the podcast including other
+
+1827
+01:08:53,960 --> 01:08:56,800
+episodes visit our website at SE - radio
+
+1828
+01:08:56,810 --> 01:08:59,650
+net to provide feedback you can comment
+
+1829
+01:08:59,660 --> 01:09:01,630
+on each episode on the website or reach
+
+1830
+01:09:01,640 --> 01:09:04,360
+us on LinkedIn Facebook Twitter or
+
+1831
+01:09:04,370 --> 01:09:06,100
+through our slack channel at SC
+
+1832
+01:09:06,110 --> 01:09:10,420
+radio.com you can also email us at team
+
+1833
+01:09:10,430 --> 01:09:14,080
+@ SC - radio net this and all other
+
+1834
+01:09:14,090 --> 01:09:16,120
+episodes of SU radio is licensed under
+
+1835
+01:09:16,130 --> 01:09:19,450
+Creative Commons license 2.5 thanks for
+
+1836
+01:09:19,460 --> 01:09:21,760
+listening

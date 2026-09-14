@@ -1,0 +1,6363 @@
+1
+00:00:02,720 --> 00:00:02,730
+soft engineering radio episode 109
+
+2
+00:00:02,730 --> 00:00:05,150
+eBay's architecture principles with a
+
+3
+00:00:05,160 --> 00:00:14,209
+Randy shop this is software engineering
+
+4
+00:00:14,219 --> 00:00:16,939
+radio the podcasts for professional
+
+5
+00:00:16,949 --> 00:00:19,670
+developers on the web at se - radio
+
+6
+00:00:19,680 --> 00:00:22,160
+dotnet se radio prints irrelevant and
+
+7
+00:00:22,170 --> 00:00:23,779
+detailed discussions and interviews on
+
+8
+00:00:23,789 --> 00:00:25,910
+soft engineering topics every 10 days
+
+9
+00:00:25,920 --> 00:00:28,130
+thanks to our audience and the partners
+
+10
+00:00:28,140 --> 00:00:30,109
+listed on our website for supporting the
+
+11
+00:00:30,119 --> 00:00:31,450
+hot rod
+
+12
+00:00:31,460 --> 00:00:37,509
+[Music]
+
+13
+00:00:40,729 --> 00:00:40,739
+so welcome listeners to a new episode of
+
+14
+00:00:40,739 --> 00:00:42,889
+software engineering radio this is
+
+15
+00:00:42,899 --> 00:00:45,079
+another episode we are recording at a
+
+16
+00:00:45,089 --> 00:00:47,240
+jowl derived conference this is Q Khan
+
+17
+00:00:47,250 --> 00:00:49,759
+and today we are talking to Randy Sharpe
+
+18
+00:00:49,769 --> 00:00:53,030
+from eBay so welcome Randy thank you
+
+19
+00:00:53,040 --> 00:00:54,469
+so Randy why don't you introduce
+
+20
+00:00:54,479 --> 00:00:57,920
+yourself to the audience and sure
+
+21
+00:00:57,930 --> 00:00:59,600
+well I'm Randy shell PI I'm a
+
+22
+00:00:59,610 --> 00:01:02,359
+distinguished Architect at eBay my
+
+23
+00:01:02,369 --> 00:01:04,249
+particular area of specialization at
+
+24
+00:01:04,259 --> 00:01:05,930
+eBay is the search engine so I'm
+
+25
+00:01:05,940 --> 00:01:08,540
+responsible for sort of all the vertical
+
+26
+00:01:08,550 --> 00:01:10,760
+functionality from the webpages
+
+27
+00:01:10,770 --> 00:01:12,649
+down to the depths of the search engine
+
+28
+00:01:12,659 --> 00:01:15,830
+that eBay has written itself I've been
+
+29
+00:01:15,840 --> 00:01:17,620
+at eBay for about three and a half years
+
+30
+00:01:17,630 --> 00:01:20,540
+before eBay I was the chief architect at
+
+31
+00:01:20,550 --> 00:01:22,700
+a small security company called
+
+32
+00:01:22,710 --> 00:01:24,529
+tumbleweed Communications and I worked
+
+33
+00:01:24,539 --> 00:01:27,740
+there for six years before that I worked
+
+34
+00:01:27,750 --> 00:01:29,539
+at various other places including Oracle
+
+35
+00:01:29,549 --> 00:01:33,260
+for a long time okay so and the topic of
+
+36
+00:01:33,270 --> 00:01:36,169
+today's show is well architectural
+
+37
+00:01:36,179 --> 00:01:39,920
+principles in obviously eBay so why
+
+38
+00:01:39,930 --> 00:01:41,719
+don't you give us a general broad
+
+39
+00:01:41,729 --> 00:01:44,359
+introduction to to what the challenge is
+
+40
+00:01:44,369 --> 00:01:46,700
+what what what the magnitude of the
+
+41
+00:01:46,710 --> 00:01:48,289
+problem is at eBay and then we can look
+
+42
+00:01:48,299 --> 00:01:50,959
+at how you solve that sure well I always
+
+43
+00:01:50,969 --> 00:01:53,569
+like to start by talking a little bit
+
+44
+00:01:53,579 --> 00:01:54,649
+about the magnitude of the problem
+
+45
+00:01:54,659 --> 00:01:56,630
+because that sort of sets the sets the
+
+46
+00:01:56,640 --> 00:01:59,480
+context right so at the moment eBay
+
+47
+00:01:59,490 --> 00:02:01,969
+manages about 250 million registered
+
+48
+00:02:01,979 --> 00:02:04,760
+users worldwide we have about two
+
+49
+00:02:04,770 --> 00:02:06,770
+billion photos so that puts us in the
+
+50
+00:02:06,780 --> 00:02:09,650
+realm of even a large photo sharing
+
+51
+00:02:09,660 --> 00:02:12,560
+sites eBay users do just over two
+
+52
+00:02:12,570 --> 00:02:14,599
+thousand dollars in trades every second
+
+53
+00:02:14,609 --> 00:02:16,430
+worldwide so they trade two thousand
+
+54
+00:02:16,440 --> 00:02:19,610
+dollars worth of goods every second we
+
+55
+00:02:19,620 --> 00:02:22,509
+do well over a billion page views a day
+
+56
+00:02:22,519 --> 00:02:25,460
+100 million items in 50,000 categories
+
+57
+00:02:25,470 --> 00:02:29,599
+worldwide we store about 2 petabytes of
+
+58
+00:02:29,609 --> 00:02:32,390
+data which is which is quite large how
+
+59
+00:02:32,400 --> 00:02:34,640
+many zeros all that that's quite a lot
+
+60
+00:02:34,650 --> 00:02:38,390
+of zeros ^ 12/12/12
+
+61
+00:02:38,400 --> 00:02:42,509
+yeah it's quadrillion so well
+
+62
+00:02:42,519 --> 00:02:44,640
+yeah and then we do about 5.5 billion
+
+63
+00:02:44,650 --> 00:02:47,699
+API calls every month no so it's it's a
+
+64
+00:02:47,709 --> 00:02:50,849
+decent-sized problem and it gives us as
+
+65
+00:02:50,859 --> 00:02:52,289
+you'll see as we talk forward it gives
+
+66
+00:02:52,299 --> 00:02:53,699
+us some particular challenges which we
+
+67
+00:02:53,709 --> 00:02:55,979
+have to solve yeah the other aspect of e
+
+68
+00:02:55,989 --> 00:02:58,649
+based problem or eBay's issue is the
+
+69
+00:02:58,659 --> 00:03:01,709
+dynamism of it it's we change the sight
+
+70
+00:03:01,719 --> 00:03:03,360
+constantly so every two weeks we're
+
+71
+00:03:03,370 --> 00:03:04,559
+rolling about a hundred thousand new
+
+72
+00:03:04,569 --> 00:03:07,920
+lines of code and we do a search
+
+73
+00:03:07,930 --> 00:03:10,649
+Federation process where every two weeks
+
+74
+00:03:10,659 --> 00:03:13,619
+new code appears on the site in total we
+
+75
+00:03:13,629 --> 00:03:15,659
+do about 300 new features every quarter
+
+76
+00:03:15,669 --> 00:03:17,270
+some of them small some of them large
+
+77
+00:03:17,280 --> 00:03:21,119
+and it's a world wide side of course so
+
+78
+00:03:21,129 --> 00:03:25,319
+we're in 38 countries worldwide and what
+
+79
+00:03:25,329 --> 00:03:29,429
+that ends up being is for the database
+
+80
+00:03:29,439 --> 00:03:31,920
+savvy is about 48 billion sequel
+
+81
+00:03:31,930 --> 00:03:33,300
+statements that we actually execute
+
+82
+00:03:33,310 --> 00:03:34,890
+every day so that's not one of those
+
+83
+00:03:34,900 --> 00:03:37,319
+metrics where more is better yeah but it
+
+84
+00:03:37,329 --> 00:03:39,119
+but it does give a give a sense of the
+
+85
+00:03:39,129 --> 00:03:41,339
+scale of the problem yeah so and from
+
+86
+00:03:41,349 --> 00:03:42,929
+the things you just mentioned I take it
+
+87
+00:03:42,939 --> 00:03:44,729
+that obviously some of the forces and
+
+88
+00:03:44,739 --> 00:03:46,319
+challenges in the architecture are
+
+89
+00:03:46,329 --> 00:03:49,140
+probably obviously scalability and maybe
+
+90
+00:03:49,150 --> 00:03:51,059
+an ability to evolve the system
+
+91
+00:03:51,069 --> 00:03:53,129
+continuously without shutting it down so
+
+92
+00:03:53,139 --> 00:03:54,330
+why don't you elaborate a little bit on
+
+93
+00:03:54,340 --> 00:03:56,189
+the core architectural forces that
+
+94
+00:03:56,199 --> 00:03:57,180
+you're going to address with the
+
+95
+00:03:57,190 --> 00:03:58,679
+patterns and practices we're going to
+
+96
+00:03:58,689 --> 00:03:59,819
+talk about in the main section of
+
+97
+00:03:59,829 --> 00:04:01,979
+interview so there are sort of four four
+
+98
+00:04:01,989 --> 00:04:03,780
+or five architectural forces that we
+
+99
+00:04:03,790 --> 00:04:05,280
+think of and you mentioned the first one
+
+100
+00:04:05,290 --> 00:04:07,229
+quite obviously scalability is our
+
+101
+00:04:07,239 --> 00:04:09,750
+primary challenge if the second is
+
+102
+00:04:09,760 --> 00:04:11,849
+availability so any public website is
+
+103
+00:04:11,859 --> 00:04:14,099
+going to care to be available to its
+
+104
+00:04:14,109 --> 00:04:16,289
+users and so that's one of the core the
+
+105
+00:04:16,299 --> 00:04:17,430
+core aspect of it
+
+106
+00:04:17,440 --> 00:04:19,830
+latency both latency for users in terms
+
+107
+00:04:19,840 --> 00:04:21,629
+of how they're how quickly the system
+
+108
+00:04:21,639 --> 00:04:23,850
+responds to them but then also data or
+
+109
+00:04:23,860 --> 00:04:26,310
+execution latency how rapidly does a
+
+110
+00:04:26,320 --> 00:04:31,050
+users an event driven by the user change
+
+111
+00:04:31,060 --> 00:04:32,820
+data that there's in our persistent
+
+112
+00:04:32,830 --> 00:04:34,350
+storage and have and how quickly does it
+
+113
+00:04:34,360 --> 00:04:38,100
+actually cause follow-on effect and then
+
+114
+00:04:38,110 --> 00:04:39,719
+of course for a large-scale system you
+
+115
+00:04:39,729 --> 00:04:41,370
+need to worry about manageability so we
+
+116
+00:04:41,380 --> 00:04:42,390
+need to make sure that our operations
+
+117
+00:04:42,400 --> 00:04:44,629
+team which the site it's simple it's
+
+118
+00:04:44,639 --> 00:04:46,379
+maintainable and we can diagnose
+
+119
+00:04:46,389 --> 00:04:49,020
+problems and then the final which is
+
+120
+00:04:49,030 --> 00:04:50,430
+similar to scalability but I think is
+
+121
+00:04:50,440 --> 00:04:52,230
+worth talking about separately is simply
+
+122
+00:04:52,240 --> 00:04:56,190
+cost and we measure cost in terms of hue
+
+123
+00:04:56,200 --> 00:04:58,470
+an effort so development effort know how
+
+124
+00:04:58,480 --> 00:05:00,960
+quickly can we evolve the site how
+
+125
+00:05:00,970 --> 00:05:02,490
+expensive as a feature or less expensive
+
+126
+00:05:02,500 --> 00:05:04,560
+and then also the operational cost so
+
+127
+00:05:04,570 --> 00:05:06,240
+the hardware the software the people to
+
+128
+00:05:06,250 --> 00:05:07,890
+run the site energy probably is also
+
+129
+00:05:07,900 --> 00:05:10,260
+absolutely that's right yes and your you
+
+130
+00:05:10,270 --> 00:05:11,700
+have you talked about exactly that with
+
+131
+00:05:11,710 --> 00:05:14,670
+a varnish mobile right and it's yes so
+
+132
+00:05:14,680 --> 00:05:17,670
+power consumption in our in so anybody
+
+133
+00:05:17,680 --> 00:05:20,250
+who runs large data centers knows this
+
+134
+00:05:20,260 --> 00:05:24,270
+but power consumption simply powering
+
+135
+00:05:24,280 --> 00:05:25,950
+and cooling the hardware is actually the
+
+136
+00:05:25,960 --> 00:05:28,170
+biggest limiting factor for the growth
+
+137
+00:05:28,180 --> 00:05:29,760
+of our hardware so it's not it's not
+
+138
+00:05:29,770 --> 00:05:34,260
+physical space it's not well sorry it's
+
+139
+00:05:34,270 --> 00:05:35,490
+not physical space it's not being able
+
+140
+00:05:35,500 --> 00:05:37,290
+to buy the machine it's simply being
+
+141
+00:05:37,300 --> 00:05:38,850
+able to power the machines and to cool
+
+142
+00:05:38,860 --> 00:05:41,520
+the machines and what we're finding we
+
+143
+00:05:41,530 --> 00:05:43,620
+in eBay but everyone else Google Yahoo
+
+144
+00:05:43,630 --> 00:05:45,660
+Amazon etcetera are all finding the same
+
+145
+00:05:45,670 --> 00:05:48,600
+thing that the size of an of an
+
+146
+00:05:48,610 --> 00:05:50,520
+individual data center is now exceeding
+
+147
+00:05:50,530 --> 00:05:52,440
+what a residential power grid and most
+
+148
+00:05:52,450 --> 00:05:55,410
+of the United States can power so now
+
+149
+00:05:55,420 --> 00:05:57,090
+you have to start thinking about more
+
+150
+00:05:57,100 --> 00:05:58,710
+and more and more smaller data centers
+
+151
+00:05:58,720 --> 00:06:00,180
+and and architecting around that so it's
+
+152
+00:06:00,190 --> 00:06:01,710
+actually that by the bat is actually one
+
+153
+00:06:01,720 --> 00:06:03,300
+of our main challenges and do--the is
+
+154
+00:06:03,310 --> 00:06:06,930
+exactly that yeah okay so why don't you
+
+155
+00:06:06,940 --> 00:06:09,750
+give us an overview about the let's say
+
+156
+00:06:09,760 --> 00:06:12,750
+most important strategies that you use
+
+157
+00:06:12,760 --> 00:06:14,760
+to solve those or address these issues
+
+158
+00:06:14,770 --> 00:06:16,260
+and then we can look at each of them in
+
+159
+00:06:16,270 --> 00:06:18,960
+detail sure well I like to think about
+
+160
+00:06:18,970 --> 00:06:21,300
+our approach in terms of four different
+
+161
+00:06:21,310 --> 00:06:23,810
+strategies the first approach is
+
+162
+00:06:23,820 --> 00:06:26,220
+partition everything split everything
+
+163
+00:06:26,230 --> 00:06:29,160
+into manageable chunks the second
+
+164
+00:06:29,170 --> 00:06:30,990
+strategy that we apply is be
+
+165
+00:06:31,000 --> 00:06:33,390
+asynchronous everywhere so try as much
+
+166
+00:06:33,400 --> 00:06:35,610
+as possible to move processing to an
+
+167
+00:06:35,620 --> 00:06:37,890
+asynchronous flow rather than a
+
+168
+00:06:37,900 --> 00:06:41,240
+synchronous flow the third strategy is
+
+169
+00:06:41,250 --> 00:06:43,380
+automation automate everything that's
+
+170
+00:06:43,390 --> 00:06:46,950
+possible to automate and that has and
+
+171
+00:06:46,960 --> 00:06:50,280
+that sort of expressed in writ small by
+
+172
+00:06:50,290 --> 00:06:52,920
+how how individual components are
+
+173
+00:06:52,930 --> 00:06:54,300
+configured they should automatically
+
+174
+00:06:54,310 --> 00:06:56,970
+adjust or adapt to their environment and
+
+175
+00:06:56,980 --> 00:07:00,510
+then also the larger scale automation of
+
+176
+00:07:00,520 --> 00:07:03,180
+sort of how does a system improve itself
+
+177
+00:07:03,190 --> 00:07:04,980
+over time and can we evolve or machine
+
+178
+00:07:04,990 --> 00:07:06,630
+learning our way into in doing better
+
+179
+00:07:06,640 --> 00:07:09,840
+and then the final strategy is remember
+
+180
+00:07:09,850 --> 00:07:11,520
+that everything fails so how do you
+
+181
+00:07:11,530 --> 00:07:12,780
+design a system that can remain
+
+182
+00:07:12,790 --> 00:07:16,190
+available in given of realities that
+
+183
+00:07:16,200 --> 00:07:19,050
+everything all the hundreds of thousands
+
+184
+00:07:19,060 --> 00:07:22,410
+of pieces of infrastructure will fail at
+
+185
+00:07:22,420 --> 00:07:25,680
+every at any given moment no okay so I
+
+186
+00:07:25,690 --> 00:07:27,420
+think the the rest of the interview or
+
+187
+00:07:27,430 --> 00:07:28,950
+discussion is going to be looking at
+
+188
+00:07:28,960 --> 00:07:31,170
+those in in detail and and looking at
+
+189
+00:07:31,180 --> 00:07:32,460
+specific examples of how these
+
+190
+00:07:32,470 --> 00:07:35,280
+principles and strategies strategies are
+
+191
+00:07:35,290 --> 00:07:37,620
+applied so let's start with obviously
+
+192
+00:07:37,630 --> 00:07:39,660
+the first one partition everything sure
+
+193
+00:07:39,670 --> 00:07:41,460
+so again the first strategy is about
+
+194
+00:07:41,470 --> 00:07:43,200
+partitioning everything into smaller
+
+195
+00:07:43,210 --> 00:07:45,150
+chunks and the way I like to think about
+
+196
+00:07:45,160 --> 00:07:47,130
+it or the way our head of research likes
+
+197
+00:07:47,140 --> 00:07:49,110
+to talk about it is if you can't split
+
+198
+00:07:49,120 --> 00:07:52,350
+it you can't scale it so simply scaling
+
+199
+00:07:52,360 --> 00:07:54,180
+with site two you know more than a
+
+200
+00:07:54,190 --> 00:07:56,670
+billion pages and so on is none no
+
+201
+00:07:56,680 --> 00:07:58,500
+single machine or single system is going
+
+202
+00:07:58,510 --> 00:08:00,210
+to be able to handle that load and so
+
+203
+00:08:00,220 --> 00:08:01,980
+vertical scalability only takes you so
+
+204
+00:08:01,990 --> 00:08:05,340
+far so the the way that keeps the system
+
+205
+00:08:05,350 --> 00:08:07,530
+simple and maintainable but yet
+
+206
+00:08:07,540 --> 00:08:10,410
+available and growable is to split the
+
+207
+00:08:10,420 --> 00:08:12,540
+system into individual chunks and I'll
+
+208
+00:08:12,550 --> 00:08:14,280
+talk about individual examples of how we
+
+209
+00:08:14,290 --> 00:08:16,050
+split that in different parts of our
+
+210
+00:08:16,060 --> 00:08:18,090
+infrastructure so it's pretty obvious
+
+211
+00:08:18,100 --> 00:08:20,010
+but why would somebody
+
+212
+00:08:20,020 --> 00:08:21,420
+why would somebody split their
+
+213
+00:08:21,430 --> 00:08:22,920
+architecture the main motivation is
+
+214
+00:08:22,930 --> 00:08:25,320
+scalability right it's the ability to to
+
+215
+00:08:25,330 --> 00:08:28,020
+hold costs constant so have a constant
+
+216
+00:08:28,030 --> 00:08:30,570
+size unit of processing let's say
+
+217
+00:08:30,580 --> 00:08:32,790
+whether it's an application server a
+
+218
+00:08:32,800 --> 00:08:34,500
+database or whatever but some particular
+
+219
+00:08:34,510 --> 00:08:36,540
+unit that's a reasonable price
+
+220
+00:08:36,550 --> 00:08:39,990
+performance them right and then be able
+
+221
+00:08:40,000 --> 00:08:41,909
+to kiss Cal horizontally by adding more
+
+222
+00:08:41,919 --> 00:08:44,190
+and more of those units but the other
+
+223
+00:08:44,200 --> 00:08:46,530
+the other aspect sort of less maybe less
+
+224
+00:08:46,540 --> 00:08:49,080
+obvious are availability and
+
+225
+00:08:49,090 --> 00:08:50,670
+manageability if you think about the
+
+226
+00:08:50,680 --> 00:08:52,290
+individual components as individual
+
+227
+00:08:52,300 --> 00:08:55,400
+components you can be maintaining or
+
+228
+00:08:55,410 --> 00:08:57,600
+dealing with a particular component you
+
+229
+00:08:57,610 --> 00:08:58,800
+could in the worst case take a
+
+230
+00:08:58,810 --> 00:09:00,780
+particular slice of the infrastructure
+
+231
+00:09:00,790 --> 00:09:04,050
+offline and manage it separately without
+
+232
+00:09:04,060 --> 00:09:06,120
+without affecting the availability of
+
+233
+00:09:06,130 --> 00:09:08,190
+the rest of the interest after or maybe
+
+234
+00:09:08,200 --> 00:09:10,320
+updating half of the nodes to a new
+
+235
+00:09:10,330 --> 00:09:12,420
+version and you know doing these things
+
+236
+00:09:12,430 --> 00:09:14,100
+exactly right exactly right and I can
+
+237
+00:09:14,110 --> 00:09:15,720
+talk more about that as we go along but
+
+238
+00:09:15,730 --> 00:09:19,230
+but definitely one of the main ideas is
+
+239
+00:09:19,240 --> 00:09:21,450
+that if you think of if you think of the
+
+240
+00:09:21,460 --> 00:09:23,010
+infrastructure as partitioned into
+
+241
+00:09:23,020 --> 00:09:23,820
+smaller sly
+
+242
+00:09:23,830 --> 00:09:26,580
+you can be doing rolling right updates
+
+243
+00:09:26,590 --> 00:09:28,410
+in parts of the infrastructure where the
+
+244
+00:09:28,420 --> 00:09:31,110
+other parts are staying stable so the
+
+245
+00:09:31,120 --> 00:09:34,200
+first aspect of partitioning that is
+
+246
+00:09:34,210 --> 00:09:35,550
+maybe the hardest and therefore I want
+
+247
+00:09:35,560 --> 00:09:37,050
+to start with first is partitioning the
+
+248
+00:09:37,060 --> 00:09:39,720
+data tier petition M database itself and
+
+249
+00:09:39,730 --> 00:09:41,430
+that's something that's becoming a lot
+
+250
+00:09:41,440 --> 00:09:44,340
+more well-known within the industry but
+
+251
+00:09:44,350 --> 00:09:46,890
+it was relatively new when we started
+
+252
+00:09:46,900 --> 00:09:48,720
+doing it or really when everybody like I
+
+253
+00:09:48,730 --> 00:09:50,160
+started doing it sort of all without
+
+254
+00:09:50,170 --> 00:09:53,490
+knowing about one another so I guess I
+
+255
+00:09:53,500 --> 00:09:54,330
+just talked a little bit about the
+
+256
+00:09:54,340 --> 00:09:56,640
+patterns that we employ and splitting we
+
+257
+00:09:56,650 --> 00:09:58,500
+have two to two patterns and we'll see
+
+258
+00:09:58,510 --> 00:10:02,040
+them instantiated throughout the
+
+259
+00:10:02,050 --> 00:10:03,330
+throughout the infrastructure but the
+
+260
+00:10:03,340 --> 00:10:05,910
+first is functional segmentation so
+
+261
+00:10:05,920 --> 00:10:07,080
+dividing things into different
+
+262
+00:10:07,090 --> 00:10:09,870
+functional areas so in a base example we
+
+263
+00:10:09,880 --> 00:10:11,730
+will have the selling systems distinct
+
+264
+00:10:11,740 --> 00:10:13,260
+from the buying systems distinct from
+
+265
+00:10:13,270 --> 00:10:15,090
+the search systems distinct from various
+
+266
+00:10:15,100 --> 00:10:16,770
+back-end systems and so on if we
+
+267
+00:10:16,780 --> 00:10:17,790
+actually have quite a few different
+
+268
+00:10:17,800 --> 00:10:20,280
+divisions there that's sort of
+
+269
+00:10:20,290 --> 00:10:21,870
+functional segmentation and then the
+
+270
+00:10:21,880 --> 00:10:23,130
+other pattern is something that I call
+
+271
+00:10:23,140 --> 00:10:25,770
+horizontal split and that's simply being
+
+272
+00:10:25,780 --> 00:10:28,740
+able to chop a single functional unit
+
+273
+00:10:28,750 --> 00:10:31,470
+into smaller and smaller pieces to be
+
+274
+00:10:31,480 --> 00:10:33,180
+able to manage and grow them separately
+
+275
+00:10:33,190 --> 00:10:34,950
+yeah but that means that you need some
+
+276
+00:10:34,960 --> 00:10:37,230
+kind of dispatcher if you access the
+
+277
+00:10:37,240 --> 00:10:39,360
+persistent store because the the actual
+
+278
+00:10:39,370 --> 00:10:40,890
+data you are looking for might be on
+
+279
+00:10:40,900 --> 00:10:43,080
+this this or that host machine database
+
+280
+00:10:43,090 --> 00:10:45,450
+exactly right and what I'll tell you
+
+281
+00:10:45,460 --> 00:10:46,590
+about that because that's one of it
+
+282
+00:10:46,600 --> 00:10:47,850
+that's one of the main challenges of
+
+283
+00:10:47,860 --> 00:10:49,620
+horizontally split by the data tier yeah
+
+284
+00:10:49,630 --> 00:10:51,870
+okay but but first maybe the the
+
+285
+00:10:51,880 --> 00:10:54,000
+slightly simpler approach still
+
+286
+00:10:54,010 --> 00:10:55,620
+interesting is functional segmentation
+
+287
+00:10:55,630 --> 00:10:57,690
+of the data tier so again as I mentioned
+
+288
+00:10:57,700 --> 00:11:00,240
+we segment our databases into particular
+
+289
+00:11:00,250 --> 00:11:02,130
+functional areas so there's a you a set
+
+290
+00:11:02,140 --> 00:11:05,310
+of user databases there's a set of item
+
+291
+00:11:05,320 --> 00:11:06,720
+databases that are about the items that
+
+292
+00:11:06,730 --> 00:11:08,550
+we deal with or a set of transactional
+
+293
+00:11:08,560 --> 00:11:11,610
+databases products account feedback and
+
+294
+00:11:11,620 --> 00:11:13,320
+so on transactional transactional
+
+295
+00:11:13,330 --> 00:11:15,360
+meaning not in the sense of database
+
+296
+00:11:15,370 --> 00:11:17,160
+translation if they tell like the boss
+
+297
+00:11:17,170 --> 00:11:18,450
+the shopping cart or something yes
+
+298
+00:11:18,460 --> 00:11:20,640
+transaction meaning a purchase okay some
+
+299
+00:11:20,650 --> 00:11:23,430
+if you we call them transactions you can
+
+300
+00:11:23,440 --> 00:11:26,070
+think about them as the purchase flow or
+
+301
+00:11:26,080 --> 00:11:27,480
+checkout that's sort of it doesn't -
+
+302
+00:11:27,490 --> 00:11:28,740
+make sure the term transaction in the
+
+303
+00:11:28,750 --> 00:11:30,450
+context of database is not misunderstood
+
+304
+00:11:30,460 --> 00:11:32,070
+that's right and and they do a thank you
+
+305
+00:11:32,080 --> 00:11:34,950
+for for pointing that out yeah so for us
+
+306
+00:11:34,960 --> 00:11:36,900
+that the databases that are around
+
+307
+00:11:36,910 --> 00:11:37,319
+trends
+
+308
+00:11:37,329 --> 00:11:39,539
+actions are about essentially the
+
+309
+00:11:39,549 --> 00:11:40,949
+relationship of users to items if you
+
+310
+00:11:40,959 --> 00:11:42,809
+like right a user has this user has
+
+311
+00:11:42,819 --> 00:11:44,879
+purchased this item and items have
+
+312
+00:11:44,889 --> 00:11:45,929
+multiple quantities and could be
+
+313
+00:11:45,939 --> 00:11:47,220
+purchased multiple times and so on so
+
+314
+00:11:47,230 --> 00:11:49,049
+there's too many too many thing anyway
+
+315
+00:11:49,059 --> 00:11:51,869
+but so so once you've decided that you
+
+316
+00:11:51,879 --> 00:11:55,400
+need to divide your databases into
+
+317
+00:11:55,410 --> 00:11:58,919
+different different functional segments
+
+318
+00:11:58,929 --> 00:12:01,109
+how do you do it well what's interesting
+
+319
+00:12:01,119 --> 00:12:03,449
+at least to me is that you can do that
+
+320
+00:12:03,459 --> 00:12:06,090
+the same principles that you use to
+
+321
+00:12:06,100 --> 00:12:08,400
+divide information into tables in a
+
+322
+00:12:08,410 --> 00:12:11,119
+single database is that exact same
+
+323
+00:12:11,129 --> 00:12:13,139
+approach that same data modeling
+
+324
+00:12:13,149 --> 00:12:14,609
+approach you take at one level higher
+
+325
+00:12:14,619 --> 00:12:18,539
+right so the user databases include not
+
+326
+00:12:18,549 --> 00:12:20,100
+a single table of users but a whole
+
+327
+00:12:20,110 --> 00:12:22,289
+suite of related tables all which are
+
+328
+00:12:22,299 --> 00:12:24,869
+sort of partitioned will by the user ID
+
+329
+00:12:24,879 --> 00:12:27,600
+if you like and similarly for items so
+
+330
+00:12:27,610 --> 00:12:29,340
+there's a sort of feel like a central
+
+331
+00:12:29,350 --> 00:12:31,079
+item table and then there's a whole
+
+332
+00:12:31,089 --> 00:12:33,090
+suite of other tables that are related
+
+333
+00:12:33,100 --> 00:12:36,419
+to that but but those but those are you
+
+334
+00:12:36,429 --> 00:12:38,579
+know by item as distinct for by user or
+
+335
+00:12:38,589 --> 00:12:40,530
+by transaction or whatever so you use
+
+336
+00:12:40,540 --> 00:12:42,119
+the same data data modeling techniques
+
+337
+00:12:42,129 --> 00:12:45,239
+that you would ordinarily use and so
+
+338
+00:12:45,249 --> 00:12:46,559
+what that ends up at least in the eBay
+
+339
+00:12:46,569 --> 00:12:47,909
+infrastructure is that we end up having
+
+340
+00:12:47,919 --> 00:12:50,069
+a hunt a thousand different logical
+
+341
+00:12:50,079 --> 00:12:53,699
+databases and we spread them over 400
+
+342
+00:12:53,709 --> 00:12:56,159
+different physical hosts we don't make a
+
+343
+00:12:56,169 --> 00:12:57,780
+one-to-one mapping between a logical
+
+344
+00:12:57,790 --> 00:12:59,159
+database in a physical database we have
+
+345
+00:12:59,169 --> 00:13:03,539
+another sort of set of indirection there
+
+346
+00:13:03,549 --> 00:13:04,650
+where there's a logical to physical
+
+347
+00:13:04,660 --> 00:13:07,590
+mapping that's functional segmentation
+
+348
+00:13:07,600 --> 00:13:11,039
+the next the next pattern is applied to
+
+349
+00:13:11,049 --> 00:13:12,840
+databases as horizontal split so
+
+350
+00:13:12,850 --> 00:13:14,549
+essentially that's take the user
+
+351
+00:13:14,559 --> 00:13:19,109
+database the overall user stop data data
+
+352
+00:13:19,119 --> 00:13:20,879
+set write the overall data set about
+
+353
+00:13:20,889 --> 00:13:22,679
+items and how do you divide it up well
+
+354
+00:13:22,689 --> 00:13:25,799
+it turns out that of course there are
+
+355
+00:13:25,809 --> 00:13:27,689
+multiple different ways of dividing the
+
+356
+00:13:27,699 --> 00:13:30,119
+data data up you can do something very
+
+357
+00:13:30,129 --> 00:13:32,519
+simple where you hash or mod on a key so
+
+358
+00:13:32,529 --> 00:13:35,280
+item ID or user ID if it ends in one it
+
+359
+00:13:35,290 --> 00:13:36,780
+goes in this database if it ends in two
+
+360
+00:13:36,790 --> 00:13:39,210
+it goes in that database etc and there
+
+361
+00:13:39,220 --> 00:13:41,970
+are there are also imagine doing range
+
+362
+00:13:41,980 --> 00:13:47,519
+things user user one to a million or go
+
+363
+00:13:47,529 --> 00:13:49,559
+in this users want to know n to 2
+
+364
+00:13:49,569 --> 00:13:50,720
+million going another and
+
+365
+00:13:50,730 --> 00:13:52,980
+and then and then there are more
+
+366
+00:13:52,990 --> 00:13:55,440
+complicated schemes like a lookup scheme
+
+367
+00:13:55,450 --> 00:13:56,880
+sort of like a imagine a routing table
+
+368
+00:13:56,890 --> 00:13:58,290
+something like that and then you can
+
+369
+00:13:58,300 --> 00:14:00,720
+combine those those schemes in different
+
+370
+00:14:00,730 --> 00:14:03,540
+ways this is I as I hinted before is
+
+371
+00:14:03,550 --> 00:14:04,560
+something that's becoming increasingly
+
+372
+00:14:04,570 --> 00:14:06,480
+known within the industry the industry
+
+373
+00:14:06,490 --> 00:14:07,620
+standard term we don't use this
+
+374
+00:14:07,630 --> 00:14:08,790
+internally but the industry standard
+
+375
+00:14:08,800 --> 00:14:10,770
+term is sharding right that's I heard
+
+376
+00:14:10,780 --> 00:14:12,840
+about that when I think Google published
+
+377
+00:14:12,850 --> 00:14:14,490
+the hive on a chart exactly right
+
+378
+00:14:14,500 --> 00:14:15,420
+exactly right
+
+379
+00:14:15,430 --> 00:14:17,520
+yeah so when we started doing this and
+
+380
+00:14:17,530 --> 00:14:18,150
+we've actually built something
+
+381
+00:14:18,160 --> 00:14:19,560
+internally which is equivalent to
+
+382
+00:14:19,570 --> 00:14:22,440
+hibernate shards it's we call it our own
+
+383
+00:14:22,450 --> 00:14:24,180
+data access layer and it does the
+
+384
+00:14:24,190 --> 00:14:26,610
+standard or our mapping but it also does
+
+385
+00:14:26,620 --> 00:14:28,890
+the sort of shard management that you
+
+386
+00:14:28,900 --> 00:14:31,740
+hinted at before where there's a bit of
+
+387
+00:14:31,750 --> 00:14:33,930
+room most of the operations are routing
+
+388
+00:14:33,940 --> 00:14:35,640
+operations right I need to update this
+
+389
+00:14:35,650 --> 00:14:37,140
+particular item so I need to go to their
+
+390
+00:14:37,150 --> 00:14:39,150
+appropriate database that has that some
+
+391
+00:14:39,160 --> 00:14:40,770
+of them we try to do this as little as
+
+392
+00:14:40,780 --> 00:14:42,170
+possible but some of them are kind of
+
+393
+00:14:42,180 --> 00:14:44,790
+scattered gather operation I used to do
+
+394
+00:14:44,800 --> 00:14:46,080
+stowing together to talk about these
+
+395
+00:14:46,090 --> 00:14:47,730
+that are expensive then those are very
+
+396
+00:14:47,740 --> 00:14:51,120
+expensive and I'll talk and let me let
+
+397
+00:14:51,130 --> 00:14:52,620
+me talk about that in a second but we
+
+398
+00:14:52,630 --> 00:14:54,330
+try to make sure that the scatter gather
+
+399
+00:14:54,340 --> 00:14:58,020
+operations are we try to minimize the
+
+400
+00:14:58,030 --> 00:14:59,550
+the times that we do scattered our
+
+401
+00:14:59,560 --> 00:15:00,870
+operations and actually try to do them
+
+402
+00:15:00,880 --> 00:15:02,900
+in different types of infrastructure but
+
+403
+00:15:02,910 --> 00:15:05,610
+but I'll but but that's but that's what
+
+404
+00:15:05,620 --> 00:15:07,350
+this layer is for yeah in which the
+
+405
+00:15:07,360 --> 00:15:09,090
+hibernate shards would would would do as
+
+406
+00:15:09,100 --> 00:15:11,160
+well so a sort of routing or aggregation
+
+407
+00:15:11,170 --> 00:15:13,500
+layer and that lives in our in our
+
+408
+00:15:13,510 --> 00:15:17,490
+application server tier but back to the
+
+409
+00:15:17,500 --> 00:15:20,130
+back to the split idea so given a
+
+410
+00:15:20,140 --> 00:15:23,010
+particular item ID or user ID we know
+
+411
+00:15:23,020 --> 00:15:24,690
+which particular host that it belongs in
+
+412
+00:15:24,700 --> 00:15:26,730
+and this dal this data access layer
+
+413
+00:15:26,740 --> 00:15:29,430
+allows us to to route to the particular
+
+414
+00:15:29,440 --> 00:15:32,040
+host right and of course just as
+
+415
+00:15:32,050 --> 00:15:33,380
+hibernate shards would it would it
+
+416
+00:15:33,390 --> 00:15:36,570
+abstracts the developers from knowing
+
+417
+00:15:36,580 --> 00:15:38,820
+about how how an item is associated with
+
+418
+00:15:38,830 --> 00:15:41,670
+a particular split and so on but yeah so
+
+419
+00:15:41,680 --> 00:15:44,100
+a bit on the sharding term that's that's
+
+420
+00:15:44,110 --> 00:15:45,510
+something that's that's come out of
+
+421
+00:15:45,520 --> 00:15:47,550
+Google but that's the term that they use
+
+422
+00:15:47,560 --> 00:15:50,970
+internally and then also Yahoo tends to
+
+423
+00:15:50,980 --> 00:15:52,260
+use that term as well so that's that's
+
+424
+00:15:52,270 --> 00:15:53,220
+the standard way we should be talking
+
+425
+00:15:53,230 --> 00:15:56,100
+about this that we is it we have shards
+
+426
+00:15:56,110 --> 00:15:58,850
+the corollary and this is maybe the most
+
+427
+00:15:58,860 --> 00:16:01,800
+controversial thing that
+
+428
+00:16:01,810 --> 00:16:04,350
+when I give this talk that people people
+
+429
+00:16:04,360 --> 00:16:06,990
+react to is that eBay doesn't use
+
+430
+00:16:07,000 --> 00:16:10,380
+database transactions to be more precise
+
+431
+00:16:10,390 --> 00:16:13,380
+eBay doesn't use any distributed
+
+432
+00:16:13,390 --> 00:16:14,910
+transaction rights right though we do
+
+433
+00:16:14,920 --> 00:16:16,710
+single-ride is of course a transaction a
+
+434
+00:16:16,720 --> 00:16:18,540
+single right is its own transaction and
+
+435
+00:16:18,550 --> 00:16:20,220
+then we do bunch together I'll talk
+
+436
+00:16:20,230 --> 00:16:21,540
+about this in a second we do bunch
+
+437
+00:16:21,550 --> 00:16:24,270
+together multiple inserts or updates
+
+438
+00:16:24,280 --> 00:16:26,010
+into a single right which is
+
+439
+00:16:26,020 --> 00:16:28,170
+transactional for that but we don't do
+
+440
+00:16:28,180 --> 00:16:30,330
+any client-side transactions at all and
+
+441
+00:16:30,340 --> 00:16:32,880
+we have a j2ee infrastructure we don't
+
+442
+00:16:32,890 --> 00:16:35,160
+do any client-side transactions if we do
+
+443
+00:16:35,170 --> 00:16:36,210
+no two-phase commit
+
+444
+00:16:36,220 --> 00:16:39,780
+mm-hm nothing like that so whenever we
+
+445
+00:16:39,790 --> 00:16:41,970
+need to do we sort of have two things
+
+446
+00:16:41,980 --> 00:16:43,500
+happen transactionally together like
+
+447
+00:16:43,510 --> 00:16:45,270
+updating a master a detail table we do
+
+448
+00:16:45,280 --> 00:16:46,830
+that with what we call an anonymous PL
+
+449
+00:16:46,840 --> 00:16:48,810
+sequel block that's an Oracle specific
+
+450
+00:16:48,820 --> 00:16:50,550
+term but it's essentially a little bit
+
+451
+00:16:50,560 --> 00:16:54,360
+of stored procedure passed along in the
+
+452
+00:16:54,370 --> 00:16:56,040
+call saya it's like a closure in
+
+453
+00:16:56,050 --> 00:16:57,390
+programming languages we're gonna take a
+
+454
+00:16:57,400 --> 00:16:59,730
+piece of behavior and feed it to
+
+455
+00:16:59,740 --> 00:17:02,160
+something else which yes sure or or if
+
+456
+00:17:02,170 --> 00:17:03,330
+you think about it it's a little mini
+
+457
+00:17:03,340 --> 00:17:07,079
+script yeah it's a it's a mini script so
+
+458
+00:17:07,089 --> 00:17:09,210
+okay you you go ahead the reason why
+
+459
+00:17:09,220 --> 00:17:10,920
+you're doing this is because you expect
+
+460
+00:17:10,930 --> 00:17:12,329
+that this typically doesn't fail because
+
+461
+00:17:12,339 --> 00:17:14,309
+it happens down in the database so it's
+
+462
+00:17:14,319 --> 00:17:15,900
+it's a kind of isolation that's
+
+463
+00:17:15,910 --> 00:17:17,040
+different from transactions or why you
+
+464
+00:17:17,050 --> 00:17:19,740
+do oh yeah is let me back it so let me
+
+465
+00:17:19,750 --> 00:17:21,210
+back up a little bit and say why we
+
+466
+00:17:21,220 --> 00:17:22,829
+don't use transactions oh I didn't I
+
+467
+00:17:22,839 --> 00:17:25,679
+didn't motivate very well the why is
+
+468
+00:17:25,689 --> 00:17:27,990
+simply that because we functionally
+
+469
+00:17:28,000 --> 00:17:30,270
+segmented the architecture into users
+
+470
+00:17:30,280 --> 00:17:32,520
+user data is over here and item data is
+
+471
+00:17:32,530 --> 00:17:33,810
+over here in transaction data is over
+
+472
+00:17:33,820 --> 00:17:36,120
+here and then further because we've
+
+473
+00:17:36,130 --> 00:17:38,850
+segmented we've partitioned or split or
+
+474
+00:17:38,860 --> 00:17:43,050
+shorted the user data into 10 or 20
+
+475
+00:17:43,060 --> 00:17:44,490
+different shards and the item data into
+
+476
+00:17:44,500 --> 00:17:45,920
+10 or 20 or a hundred different shards
+
+477
+00:17:45,930 --> 00:17:49,440
+there's no single data tip any operation
+
+478
+00:17:49,450 --> 00:17:52,530
+that's interesting you know the user
+
+479
+00:17:52,540 --> 00:17:54,960
+buying something ends up having having
+
+480
+00:17:54,970 --> 00:17:56,850
+effects in different places of the
+
+481
+00:17:56,860 --> 00:17:58,740
+interaction right so let's pretend that
+
+482
+00:17:58,750 --> 00:18:01,740
+well it's a real example I'm bidding on
+
+483
+00:18:01,750 --> 00:18:04,530
+something there's the actual bid event
+
+484
+00:18:04,540 --> 00:18:06,780
+or the bid update that happens in the
+
+485
+00:18:06,790 --> 00:18:08,520
+item database on that particular item
+
+486
+00:18:08,530 --> 00:18:11,190
+but then are also other systems that we
+
+487
+00:18:11,200 --> 00:18:13,350
+need that we need to update that or we'd
+
+488
+00:18:13,360 --> 00:18:15,600
+like for better or for worse to
+
+489
+00:18:15,610 --> 00:18:17,279
+happen at roughly the same time as that
+
+490
+00:18:17,289 --> 00:18:21,239
+that bit update counts and and history
+
+491
+00:18:21,249 --> 00:18:23,460
+for the four user activity right that
+
+492
+00:18:23,470 --> 00:18:25,350
+they can see in there and their Webre in
+
+493
+00:18:25,360 --> 00:18:27,479
+their webpages and so on so all those
+
+494
+00:18:27,489 --> 00:18:30,090
+things it's just impossible the way that
+
+495
+00:18:30,100 --> 00:18:32,279
+we've there's no single database that
+
+496
+00:18:32,289 --> 00:18:33,570
+holds all of them so there's no way that
+
+497
+00:18:33,580 --> 00:18:35,009
+we can do it in a non distributed
+
+498
+00:18:35,019 --> 00:18:37,560
+transaction right once once you decide
+
+499
+00:18:37,570 --> 00:18:40,379
+then that you have an operation that
+
+500
+00:18:40,389 --> 00:18:42,119
+occurs over multiple databases you have
+
+501
+00:18:42,129 --> 00:18:43,440
+a choice of trying to do a distributed
+
+502
+00:18:43,450 --> 00:18:44,489
+transaction or trying to do something
+
+503
+00:18:44,499 --> 00:18:48,690
+else well as Vernor phobos says very
+
+504
+00:18:48,700 --> 00:18:52,249
+well and other people as well the
+
+505
+00:18:52,259 --> 00:18:54,509
+distributed transactions are sort of a
+
+506
+00:18:54,519 --> 00:18:56,759
+bane of scalability it sort of grinds
+
+507
+00:18:56,769 --> 00:19:01,220
+the entire system to a halt yeah and so
+
+508
+00:19:01,230 --> 00:19:04,470
+so in terms of in terms of scaling that
+
+509
+00:19:04,480 --> 00:19:05,820
+that's really not an option for us
+
+510
+00:19:05,830 --> 00:19:09,090
+there's a whole trade-off of consistency
+
+511
+00:19:09,100 --> 00:19:10,560
+availability and partitioning which
+
+512
+00:19:10,570 --> 00:19:11,970
+people may have heard of the cap this
+
+513
+00:19:11,980 --> 00:19:14,700
+will called cap theorem so we need to
+
+514
+00:19:14,710 --> 00:19:17,009
+have partitioning for scalability we
+
+515
+00:19:17,019 --> 00:19:18,659
+need to have availability so what that
+
+516
+00:19:18,669 --> 00:19:20,489
+means is we give up on consistency
+
+517
+00:19:20,499 --> 00:19:21,869
+because that's the choice that's forced
+
+518
+00:19:21,879 --> 00:19:25,109
+on us by by the theorem essentially so
+
+519
+00:19:25,119 --> 00:19:28,680
+we choose a and P we lose C but we'd
+
+520
+00:19:28,690 --> 00:19:30,330
+like to have C sees a nice thing to have
+
+521
+00:19:30,340 --> 00:19:32,129
+right we'd like to have consistency so
+
+522
+00:19:32,139 --> 00:19:34,859
+so what we actually end up doing is in
+
+523
+00:19:34,869 --> 00:19:35,609
+other words how do we guarantee
+
+524
+00:19:35,619 --> 00:19:37,769
+consistency without doing these
+
+525
+00:19:37,779 --> 00:19:39,720
+distributed transactions or without
+
+526
+00:19:39,730 --> 00:19:42,289
+doing two-phase commit or whatever that
+
+527
+00:19:42,299 --> 00:19:44,999
+the the simple approach is that you can
+
+528
+00:19:45,009 --> 00:19:48,029
+often get consistent behavior or semi
+
+529
+00:19:48,039 --> 00:19:49,649
+consistent behavior by simply ordering
+
+530
+00:19:49,659 --> 00:19:50,820
+the database operations in the
+
+531
+00:19:50,830 --> 00:19:53,009
+appropriate way right you update when
+
+532
+00:19:53,019 --> 00:19:54,749
+you're doing an insert for example it's
+
+533
+00:19:54,759 --> 00:19:56,099
+a reverse of what people often think
+
+534
+00:19:56,109 --> 00:19:57,599
+about it but if you do an insert of
+
+535
+00:19:57,609 --> 00:19:59,549
+detail records before you insert the
+
+536
+00:19:59,559 --> 00:20:01,259
+master record you never end up with a
+
+537
+00:20:01,269 --> 00:20:03,749
+dangling a dangling situation right
+
+538
+00:20:03,759 --> 00:20:05,460
+because I can't see the details as long
+
+539
+00:20:05,470 --> 00:20:06,899
+as the master hasn't been exactly right
+
+540
+00:20:06,909 --> 00:20:09,149
+exactly right so that's one example and
+
+541
+00:20:09,159 --> 00:20:10,529
+there are plenty of other examples if
+
+542
+00:20:10,539 --> 00:20:12,930
+something you know if I want to have a
+
+543
+00:20:12,940 --> 00:20:15,629
+update and B update happening together I
+
+544
+00:20:15,639 --> 00:20:18,060
+just simply do a update and then I do B
+
+545
+00:20:18,070 --> 00:20:20,460
+update and then once I know that a
+
+546
+00:20:20,470 --> 00:20:23,159
+update has succeeded I can I can do B
+
+547
+00:20:23,169 --> 00:20:23,669
+update
+
+548
+00:20:23,679 --> 00:20:26,700
+well now the transactional issue is what
+
+549
+00:20:26,710 --> 00:20:28,259
+if B fails do I need to roll back a and
+
+550
+00:20:28,269 --> 00:20:29,759
+so on so
+
+551
+00:20:29,769 --> 00:20:34,259
+the the medic met a question which I'll
+
+552
+00:20:34,269 --> 00:20:36,360
+get back to in in a moment is do we
+
+553
+00:20:36,370 --> 00:20:38,730
+really need acid consistency for every
+
+554
+00:20:38,740 --> 00:20:40,470
+operation so I'll come back to that one
+
+555
+00:20:40,480 --> 00:20:41,970
+in a second but particularly for this
+
+556
+00:20:41,980 --> 00:20:45,299
+type of but assuming that we do need
+
+557
+00:20:45,309 --> 00:20:47,070
+some type of consistency there what we
+
+558
+00:20:47,080 --> 00:20:50,120
+do is we we typically follow along that
+
+559
+00:20:50,130 --> 00:20:53,370
+that update with an asynchronous event
+
+560
+00:20:53,380 --> 00:20:54,779
+which can go around and clean things
+
+561
+00:20:54,789 --> 00:20:57,720
+back up so you can do so instead of
+
+562
+00:20:57,730 --> 00:20:59,310
+thinking of it as the transaction
+
+563
+00:20:59,320 --> 00:21:01,409
+succeeded or failed think of it as I did
+
+564
+00:21:01,419 --> 00:21:04,019
+these operations and now I'm in this I'm
+
+565
+00:21:04,029 --> 00:21:05,490
+in this interim state and I need to
+
+566
+00:21:05,500 --> 00:21:07,529
+recover from that state yeah so the
+
+567
+00:21:07,539 --> 00:21:09,450
+recovery can typically happens in an
+
+568
+00:21:09,460 --> 00:21:10,799
+asynchronous way so we either have a
+
+569
+00:21:10,809 --> 00:21:12,480
+batch sort of a batch job that goes
+
+570
+00:21:12,490 --> 00:21:14,370
+through and cleans things up or weak you
+
+571
+00:21:14,380 --> 00:21:16,259
+up in a synchronous event and it's it
+
+572
+00:21:16,269 --> 00:21:17,580
+has guaranteed delivery it doesn't
+
+573
+00:21:17,590 --> 00:21:18,870
+happen immediately but it happens
+
+574
+00:21:18,880 --> 00:21:20,730
+eventually so that means that
+
+575
+00:21:20,740 --> 00:21:24,659
+potentially a user can encounter some
+
+576
+00:21:24,669 --> 00:21:27,169
+kind of inconsistent state because the
+
+577
+00:21:27,179 --> 00:21:30,269
+quote non transaction you know the
+
+578
+00:21:30,279 --> 00:21:31,289
+distributed thing over the several
+
+579
+00:21:31,299 --> 00:21:33,180
+databases didn't work and the cleanup
+
+580
+00:21:33,190 --> 00:21:35,759
+thing hasn't been executed yet yeah so
+
+581
+00:21:35,769 --> 00:21:37,620
+let me that's a that's a great point and
+
+582
+00:21:37,630 --> 00:21:39,450
+so it's yes theoretically possible for
+
+583
+00:21:39,460 --> 00:21:40,470
+something like that to happen of course
+
+584
+00:21:40,480 --> 00:21:43,289
+I will say I'll say several things one
+
+585
+00:21:43,299 --> 00:21:46,740
+is that there are many in fact most in
+
+586
+00:21:46,750 --> 00:21:49,350
+fact almost all of such situations where
+
+587
+00:21:49,360 --> 00:21:51,180
+it doesn't matter and actually can't be
+
+588
+00:21:51,190 --> 00:21:53,399
+noticed okay so that's the first thing
+
+589
+00:21:53,409 --> 00:21:55,080
+things that we really care about like
+
+590
+00:21:55,090 --> 00:21:56,789
+ordering of bids at the end of an
+
+591
+00:21:56,799 --> 00:21:58,169
+auction that stuff's that stuffs
+
+592
+00:21:58,179 --> 00:22:00,269
+transactionally handled it all is in a
+
+593
+00:22:00,279 --> 00:22:01,759
+single database so that's not a big word
+
+594
+00:22:01,769 --> 00:22:05,129
+it's things like well I'm selling my
+
+595
+00:22:05,139 --> 00:22:06,870
+item and I'm also updating my seller
+
+596
+00:22:06,880 --> 00:22:08,789
+preferences at the same time we make a
+
+597
+00:22:08,799 --> 00:22:11,519
+business decision that it is more
+
+598
+00:22:11,529 --> 00:22:13,230
+important for us to make sure that the
+
+599
+00:22:13,240 --> 00:22:16,080
+item is listed to be sold than it is to
+
+600
+00:22:16,090 --> 00:22:18,750
+go and at the same time transactionally
+
+601
+00:22:18,760 --> 00:22:20,430
+with that update go and change the
+
+602
+00:22:20,440 --> 00:22:23,419
+seller preferences right now so again
+
+603
+00:22:23,429 --> 00:22:25,500
+the meta point which I'll expand on a
+
+604
+00:22:25,510 --> 00:22:27,680
+little bit right now is think
+
+605
+00:22:27,690 --> 00:22:29,549
+consistency is not an all-or-nothing
+
+606
+00:22:29,559 --> 00:22:31,799
+proposition right right in the acid
+
+607
+00:22:31,809 --> 00:22:33,779
+database world it is the transaction
+
+608
+00:22:33,789 --> 00:22:36,000
+succeeded or it failed on or off binary
+
+609
+00:22:36,010 --> 00:22:39,419
+yeah the reality of large-scale systems
+
+610
+00:22:39,429 --> 00:22:40,790
+is that
+
+611
+00:22:40,800 --> 00:22:42,500
+the degree it's a spectrum and the
+
+612
+00:22:42,510 --> 00:22:45,650
+degree of trading of of consistency can
+
+613
+00:22:45,660 --> 00:22:47,450
+be traded off with those other metrics
+
+614
+00:22:47,460 --> 00:22:48,860
+and that's what the the cap theorem
+
+615
+00:22:48,870 --> 00:22:51,200
+tells us and Eric Brewer discovered this
+
+616
+00:22:51,210 --> 00:22:54,500
+ten years ago right in 1998 and it's
+
+617
+00:22:54,510 --> 00:22:56,960
+taken us a while for for it to be kind
+
+618
+00:22:56,970 --> 00:22:58,280
+of percolate through the through the
+
+619
+00:22:58,290 --> 00:23:00,080
+community and and everybody sort of
+
+620
+00:23:00,090 --> 00:23:03,080
+understand it but the point is that
+
+621
+00:23:03,090 --> 00:23:05,180
+there are some operations that need to
+
+622
+00:23:05,190 --> 00:23:06,740
+be very highly consistent and the one
+
+623
+00:23:06,750 --> 00:23:07,880
+hundred percent is the absolutely
+
+624
+00:23:07,890 --> 00:23:09,290
+appropriate number and nothing less is
+
+625
+00:23:09,300 --> 00:23:12,560
+nothing less but there are other cases
+
+626
+00:23:12,570 --> 00:23:15,800
+where in fact again the majority of
+
+627
+00:23:15,810 --> 00:23:17,240
+cases where it doesn't need to be
+
+628
+00:23:17,250 --> 00:23:18,920
+transactional at certainly at that
+
+629
+00:23:18,930 --> 00:23:21,200
+moment and something where an
+
+630
+00:23:21,210 --> 00:23:22,460
+asynchronous event that goes and
+
+631
+00:23:22,470 --> 00:23:24,230
+recovers is perfectly appropriate and
+
+632
+00:23:24,240 --> 00:23:27,190
+then there are plenty of situations a
+
+633
+00:23:27,200 --> 00:23:29,750
+significant percentage of Osen things
+
+634
+00:23:29,760 --> 00:23:32,060
+where consistency is just never it's
+
+635
+00:23:32,070 --> 00:23:34,400
+just not all that important right some
+
+636
+00:23:34,410 --> 00:23:35,960
+information is it's okay to lose some
+
+637
+00:23:35,970 --> 00:23:38,300
+some information because we got the we
+
+638
+00:23:38,310 --> 00:23:39,650
+got the stuff that was really important
+
+639
+00:23:39,660 --> 00:23:41,750
+and if somebody has to redo an operation
+
+640
+00:23:41,760 --> 00:23:43,700
+that's unfortunate and we wish it didn't
+
+641
+00:23:43,710 --> 00:23:45,800
+happen sure but that's the cost and the
+
+642
+00:23:45,810 --> 00:23:47,900
+price that we pay for having an
+
+643
+00:23:47,910 --> 00:23:52,180
+available system and a scalable system
+
+644
+00:23:53,619 --> 00:23:53,629
+I think a term that's used in this
+
+645
+00:23:53,629 --> 00:23:55,450
+context sometimes is also compensating
+
+646
+00:23:55,460 --> 00:23:58,419
+transactions that you explicitly undo
+
+647
+00:23:58,429 --> 00:24:00,460
+something if the overall thing didn't
+
+648
+00:24:00,470 --> 00:24:04,799
+work yeah and so if I could lay out the
+
+649
+00:24:04,809 --> 00:24:07,509
+if there's a begin the spectrum of
+
+650
+00:24:07,519 --> 00:24:10,779
+consistency and backing away from the
+
+651
+00:24:10,789 --> 00:24:12,940
+mote so there's an acid transaction 100%
+
+652
+00:24:12,950 --> 00:24:14,680
+consistent if okay then backing away
+
+653
+00:24:14,690 --> 00:24:15,519
+from that would be something like
+
+654
+00:24:15,529 --> 00:24:17,529
+compensating transactions backing away
+
+655
+00:24:17,539 --> 00:24:19,690
+from that would be a sort of best effort
+
+656
+00:24:19,700 --> 00:24:22,840
+a synchronous asynchronous event which
+
+657
+00:24:22,850 --> 00:24:24,970
+would go and clean things up and then
+
+658
+00:24:24,980 --> 00:24:26,919
+backing away from that would be sort of
+
+659
+00:24:26,929 --> 00:24:30,060
+less and less effort that we spend on
+
+660
+00:24:30,070 --> 00:24:32,919
+inconsistent and again just a point that
+
+661
+00:24:32,929 --> 00:24:34,749
+all that I'll make is architectural II
+
+662
+00:24:34,759 --> 00:24:36,639
+the degree of consistency is one of
+
+663
+00:24:36,649 --> 00:24:40,779
+those other knobs and dials that you
+
+664
+00:24:40,789 --> 00:24:42,909
+have to play once you reel once you
+
+665
+00:24:42,919 --> 00:24:45,909
+can't kind of get the Zen of being
+
+666
+00:24:45,919 --> 00:24:48,220
+inconsistent yeah it frees you quite a
+
+667
+00:24:48,230 --> 00:24:50,379
+lot to build ya systems that's that our
+
+668
+00:24:50,389 --> 00:24:52,930
+scale scalable and available and it
+
+669
+00:24:52,940 --> 00:24:55,419
+becomes yet another tool in your toolbox
+
+670
+00:24:55,429 --> 00:24:57,610
+how you die all consitency up or down
+
+671
+00:24:57,620 --> 00:24:59,440
+along that spectrum and it also and it
+
+672
+00:24:59,450 --> 00:25:01,240
+also fits together nicely with the
+
+673
+00:25:01,250 --> 00:25:03,310
+asynchronous thing that we'll talk about
+
+674
+00:25:03,320 --> 00:25:05,080
+later exactly right it feeds right into
+
+675
+00:25:05,090 --> 00:25:07,149
+the asynchronous thing yep so but first
+
+676
+00:25:07,159 --> 00:25:09,190
+let's look at partitioning other aspects
+
+677
+00:25:09,200 --> 00:25:10,360
+of the system we talked about the
+
+678
+00:25:10,370 --> 00:25:13,299
+database early the application tier yes
+
+679
+00:25:13,309 --> 00:25:15,759
+the next market rate yeah so I started
+
+680
+00:25:15,769 --> 00:25:17,379
+with the hard one which is partitioning
+
+681
+00:25:17,389 --> 00:25:21,070
+the data the much easier problem is
+
+682
+00:25:21,080 --> 00:25:25,240
+partitioning the application tier so we
+
+683
+00:25:25,250 --> 00:25:26,409
+could have implemented it in other ways
+
+684
+00:25:26,419 --> 00:25:28,509
+but eBay zem eBay's application tier is
+
+685
+00:25:28,519 --> 00:25:29,499
+a java-based
+
+686
+00:25:29,509 --> 00:25:32,740
+tier we run on servlets and and so it's
+
+687
+00:25:32,750 --> 00:25:35,560
+very it's a minimal amount of j2ee but
+
+688
+00:25:35,570 --> 00:25:37,450
+that's but if you want to buy B's no e
+
+689
+00:25:37,460 --> 00:25:41,560
+JB's nothing like that but we sort of
+
+690
+00:25:41,570 --> 00:25:45,159
+written our own internal infrastructure
+
+691
+00:25:45,169 --> 00:25:47,230
+is too strong a word but a set of pojos
+
+692
+00:25:47,240 --> 00:25:48,840
+essentially that do that do that kind of
+
+693
+00:25:48,850 --> 00:25:51,119
+do that kind of functionality for us
+
+694
+00:25:51,129 --> 00:25:54,279
+anyway but but for us it's some it's
+
+695
+00:25:54,289 --> 00:25:55,659
+easy to scale the application tier
+
+696
+00:25:55,669 --> 00:25:58,090
+because we make it entirely stateless
+
+697
+00:25:58,100 --> 00:26:00,820
+right so and I'll I'll come back to the
+
+698
+00:26:00,830 --> 00:26:01,960
+implicate the sort of corollary
+
+699
+00:26:01,970 --> 00:26:04,109
+implication of that in a moment but we
+
+700
+00:26:04,119 --> 00:26:05,890
+we
+
+701
+00:26:05,900 --> 00:26:07,180
+we first functionally segment the
+
+702
+00:26:07,190 --> 00:26:08,620
+applications here in the same way as we
+
+703
+00:26:08,630 --> 00:26:10,750
+do or similar to how we do the databases
+
+704
+00:26:10,760 --> 00:26:12,580
+so there's a set of application servers
+
+705
+00:26:12,590 --> 00:26:13,960
+that deal with a selling part of the
+
+706
+00:26:13,970 --> 00:26:16,150
+application a set of application that
+
+707
+00:26:16,160 --> 00:26:17,890
+servers that deal with the finding or
+
+708
+00:26:17,900 --> 00:26:21,940
+search part the buying the check out dot
+
+709
+00:26:21,950 --> 00:26:24,250
+dot we end up having about 200 more than
+
+710
+00:26:24,260 --> 00:26:26,410
+200 of those individual pools some large
+
+711
+00:26:26,420 --> 00:26:29,050
+some small partition by functionality
+
+712
+00:26:29,060 --> 00:26:31,750
+and that's partly for very good
+
+713
+00:26:31,760 --> 00:26:33,520
+architectural reasons that mainly why we
+
+714
+00:26:33,530 --> 00:26:35,590
+do it but there's also the reality that
+
+715
+00:26:35,600 --> 00:26:38,020
+a single EA our file can't hold the
+
+716
+00:26:38,030 --> 00:26:41,740
+entire eBay application so it's sort of
+
+717
+00:26:41,750 --> 00:26:43,210
+out of necessity that we've had to learn
+
+718
+00:26:43,220 --> 00:26:44,350
+to do that in any of them
+
+719
+00:26:44,360 --> 00:26:46,030
+so that's segmenting it functionally
+
+720
+00:26:46,040 --> 00:26:48,490
+again the next pattern is the horizontal
+
+721
+00:26:48,500 --> 00:26:51,610
+split pattern so again within the search
+
+722
+00:26:51,620 --> 00:26:53,950
+pool or set of search pools within the
+
+723
+00:26:53,960 --> 00:26:56,290
+selling pool etc all the application
+
+724
+00:26:56,300 --> 00:26:57,700
+servers all the hundreds or thousands of
+
+725
+00:26:57,710 --> 00:26:58,900
+application servers that are in that
+
+726
+00:26:58,910 --> 00:27:02,380
+pool are all entirely equal and each
+
+727
+00:27:02,390 --> 00:27:04,390
+conserve the load its load balanced in a
+
+728
+00:27:04,400 --> 00:27:06,430
+very standard way so there's nothing
+
+729
+00:27:06,440 --> 00:27:09,460
+particularly tricky about that except
+
+730
+00:27:09,470 --> 00:27:10,990
+that it has implications for application
+
+731
+00:27:11,000 --> 00:27:12,910
+design so the implication is is that we
+
+732
+00:27:12,920 --> 00:27:15,660
+have absolutely no session State at all
+
+733
+00:27:15,670 --> 00:27:21,700
+so on the server on the server so that's
+
+734
+00:27:21,710 --> 00:27:24,580
+how you can keep the application servers
+
+735
+00:27:24,590 --> 00:27:25,810
+entirely stateless and completely
+
+736
+00:27:25,820 --> 00:27:27,580
+horizontally scalable so it means that
+
+737
+00:27:27,590 --> 00:27:29,590
+we can take at any given at any moment
+
+738
+00:27:29,600 --> 00:27:32,650
+we can shut down and can and do shut
+
+739
+00:27:32,660 --> 00:27:34,750
+down say half the application servers in
+
+740
+00:27:34,760 --> 00:27:36,760
+a pool yeah upgrade them to a new
+
+741
+00:27:36,770 --> 00:27:38,560
+version of the code which we're doing
+
+742
+00:27:38,570 --> 00:27:42,670
+every two weeks and then do a flip or or
+
+743
+00:27:42,680 --> 00:27:45,580
+do rolling updates where we do 10% 50% %
+
+744
+00:27:45,590 --> 00:27:47,440
+zone so all that kind of stuff gives us
+
+745
+00:27:47,450 --> 00:27:49,000
+the ability to manage that quite
+
+746
+00:27:49,010 --> 00:27:50,560
+flexibly and gives the operations team
+
+747
+00:27:50,570 --> 00:27:52,690
+the ability to do that well that has
+
+748
+00:27:52,700 --> 00:27:54,460
+strong implications for the kind of
+
+749
+00:27:54,470 --> 00:27:57,220
+applications our application developers
+
+750
+00:27:57,230 --> 00:27:59,050
+can build so we don't begin we don't
+
+751
+00:27:59,060 --> 00:28:01,090
+store any any session State there and
+
+752
+00:28:01,100 --> 00:28:03,670
+the reason for that is a bit obvious
+
+753
+00:28:03,680 --> 00:28:06,880
+when you take a step back if the since
+
+754
+00:28:06,890 --> 00:28:10,200
+the eBay application if you like is
+
+755
+00:28:10,210 --> 00:28:13,240
+implemented on multiple distinct pools
+
+756
+00:28:13,250 --> 00:28:16,870
+it means that when on when a user goes
+
+757
+00:28:16,880 --> 00:28:18,190
+through the website that sort of session
+
+758
+00:28:18,200 --> 00:28:19,810
+flow it means they're going to
+
+759
+00:28:19,820 --> 00:28:24,100
+from a selling application to a search
+
+760
+00:28:24,110 --> 00:28:27,490
+application to a few item application
+
+761
+00:28:27,500 --> 00:28:30,460
+etc etc so no there's no one place in
+
+762
+00:28:30,470 --> 00:28:31,450
+the infrastructure that they're going to
+
+763
+00:28:31,460 --> 00:28:33,910
+keep coming back to where you could even
+
+764
+00:28:33,920 --> 00:28:38,140
+store the session state and and that's
+
+765
+00:28:38,150 --> 00:28:39,610
+actually a good discipline for us
+
+766
+00:28:39,620 --> 00:28:43,030
+because it forces us to to design the
+
+767
+00:28:43,040 --> 00:28:45,130
+application in an entirely stateless way
+
+768
+00:28:45,140 --> 00:28:48,370
+so how do we but Randy you say there is
+
+769
+00:28:48,380 --> 00:28:51,700
+there is session state there how do you
+
+770
+00:28:51,710 --> 00:28:53,200
+deal with it right how do you do multi
+
+771
+00:28:53,210 --> 00:28:55,930
+page flows and so on well there aren't
+
+772
+00:28:55,940 --> 00:28:58,270
+any aren't any there's nothing new Under
+
+773
+00:28:58,280 --> 00:28:59,920
+the Sun or there's not really any magic
+
+774
+00:28:59,930 --> 00:29:02,530
+it's simply using for most of the
+
+775
+00:29:02,540 --> 00:29:04,450
+session state we use either URL URL
+
+776
+00:29:04,460 --> 00:29:07,240
+rewriting or cookies cookies are limited
+
+777
+00:29:07,250 --> 00:29:09,850
+as everybody probably knows or will soon
+
+778
+00:29:09,860 --> 00:29:12,790
+discover cookies are limited by the RFC
+
+779
+00:29:12,800 --> 00:29:16,300
+to 4k so we only get in 4000 bytes worth
+
+780
+00:29:16,310 --> 00:29:18,130
+of cookie space which seems like a lot
+
+781
+00:29:18,140 --> 00:29:19,870
+to start but actually when that covers
+
+782
+00:29:19,880 --> 00:29:22,060
+everything that ebay.com does it it
+
+783
+00:29:22,070 --> 00:29:23,830
+starts to become pretty limiting so just
+
+784
+00:29:23,840 --> 00:29:25,870
+to clarify that maybe for for users I
+
+785
+00:29:25,880 --> 00:29:27,280
+mean using cookies is nothing special
+
+786
+00:29:27,290 --> 00:29:28,780
+but what you're getting at is that you
+
+787
+00:29:28,790 --> 00:29:31,450
+don't use a cookie to store some kind of
+
+788
+00:29:31,460 --> 00:29:33,670
+ID which we then use on the server to
+
+789
+00:29:33,680 --> 00:29:35,620
+look up a session information data which
+
+790
+00:29:35,630 --> 00:29:37,600
+can be anything you literally put all
+
+791
+00:29:37,610 --> 00:29:39,250
+this data information into the cookie
+
+792
+00:29:39,260 --> 00:29:43,750
+yeah the width we do yes with a few
+
+793
+00:29:43,760 --> 00:29:47,860
+exceptions okay so the few exceptions at
+
+794
+00:29:47,870 --> 00:29:49,900
+the moment are for multi page flows
+
+795
+00:29:49,910 --> 00:29:51,900
+where so imagine somebody is selling
+
+796
+00:29:51,910 --> 00:29:54,220
+selling an item that's not something you
+
+797
+00:29:54,230 --> 00:29:56,110
+know you can't enter all the or don't
+
+798
+00:29:56,120 --> 00:29:57,460
+enter all the information in a single
+
+799
+00:29:57,470 --> 00:29:59,710
+page but you need to we need to retain
+
+800
+00:29:59,720 --> 00:30:01,210
+that transient state going along so how
+
+801
+00:30:01,220 --> 00:30:02,890
+we do that is exactly how you hint which
+
+802
+00:30:02,900 --> 00:30:05,080
+is there's essentially an ID that's in
+
+803
+00:30:05,090 --> 00:30:07,030
+the cookie that refers to something in a
+
+804
+00:30:07,040 --> 00:30:09,100
+scratch database in a database yet now
+
+805
+00:30:09,110 --> 00:30:12,100
+so it's not in memory or even on disk in
+
+806
+00:30:12,110 --> 00:30:13,030
+one of the application the application
+
+807
+00:30:13,040 --> 00:30:15,640
+server tier it's it's physically on a
+
+808
+00:30:15,650 --> 00:30:17,080
+database and what that database is
+
+809
+00:30:17,090 --> 00:30:19,060
+limited to one of your logical database
+
+810
+00:30:19,070 --> 00:30:20,590
+things so it's something that's kind of
+
+811
+00:30:20,600 --> 00:30:23,410
+local to all of your applications yes
+
+812
+00:30:23,420 --> 00:30:25,420
+that's exactly right and then we're
+
+813
+00:30:25,430 --> 00:30:29,800
+we're experimenting with other schemes
+
+814
+00:30:29,810 --> 00:30:33,250
+where where we have a a session storage
+
+815
+00:30:33,260 --> 00:30:33,990
+that's
+
+816
+00:30:34,000 --> 00:30:37,500
+in a database but it's separate from the
+
+817
+00:30:37,510 --> 00:30:38,700
+application server tier and we're kind
+
+818
+00:30:38,710 --> 00:30:40,980
+of working working the working the
+
+819
+00:30:40,990 --> 00:30:43,020
+issues through on that but we sort of
+
+820
+00:30:43,030 --> 00:30:44,310
+think of those as server-side cookies
+
+821
+00:30:44,320 --> 00:30:49,860
+right and just like cookies the app from
+
+822
+00:30:49,870 --> 00:30:51,240
+the application developers perspective
+
+823
+00:30:51,250 --> 00:30:53,460
+the developer has to assume that that
+
+824
+00:30:53,470 --> 00:30:55,620
+cookie can be deleted at any time right
+
+825
+00:30:55,630 --> 00:30:58,860
+so really important transient state like
+
+826
+00:30:58,870 --> 00:31:00,630
+as for a multi page flow as I hinted
+
+827
+00:31:00,640 --> 00:31:02,280
+that goes in a database as I all our
+
+828
+00:31:02,290 --> 00:31:03,690
+important information does that doesn't
+
+829
+00:31:03,700 --> 00:31:05,790
+live permanently in that database that's
+
+830
+00:31:05,800 --> 00:31:09,120
+what I call it a scratch database but
+
+831
+00:31:09,130 --> 00:31:11,060
+important data lives in databases and
+
+832
+00:31:11,070 --> 00:31:13,260
+other transient stuff just gets passed
+
+833
+00:31:13,270 --> 00:31:15,030
+back and forth so that's our that's our
+
+834
+00:31:15,040 --> 00:31:17,670
+approach okay and then the final the
+
+835
+00:31:17,680 --> 00:31:21,750
+final sort of example of partitioning is
+
+836
+00:31:21,760 --> 00:31:23,580
+the search infrastructure and that's the
+
+837
+00:31:23,590 --> 00:31:24,690
+part that's near and dear to my heart
+
+838
+00:31:24,700 --> 00:31:26,610
+because my particular area of expertise
+
+839
+00:31:26,620 --> 00:31:29,400
+so our search infrastructure so the
+
+840
+00:31:29,410 --> 00:31:31,770
+functional segmentation is simply that
+
+841
+00:31:31,780 --> 00:31:34,080
+the search infrastructure is func is
+
+842
+00:31:34,090 --> 00:31:36,120
+read-only as you might imagine a search
+
+843
+00:31:36,130 --> 00:31:37,770
+infrastructure would be it's
+
+844
+00:31:37,780 --> 00:31:39,810
+functionally segmented from the rest of
+
+845
+00:31:39,820 --> 00:31:42,750
+the data sort of transactional part of
+
+846
+00:31:42,760 --> 00:31:44,910
+the database of the site transactional
+
+847
+00:31:44,920 --> 00:31:47,040
+databases of the site and I'll talk a
+
+848
+00:31:47,050 --> 00:31:49,770
+little bit later about how the one how
+
+849
+00:31:49,780 --> 00:31:51,180
+the one gets transferred to the other be
+
+850
+00:31:51,190 --> 00:31:53,070
+updated from x right that's a synchrony
+
+851
+00:31:53,080 --> 00:31:54,780
+right there so we'll talk about that as
+
+852
+00:31:54,790 --> 00:31:57,330
+we go forward by it but this but the
+
+853
+00:31:57,340 --> 00:31:59,400
+search function the search engine is a
+
+854
+00:31:59,410 --> 00:32:01,380
+functionally segment a functionally
+
+855
+00:32:01,390 --> 00:32:03,270
+different part of the site as the
+
+856
+00:32:03,280 --> 00:32:05,100
+transactional data so I mean that that's
+
+857
+00:32:05,110 --> 00:32:07,320
+something I've heard also in these data
+
+858
+00:32:07,330 --> 00:32:09,390
+warehousing and and data cube
+
+859
+00:32:09,400 --> 00:32:11,310
+applications where you prepare the data
+
+860
+00:32:11,320 --> 00:32:13,560
+in a way that is not suitable for
+
+861
+00:32:13,570 --> 00:32:15,420
+transactional because it might contain
+
+862
+00:32:15,430 --> 00:32:17,220
+duplicate and stuff it's not necessarily
+
+863
+00:32:17,230 --> 00:32:19,320
+always normalized but it is optimized
+
+864
+00:32:19,330 --> 00:32:21,660
+for for queries yeah that's that's a
+
+865
+00:32:21,670 --> 00:32:24,660
+very insightful and lt to draw the eBay
+
+866
+00:32:24,670 --> 00:32:26,370
+search engine is to the ebay
+
+867
+00:32:26,380 --> 00:32:29,280
+transactional databases as the eBay data
+
+868
+00:32:29,290 --> 00:32:31,410
+warehouse which also exists is to look
+
+869
+00:32:31,420 --> 00:32:33,450
+at it was those transactional databases
+
+870
+00:32:33,460 --> 00:32:35,730
+right there's to use data warehousing
+
+871
+00:32:35,740 --> 00:32:37,530
+terminology there's a kind of ETL
+
+872
+00:32:37,540 --> 00:32:39,450
+process which I'll talk about extract
+
+873
+00:32:39,460 --> 00:32:41,490
+transform load right which takes the
+
+874
+00:32:41,500 --> 00:32:44,250
+data from the probe from the primary
+
+875
+00:32:44,260 --> 00:32:45,750
+databases and moves it over into the
+
+876
+00:32:45,760 --> 00:32:47,790
+search engines it doesn't work like most
+
+877
+00:32:47,800 --> 00:32:49,950
+warehouse ETL processes do but but
+
+878
+00:32:49,960 --> 00:32:52,260
+that's a detail the general idea is yes
+
+879
+00:32:52,270 --> 00:32:53,940
+it's a kind of read-only it's a
+
+880
+00:32:53,950 --> 00:32:55,410
+different data structure right a search
+
+881
+00:32:55,420 --> 00:32:57,900
+engine is an inverted index it's a
+
+882
+00:32:57,910 --> 00:32:59,610
+difference a very entirely different
+
+883
+00:32:59,620 --> 00:33:01,920
+data structure and should be from third
+
+884
+00:33:01,930 --> 00:33:04,470
+normal form style relational database is
+
+885
+00:33:04,480 --> 00:33:06,390
+it a relational database or is it really
+
+886
+00:33:06,400 --> 00:33:08,190
+different it is very different okay it's
+
+887
+00:33:08,200 --> 00:33:09,930
+it's it's a search engine like Google or
+
+888
+00:33:09,940 --> 00:33:11,670
+Yahoo developed by the same people that
+
+889
+00:33:11,680 --> 00:33:13,320
+develop the Alta Vista search engine and
+
+890
+00:33:13,330 --> 00:33:15,540
+as with many search engines it's
+
+891
+00:33:15,550 --> 00:33:17,370
+developed on similar principles which is
+
+892
+00:33:17,380 --> 00:33:20,550
+that it's an inverted index there's a
+
+893
+00:33:20,560 --> 00:33:23,160
+set of documents with IDs keywords are
+
+894
+00:33:23,170 --> 00:33:25,770
+indexed into those documents and query
+
+895
+00:33:25,780 --> 00:33:27,990
+operations happen by intersecting lists
+
+896
+00:33:28,000 --> 00:33:31,080
+of vectors of of those keywords very
+
+897
+00:33:31,090 --> 00:33:32,400
+sound very simply and there's a lot of
+
+898
+00:33:32,410 --> 00:33:34,260
+there's a lot more detail about about
+
+899
+00:33:34,270 --> 00:33:34,980
+how that works
+
+900
+00:33:34,990 --> 00:33:37,050
+the challenge for just as an aside the
+
+901
+00:33:37,060 --> 00:33:38,400
+challenge for that eBay style search
+
+902
+00:33:38,410 --> 00:33:41,400
+engine is that our users expect the
+
+903
+00:33:41,410 --> 00:33:42,510
+search engine to be updated in
+
+904
+00:33:42,520 --> 00:33:44,580
+essentially near real-time right when
+
+905
+00:33:44,590 --> 00:33:46,230
+somebody bids on an item that changes
+
+906
+00:33:46,240 --> 00:33:48,240
+the price and price is a filter that
+
+907
+00:33:48,250 --> 00:33:50,070
+people are very interested in querying
+
+908
+00:33:50,080 --> 00:33:53,520
+on so it actually means that the style
+
+909
+00:33:53,530 --> 00:33:56,070
+the sort of classic web search engine
+
+910
+00:33:56,080 --> 00:33:58,200
+style of you build the index in a kind
+
+911
+00:33:58,210 --> 00:34:01,590
+of batch mode and then upload it to the
+
+912
+00:34:01,600 --> 00:34:02,940
+to the search engines is something that
+
+913
+00:34:02,950 --> 00:34:04,020
+doesn't really work for us it needs to
+
+914
+00:34:04,030 --> 00:34:05,280
+be a lot more real-time so I'll talk a
+
+915
+00:34:05,290 --> 00:34:07,040
+little bit about how that real-time
+
+916
+00:34:07,050 --> 00:34:10,350
+system works in my asynchrony section
+
+917
+00:34:10,360 --> 00:34:14,040
+but anyhow the the but the sort of to
+
+918
+00:34:14,050 --> 00:34:15,390
+finish the thought on scalability for
+
+919
+00:34:15,400 --> 00:34:18,120
+search the idea is that the search
+
+920
+00:34:18,130 --> 00:34:19,620
+engine can be horizontally split so
+
+921
+00:34:19,630 --> 00:34:21,600
+there's this overall search index of
+
+922
+00:34:21,610 --> 00:34:23,640
+whatever size it is we divide it up into
+
+923
+00:34:23,650 --> 00:34:28,200
+chunks of 10 or 20 or 60 or 100 and then
+
+924
+00:34:28,210 --> 00:34:29,909
+divide the infrastructure that way and
+
+925
+00:34:29,919 --> 00:34:32,720
+then we have an aggregator piece which
+
+926
+00:34:32,730 --> 00:34:35,190
+now does do scatter gather over all
+
+927
+00:34:35,200 --> 00:34:36,300
+those different parts of the of the
+
+928
+00:34:36,310 --> 00:34:36,810
+index
+
+929
+00:34:36,820 --> 00:34:39,390
+so somebody queries for iPod or Mickey
+
+930
+00:34:39,400 --> 00:34:42,390
+Mouse or Wii and the aggregator sends
+
+931
+00:34:42,400 --> 00:34:45,360
+the query to each one of the different
+
+932
+00:34:45,370 --> 00:34:47,669
+splits or shards and gets the results
+
+933
+00:34:47,679 --> 00:34:49,260
+back and aggregates and send somebody
+
+934
+00:34:49,270 --> 00:34:51,350
+user so
+
+935
+00:34:51,360 --> 00:34:54,320
+okay so that was the discussion on
+
+936
+00:34:54,330 --> 00:34:57,680
+partitioning the next of your basic
+
+937
+00:34:57,690 --> 00:35:01,310
+architectural strategies is or boss or
+
+938
+00:35:01,320 --> 00:35:02,990
+whatever is to be asynchronous
+
+939
+00:35:03,000 --> 00:35:05,990
+everywhere this is something we all know
+
+940
+00:35:06,000 --> 00:35:08,060
+but as the systems grow larger and
+
+941
+00:35:08,070 --> 00:35:09,770
+larger becomes more and more important
+
+942
+00:35:09,780 --> 00:35:12,500
+that the more processing that you can do
+
+943
+00:35:12,510 --> 00:35:15,230
+asynchronously the better there are
+
+944
+00:35:15,240 --> 00:35:17,240
+obvious reasons for that scalability is
+
+945
+00:35:17,250 --> 00:35:19,730
+one where component if component a and
+
+946
+00:35:19,740 --> 00:35:21,500
+component B are linked asynchronously
+
+947
+00:35:21,510 --> 00:35:23,660
+you can scale a and B separate from one
+
+948
+00:35:23,670 --> 00:35:26,660
+another right availability is maybe
+
+949
+00:35:26,670 --> 00:35:29,660
+another another key point which is that
+
+950
+00:35:29,670 --> 00:35:33,050
+a and B will not necessarily always be
+
+951
+00:35:33,060 --> 00:35:36,850
+up at the same time so you want to have
+
+952
+00:35:36,860 --> 00:35:39,860
+the ability to have a be available and B
+
+953
+00:35:39,870 --> 00:35:41,330
+not be available and some kind of
+
+954
+00:35:41,340 --> 00:35:43,700
+asynchronous queue or topic or some kind
+
+955
+00:35:43,710 --> 00:35:44,800
+of way of asynchronously
+
+956
+00:35:44,810 --> 00:35:46,940
+linking those two things allows you to
+
+957
+00:35:46,950 --> 00:35:48,920
+do that so a can be up and print can
+
+958
+00:35:48,930 --> 00:35:50,600
+perform its job without B being up at
+
+959
+00:35:50,610 --> 00:35:52,490
+that moment the slightly more subtle
+
+960
+00:35:52,500 --> 00:35:55,460
+point is that not only this the up down
+
+961
+00:35:55,470 --> 00:35:58,670
+state of B and a are decoupled but also
+
+962
+00:35:58,680 --> 00:36:00,200
+what we call availability
+
+963
+00:36:00,210 --> 00:36:02,210
+characteristics so when we build out a
+
+964
+00:36:02,220 --> 00:36:04,040
+particular pool or piece of
+
+965
+00:36:04,050 --> 00:36:05,780
+infrastructure one of the very first
+
+966
+00:36:05,790 --> 00:36:07,130
+things we ask is does it need to be
+
+967
+00:36:07,140 --> 00:36:09,530
+so-called always available does it need
+
+968
+00:36:09,540 --> 00:36:11,210
+to be highly available which isn't
+
+969
+00:36:11,220 --> 00:36:12,800
+always does it need to be sort of
+
+970
+00:36:12,810 --> 00:36:15,890
+best-effort available etc etc again like
+
+971
+00:36:15,900 --> 00:36:17,540
+consistency or anything else it's a sort
+
+972
+00:36:17,550 --> 00:36:19,220
+of spectrum of availability right and
+
+973
+00:36:19,230 --> 00:36:21,740
+it's more expensive to do the more more
+
+974
+00:36:21,750 --> 00:36:24,980
+available so you can decouple the
+
+975
+00:36:24,990 --> 00:36:26,750
+availability characteristics of the two
+
+976
+00:36:26,760 --> 00:36:28,460
+things maybe a doesn't need to be always
+
+977
+00:36:28,470 --> 00:36:30,350
+available but B doesn't need to be right
+
+978
+00:36:30,360 --> 00:36:31,700
+as long as they're linked asynchronously
+
+979
+00:36:31,710 --> 00:36:35,480
+and then of course latency you can
+
+980
+00:36:35,490 --> 00:36:37,310
+improve user experience latency by
+
+981
+00:36:37,320 --> 00:36:38,540
+getting back to the user very quickly
+
+982
+00:36:38,550 --> 00:36:39,710
+doing some of the more expensive
+
+983
+00:36:39,720 --> 00:36:42,020
+processing later at the very explicit
+
+984
+00:36:42,030 --> 00:36:44,660
+cost though of the data or execution
+
+985
+00:36:44,670 --> 00:36:47,060
+latency happens later because that's an
+
+986
+00:36:47,070 --> 00:36:49,730
+asynchronous process and then then the
+
+987
+00:36:49,740 --> 00:36:52,190
+other sort of maybe more subtle point
+
+988
+00:36:52,200 --> 00:36:54,590
+but I think should be appreciated more
+
+989
+00:36:54,600 --> 00:36:57,200
+than it is is that when there's a
+
+990
+00:36:57,210 --> 00:36:58,220
+synchronous integration between
+
+991
+00:36:58,230 --> 00:37:00,470
+components the cost
+
+992
+00:37:00,480 --> 00:37:02,359
+metric is a little bit different you
+
+993
+00:37:02,369 --> 00:37:03,980
+don't have to build out for the peak
+
+994
+00:37:03,990 --> 00:37:06,250
+load if there's there's a queue there
+
+995
+00:37:06,260 --> 00:37:08,210
+you don't build you don't need to build
+
+996
+00:37:08,220 --> 00:37:09,890
+for the peak load you simply need to
+
+997
+00:37:09,900 --> 00:37:11,480
+build for the average load right or
+
+998
+00:37:11,490 --> 00:37:13,069
+maybe the above average load but in any
+
+999
+00:37:13,079 --> 00:37:16,910
+event because as you hit your peak the
+
+1000
+00:37:16,920 --> 00:37:19,730
+instead of it's sort of the queue allows
+
+1001
+00:37:19,740 --> 00:37:21,319
+you to spread the processing out over
+
+1002
+00:37:21,329 --> 00:37:23,299
+time yeah the queue cools it up Pacific
+
+1003
+00:37:23,309 --> 00:37:24,950
+use it and flat and strengthens it
+
+1004
+00:37:24,960 --> 00:37:27,890
+exactly it's exactly dampening in e it
+
+1005
+00:37:27,900 --> 00:37:31,039
+it takes it takes high amplitude
+
+1006
+00:37:31,049 --> 00:37:33,950
+fluctuations that peaks and valleys are
+
+1007
+00:37:33,960 --> 00:37:37,279
+and turns them flatter right so that
+
+1008
+00:37:37,289 --> 00:37:39,410
+helps quite a lot so patterns that we
+
+1009
+00:37:39,420 --> 00:37:41,000
+apply asynchronously are sort of well
+
+1010
+00:37:41,010 --> 00:37:43,490
+known patterns in the industry one is
+
+1011
+00:37:43,500 --> 00:37:45,170
+sort of message dispatch right and
+
+1012
+00:37:45,180 --> 00:37:47,299
+event-driven or message driven model and
+
+1013
+00:37:47,309 --> 00:37:48,529
+the other is something that I call
+
+1014
+00:37:48,539 --> 00:37:50,029
+periodic batch which should be familiar
+
+1015
+00:37:50,039 --> 00:37:53,599
+to everybody that the eldest eldest of
+
+1016
+00:37:53,609 --> 00:37:56,930
+us will be under that as well well no
+
+1017
+00:37:56,940 --> 00:37:58,309
+I'm the older one of the two of us
+
+1018
+00:37:58,319 --> 00:38:00,170
+that's for sure but in any event people
+
+1019
+00:38:00,180 --> 00:38:01,220
+who've been around for a while we're
+
+1020
+00:38:01,230 --> 00:38:03,470
+familiar with a batch yes so some
+
+1021
+00:38:03,480 --> 00:38:05,599
+particular examples of those patterns
+
+1022
+00:38:05,609 --> 00:38:06,890
+and the eBay infrastructure are
+
+1023
+00:38:06,900 --> 00:38:09,430
+something that we call event streams so
+
+1024
+00:38:09,440 --> 00:38:14,690
+in very sort of JMS style approach you
+
+1025
+00:38:14,700 --> 00:38:16,759
+know when things happen on eBay there
+
+1026
+00:38:16,769 --> 00:38:17,930
+are lots of different systems that are
+
+1027
+00:38:17,940 --> 00:38:19,370
+interested in nothing having happened
+
+1028
+00:38:19,380 --> 00:38:21,470
+right so somebody has listed an item
+
+1029
+00:38:21,480 --> 00:38:22,519
+somebody has purchased an item
+
+1030
+00:38:22,529 --> 00:38:24,049
+somebody's bid on an item all those
+
+1031
+00:38:24,059 --> 00:38:25,910
+things are interesting events that other
+
+1032
+00:38:25,920 --> 00:38:28,309
+people are interested in knowing about
+
+1033
+00:38:28,319 --> 00:38:31,249
+it and doing stuff with and so we've
+
+1034
+00:38:31,259 --> 00:38:33,670
+developed as is I want our own
+
+1035
+00:38:33,680 --> 00:38:35,329
+infrastructure if we're doing that but
+
+1036
+00:38:35,339 --> 00:38:37,339
+it's very much along the GMs style lines
+
+1037
+00:38:37,349 --> 00:38:39,740
+so typically what happens is a print the
+
+1038
+00:38:39,750 --> 00:38:42,410
+primary use case that lists an item or
+
+1039
+00:38:42,420 --> 00:38:45,349
+bids an item or whatever also as part of
+
+1040
+00:38:45,359 --> 00:38:50,150
+its insert or update of that record also
+
+1041
+00:38:50,160 --> 00:38:54,499
+is inserting an item into an event table
+
+1042
+00:38:54,509 --> 00:38:56,690
+and that event gets consumed by these
+
+1043
+00:38:56,700 --> 00:38:57,829
+multiple consumers that run
+
+1044
+00:38:57,839 --> 00:38:59,569
+asynchronously so that's again where we
+
+1045
+00:38:59,579 --> 00:39:02,059
+use this trick of plc of anonymous plc
+
+1046
+00:39:02,069 --> 00:39:04,009
+blocks and making that transactional
+
+1047
+00:39:04,019 --> 00:39:06,230
+right yeah so the so it's a single
+
+1048
+00:39:06,240 --> 00:39:09,380
+database transaction to update the
+
+1049
+00:39:09,390 --> 00:39:11,870
+current items current price with the bed
+
+1050
+00:39:11,880 --> 00:39:14,210
+and insert
+
+1051
+00:39:14,220 --> 00:39:16,490
+and cue the event the sort of item that
+
+1052
+00:39:16,500 --> 00:39:18,830
+did event for other people to process so
+
+1053
+00:39:18,840 --> 00:39:21,320
+and where do those cue tables live I
+
+1054
+00:39:21,330 --> 00:39:22,760
+mean they are part of one of those
+
+1055
+00:39:22,770 --> 00:39:24,260
+systems otherwise you couldn't do it
+
+1056
+00:39:24,270 --> 00:39:26,660
+with your anonymous SQL block yes that
+
+1057
+00:39:26,670 --> 00:39:28,490
+means that some other system needs to
+
+1058
+00:39:28,500 --> 00:39:30,890
+watch this table of the other system so
+
+1059
+00:39:30,900 --> 00:39:32,240
+you have these dependencies between
+
+1060
+00:39:32,250 --> 00:39:33,830
+those systems in the sense that they
+
+1061
+00:39:33,840 --> 00:39:35,960
+monitor each other's cue tables or even
+
+1062
+00:39:35,970 --> 00:39:38,240
+tables it's that's exactly right so in
+
+1063
+00:39:38,250 --> 00:39:40,460
+order as you could I mean very
+
+1064
+00:39:40,470 --> 00:39:42,290
+insightful as you correctly point out in
+
+1065
+00:39:42,300 --> 00:39:44,030
+order for us to do it at a single
+
+1066
+00:39:44,040 --> 00:39:46,130
+database transaction by its very nature
+
+1067
+00:39:46,140 --> 00:39:49,730
+the cue table or really the the segment
+
+1068
+00:39:49,740 --> 00:39:51,410
+of the cue table or the shard of the cue
+
+1069
+00:39:51,420 --> 00:39:54,410
+that lives that is associated with these
+
+1070
+00:39:54,420 --> 00:39:55,880
+particular set of items or these
+
+1071
+00:39:55,890 --> 00:39:57,620
+particular set of uses or whatever needs
+
+1072
+00:39:57,630 --> 00:39:59,270
+to live in the same be co-located in the
+
+1073
+00:39:59,280 --> 00:40:01,430
+same database as the item table or the
+
+1074
+00:40:01,440 --> 00:40:03,700
+user table or whatever absolutely true
+
+1075
+00:40:03,710 --> 00:40:07,070
+but that actually has advantages not
+
+1076
+00:40:07,080 --> 00:40:08,690
+disadvantages if you think about it for
+
+1077
+00:40:08,700 --> 00:40:11,000
+a second because the it means that the
+
+1078
+00:40:11,010 --> 00:40:13,550
+primary data and the event data are
+
+1079
+00:40:13,560 --> 00:40:16,040
+co-located in a single split yes for a
+
+1080
+00:40:16,050 --> 00:40:18,920
+single shard so yes when a consumer is
+
+1081
+00:40:18,930 --> 00:40:21,680
+interested in consuming events out of
+
+1082
+00:40:21,690 --> 00:40:25,580
+that particular shard they are they do
+
+1083
+00:40:25,590 --> 00:40:27,680
+have a dependency on that database but
+
+1084
+00:40:27,690 --> 00:40:29,990
+they already did in some sense because
+
+1085
+00:40:30,000 --> 00:40:32,120
+they have a dependency to read the cue
+
+1086
+00:40:32,130 --> 00:40:34,220
+write but they also have a dependency I
+
+1087
+00:40:34,230 --> 00:40:36,620
+mean typically they have the dependency
+
+1088
+00:40:36,630 --> 00:40:38,420
+to read the data as well yeah so it so
+
+1089
+00:40:38,430 --> 00:40:40,610
+it it works out quite well actually sort
+
+1090
+00:40:40,620 --> 00:40:42,170
+of a very natural way of essentially
+
+1091
+00:40:42,180 --> 00:40:43,820
+partitioning events along the same lines
+
+1092
+00:40:43,830 --> 00:40:48,650
+as partitioning the data yeah so the
+
+1093
+00:40:48,660 --> 00:40:50,090
+asynchrony there is again a very
+
+1094
+00:40:50,100 --> 00:40:51,830
+standard JMS model there are multiple
+
+1095
+00:40:51,840 --> 00:40:53,600
+consumers each of which are consuming
+
+1096
+00:40:53,610 --> 00:40:57,220
+those events and the key sort of design
+
+1097
+00:40:57,230 --> 00:40:58,910
+thing that we've been able to take
+
+1098
+00:40:58,920 --> 00:41:02,540
+advantage of is the design principle for
+
+1099
+00:41:02,550 --> 00:41:04,400
+the events rooms we built or simply that
+
+1100
+00:41:04,410 --> 00:41:06,320
+we don't care about exactly once
+
+1101
+00:41:06,330 --> 00:41:08,120
+delivery and we don't care about order
+
+1102
+00:41:08,130 --> 00:41:09,950
+this has implications for our
+
+1103
+00:41:09,960 --> 00:41:11,870
+application developers but it's again
+
+1104
+00:41:11,880 --> 00:41:13,760
+just like trading off consistency it
+
+1105
+00:41:13,770 --> 00:41:15,800
+frees up the ability to do a much more
+
+1106
+00:41:15,810 --> 00:41:17,960
+performance system so we talked about
+
+1107
+00:41:17,970 --> 00:41:21,080
+using asynchronous message message
+
+1108
+00:41:21,090 --> 00:41:23,240
+dispatch to communicate between the
+
+1109
+00:41:23,250 --> 00:41:25,070
+different separated applications and
+
+1110
+00:41:25,080 --> 00:41:27,849
+charts of those applications
+
+1111
+00:41:27,859 --> 00:41:31,269
+the async metaphor or principle play
+
+1112
+00:41:31,279 --> 00:41:33,789
+with the search infrastructure in the
+
+1113
+00:41:33,799 --> 00:41:35,499
+updating of the index we talked about
+
+1114
+00:41:35,509 --> 00:41:37,630
+before so we use exactly the same
+
+1115
+00:41:37,640 --> 00:41:39,279
+pattern although as you'll see the
+
+1116
+00:41:39,289 --> 00:41:40,509
+implementation of that pattern is
+
+1117
+00:41:40,519 --> 00:41:42,789
+slightly different but fundamentally the
+
+1118
+00:41:42,799 --> 00:41:45,609
+idea is that again interesting things
+
+1119
+00:41:45,619 --> 00:41:47,589
+happen in the primary databases people
+
+1120
+00:41:47,599 --> 00:41:49,809
+list items they bid on items items are
+
+1121
+00:41:49,819 --> 00:41:51,910
+purchased and so on and we want those
+
+1122
+00:41:51,920 --> 00:41:53,920
+those changes to be reflected and
+
+1123
+00:41:53,930 --> 00:41:57,279
+searched as quickly as possible right so
+
+1124
+00:41:57,289 --> 00:41:59,470
+how we do that is we have a sort of
+
+1125
+00:41:59,480 --> 00:42:01,239
+asynchronous feeder infrastructure we
+
+1126
+00:42:01,249 --> 00:42:03,130
+call it simply feeding updates that
+
+1127
+00:42:03,140 --> 00:42:03,640
+happen
+
+1128
+00:42:03,650 --> 00:42:05,589
+on the primary databases into the search
+
+1129
+00:42:05,599 --> 00:42:09,759
+infrastructure so how that works is we
+
+1130
+00:42:09,769 --> 00:42:11,650
+have something for each of the sort of
+
+1131
+00:42:11,660 --> 00:42:14,349
+shards of item database let's say we
+
+1132
+00:42:14,359 --> 00:42:16,299
+have a sort of search feed or
+
+1133
+00:42:16,309 --> 00:42:18,489
+application which is a sort of demon
+
+1134
+00:42:18,499 --> 00:42:20,319
+which is periodically polling for
+
+1135
+00:42:20,329 --> 00:42:21,880
+updates that happen on the primary
+
+1136
+00:42:21,890 --> 00:42:24,789
+databases what happens is that that
+
+1137
+00:42:24,799 --> 00:42:28,210
+feeder application notices the updates
+
+1138
+00:42:28,220 --> 00:42:30,489
+persists those updates locally for a
+
+1139
+00:42:30,499 --> 00:42:31,720
+reason I'll tell you but talk about in a
+
+1140
+00:42:31,730 --> 00:42:34,630
+second then messages those updates out
+
+1141
+00:42:34,640 --> 00:42:37,539
+over a multicast message bus and the
+
+1142
+00:42:37,549 --> 00:42:39,999
+individual nodes of the search
+
+1143
+00:42:40,009 --> 00:42:42,549
+infrastructure are all listening are
+
+1144
+00:42:42,559 --> 00:42:44,289
+listening each listening to appropriate
+
+1145
+00:42:44,299 --> 00:42:46,029
+set of those messages to update
+
+1146
+00:42:46,039 --> 00:42:48,460
+themselves so the reason why there's
+
+1147
+00:42:48,470 --> 00:42:50,460
+this intermediate persistence is that
+
+1148
+00:42:50,470 --> 00:42:54,069
+the multicast bus is multicast messaging
+
+1149
+00:42:54,079 --> 00:42:57,220
+is of course unreliable so but we'd like
+
+1150
+00:42:57,230 --> 00:42:59,289
+it to be reliable or semi reliable so
+
+1151
+00:42:59,299 --> 00:43:01,660
+the way we make it reliable is that when
+
+1152
+00:43:01,670 --> 00:43:03,220
+nodes notice that they've missed a
+
+1153
+00:43:03,230 --> 00:43:05,970
+message they send a message back to the
+
+1154
+00:43:05,980 --> 00:43:08,940
+the search feed or application which
+
+1155
+00:43:08,950 --> 00:43:11,349
+saying hey I missed message for or
+
+1156
+00:43:11,359 --> 00:43:12,370
+missed message five
+
+1157
+00:43:12,380 --> 00:43:13,870
+could you please resend that to me and
+
+1158
+00:43:13,880 --> 00:43:15,249
+how does it know how to resend it it
+
+1159
+00:43:15,259 --> 00:43:17,499
+reads it from the persistent storage
+
+1160
+00:43:17,509 --> 00:43:21,099
+right right okay so so that's the sort
+
+1161
+00:43:21,109 --> 00:43:23,170
+of a asynchrony part and then those
+
+1162
+00:43:23,180 --> 00:43:24,910
+individual nodes are again listening to
+
+1163
+00:43:24,920 --> 00:43:26,620
+those messages and they keep their their
+
+1164
+00:43:26,630 --> 00:43:28,779
+slice of the search index in memory and
+
+1165
+00:43:28,789 --> 00:43:30,579
+they update that search index in memory
+
+1166
+00:43:30,589 --> 00:43:33,039
+and then it's immediately available to
+
+1167
+00:43:33,049 --> 00:43:36,279
+be queried so okay you already talked
+
+1168
+00:43:36,289 --> 00:43:38,500
+about the batch stuff before
+
+1169
+00:43:38,510 --> 00:43:40,750
+that sounds really old style but it's a
+
+1170
+00:43:40,760 --> 00:43:42,550
+good way of obviously batching things
+
+1171
+00:43:42,560 --> 00:43:45,100
+that that happened only at certain time
+
+1172
+00:43:45,110 --> 00:43:46,330
+intervals so they want to talk about
+
+1173
+00:43:46,340 --> 00:43:47,170
+that a little bit
+
+1174
+00:43:47,180 --> 00:43:48,820
+sure I'll talk briefly about that and
+
+1175
+00:43:48,830 --> 00:43:50,920
+you say exactly what you say is exactly
+
+1176
+00:43:50,930 --> 00:43:54,190
+correct that the the batch is a sort of
+
+1177
+00:43:54,200 --> 00:43:57,060
+old-style 1970s transaction processing
+
+1178
+00:43:57,070 --> 00:43:59,410
+approach but it's still a very good one
+
+1179
+00:43:59,420 --> 00:44:01,270
+not everything is appropriate for
+
+1180
+00:44:01,280 --> 00:44:04,180
+messaging so it's typically appropriate
+
+1181
+00:44:04,190 --> 00:44:06,120
+for those things that are scheduled or
+
+1182
+00:44:06,130 --> 00:44:09,040
+infrequent or frankly particularly
+
+1183
+00:44:09,050 --> 00:44:11,950
+expensive such things that we do once an
+
+1184
+00:44:11,960 --> 00:44:14,680
+hour once a day once a week things that
+
+1185
+00:44:14,690 --> 00:44:16,600
+we don't need to do very often you know
+
+1186
+00:44:16,610 --> 00:44:17,860
+those are those are types of things that
+
+1187
+00:44:17,870 --> 00:44:20,050
+are perfectly appropriate for batches so
+
+1188
+00:44:20,060 --> 00:44:21,970
+that allows us to do large summations
+
+1189
+00:44:21,980 --> 00:44:25,480
+over over large amounts of data but
+
+1190
+00:44:25,490 --> 00:44:26,740
+actually also we kind of we end up
+
+1191
+00:44:26,750 --> 00:44:28,900
+combining the two patterns as well so
+
+1192
+00:44:28,910 --> 00:44:31,270
+we'll have a batch that reads a bunch of
+
+1193
+00:44:31,280 --> 00:44:33,220
+primary data and then generates a bunch
+
+1194
+00:44:33,230 --> 00:44:35,500
+of downstream processing through message
+
+1195
+00:44:35,510 --> 00:44:37,350
+dispatch so we'll have a batch that
+
+1196
+00:44:37,360 --> 00:44:40,960
+collects collects a bunch of data and
+
+1197
+00:44:40,970 --> 00:44:42,250
+then it generates a whole series of
+
+1198
+00:44:42,260 --> 00:44:43,750
+other events that can be consumed later
+
+1199
+00:44:43,760 --> 00:44:46,630
+on so the two patterns are quite
+
+1200
+00:44:46,640 --> 00:44:48,150
+complementary to one another right
+
+1201
+00:44:48,160 --> 00:44:49,960
+anything else
+
+1202
+00:44:49,970 --> 00:44:51,760
+on I think that's about all I have to
+
+1203
+00:44:51,770 --> 00:44:54,700
+say so strategy number three automate
+
+1204
+00:44:54,710 --> 00:44:58,090
+everything automate everything so again
+
+1205
+00:44:58,100 --> 00:45:00,220
+it's pretty obvious but as the as the
+
+1206
+00:45:00,230 --> 00:45:02,110
+number of systems and the complexity of
+
+1207
+00:45:02,120 --> 00:45:03,850
+systems grows it becomes more and more
+
+1208
+00:45:03,860 --> 00:45:05,950
+difficult to manage it manually I mean
+
+1209
+00:45:05,960 --> 00:45:07,240
+that's true of hardware that's also true
+
+1210
+00:45:07,250 --> 00:45:09,160
+of software so if we as software
+
+1211
+00:45:09,170 --> 00:45:12,880
+engineers can build systems that can be
+
+1212
+00:45:12,890 --> 00:45:14,980
+more automatable right and adapt
+
+1213
+00:45:14,990 --> 00:45:16,390
+themselves to their environment that
+
+1214
+00:45:16,400 --> 00:45:18,700
+makes it much easier to manage and also
+
+1215
+00:45:18,710 --> 00:45:20,650
+has a bunch of other nice effects as
+
+1216
+00:45:20,660 --> 00:45:23,320
+well so clearly there's a there's a
+
+1217
+00:45:23,330 --> 00:45:25,150
+scalability effect for your organization
+
+1218
+00:45:25,160 --> 00:45:26,680
+you scale number of machines without
+
+1219
+00:45:26,690 --> 00:45:28,570
+linearly scaling the number of humans
+
+1220
+00:45:28,580 --> 00:45:31,120
+yeah machines are less expensive so
+
+1221
+00:45:31,130 --> 00:45:33,490
+there's a cost advantage but again maybe
+
+1222
+00:45:33,500 --> 00:45:35,530
+the less less a more subtle and less
+
+1223
+00:45:35,540 --> 00:45:37,360
+appreciated one is you can do different
+
+1224
+00:45:37,370 --> 00:45:39,760
+kinds of functionality more
+
+1225
+00:45:39,770 --> 00:45:41,920
+sophisticated kinds of functionality in
+
+1226
+00:45:41,930 --> 00:45:43,960
+an adaptive or automated system then
+
+1227
+00:45:43,970 --> 00:45:45,820
+typically you can wear with manual
+
+1228
+00:45:45,830 --> 00:45:49,300
+tuning right if I'm tuning a thread pool
+
+1229
+00:45:49,310 --> 00:45:51,710
+the size of a thread pool from
+
+1230
+00:45:51,720 --> 00:45:53,900
+nine to ten to twelve as a human I only
+
+1231
+00:45:53,910 --> 00:45:55,670
+have so much attention that I'm gonna
+
+1232
+00:45:55,680 --> 00:46:00,200
+put to that yeah and I need to sleep and
+
+1233
+00:46:00,210 --> 00:46:04,220
+I think but but something where that
+
+1234
+00:46:04,230 --> 00:46:06,230
+that could be configured in an adaptive
+
+1235
+00:46:06,240 --> 00:46:08,120
+way and the machine could tune itself
+
+1236
+00:46:08,130 --> 00:46:10,580
+freeze the human to do something else
+
+1237
+00:46:10,590 --> 00:46:12,200
+even something something very simple
+
+1238
+00:46:12,210 --> 00:46:14,060
+like that oh it's also something Bob
+
+1239
+00:46:14,070 --> 00:46:15,349
+henro talked about in the
+
+1240
+00:46:15,359 --> 00:46:17,270
+fault-tolerance episodes that you should
+
+1241
+00:46:17,280 --> 00:46:20,150
+make humans aware of what's going on but
+
+1242
+00:46:20,160 --> 00:46:21,680
+you should take them out of the critical
+
+1243
+00:46:21,690 --> 00:46:23,990
+path of actually adapting or recovering
+
+1244
+00:46:24,000 --> 00:46:25,760
+a system that's a very nicely nice way
+
+1245
+00:46:25,770 --> 00:46:27,770
+to say it yeah yeah yeah
+
+1246
+00:46:27,780 --> 00:46:29,690
+so so basically you have a bunch of
+
+1247
+00:46:29,700 --> 00:46:31,310
+metrics that you measure all the time
+
+1248
+00:46:31,320 --> 00:46:33,680
+and then you have a rule set of rules
+
+1249
+00:46:33,690 --> 00:46:35,570
+and they tune the system itself sort of
+
+1250
+00:46:35,580 --> 00:46:37,910
+that's that's a general idea or further
+
+1251
+00:46:37,920 --> 00:46:39,560
+cases where we've been where we've done
+
+1252
+00:46:39,570 --> 00:46:41,150
+this that's the general idea so one
+
+1253
+00:46:41,160 --> 00:46:42,950
+specific example is again with a sort of
+
+1254
+00:46:42,960 --> 00:46:46,280
+event streaming system the individual
+
+1255
+00:46:46,290 --> 00:46:48,440
+consumers we said it we said it we call
+
+1256
+00:46:48,450 --> 00:46:50,089
+it what you call an SLA a service level
+
+1257
+00:46:50,099 --> 00:46:51,410
+agreement for a particular consumer
+
+1258
+00:46:51,420 --> 00:46:53,870
+saying something like you know you
+
+1259
+00:46:53,880 --> 00:46:56,510
+consumer need to have processed 99% of
+
+1260
+00:46:56,520 --> 00:46:58,730
+the events within one minute or 10
+
+1261
+00:46:58,740 --> 00:47:01,220
+seconds or whatever and then given that
+
+1262
+00:47:01,230 --> 00:47:04,520
+SLA the the consumer then Tunes its
+
+1263
+00:47:04,530 --> 00:47:06,680
+various parameters to meet that SLA with
+
+1264
+00:47:06,690 --> 00:47:10,130
+minimum resources right so if load is
+
+1265
+00:47:10,140 --> 00:47:13,640
+high it might use more consumer
+
+1266
+00:47:13,650 --> 00:47:16,700
+instances pull more often more threads
+
+1267
+00:47:16,710 --> 00:47:20,210
+etc when when the load is lower it might
+
+1268
+00:47:20,220 --> 00:47:24,140
+dial that back but but that's been very
+
+1269
+00:47:24,150 --> 00:47:25,970
+very effective and helpful for us in
+
+1270
+00:47:25,980 --> 00:47:28,700
+that way so the other more maybe
+
+1271
+00:47:28,710 --> 00:47:31,520
+sophisticated approach is sort of less
+
+1272
+00:47:31,530 --> 00:47:33,530
+about adaptive adaptively configuring
+
+1273
+00:47:33,540 --> 00:47:35,750
+and more about machine learning okay so
+
+1274
+00:47:35,760 --> 00:47:37,160
+this is something that I've been working
+
+1275
+00:47:37,170 --> 00:47:41,540
+on for the last while and which is what
+
+1276
+00:47:41,550 --> 00:47:43,099
+you might call the adaptive finding
+
+1277
+00:47:43,109 --> 00:47:44,960
+experience at eBay so how can we adapt
+
+1278
+00:47:44,970 --> 00:47:46,640
+the search experience which is one of
+
+1279
+00:47:46,650 --> 00:47:48,170
+the main experience that people have at
+
+1280
+00:47:48,180 --> 00:47:50,900
+eBay how can we adapt it to the
+
+1281
+00:47:50,910 --> 00:47:52,970
+particular context that the user is in
+
+1282
+00:47:52,980 --> 00:47:55,400
+right how can we learn from what that
+
+1283
+00:47:55,410 --> 00:47:57,079
+user or that type of user has done in
+
+1284
+00:47:57,089 --> 00:47:58,460
+the past what can we learn about what
+
+1285
+00:47:58,470 --> 00:48:00,920
+the people who have searched for iPod
+
+1286
+00:48:00,930 --> 00:48:04,220
+their Mickey Mouse or whatever
+
+1287
+00:48:04,230 --> 00:48:06,170
+have done in the past how can we add
+
+1288
+00:48:06,180 --> 00:48:07,849
+dynamically adapt the experience in that
+
+1289
+00:48:07,859 --> 00:48:10,810
+way so as with any machine learning
+
+1290
+00:48:10,820 --> 00:48:13,490
+setup you need a feedback loop so that
+
+1291
+00:48:13,500 --> 00:48:15,560
+feedback loop for us is a couple of
+
+1292
+00:48:15,570 --> 00:48:17,599
+obvious steps we collect data about what
+
+1293
+00:48:17,609 --> 00:48:19,520
+has actually what we've shown and what's
+
+1294
+00:48:19,530 --> 00:48:22,339
+actually happened afterward we sort of
+
+1295
+00:48:22,349 --> 00:48:24,020
+aggregate that data correlate it
+
+1296
+00:48:24,030 --> 00:48:26,810
+together in the in a sort of in the
+
+1297
+00:48:26,820 --> 00:48:29,720
+background then we make some inferences
+
+1298
+00:48:29,730 --> 00:48:32,240
+from that we deploy those inferences or
+
+1299
+00:48:32,250 --> 00:48:35,390
+those rules or those metrics back up to
+
+1300
+00:48:35,400 --> 00:48:36,950
+the site and then next time when we're
+
+1301
+00:48:36,960 --> 00:48:39,230
+going to serve a page or iPod to this
+
+1302
+00:48:39,240 --> 00:48:41,390
+particular type of user we'll know what
+
+1303
+00:48:41,400 --> 00:48:43,579
+to do mmm so it's generally the idea and
+
+1304
+00:48:43,589 --> 00:48:45,859
+this is you know not unique to eBay this
+
+1305
+00:48:45,869 --> 00:48:47,540
+is a general idea across the industry
+
+1306
+00:48:47,550 --> 00:48:49,579
+we're sort of closing that loop if
+
+1307
+00:48:49,589 --> 00:48:51,349
+learning from what users have done and
+
+1308
+00:48:51,359 --> 00:48:55,160
+directly making the site adapt due to
+
+1309
+00:48:55,170 --> 00:48:56,510
+what the users have done in the past and
+
+1310
+00:48:56,520 --> 00:48:57,650
+that worked for them that's better in
+
+1311
+00:48:57,660 --> 00:49:01,790
+the past hmm okay strategy number four I
+
+1312
+00:49:01,800 --> 00:49:03,680
+guess the most important aspect of
+
+1313
+00:49:03,690 --> 00:49:05,329
+distributed system design at least
+
+1314
+00:49:05,339 --> 00:49:07,430
+everything can fail independent of other
+
+1315
+00:49:07,440 --> 00:49:09,530
+things the whole system goes down or not
+
+1316
+00:49:09,540 --> 00:49:12,680
+parts can fail so why don't you talk
+
+1317
+00:49:12,690 --> 00:49:14,980
+about this a little bit sure yeah the
+
+1318
+00:49:14,990 --> 00:49:17,510
+yeah the final and very important part
+
+1319
+00:49:17,520 --> 00:49:19,670
+of distributed systems is that you know
+
+1320
+00:49:19,680 --> 00:49:22,599
+they fail and the more systems you have
+
+1321
+00:49:22,609 --> 00:49:26,000
+the more likely I mean if a given
+
+1322
+00:49:26,010 --> 00:49:28,670
+percentage of time a unit is down yeah
+
+1323
+00:49:28,680 --> 00:49:30,559
+the more you're gonna have more units or
+
+1324
+00:49:30,569 --> 00:49:32,680
+going to go down that's obvious so
+
+1325
+00:49:32,690 --> 00:49:35,059
+essentially the idea is to build systems
+
+1326
+00:49:35,069 --> 00:49:37,220
+to be tolerant of failure and to try to
+
+1327
+00:49:37,230 --> 00:49:40,220
+continue moving as far and as fast as
+
+1328
+00:49:40,230 --> 00:49:42,559
+they can even when other parts of this
+
+1329
+00:49:42,569 --> 00:49:44,150
+other parts of the system or other
+
+1330
+00:49:44,160 --> 00:49:45,520
+components that they depend on are down
+
+1331
+00:49:45,530 --> 00:49:48,530
+so we try to we assume that every
+
+1332
+00:49:48,540 --> 00:49:50,780
+operation will fail every resource will
+
+1333
+00:49:50,790 --> 00:49:53,480
+be unavailable we assume you know we
+
+1334
+00:49:53,490 --> 00:49:54,589
+make all we make all those assumptions
+
+1335
+00:49:54,599 --> 00:49:57,620
+as part of the program in Sderot we of
+
+1336
+00:49:57,630 --> 00:49:59,300
+course want to detect failure as quickly
+
+1337
+00:49:59,310 --> 00:50:02,420
+as possible we want to recover from
+
+1338
+00:50:02,430 --> 00:50:04,040
+failure as particular as quickly as
+
+1339
+00:50:04,050 --> 00:50:06,020
+possible and while that failure is going
+
+1340
+00:50:06,030 --> 00:50:07,370
+along we want to do as much as we
+
+1341
+00:50:07,380 --> 00:50:09,170
+possibly can degrade gracefully degrade
+
+1342
+00:50:09,180 --> 00:50:10,490
+gracefully exactly right
+
+1343
+00:50:10,500 --> 00:50:12,550
+so the sort of patterns that we have
+
+1344
+00:50:12,560 --> 00:50:15,380
+here are a sort of failure detection
+
+1345
+00:50:15,390 --> 00:50:17,430
+pattern which I'll talk about
+
+1346
+00:50:17,440 --> 00:50:19,560
+something that I call rollback which is
+
+1347
+00:50:19,570 --> 00:50:22,440
+essentially undoing the operations and
+
+1348
+00:50:22,450 --> 00:50:24,390
+then graceful degradation of the
+
+1349
+00:50:24,400 --> 00:50:26,910
+experience so in terms of failure
+
+1350
+00:50:26,920 --> 00:50:30,630
+detection one of the things we learned
+
+1351
+00:50:30,640 --> 00:50:33,740
+early on at eBay is the need to have a
+
+1352
+00:50:33,750 --> 00:50:36,870
+central application logging system that
+
+1353
+00:50:36,880 --> 00:50:38,400
+allows our operations team and
+
+1354
+00:50:38,410 --> 00:50:39,600
+development team for that matter to
+
+1355
+00:50:39,610 --> 00:50:41,280
+monitor the health of the infrastructure
+
+1356
+00:50:41,290 --> 00:50:44,130
+so every application server and piece of
+
+1357
+00:50:44,140 --> 00:50:45,960
+infrastructure is constantly sending
+
+1358
+00:50:45,970 --> 00:50:49,440
+events over a multicast message bus and
+
+1359
+00:50:49,450 --> 00:50:51,870
+those we have a whole set of listeners
+
+1360
+00:50:51,880 --> 00:50:54,420
+which are listening to various slices of
+
+1361
+00:50:54,430 --> 00:50:56,550
+those events and aggregating them in
+
+1362
+00:50:56,560 --> 00:50:58,290
+various ways sending of them sending
+
+1363
+00:50:58,300 --> 00:51:00,990
+alerts and so on so it's the only way a
+
+1364
+00:51:01,000 --> 00:51:04,110
+large-scale system can really work is by
+
+1365
+00:51:04,120 --> 00:51:06,390
+having having some kind of monitoring
+
+1366
+00:51:06,400 --> 00:51:08,940
+that's constantly happening and and as
+
+1367
+00:51:08,950 --> 00:51:10,920
+available for the people who can do
+
+1368
+00:51:10,930 --> 00:51:13,950
+something about it to to know in terms
+
+1369
+00:51:13,960 --> 00:51:18,900
+of rollback two of the things that have
+
+1370
+00:51:18,910 --> 00:51:21,810
+been really useful sort of two simple
+
+1371
+00:51:21,820 --> 00:51:23,460
+approaches that we've taken I've been
+
+1372
+00:51:23,470 --> 00:51:26,250
+very useful for us one is in the area of
+
+1373
+00:51:26,260 --> 00:51:28,290
+code deployment and the other is in the
+
+1374
+00:51:28,300 --> 00:51:30,390
+area of feature deployment and the fact
+
+1375
+00:51:30,400 --> 00:51:31,200
+that they're separate from one another
+
+1376
+00:51:31,210 --> 00:51:33,780
+which I'll talk about in this yeah so
+
+1377
+00:51:33,790 --> 00:51:36,180
+the general rollback idea is you never
+
+1378
+00:51:36,190 --> 00:51:37,860
+make any changes to the site that you
+
+1379
+00:51:37,870 --> 00:51:39,780
+can't undo so it's not about rolling
+
+1380
+00:51:39,790 --> 00:51:42,150
+back data in transactions or the non
+
+1381
+00:51:42,160 --> 00:51:43,230
+transactions you have it's actually
+
+1382
+00:51:43,240 --> 00:51:45,570
+about rolling back updates to the system
+
+1383
+00:51:45,580 --> 00:51:48,390
+that's right yeah so rollback as applied
+
+1384
+00:51:48,400 --> 00:51:52,080
+to large-scale updates the system as
+
+1385
+00:51:52,090 --> 00:51:53,790
+distinct from a transactional rollback
+
+1386
+00:51:53,800 --> 00:51:54,900
+yes thanks for thanks for clarifying
+
+1387
+00:51:54,910 --> 00:51:56,250
+that's very good
+
+1388
+00:51:56,260 --> 00:51:58,710
+so again the philosophy is that there's
+
+1389
+00:51:58,720 --> 00:52:00,690
+no single change that we can make to the
+
+1390
+00:52:00,700 --> 00:52:03,630
+system that can't be undone and that has
+
+1391
+00:52:03,640 --> 00:52:06,330
+very severe implications for application
+
+1392
+00:52:06,340 --> 00:52:07,920
+developer particularly for a schema
+
+1393
+00:52:07,930 --> 00:52:09,960
+development right right because what
+
+1394
+00:52:09,970 --> 00:52:11,940
+like you liked you hinted about if we
+
+1395
+00:52:11,950 --> 00:52:12,900
+just think about it in terms of the
+
+1396
+00:52:12,910 --> 00:52:15,540
+database what that means is that I can't
+
+1397
+00:52:15,550 --> 00:52:17,100
+make any changes to the database schema
+
+1398
+00:52:17,110 --> 00:52:20,340
+that I can't undo I can't make any date
+
+1399
+00:52:20,350 --> 00:52:25,110
+changes to the the if you like interface
+
+1400
+00:52:25,120 --> 00:52:27,660
+to the data that can't be undone
+
+1401
+00:52:27,670 --> 00:52:28,950
+there's always needs to be backward
+
+1402
+00:52:28,960 --> 00:52:31,150
+compatibility for data as well as
+
+1403
+00:52:31,160 --> 00:52:33,490
+for interface so that actually gives us
+
+1404
+00:52:33,500 --> 00:52:36,640
+a lot of challenges but because we roll
+
+1405
+00:52:36,650 --> 00:52:38,560
+the site and we make updates to the site
+
+1406
+00:52:38,570 --> 00:52:43,240
+every two weeks we've essentially forced
+
+1407
+00:52:43,250 --> 00:52:45,250
+to to do this kind of thing you're
+
+1408
+00:52:45,260 --> 00:52:46,840
+always operating different versions of
+
+1409
+00:52:46,850 --> 00:52:48,580
+the same things in parallel yes almost
+
+1410
+00:52:48,590 --> 00:52:50,800
+at almost at any given moment there are
+
+1411
+00:52:50,810 --> 00:52:52,660
+almost surely multiple versions of at
+
+1412
+00:52:52,670 --> 00:52:54,970
+least one component in flight right
+
+1413
+00:52:54,980 --> 00:52:56,350
+because it takes us because for
+
+1414
+00:52:56,360 --> 00:52:58,180
+thousands of application servers it
+
+1415
+00:52:58,190 --> 00:53:01,240
+takes us serious time to be able to go
+
+1416
+00:53:01,250 --> 00:53:02,650
+through and update all those things and
+
+1417
+00:53:02,660 --> 00:53:04,570
+of course as with anything else things
+
+1418
+00:53:04,580 --> 00:53:06,430
+fail so you need to be able to roll out
+
+1419
+00:53:06,440 --> 00:53:09,850
+and roll back so so when we do cold
+
+1420
+00:53:09,860 --> 00:53:12,250
+deployment for a particular two-week
+
+1421
+00:53:12,260 --> 00:53:14,020
+iteration which we call a train for
+
+1422
+00:53:14,030 --> 00:53:16,900
+historical reasons for a given train we
+
+1423
+00:53:16,910 --> 00:53:19,480
+have what's called a rollout plan and
+
+1424
+00:53:19,490 --> 00:53:21,490
+each feature that's on that train has
+
+1425
+00:53:21,500 --> 00:53:23,530
+its individual rollout plan I need to
+
+1426
+00:53:23,540 --> 00:53:26,380
+make modifications to this part of the
+
+1427
+00:53:26,390 --> 00:53:27,940
+infrastructure this database I need to
+
+1428
+00:53:27,950 --> 00:53:30,730
+make changes to this pool of application
+
+1429
+00:53:30,740 --> 00:53:32,530
+servers and also to this one so we have
+
+1430
+00:53:32,540 --> 00:53:34,900
+a individual roll out plans for features
+
+1431
+00:53:34,910 --> 00:53:38,320
+and we roll them all up to a grand one
+
+1432
+00:53:38,330 --> 00:53:39,490
+take what's called the transitive
+
+1433
+00:53:39,500 --> 00:53:40,900
+closure of all the individual
+
+1434
+00:53:40,910 --> 00:53:43,300
+dependencies of those individual rollout
+
+1435
+00:53:43,310 --> 00:53:46,330
+plans and that's the master rollout plan
+
+1436
+00:53:46,340 --> 00:53:49,540
+for the for the site and then we exit
+
+1437
+00:53:49,550 --> 00:53:50,800
+and then we have automated tools that
+
+1438
+00:53:50,810 --> 00:53:53,740
+execute that rollout plan in I was gonna
+
+1439
+00:53:53,750 --> 00:53:54,880
+say dependency order it's actually
+
+1440
+00:53:54,890 --> 00:53:56,410
+reverse dependency order starting with
+
+1441
+00:53:56,420 --> 00:53:58,060
+the starting with the leaves and debris
+
+1442
+00:53:58,070 --> 00:54:01,840
+and living backup automated tools that
+
+1443
+00:54:01,850 --> 00:54:03,280
+do the rollout and then audit and then
+
+1444
+00:54:03,290 --> 00:54:05,320
+if there are issues that we detect we
+
+1445
+00:54:05,330 --> 00:54:07,240
+can automatically rollback and put
+
+1446
+00:54:07,250 --> 00:54:08,500
+things back in the in the same place in
+
+1447
+00:54:08,510 --> 00:54:10,510
+an automated way and you do that in the
+
+1448
+00:54:10,520 --> 00:54:12,520
+dependency also you can have the leaves
+
+1449
+00:54:12,530 --> 00:54:14,650
+still running but the stuff that depends
+
+1450
+00:54:14,660 --> 00:54:15,970
+on the leaves if that cost the problem
+
+1451
+00:54:15,980 --> 00:54:17,770
+is just remove that exactly right yeah
+
+1452
+00:54:17,780 --> 00:54:19,570
+so we can move forward and we can
+
+1453
+00:54:19,580 --> 00:54:22,270
+traverse up or down if you think of a
+
+1454
+00:54:22,280 --> 00:54:23,500
+dependency tree you know if you're
+
+1455
+00:54:23,510 --> 00:54:25,350
+traversing up or down yeah exactly hill
+
+1456
+00:54:25,360 --> 00:54:28,900
+so that's four that's four code
+
+1457
+00:54:28,910 --> 00:54:30,790
+deployment and then for feature
+
+1458
+00:54:30,800 --> 00:54:32,500
+deployment every feature that we were
+
+1459
+00:54:32,510 --> 00:54:33,790
+every significant feature that we roll
+
+1460
+00:54:33,800 --> 00:54:38,560
+out has an on or off state so what that
+
+1461
+00:54:38,570 --> 00:54:40,960
+means is that for any kind of reason
+
+1462
+00:54:40,970 --> 00:54:42,400
+operational reasons business reasons
+
+1463
+00:54:42,410 --> 00:54:44,920
+whatever we can turn on and off
+
+1464
+00:54:44,930 --> 00:54:46,809
+feature with some sense a flip of a
+
+1465
+00:54:46,819 --> 00:54:49,210
+button and that's much faster than doing
+
+1466
+00:54:49,220 --> 00:54:50,530
+code rolls as you might imagine because
+
+1467
+00:54:50,540 --> 00:54:53,130
+it's driven by a central configuration
+
+1468
+00:54:53,140 --> 00:54:56,130
+which sort of everybody subscribes to so
+
+1469
+00:54:56,140 --> 00:55:01,180
+that allows us to that actually allows
+
+1470
+00:55:01,190 --> 00:55:02,910
+us to do several things one is that
+
+1471
+00:55:02,920 --> 00:55:05,230
+decouples the code deployment from the
+
+1472
+00:55:05,240 --> 00:55:06,460
+feature deployment it means we can roll
+
+1473
+00:55:06,470 --> 00:55:08,890
+out code that's essentially off which we
+
+1474
+00:55:08,900 --> 00:55:10,870
+do all the time and then we can turn it
+
+1475
+00:55:10,880 --> 00:55:12,309
+on at some particular moment either
+
+1476
+00:55:12,319 --> 00:55:14,290
+because we've announced we're gonna make
+
+1477
+00:55:14,300 --> 00:55:16,150
+some pricing changes at X date and we
+
+1478
+00:55:16,160 --> 00:55:20,140
+can turn them on at a date or because
+
+1479
+00:55:20,150 --> 00:55:21,760
+the feature isn't working well
+
+1480
+00:55:21,770 --> 00:55:23,620
+business-wise whatever wise and we can
+
+1481
+00:55:23,630 --> 00:55:26,589
+turn it off it also allows us to unroll
+
+1482
+00:55:26,599 --> 00:55:28,540
+some of those code dependencies which
+
+1483
+00:55:28,550 --> 00:55:32,020
+can become circular right so uh changes
+
+1484
+00:55:32,030 --> 00:55:33,520
+on this particular train you know
+
+1485
+00:55:33,530 --> 00:55:35,349
+changes to this change of the selling
+
+1486
+00:55:35,359 --> 00:55:37,690
+pool requires this change to the finding
+
+1487
+00:55:37,700 --> 00:55:39,160
+pool first but there's this change to
+
+1488
+00:55:39,170 --> 00:55:40,450
+the finding pool that requires this
+
+1489
+00:55:40,460 --> 00:55:41,710
+other change to the certain to this
+
+1490
+00:55:41,720 --> 00:55:43,660
+selling pool first you can unroll those
+
+1491
+00:55:43,670 --> 00:55:46,120
+dependencies by rolling all the code out
+
+1492
+00:55:46,130 --> 00:55:48,579
+with various flavors of on off of the
+
+1493
+00:55:48,589 --> 00:55:51,190
+feature yep and that allows you to to
+
+1494
+00:55:51,200 --> 00:55:54,039
+deal with that it reminds me of another
+
+1495
+00:55:54,049 --> 00:55:56,200
+very old thing I know it by the name of
+
+1496
+00:55:56,210 --> 00:55:59,200
+runlevels so if you want to start up a
+
+1497
+00:55:59,210 --> 00:56:01,089
+system when you have dependencies going
+
+1498
+00:56:01,099 --> 00:56:03,609
+around you choose to start it up to some
+
+1499
+00:56:03,619 --> 00:56:05,440
+level where it's maybe still pass it but
+
+1500
+00:56:05,450 --> 00:56:06,910
+everything is there and then you start
+
+1501
+00:56:06,920 --> 00:56:08,440
+up the next level it's kind of similar
+
+1502
+00:56:08,450 --> 00:56:10,630
+yeah I never thought about it that way
+
+1503
+00:56:10,640 --> 00:56:14,049
+but that's absolutely right we yeah I
+
+1504
+00:56:14,059 --> 00:56:15,609
+guess this is someone that's a that's a
+
+1505
+00:56:15,619 --> 00:56:17,109
+great analogy I think this takes us a
+
+1506
+00:56:17,119 --> 00:56:18,839
+little bit one step further because
+
+1507
+00:56:18,849 --> 00:56:22,030
+instead of there's not there aren't
+
+1508
+00:56:22,040 --> 00:56:24,099
+states of the system as a whole right
+
+1509
+00:56:24,109 --> 00:56:25,809
+there are states of individual parts of
+
+1510
+00:56:25,819 --> 00:56:31,089
+the system yes and and what's what what
+
+1511
+00:56:31,099 --> 00:56:33,430
+we've ended up with is a situation where
+
+1512
+00:56:33,440 --> 00:56:37,299
+application developers sort of check for
+
+1513
+00:56:37,309 --> 00:56:38,859
+the availability of resources as you
+
+1514
+00:56:38,869 --> 00:56:40,780
+would imagine they would or deal with
+
+1515
+00:56:40,790 --> 00:56:42,579
+the unavailability of resources but they
+
+1516
+00:56:42,589 --> 00:56:44,470
+also can check for the availability of
+
+1517
+00:56:44,480 --> 00:56:46,839
+features in that same way and that and
+
+1518
+00:56:46,849 --> 00:56:50,079
+sort of a similar metaphor and both of
+
+1519
+00:56:50,089 --> 00:56:53,740
+those things and in fact and and and in
+
+1520
+00:56:53,750 --> 00:56:55,660
+some sense from the perspective of the
+
+1521
+00:56:55,670 --> 00:56:57,370
+code it almost doesn't matter right
+
+1522
+00:56:57,380 --> 00:56:58,180
+either
+
+1523
+00:56:58,190 --> 00:57:01,720
+this feature if this feature is down or
+
+1524
+00:57:01,730 --> 00:57:02,890
+this resource is down
+
+1525
+00:57:02,900 --> 00:57:04,269
+I don't do accent I don't care about
+
+1526
+00:57:04,279 --> 00:57:07,359
+which why should I yeah exactly yeah
+
+1527
+00:57:07,369 --> 00:57:09,519
+that's actually interesting yeah there's
+
+1528
+00:57:09,529 --> 00:57:11,200
+a little bit like reflection so you have
+
+1529
+00:57:11,210 --> 00:57:14,009
+the system knows about its own
+
+1530
+00:57:14,019 --> 00:57:16,390
+configuration or state in the term in
+
+1531
+00:57:16,400 --> 00:57:18,759
+terms of update inversion and then you
+
+1532
+00:57:18,769 --> 00:57:20,319
+can react on that explicitly yeah
+
+1533
+00:57:20,329 --> 00:57:21,759
+exactly right it's one of these things
+
+1534
+00:57:21,769 --> 00:57:23,499
+where it shows that trying to make
+
+1535
+00:57:23,509 --> 00:57:25,539
+things transparent application
+
+1536
+00:57:25,549 --> 00:57:27,190
+developers really doesn't work in big
+
+1537
+00:57:27,200 --> 00:57:30,130
+systems right also a very insightful
+
+1538
+00:57:30,140 --> 00:57:33,279
+comment yes there a lot there are lots
+
+1539
+00:57:33,289 --> 00:57:35,230
+of ways to say this Joel suppose Spolsky
+
+1540
+00:57:35,240 --> 00:57:36,819
+talks about it as leaky abstractions
+
+1541
+00:57:36,829 --> 00:57:38,349
+yeah that's a wonderful way of saying it
+
+1542
+00:57:38,359 --> 00:57:42,839
+but yes there there are fundamental
+
+1543
+00:57:42,849 --> 00:57:45,309
+what's the way to say it crisply the
+
+1544
+00:57:45,319 --> 00:57:48,430
+availability state of the system is a
+
+1545
+00:57:48,440 --> 00:57:50,109
+leaky abstraction and there's no way
+
+1546
+00:57:50,119 --> 00:57:53,640
+around it right it's you cannot abstract
+
+1547
+00:57:53,650 --> 00:57:56,170
+you cannot abstract the developer from
+
+1548
+00:57:56,180 --> 00:57:58,539
+the fact that resources cannot be there
+
+1549
+00:57:58,549 --> 00:58:00,519
+right or features cannot be there about
+
+1550
+00:58:00,529 --> 00:58:03,400
+it that's a fundamental part of the
+
+1551
+00:58:03,410 --> 00:58:07,749
+system and the more you try to hide that
+
+1552
+00:58:07,759 --> 00:58:09,370
+from the developers to actually the more
+
+1553
+00:58:09,380 --> 00:58:12,009
+complex it in make yeah because
+
+1554
+00:58:12,019 --> 00:58:13,960
+somewhere someone's got to be available
+
+1555
+00:58:13,970 --> 00:58:15,880
+to be aware of that
+
+1556
+00:58:15,890 --> 00:58:18,490
+availability state and if it's not the
+
+1557
+00:58:18,500 --> 00:58:22,089
+developer then who right yeah the magic
+
+1558
+00:58:22,099 --> 00:58:24,460
+framework guys well Matt that's the
+
+1559
+00:58:24,470 --> 00:58:26,559
+scary part the magic framework which
+
+1560
+00:58:26,569 --> 00:58:28,990
+would need outrageous numbers of rules
+
+1561
+00:58:29,000 --> 00:58:32,440
+and that's just a nut you know so in
+
+1562
+00:58:32,450 --> 00:58:34,690
+some sense to keep it simple we make it
+
+1563
+00:58:34,700 --> 00:58:39,309
+obvious and transparent mmm-hmm okay I
+
+1564
+00:58:39,319 --> 00:58:41,289
+think this was the the main the main
+
+1565
+00:58:41,299 --> 00:58:43,269
+thing Randy thank you very much for
+
+1566
+00:58:43,279 --> 00:58:44,440
+being on the show I think this was very
+
+1567
+00:58:44,450 --> 00:58:48,069
+interesting and well thanks thank you
+
+1568
+00:58:48,079 --> 00:58:51,950
+very much I enjoyed
+
+1569
+00:59:02,599 --> 00:59:02,609
+thanks for listening to software
+
+1570
+00:59:02,609 --> 00:59:04,609
+engineering radio if you want more
+
+1571
+00:59:04,619 --> 00:59:06,410
+information about the podcast and all
+
+1572
+00:59:06,420 --> 00:59:09,049
+the other episodes visit our website and
+
+1573
+00:59:09,059 --> 00:59:12,229
+SE - radio dotnet if you want to support
+
+1574
+00:59:12,239 --> 00:59:14,449
+us you can donate to the SU radio team
+
+1575
+00:59:14,459 --> 00:59:16,489
+by on the website or you can advertise
+
+1576
+00:59:16,499 --> 00:59:18,920
+for su radio for example by clicking on
+
+1577
+00:59:18,930 --> 00:59:21,410
+the Digg reddit delicious and slash dog
+
+1578
+00:59:21,420 --> 00:59:24,319
+buttons to contact the team leaves an
+
+1579
+00:59:24,329 --> 00:59:27,380
+email to team and SI radio net or if
+
+1580
+00:59:27,390 --> 00:59:29,630
+it's specific to an episode please use
+
+1581
+00:59:29,640 --> 00:59:31,429
+the comments facility on the website so
+
+1582
+00:59:31,439 --> 00:59:33,049
+other people can read and react to your
+
+1583
+00:59:33,059 --> 00:59:35,779
+comments this episode of software
+
+1584
+00:59:35,789 --> 00:59:37,370
+engineering radio as well as all other
+
+1585
+00:59:37,380 --> 00:59:39,439
+episodes are licensed under Creative
+
+1586
+00:59:39,449 --> 00:59:41,390
+Commons license please see the website
+
+1587
+00:59:41,400 --> 00:59:44,719
+for details thanks to Charlie crowd and
+
+1588
+00:59:44,729 --> 00:59:46,849
+the pot safe music Network for the music
+
+1589
+00:59:46,859 --> 00:59:48,709
+used in this show the song is called
+
+1590
+00:59:48,719 --> 00:59:50,180
+Vegas hard rock shuffle
+
+1591
+00:59:50,190 --> 01:00:00,769
+[Music]

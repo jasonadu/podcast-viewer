@@ -1,0 +1,8067 @@
+1
+00:00:00,950 --> 00:00:00,960
+[Music]
+
+2
+00:00:00,960 --> 00:00:02,909
+this is software engineering radio the
+
+3
+00:00:02,919 --> 00:00:04,829
+podcast for professional developers on
+
+4
+00:00:04,839 --> 00:00:06,749
+the web at
+
+5
+00:00:06,759 --> 00:00:09,190
+SE-R SE radio is brought to you by the
+
+6
+00:00:09,200 --> 00:00:11,950
+it computer society and by It software
+
+7
+00:00:11,960 --> 00:00:15,730
+Magazine online at computer.org
+
+8
+00:00:15,740 --> 00:00:18,109
+[Music]
+
+9
+00:00:18,119 --> 00:00:20,349
+software welcome to software engineering
+
+10
+00:00:20,359 --> 00:00:22,870
+radio this is Philip Winston I'm here
+
+11
+00:00:22,880 --> 00:00:25,390
+today with Maxim faiv Maxim is the
+
+12
+00:00:25,400 --> 00:00:27,910
+co-founder and CEO of temporal he has
+
+13
+00:00:27,920 --> 00:00:29,950
+worked in lead roles at Amazon micro
+
+14
+00:00:29,960 --> 00:00:32,269
+roft Google and Uber he led the
+
+15
+00:00:32,279 --> 00:00:35,590
+development of AWS simple workflow
+
+16
+00:00:35,600 --> 00:00:38,310
+service at Amazon and the op Source
+
+17
+00:00:38,320 --> 00:00:40,709
+Cadence workflow at Uber Maxum holds
+
+18
+00:00:40,719 --> 00:00:43,350
+degrees in computer science and physics
+
+19
+00:00:43,360 --> 00:00:44,470
+we're going to talk today about
+
+20
+00:00:44,480 --> 00:00:46,389
+automating business processes with
+
+21
+00:00:46,399 --> 00:00:48,430
+distributed systems but let's start with
+
+22
+00:00:48,440 --> 00:00:51,069
+a term not everyone might be familiar
+
+23
+00:00:51,079 --> 00:00:54,549
+with durable execution Maxim what is a
+
+24
+00:00:54,559 --> 00:00:57,029
+durable execution and why is it a useful
+
+25
+00:00:57,039 --> 00:00:59,310
+abstraction durable execution is a new
+
+26
+00:00:59,320 --> 00:01:02,630
+abstraction which we kind of introduced
+
+27
+00:01:02,640 --> 00:01:04,149
+and it's not very well known but I think
+
+28
+00:01:04,159 --> 00:01:06,550
+every engineer absolutely should have it
+
+29
+00:01:06,560 --> 00:01:08,590
+in their back pocket of tools the idea
+
+30
+00:01:08,600 --> 00:01:10,630
+is pretty straightforward imagine
+
+31
+00:01:10,640 --> 00:01:13,109
+runtime which keeps the full state of
+
+32
+00:01:13,119 --> 00:01:16,070
+your code execution durable all the time
+
+33
+00:01:16,080 --> 00:01:18,950
+it means that if process crashes or any
+
+34
+00:01:18,960 --> 00:01:21,390
+other infrastructure outage happens like
+
+35
+00:01:21,400 --> 00:01:23,990
+Network event power outage and so on
+
+36
+00:01:24,000 --> 00:01:26,350
+your code will keep running after the
+
+37
+00:01:26,360 --> 00:01:28,190
+problem is resolved or if it's process
+
+38
+00:01:28,200 --> 00:01:29,429
+CR it just will be migrated to a
+
+39
+00:01:29,439 --> 00:01:31,510
+separate process but if the whole region
+
+40
+00:01:31,520 --> 00:01:33,870
+is down as soon as it comes back your
+
+41
+00:01:33,880 --> 00:01:35,950
+code will continue executing and I'm not
+
+42
+00:01:35,960 --> 00:01:37,950
+saying process but actually the full
+
+43
+00:01:37,960 --> 00:01:39,670
+state so for example if you have a
+
+44
+00:01:39,680 --> 00:01:41,950
+function which is blocked like executes
+
+45
+00:01:41,960 --> 00:01:45,350
+let's say three API calls A B C and it's
+
+46
+00:01:45,360 --> 00:01:47,630
+blocked on B and then this process
+
+47
+00:01:47,640 --> 00:01:49,709
+crashes this execution will migrate to
+
+48
+00:01:49,719 --> 00:01:50,950
+another machine and it will be still
+
+49
+00:01:50,960 --> 00:01:53,270
+blocked on B and B result can come two
+
+50
+00:01:53,280 --> 00:01:54,550
+days later and then it will continue
+
+51
+00:01:54,560 --> 00:01:56,630
+executing so all local variables in the
+
+52
+00:01:56,640 --> 00:01:58,350
+whole state including block and calls is
+
+53
+00:01:58,360 --> 00:02:00,630
+fully preserved all the time great we're
+
+54
+00:02:00,640 --> 00:02:02,149
+definitely going to get into how that
+
+55
+00:02:02,159 --> 00:02:04,510
+works but before we do that we're going
+
+56
+00:02:04,520 --> 00:02:06,310
+to do a little bit of history and how we
+
+57
+00:02:06,320 --> 00:02:08,070
+got here but let's just describe
+
+58
+00:02:08,080 --> 00:02:11,190
+temporal as it exists today so temporal
+
+59
+00:02:11,200 --> 00:02:13,270
+is an open source project it's MIT
+
+60
+00:02:13,280 --> 00:02:15,270
+licensed so you can absolutely run it
+
+61
+00:02:15,280 --> 00:02:17,309
+yourself including both his DK libraries
+
+62
+00:02:17,319 --> 00:02:19,030
+and the backend server which keeps the
+
+63
+00:02:19,040 --> 00:02:21,350
+state and so this project we started at
+
+64
+00:02:21,360 --> 00:02:23,710
+tuber it was initially called Cadence
+
+65
+00:02:23,720 --> 00:02:25,830
+and then four years ago we started a
+
+66
+00:02:25,840 --> 00:02:27,949
+company with fork the project and we
+
+67
+00:02:27,959 --> 00:02:30,229
+call it temporal and it's been around
+
+68
+00:02:30,239 --> 00:02:31,990
+for seven years in production at high
+
+69
+00:02:32,000 --> 00:02:33,990
+scale and used by thousands of companies
+
+70
+00:02:34,000 --> 00:02:35,670
+around the world for Mission critical
+
+71
+00:02:35,680 --> 00:02:38,470
+applications let's go back even further
+
+72
+00:02:38,480 --> 00:02:42,030
+before Cadence you worked on the simple
+
+73
+00:02:42,040 --> 00:02:44,589
+workflow service at Amazon can you tell
+
+74
+00:02:44,599 --> 00:02:46,350
+me a little bit about how that project
+
+75
+00:02:46,360 --> 00:02:47,990
+started and what were the goals of the
+
+76
+00:02:48,000 --> 00:02:50,270
+project so I probably want to start even
+
+77
+00:02:50,280 --> 00:02:52,350
+earlier I joined Amazon first time in
+
+78
+00:02:52,360 --> 00:02:55,270
+2002 and back then Amazon was actively
+
+79
+00:02:55,280 --> 00:02:57,270
+moving from monolith architecture to
+
+80
+00:02:57,280 --> 00:02:58,830
+micro service architecture it wasn't
+
+81
+00:02:58,840 --> 00:03:00,390
+called microservices back then it was
+
+82
+00:03:00,400 --> 00:03:02,430
+called just Services later it was called
+
+83
+00:03:02,440 --> 00:03:04,750
+saw but basic idea was the same that
+
+84
+00:03:04,760 --> 00:03:06,470
+this monolith was unsustainable just
+
+85
+00:03:06,480 --> 00:03:08,589
+relinking that binary was taking 45
+
+86
+00:03:08,599 --> 00:03:10,589
+minutes on a high-end desktop so it
+
+87
+00:03:10,599 --> 00:03:12,350
+wasn't practical to do any development
+
+88
+00:03:12,360 --> 00:03:14,789
+so Amazon had to do that and we found
+
+89
+00:03:14,799 --> 00:03:16,470
+that practically we used the standard
+
+90
+00:03:16,480 --> 00:03:19,229
+approach even back then of using cues to
+
+91
+00:03:19,239 --> 00:03:21,630
+connect multiple Services together and
+
+92
+00:03:21,640 --> 00:03:23,350
+practically execute all this backend
+
+93
+00:03:23,360 --> 00:03:25,350
+business processes and I was Tech lead
+
+94
+00:03:25,360 --> 00:03:27,789
+for the pop sub group I practically was
+
+95
+00:03:27,799 --> 00:03:29,750
+leading Group which was owning all
+
+96
+00:03:29,760 --> 00:03:31,830
+backend pops up of Amazon I worked on
+
+97
+00:03:31,840 --> 00:03:34,110
+the distributed storage replicated
+
+98
+00:03:34,120 --> 00:03:36,149
+storage for queing it's still I think
+
+99
+00:03:36,159 --> 00:03:38,229
+it's used by simple Q service at at its
+
+100
+00:03:38,239 --> 00:03:40,390
+back end and so I was in the middle of a
+
+101
+00:03:40,400 --> 00:03:41,910
+lot of conversations about design
+
+102
+00:03:41,920 --> 00:03:44,030
+choices when you build these large scale
+
+103
+00:03:44,040 --> 00:03:45,949
+systems using cues and event driven
+
+104
+00:03:45,959 --> 00:03:48,229
+architectures it quickly became apparent
+
+105
+00:03:48,239 --> 00:03:50,470
+that it's not the right obstruction
+
+106
+00:03:50,480 --> 00:03:51,910
+events and cues not the right
+
+107
+00:03:51,920 --> 00:03:54,190
+obstruction to build such systems so I
+
+108
+00:03:54,200 --> 00:03:56,030
+think there is one very important point
+
+109
+00:03:56,040 --> 00:03:57,830
+there is they are very good runtime
+
+110
+00:03:57,840 --> 00:03:59,830
+obstruction right so event driven
+
+111
+00:03:59,840 --> 00:04:01,390
+systems and cues give you awesome
+
+112
+00:04:01,400 --> 00:04:03,270
+runtime characteristics because for
+
+113
+00:04:03,280 --> 00:04:05,550
+example your service can have be slow
+
+114
+00:04:05,560 --> 00:04:07,350
+but other services are not slowed down
+
+115
+00:04:07,360 --> 00:04:09,910
+by that because things can be buffered
+
+116
+00:04:09,920 --> 00:04:12,670
+in cues or your service can be even down
+
+117
+00:04:12,680 --> 00:04:14,710
+and the other services don't even notice
+
+118
+00:04:14,720 --> 00:04:16,469
+that they just see messages may be not
+
+119
+00:04:16,479 --> 00:04:18,430
+coming or buffer it so runtime
+
+120
+00:04:18,440 --> 00:04:19,870
+characteristic of these systems is
+
+121
+00:04:19,880 --> 00:04:21,830
+awesome but as a design choice they
+
+122
+00:04:21,840 --> 00:04:23,830
+actually create very brittle systems
+
+123
+00:04:23,840 --> 00:04:25,150
+because everything is connected to
+
+124
+00:04:25,160 --> 00:04:27,590
+everything and there are Nu clear apis
+
+125
+00:04:27,600 --> 00:04:29,029
+and it's very hard to create the state
+
+126
+00:04:29,039 --> 00:04:31,150
+machine in every service and support all
+
+127
+00:04:31,160 --> 00:04:33,070
+the business logic so our team
+
+128
+00:04:33,080 --> 00:04:34,870
+recognized that and we started to think
+
+129
+00:04:34,880 --> 00:04:37,070
+about an orchestrator and Amazon had an
+
+130
+00:04:37,080 --> 00:04:38,629
+internal orchestrator based on Petr
+
+131
+00:04:38,639 --> 00:04:40,670
+Net's idea based on top of Oracle and it
+
+132
+00:04:40,680 --> 00:04:42,749
+was used to actually orchestrate orders
+
+133
+00:04:42,759 --> 00:04:44,070
+and we started to think about more
+
+134
+00:04:44,080 --> 00:04:45,870
+scalable Solutions we had three
+
+135
+00:04:45,880 --> 00:04:47,270
+different iterations three version of
+
+136
+00:04:47,280 --> 00:04:48,950
+the service internally and only third
+
+137
+00:04:48,960 --> 00:04:50,909
+version was public and it was released
+
+138
+00:04:50,919 --> 00:04:53,590
+as a simple workflow service simple
+
+139
+00:04:53,600 --> 00:04:55,070
+workflow service so it took us a lot of
+
+140
+00:04:55,080 --> 00:04:57,469
+kind of try different attempts to get it
+
+141
+00:04:57,479 --> 00:04:59,230
+right but I think even simple workflow I
+
+142
+00:04:59,240 --> 00:05:00,629
+don't think is fully I wouldn't say
+
+143
+00:05:00,639 --> 00:05:01,909
+we've got it right because it's still
+
+144
+00:05:01,919 --> 00:05:03,950
+not very popular service but we actually
+
+145
+00:05:03,960 --> 00:05:06,029
+learned a lot doing that and then what
+
+146
+00:05:06,039 --> 00:05:07,990
+happened is that we kind of left to
+
+147
+00:05:08,000 --> 00:05:10,150
+other companies and co-founder of
+
+148
+00:05:10,160 --> 00:05:12,590
+temporal Samaras who worked with me on a
+
+149
+00:05:12,600 --> 00:05:15,629
+simple workflow he went to Microsoft and
+
+150
+00:05:15,639 --> 00:05:17,350
+at Microsoft he wrote durable task
+
+151
+00:05:17,360 --> 00:05:19,110
+framework which later was adopted by
+
+152
+00:05:19,120 --> 00:05:21,309
+Azure functions and now Microsoft has
+
+153
+00:05:21,319 --> 00:05:23,870
+Azure durable functions and then we met
+
+154
+00:05:23,880 --> 00:05:26,230
+at Uber and we started to kind of we
+
+155
+00:05:26,240 --> 00:05:27,909
+created the simula we like took all
+
+156
+00:05:27,919 --> 00:05:29,150
+these ideas and created the Next
+
+157
+00:05:29,160 --> 00:05:31,350
+Generation of the technology which we
+
+158
+00:05:31,360 --> 00:05:33,670
+are kind of right now you can think of
+
+159
+00:05:33,680 --> 00:05:36,110
+this temporal temporal being the kind of
+
+160
+00:05:36,120 --> 00:05:37,990
+continuation all this previous attempts
+
+161
+00:05:38,000 --> 00:05:40,510
+over 10 years of iterations so can you
+
+162
+00:05:40,520 --> 00:05:43,790
+tell us the process of choosing to Fort
+
+163
+00:05:43,800 --> 00:05:46,350
+Cadence and create temporal as opposed
+
+164
+00:05:46,360 --> 00:05:49,350
+to say start over again how did you make
+
+165
+00:05:49,360 --> 00:05:51,350
+that decision the reason you would start
+
+166
+00:05:51,360 --> 00:05:53,909
+again if you believe that existing
+
+167
+00:05:53,919 --> 00:05:55,870
+solution is not good enough right the
+
+168
+00:05:55,880 --> 00:05:58,550
+new cence was solid because we ran it in
+
+169
+00:05:58,560 --> 00:06:00,110
+production for over fre years at tuber
+
+170
+00:06:00,120 --> 00:06:02,189
+at large scale and there over 100 use
+
+171
+00:06:02,199 --> 00:06:03,830
+cases using that for Mission critical
+
+172
+00:06:03,840 --> 00:06:06,270
+applications but we also knew that it
+
+173
+00:06:06,280 --> 00:06:08,469
+had a lot of um kind of there were a lot
+
+174
+00:06:08,479 --> 00:06:10,029
+of things we wanted to fix because over
+
+175
+00:06:10,039 --> 00:06:11,870
+three years we can of learn a lot but we
+
+176
+00:06:11,880 --> 00:06:14,430
+had a promise of full back compatibility
+
+177
+00:06:14,440 --> 00:06:16,469
+and live upgrades so we couldn't break
+
+178
+00:06:16,479 --> 00:06:18,749
+anything so getting from this point A to
+
+179
+00:06:18,759 --> 00:06:20,629
+point B without breaking it would be
+
+180
+00:06:20,639 --> 00:06:22,589
+extremely extremely hard it's possible
+
+181
+00:06:22,599 --> 00:06:24,749
+but it would be hard and when we for the
+
+182
+00:06:24,759 --> 00:06:27,350
+project we practically had all all
+
+183
+00:06:27,360 --> 00:06:29,589
+single time opportunity to fix a lot of
+
+184
+00:06:29,599 --> 00:06:31,830
+these little issues and just basic one
+
+185
+00:06:31,840 --> 00:06:33,950
+for example moving from fift to Proto
+
+186
+00:06:33,960 --> 00:06:37,110
+Buffs and from Custom Uber specific
+
+187
+00:06:37,120 --> 00:06:39,469
+protocol to JPC that the main things
+
+188
+00:06:39,479 --> 00:06:40,950
+which gives us a lot of benefits from
+
+189
+00:06:40,960 --> 00:06:42,670
+security point of view and so on and so
+
+190
+00:06:42,680 --> 00:06:44,629
+on and there are a lot of other little
+
+191
+00:06:44,639 --> 00:06:47,510
+things which we had to fix and we spent
+
+192
+00:06:47,520 --> 00:06:49,629
+a year since we fored the project until
+
+193
+00:06:49,639 --> 00:06:50,909
+we released the project and say it's
+
+194
+00:06:50,919 --> 00:06:53,870
+ready for production it took us a year
+
+195
+00:06:53,880 --> 00:06:55,830
+just working on the fork before we
+
+196
+00:06:55,840 --> 00:06:57,749
+released it because we put so many
+
+197
+00:06:57,759 --> 00:07:00,589
+changes there you mentioned MIT license
+
+198
+00:07:00,599 --> 00:07:03,710
+what parts of temporal are there to be
+
+199
+00:07:03,720 --> 00:07:07,550
+licensed I guess there's the client sdks
+
+200
+00:07:07,560 --> 00:07:09,749
+and there's the server or the web
+
+201
+00:07:09,759 --> 00:07:11,230
+interface like what are the different
+
+202
+00:07:11,240 --> 00:07:13,830
+parts of temporal so temporal is a has
+
+203
+00:07:13,840 --> 00:07:16,350
+backend cluster which has multiple roles
+
+204
+00:07:16,360 --> 00:07:18,350
+obviously you can run all these roles in
+
+205
+00:07:18,360 --> 00:07:20,390
+a single binary you have single binary
+
+206
+00:07:20,400 --> 00:07:21,909
+version for example you used for local
+
+207
+00:07:21,919 --> 00:07:24,110
+development which also includes UI but
+
+208
+00:07:24,120 --> 00:07:26,070
+you also can have all these five roles
+
+209
+00:07:26,080 --> 00:07:27,629
+and run them as separate pools of
+
+210
+00:07:27,639 --> 00:07:29,629
+workers pools of processes and backend
+
+211
+00:07:29,639 --> 00:07:31,869
+service also needs a database so we in
+
+212
+00:07:31,879 --> 00:07:34,510
+the open source we support MySQL
+
+213
+00:07:34,520 --> 00:07:37,589
+postgress and Cassandra and SQL light
+
+214
+00:07:37,599 --> 00:07:40,430
+also as officially supported databases
+
+215
+00:07:40,440 --> 00:07:42,589
+so this cluster connects to the database
+
+216
+00:07:42,599 --> 00:07:45,070
+exposes anpc interface for its front end
+
+217
+00:07:45,080 --> 00:07:48,589
+Ro and the whole cluster is MIT licensed
+
+218
+00:07:48,599 --> 00:07:50,270
+you can run it yourself and then when
+
+219
+00:07:50,280 --> 00:07:52,189
+you write your applications applications
+
+220
+00:07:52,199 --> 00:07:54,230
+external to the cluster so they contain
+
+221
+00:07:54,240 --> 00:07:56,070
+all the code and all business logic and
+
+222
+00:07:56,080 --> 00:07:57,469
+this application just connect to the
+
+223
+00:07:57,479 --> 00:07:59,670
+backend cluster for the JPC connection
+
+224
+00:07:59,680 --> 00:08:01,350
+and they applications don't need to open
+
+225
+00:08:01,360 --> 00:08:03,309
+any ports they only do outgoing
+
+226
+00:08:03,319 --> 00:08:05,350
+connection to the cluster so yeah all
+
+227
+00:08:05,360 --> 00:08:07,070
+these components MIT license I think
+
+228
+00:08:07,080 --> 00:08:09,629
+Java is Apache to licensed for
+
+229
+00:08:09,639 --> 00:08:11,350
+historical reasons because we initially
+
+230
+00:08:11,360 --> 00:08:13,830
+forked the implementation of the Amazon
+
+231
+00:08:13,840 --> 00:08:15,710
+framework which I built the simple
+
+232
+00:08:15,720 --> 00:08:18,390
+workflow we're going to go into core
+
+233
+00:08:18,400 --> 00:08:20,909
+temporal Concepts including workflows
+
+234
+00:08:20,919 --> 00:08:23,830
+activities timers and other things but
+
+235
+00:08:23,840 --> 00:08:25,309
+first I just want to mention some
+
+236
+00:08:25,319 --> 00:08:28,469
+previous episodes that are related to
+
+237
+00:08:28,479 --> 00:08:31,909
+either workflow systems or task systems
+
+238
+00:08:31,919 --> 00:08:35,269
+episode 502 Omar cats on distributed
+
+239
+00:08:35,279 --> 00:08:39,029
+task cues using celery episode 351
+
+240
+00:08:39,039 --> 00:08:40,990
+burned Rucker on orchestrating
+
+241
+00:08:41,000 --> 00:08:43,790
+microservices with workflow management
+
+242
+00:08:43,800 --> 00:08:47,829
+and episode 198 wheel Vander Al on
+
+243
+00:08:47,839 --> 00:08:50,350
+workflow management systems that last
+
+244
+00:08:50,360 --> 00:08:52,509
+episode is 10 years old but I was
+
+245
+00:08:52,519 --> 00:08:54,949
+surprised at a lot of the concepts are
+
+246
+00:08:54,959 --> 00:08:57,350
+still being discussed and still relevant
+
+247
+00:08:57,360 --> 00:08:59,710
+today so going into the these Core
+
+248
+00:08:59,720 --> 00:09:02,389
+Concepts you don't necessarily refer to
+
+249
+00:09:02,399 --> 00:09:04,590
+temporal as a workflow system but
+
+250
+00:09:04,600 --> 00:09:06,829
+workflow is one of the Core Concepts so
+
+251
+00:09:06,839 --> 00:09:08,269
+what can you tell me about workflows in
+
+252
+00:09:08,279 --> 00:09:10,790
+the context of temporal I think it's
+
+253
+00:09:10,800 --> 00:09:12,509
+very important to understand that when I
+
+254
+00:09:12,519 --> 00:09:15,150
+say workflow in context of temporal I
+
+255
+00:09:15,160 --> 00:09:16,990
+always me durable execution and durable
+
+256
+00:09:17,000 --> 00:09:18,790
+execution exactly concept I described
+
+257
+00:09:18,800 --> 00:09:20,430
+then you write quote in top level
+
+258
+00:09:20,440 --> 00:09:22,030
+programming language you can write code
+
+259
+00:09:22,040 --> 00:09:26,550
+in Java go typescript PHP python net and
+
+260
+00:09:26,560 --> 00:09:28,750
+this code is durable so we preserve the
+
+261
+00:09:28,760 --> 00:09:30,550
+full state including as I said block and
+
+262
+00:09:30,560 --> 00:09:33,310
+calls and all variables State all the
+
+263
+00:09:33,320 --> 00:09:35,069
+time and this is very highly applicable
+
+264
+00:09:35,079 --> 00:09:36,750
+to all sort of scenarios right every
+
+265
+00:09:36,760 --> 00:09:38,269
+time you need durability every time you
+
+266
+00:09:38,279 --> 00:09:39,949
+need guarantee of completion every time
+
+267
+00:09:39,959 --> 00:09:42,350
+you need to Saga brand compensations
+
+268
+00:09:42,360 --> 00:09:44,030
+temporal is very good fit there the
+
+269
+00:09:44,040 --> 00:09:45,550
+problem is that when you say usually say
+
+270
+00:09:45,560 --> 00:09:47,750
+workflow workflow engine people imagine
+
+271
+00:09:47,760 --> 00:09:49,430
+exactly the solutions you mentioned
+
+272
+00:09:49,440 --> 00:09:52,590
+which are just all yaml XML Jon based
+
+273
+00:09:52,600 --> 00:09:54,630
+and all like they draw pictures and
+
+274
+00:09:54,640 --> 00:09:56,350
+there is a reason these Solutions never
+
+275
+00:09:56,360 --> 00:09:58,069
+became popular like really popular
+
+276
+00:09:58,079 --> 00:10:00,030
+because most people will not Engineers
+
+277
+00:10:00,040 --> 00:10:01,389
+will not even consider them for the
+
+278
+00:10:01,399 --> 00:10:03,389
+majority of their use cases because
+
+279
+00:10:03,399 --> 00:10:05,430
+these systems now were designed kind of
+
+280
+00:10:05,440 --> 00:10:07,269
+to be developer friendly right like to
+
+281
+00:10:07,279 --> 00:10:09,030
+be developer first there is always this
+
+282
+00:10:09,040 --> 00:10:10,670
+promise that non-technical people will
+
+283
+00:10:10,680 --> 00:10:12,030
+write workflows because they can do
+
+284
+00:10:12,040 --> 00:10:14,230
+pictures reality is it never works right
+
+285
+00:10:14,240 --> 00:10:16,230
+Engineers still have to do this XML
+
+286
+00:10:16,240 --> 00:10:18,509
+andjon files or draw pictures and this
+
+287
+00:10:18,519 --> 00:10:20,030
+is not what Engineers want they want
+
+288
+00:10:20,040 --> 00:10:22,110
+code that's why when I say workflow
+
+289
+00:10:22,120 --> 00:10:23,509
+always mean durable execution and I
+
+290
+00:10:23,519 --> 00:10:25,389
+think it should be very very clear right
+
+291
+00:10:25,399 --> 00:10:27,069
+and which is very different from when
+
+292
+00:10:27,079 --> 00:10:28,590
+anyone else sells workflow they always
+
+293
+00:10:28,600 --> 00:10:30,750
+mean like gone file XML file or
+
+294
+00:10:30,760 --> 00:10:33,470
+something like that my experience with
+
+295
+00:10:33,480 --> 00:10:36,389
+say AWS step functions in Google Cloud
+
+296
+00:10:36,399 --> 00:10:38,430
+workflows where you do specify the
+
+297
+00:10:38,440 --> 00:10:42,389
+workflow as Json or yaml is that Json or
+
+298
+00:10:42,399 --> 00:10:44,310
+yaml are maybe really good for
+
+299
+00:10:44,320 --> 00:10:47,110
+configuration but what happens in those
+
+300
+00:10:47,120 --> 00:10:48,990
+systems is you're essentially writing
+
+301
+00:10:49,000 --> 00:10:51,509
+imperative code in the restricted
+
+302
+00:10:51,519 --> 00:10:53,670
+language and that to me is where things
+
+303
+00:10:53,680 --> 00:10:56,110
+start to get a lot less comfortable to
+
+304
+00:10:56,120 --> 00:10:58,389
+do that so tell me some of the technical
+
+305
+00:10:58,399 --> 00:11:01,670
+challenges is in implementing temporal
+
+306
+00:11:01,680 --> 00:11:04,509
+that does support arbitrary programming
+
+307
+00:11:04,519 --> 00:11:06,710
+languages or at least a good handful of
+
+308
+00:11:06,720 --> 00:11:09,710
+programming languages I realize that
+
+309
+00:11:09,720 --> 00:11:12,069
+each language has a different SDK to
+
+310
+00:11:12,079 --> 00:11:14,150
+support it but there must be some common
+
+311
+00:11:14,160 --> 00:11:15,949
+technology that's enabling this to
+
+312
+00:11:15,959 --> 00:11:17,949
+happen yeah so if you think about it
+
+313
+00:11:17,959 --> 00:11:19,190
+like there are only two approaches
+
+314
+00:11:19,200 --> 00:11:22,069
+really to preserve state of cod all the
+
+315
+00:11:22,079 --> 00:11:24,310
+time one approach would be that you can
+
+316
+00:11:24,320 --> 00:11:27,350
+after every practically cot progression
+
+317
+00:11:27,360 --> 00:11:29,990
+you snapshot memory of that code and you
+
+318
+00:11:30,000 --> 00:11:32,470
+store it somewhere and then if you need
+
+319
+00:11:32,480 --> 00:11:34,670
+to activate that execution on a
+
+320
+00:11:34,680 --> 00:11:36,670
+different machine you would load that
+
+321
+00:11:36,680 --> 00:11:38,910
+memory and you will continue executing
+
+322
+00:11:38,920 --> 00:11:40,430
+the problem is that you could probably
+
+323
+00:11:40,440 --> 00:11:42,110
+do it with some run times for example
+
+324
+00:11:42,120 --> 00:11:43,949
+you can do it with web assembly but you
+
+325
+00:11:43,959 --> 00:11:45,590
+cannot just take Java for example in
+
+326
+00:11:45,600 --> 00:11:47,590
+serialize full state of java execution
+
+327
+00:11:47,600 --> 00:11:48,829
+especially when it's blocked on some
+
+328
+00:11:48,839 --> 00:11:51,190
+threets if it's synchronous code at run
+
+329
+00:11:51,200 --> 00:11:52,790
+time or the same do the same thing with
+
+330
+00:11:52,800 --> 00:11:54,910
+go code right you cannot just take go
+
+331
+00:11:54,920 --> 00:11:56,509
+blocked on some code technically you
+
+332
+00:11:56,519 --> 00:11:57,870
+could but you need to hack runtime
+
+333
+00:11:57,880 --> 00:11:59,230
+pretty deeply the same thing for
+
+334
+00:11:59,240 --> 00:12:01,430
+typescript and so on so the other
+
+335
+00:12:01,440 --> 00:12:03,670
+approach would be to practically use
+
+336
+00:12:03,680 --> 00:12:05,910
+what we call replay you run the code
+
+337
+00:12:05,920 --> 00:12:07,949
+from the beginning and then every time
+
+338
+00:12:07,959 --> 00:12:10,430
+code executes some external action you
+
+339
+00:12:10,440 --> 00:12:12,590
+intercept that and then if this action
+
+340
+00:12:12,600 --> 00:12:14,110
+was already completed you just give
+
+341
+00:12:14,120 --> 00:12:16,470
+result to that code so if you let's say
+
+342
+00:12:16,480 --> 00:12:18,509
+as I said your code blocked on function
+
+343
+00:12:18,519 --> 00:12:21,550
+B and this process crashes you will have
+
+344
+00:12:21,560 --> 00:12:23,389
+a history of what we call event history
+
+345
+00:12:23,399 --> 00:12:25,189
+of the workflow when it will be
+
+346
+00:12:25,199 --> 00:12:27,670
+recording that action a was requested
+
+347
+00:12:27,680 --> 00:12:29,790
+and it was completed and action B was
+
+348
+00:12:29,800 --> 00:12:32,230
+requested but not completed yet and when
+
+349
+00:12:32,240 --> 00:12:34,590
+you will restart that practically that
+
+350
+00:12:34,600 --> 00:12:36,629
+process recover you will run this
+
+351
+00:12:36,639 --> 00:12:38,750
+function you will call a verify that
+
+352
+00:12:38,760 --> 00:12:41,189
+call to the a is in the history then you
+
+353
+00:12:41,199 --> 00:12:43,629
+will give result of a to the code and
+
+354
+00:12:43,639 --> 00:12:46,470
+code will go from line a to line B then
+
+355
+00:12:46,480 --> 00:12:49,430
+we'll validate that call B was done
+
+356
+00:12:49,440 --> 00:12:51,389
+right in it is in the history and then
+
+357
+00:12:51,399 --> 00:12:53,150
+we know that this code is blocked on B
+
+358
+00:12:53,160 --> 00:12:54,870
+right now and then we need to wait for B
+
+359
+00:12:54,880 --> 00:12:56,750
+result to deliver to the B there are a
+
+360
+00:12:56,760 --> 00:12:58,910
+lot of details there for example how do
+
+361
+00:12:58,920 --> 00:13:01,509
+you make sure that result of B is routed
+
+362
+00:13:01,519 --> 00:13:03,389
+to the process which is currently
+
+363
+00:13:03,399 --> 00:13:05,110
+waiting for it because the previous
+
+364
+00:13:05,120 --> 00:13:07,110
+process already crashed so there is the
+
+365
+00:13:07,120 --> 00:13:08,829
+whole routing layer there and there are
+
+366
+00:13:08,839 --> 00:13:11,310
+a lot of kind of other things and one
+
+367
+00:13:11,320 --> 00:13:12,949
+big assumption is that code of the
+
+368
+00:13:12,959 --> 00:13:15,030
+function is deterministic what it does
+
+369
+00:13:15,040 --> 00:13:18,069
+it mean it means that the code if you
+
+370
+00:13:18,079 --> 00:13:20,670
+execute it again will reach the same
+
+371
+00:13:20,680 --> 00:13:23,069
+point so for example if your code says
+
+372
+00:13:23,079 --> 00:13:27,150
+if random more than 50 take Branch a and
+
+373
+00:13:27,160 --> 00:13:29,990
+run for example call make API call a and
+
+374
+00:13:30,000 --> 00:13:33,150
+if it's less than 5050 make API call B
+
+375
+00:13:33,160 --> 00:13:34,910
+this code is not deterministic because
+
+376
+00:13:34,920 --> 00:13:36,389
+every time you run it from the beginning
+
+377
+00:13:36,399 --> 00:13:38,269
+it can take a different branch so if you
+
+378
+00:13:38,279 --> 00:13:40,430
+need to use random you proba need to use
+
+379
+00:13:40,440 --> 00:13:42,069
+deterministic random which will be
+
+380
+00:13:42,079 --> 00:13:43,790
+random first time you call it and then
+
+381
+00:13:43,800 --> 00:13:45,870
+it will return the same value you replay
+
+382
+00:13:45,880 --> 00:13:48,590
+and temporal provides special apis for
+
+383
+00:13:48,600 --> 00:13:50,710
+all these situations for random for time
+
+384
+00:13:50,720 --> 00:13:52,870
+for creating threads because threets
+
+385
+00:13:52,880 --> 00:13:54,629
+obviously are also not deterministic
+
+386
+00:13:54,639 --> 00:13:57,389
+unless you use our own runtime how about
+
+387
+00:13:57,399 --> 00:14:00,269
+a simple example I have my email or
+
+388
+00:14:00,279 --> 00:14:02,629
+messenger and I have a function where I
+
+389
+00:14:02,639 --> 00:14:06,030
+can send a message delayed by any amount
+
+390
+00:14:06,040 --> 00:14:09,350
+of time I specify and so this workflow
+
+391
+00:14:09,360 --> 00:14:12,870
+it's launched after some endpoint and
+
+392
+00:14:12,880 --> 00:14:15,150
+the user has communicated how long the
+
+393
+00:14:15,160 --> 00:14:16,949
+delay should be when I'm looking at the
+
+394
+00:14:16,959 --> 00:14:19,310
+workflow code it looks linear it looks
+
+395
+00:14:19,320 --> 00:14:22,310
+like starts out there's a sleep say a
+
+396
+00:14:22,320 --> 00:14:25,069
+timer and then we actually post the
+
+397
+00:14:25,079 --> 00:14:27,389
+message what happens the first time
+
+398
+00:14:27,399 --> 00:14:30,710
+through it hits that timer does it exit
+
+399
+00:14:30,720 --> 00:14:32,389
+or what exactly happens it's going to
+
+400
+00:14:32,399 --> 00:14:34,829
+allow it to be continued later so what
+
+401
+00:14:34,839 --> 00:14:37,550
+will happen is that uh wflow code runs
+
+402
+00:14:37,560 --> 00:14:39,710
+on the application space right it's not
+
+403
+00:14:39,720 --> 00:14:41,509
+it doesn't run within temporal cluster
+
+404
+00:14:41,519 --> 00:14:42,790
+and usually what you will do you will
+
+405
+00:14:42,800 --> 00:14:44,749
+create so we call Walker processes
+
+406
+00:14:44,759 --> 00:14:46,430
+workflow worker process which host
+
+407
+00:14:46,440 --> 00:14:48,430
+workflow code and this worker process
+
+408
+00:14:48,440 --> 00:14:50,030
+you can think it as a q consumer it's
+
+409
+00:14:50,040 --> 00:14:51,389
+the same like for you consume message
+
+410
+00:14:51,399 --> 00:14:53,150
+from Kafka you will have always running
+
+411
+00:14:53,160 --> 00:14:56,150
+process which cue consumer the same way
+
+412
+00:14:56,160 --> 00:14:58,269
+temporal worker it's always running it's
+
+413
+00:14:58,279 --> 00:15:00,030
+always listens on a specific que inside
+
+414
+00:15:00,040 --> 00:15:02,189
+of temporal called task q and it will
+
+415
+00:15:02,199 --> 00:15:05,670
+say I'm listening for task Q F right for
+
+416
+00:15:05,680 --> 00:15:07,990
+example for my workflow F register with
+
+417
+00:15:08,000 --> 00:15:09,629
+that task que so every when you start
+
+418
+00:15:09,639 --> 00:15:11,790
+workflow it will create a task in dat
+
+419
+00:15:11,800 --> 00:15:13,389
+the state inside of temporal itself and
+
+420
+00:15:13,399 --> 00:15:15,150
+then put task in that queue and it's all
+
+421
+00:15:15,160 --> 00:15:16,509
+transactional so we don't have rise
+
+422
+00:15:16,519 --> 00:15:18,110
+condition there and then this worker
+
+423
+00:15:18,120 --> 00:15:19,949
+will pick up this task it will contain
+
+424
+00:15:19,959 --> 00:15:21,629
+arguments of the workflow like
+
+425
+00:15:21,639 --> 00:15:22,910
+information about it and we start
+
+426
+00:15:22,920 --> 00:15:24,749
+executing that then it will hit this
+
+427
+00:15:24,759 --> 00:15:27,350
+sleep and it cannot make more progress
+
+428
+00:15:27,360 --> 00:15:29,350
+and this slep will be converted to the
+
+429
+00:15:29,360 --> 00:15:31,670
+create timer command and this command
+
+430
+00:15:31,680 --> 00:15:33,629
+will be sent back to the temporal server
+
+431
+00:15:33,639 --> 00:15:35,150
+and temporal will create durable timer
+
+432
+00:15:35,160 --> 00:15:37,590
+inside of its kind of infrastructure and
+
+433
+00:15:37,600 --> 00:15:39,550
+store this timer in the database and
+
+434
+00:15:39,560 --> 00:15:41,590
+then if you has sleep for example two
+
+435
+00:15:41,600 --> 00:15:44,069
+weeks two weeks later this timer will
+
+436
+00:15:44,079 --> 00:15:46,389
+fire it will create new task and new
+
+437
+00:15:46,399 --> 00:15:48,189
+worker kind of some probably different
+
+438
+00:15:48,199 --> 00:15:49,910
+process will pick up that task recover
+
+439
+00:15:49,920 --> 00:15:51,710
+workflow State unblock the timer and
+
+440
+00:15:51,720 --> 00:15:54,629
+continue so the worker doesn't exit but
+
+441
+00:15:54,639 --> 00:15:57,189
+the task has finished when that sleep
+
+442
+00:15:57,199 --> 00:15:59,910
+starts potentially exactly so there is
+
+443
+00:15:59,920 --> 00:16:02,470
+one more just optimization there is that
+
+444
+00:16:02,480 --> 00:16:04,110
+we will catch that workflow state for
+
+445
+00:16:04,120 --> 00:16:06,389
+some time inside of the Walker because
+
+446
+00:16:06,399 --> 00:16:08,389
+if sleep is short or just waiting for an
+
+447
+00:16:08,399 --> 00:16:10,470
+activity completion there is very high
+
+448
+00:16:10,480 --> 00:16:12,309
+probability that this workflow will be
+
+449
+00:16:12,319 --> 00:16:14,389
+needed again very soon so we don't want
+
+450
+00:16:14,399 --> 00:16:16,829
+to kind of recover it every time so we
+
+451
+00:16:16,839 --> 00:16:18,710
+will go and practically cat that
+
+452
+00:16:18,720 --> 00:16:20,749
+workflow for some time in the worker so
+
+453
+00:16:20,759 --> 00:16:22,470
+fast running workf flows are always
+
+454
+00:16:22,480 --> 00:16:24,309
+cashed so we only deliver new events to
+
+455
+00:16:24,319 --> 00:16:25,870
+them we don't need to do recovery but
+
+456
+00:16:25,880 --> 00:16:28,069
+this is purely optimization so talking
+
+457
+00:16:28,079 --> 00:16:30,829
+about ations what in your view or in
+
+458
+00:16:30,839 --> 00:16:32,790
+temporals view is sort of a short
+
+459
+00:16:32,800 --> 00:16:35,030
+duration workflow and what's long I know
+
+460
+00:16:35,040 --> 00:16:36,949
+in my experience often I'm having
+
+461
+00:16:36,959 --> 00:16:40,269
+conversations about workflows and I'm
+
+462
+00:16:40,279 --> 00:16:42,350
+thinking of just a very different scope
+
+463
+00:16:42,360 --> 00:16:43,910
+or very different duration than the
+
+464
+00:16:43,920 --> 00:16:45,309
+other person so I'm just curious from
+
+465
+00:16:45,319 --> 00:16:47,389
+temporals point of view or from your
+
+466
+00:16:47,399 --> 00:16:49,269
+experience with temporal users what's
+
+467
+00:16:49,279 --> 00:16:52,030
+the range of duration so first temporal
+
+468
+00:16:52,040 --> 00:16:54,309
+durable execution and is doesn't care
+
+469
+00:16:54,319 --> 00:16:56,629
+about duration so it can be used for in
+
+470
+00:16:56,639 --> 00:16:58,509
+situations when it's very very short and
+
+471
+00:16:58,519 --> 00:17:00,150
+and can be used in situation when it's
+
+472
+00:17:00,160 --> 00:17:02,150
+very very long it's all about durability
+
+473
+00:17:02,160 --> 00:17:03,749
+do you need guarantee of completion and
+
+474
+00:17:03,759 --> 00:17:05,750
+especially compensations for example
+
+475
+00:17:05,760 --> 00:17:07,429
+there are use cases when people use it
+
+476
+00:17:07,439 --> 00:17:09,390
+for instant payments so you have very
+
+477
+00:17:09,400 --> 00:17:11,789
+very small practically time balance
+
+478
+00:17:11,799 --> 00:17:13,350
+right like to actually execute that
+
+479
+00:17:13,360 --> 00:17:15,150
+operation but why do you need something
+
+480
+00:17:15,160 --> 00:17:17,350
+like temporal because if your some API
+
+481
+00:17:17,360 --> 00:17:19,590
+call fails you need to run compensations
+
+482
+00:17:19,600 --> 00:17:20,669
+right for example you took money from
+
+483
+00:17:20,679 --> 00:17:22,110
+one account you're trying to put it in
+
+484
+00:17:22,120 --> 00:17:23,829
+another account and another account
+
+485
+00:17:23,839 --> 00:17:26,350
+fails for some reason you return error
+
+486
+00:17:26,360 --> 00:17:28,830
+to the user very very fast but you need
+
+487
+00:17:28,840 --> 00:17:30,350
+to make sure that you will return money
+
+488
+00:17:30,360 --> 00:17:32,110
+to the original account and you need to
+
+489
+00:17:32,120 --> 00:17:33,870
+guarantee that so as we don't have
+
+490
+00:17:33,880 --> 00:17:36,029
+transactions across Services these days
+
+491
+00:17:36,039 --> 00:17:37,669
+temporal is the best way practically to
+
+492
+00:17:37,679 --> 00:17:39,510
+do this replacement for transactions in
+
+493
+00:17:39,520 --> 00:17:41,510
+the distributed architecture and this is
+
+494
+00:17:41,520 --> 00:17:43,310
+very common use case and it works even
+
+495
+00:17:43,320 --> 00:17:44,909
+if you have very short duration and you
+
+496
+00:17:44,919 --> 00:17:47,270
+have people waiting at the same time we
+
+497
+00:17:47,280 --> 00:17:49,230
+have use cases when workflows are always
+
+498
+00:17:49,240 --> 00:17:51,430
+running for example if you have workflow
+
+499
+00:17:51,440 --> 00:17:53,470
+we call them entity workflows so for
+
+500
+00:17:53,480 --> 00:17:54,669
+example you have a workflow which
+
+501
+00:17:54,679 --> 00:17:57,190
+represents a user and that workflow will
+
+502
+00:17:57,200 --> 00:17:59,149
+just handle all the communication to the
+
+503
+00:17:59,159 --> 00:18:01,029
+user I can give you one practical
+
+504
+00:18:01,039 --> 00:18:03,590
+example imagine you're Airline and you
+
+505
+00:18:03,600 --> 00:18:06,470
+want to have loyalty program so you have
+
+506
+00:18:06,480 --> 00:18:07,950
+points so you can absolutely have
+
+507
+00:18:07,960 --> 00:18:09,909
+workflow per customer running all the
+
+508
+00:18:09,919 --> 00:18:12,630
+time listening to events like for
+
+509
+00:18:12,640 --> 00:18:14,789
+example flight completed events and
+
+510
+00:18:14,799 --> 00:18:16,549
+every time you complete the flight it
+
+511
+00:18:16,559 --> 00:18:18,149
+gets the length of the flight and
+
+512
+00:18:18,159 --> 00:18:20,750
+increased number of points based on that
+
+513
+00:18:20,760 --> 00:18:22,549
+and points can be stored just as vflow
+
+514
+00:18:22,559 --> 00:18:24,470
+variables because they're always durable
+
+515
+00:18:24,480 --> 00:18:25,710
+and then if you reach certain number of
+
+516
+00:18:25,720 --> 00:18:27,470
+points you can run some actions like
+
+517
+00:18:27,480 --> 00:18:29,750
+activities to notify for example other
+
+518
+00:18:29,760 --> 00:18:32,270
+services that now you're a golden member
+
+519
+00:18:32,280 --> 00:18:34,310
+and if you want to have a timer inside
+
+520
+00:18:34,320 --> 00:18:36,390
+of workflow and once a month send email
+
+521
+00:18:36,400 --> 00:18:38,149
+saying okay this is your new number of
+
+522
+00:18:38,159 --> 00:18:39,630
+points by the way do you want this
+
+523
+00:18:39,640 --> 00:18:41,669
+promotion you can also Implement all of
+
+524
+00:18:41,679 --> 00:18:43,590
+that as a single prac workflow but the
+
+525
+00:18:43,600 --> 00:18:45,110
+point is this workflow is always running
+
+526
+00:18:45,120 --> 00:18:46,909
+there is no even end until customer
+
+527
+00:18:46,919 --> 00:18:49,070
+practically uh want to quit your system
+
+528
+00:18:49,080 --> 00:18:50,510
+which is practically never happens for
+
+529
+00:18:50,520 --> 00:18:52,950
+these type of scenarios I did run across
+
+530
+00:18:52,960 --> 00:18:55,909
+that idea of workflow as entities and I
+
+531
+00:18:55,919 --> 00:18:57,590
+do want to get into that a little bit
+
+532
+00:18:57,600 --> 00:18:59,270
+but let's go back to just the Core
+
+533
+00:18:59,280 --> 00:19:01,590
+Concepts we talked about workflows let's
+
+534
+00:19:01,600 --> 00:19:04,909
+do activities next so I mentioned before
+
+535
+00:19:04,919 --> 00:19:07,710
+in my delayed email case I was going to
+
+536
+00:19:07,720 --> 00:19:10,430
+use a sleep or a timer but an activity
+
+537
+00:19:10,440 --> 00:19:12,430
+is a more General concept can you tell
+
+538
+00:19:12,440 --> 00:19:15,590
+me what makes an activity in temporal
+
+539
+00:19:15,600 --> 00:19:17,270
+what are the properties that it should
+
+540
+00:19:17,280 --> 00:19:19,789
+have or needs to have so as I described
+
+541
+00:19:19,799 --> 00:19:21,830
+the approach temporal takes to recover
+
+542
+00:19:21,840 --> 00:19:23,870
+workflow state it does it fre replay so
+
+543
+00:19:23,880 --> 00:19:26,029
+practically the main requirement is that
+
+544
+00:19:26,039 --> 00:19:28,750
+quote is deterministic any external o is
+
+545
+00:19:28,760 --> 00:19:31,230
+not deterministic by definition because
+
+546
+00:19:31,240 --> 00:19:33,669
+it can succeed one time it can fail
+
+547
+00:19:33,679 --> 00:19:35,190
+other time it can return different
+
+548
+00:19:35,200 --> 00:19:37,350
+result so that's why temporal to
+
+549
+00:19:37,360 --> 00:19:39,149
+intercept those external calls
+
+550
+00:19:39,159 --> 00:19:41,430
+practically places a rule all external
+
+551
+00:19:41,440 --> 00:19:43,070
+communication goes through activities
+
+552
+00:19:43,080 --> 00:19:45,029
+and activities are just in every
+
+553
+00:19:45,039 --> 00:19:46,870
+language just a function so it's like
+
+554
+00:19:46,880 --> 00:19:48,950
+task right so can the same for example
+
+555
+00:19:48,960 --> 00:19:50,549
+you have q consumer can have task which
+
+556
+00:19:50,559 --> 00:19:51,990
+process that queue the same way in
+
+557
+00:19:52,000 --> 00:19:53,549
+temporal you write an activity which is
+
+558
+00:19:53,559 --> 00:19:55,190
+usually just a function and then this
+
+559
+00:19:55,200 --> 00:19:56,990
+function is invoked every time you
+
+560
+00:19:57,000 --> 00:19:58,830
+invoke this activity from the workflow
+
+561
+00:19:58,840 --> 00:20:00,149
+the code of this function we don't put
+
+562
+00:20:00,159 --> 00:20:01,669
+any limitation what can be in that
+
+563
+00:20:01,679 --> 00:20:03,350
+function nice thing about temporal
+
+564
+00:20:03,360 --> 00:20:06,310
+activities comparing for example to Q's
+
+565
+00:20:06,320 --> 00:20:08,990
+Q tasks is first temporal activities can
+
+566
+00:20:09,000 --> 00:20:10,669
+run as long as necessary you can run
+
+567
+00:20:10,679 --> 00:20:12,510
+them for a year if necessary obviously
+
+568
+00:20:12,520 --> 00:20:13,789
+for long run activities you want a
+
+569
+00:20:13,799 --> 00:20:15,350
+heartbeat you don't want activity which
+
+570
+00:20:15,360 --> 00:20:17,430
+will have one year time out and wait one
+
+571
+00:20:17,440 --> 00:20:19,470
+year until times out but it can hardbeat
+
+572
+00:20:19,480 --> 00:20:22,470
+every minute and as soon as your process
+
+573
+00:20:22,480 --> 00:20:24,390
+crashes it will be retried after 1
+
+574
+00:20:24,400 --> 00:20:26,390
+minute for example also you can add
+
+575
+00:20:26,400 --> 00:20:28,190
+information to the heartbeat so you can
+
+576
+00:20:28,200 --> 00:20:29,470
+store some information about your
+
+577
+00:20:29,480 --> 00:20:31,350
+progress in the heartbeat so for example
+
+578
+00:20:31,360 --> 00:20:33,270
+if your activity is scanning a huge data
+
+579
+00:20:33,280 --> 00:20:36,070
+set it can just heartbeat progress on
+
+580
+00:20:36,080 --> 00:20:38,750
+every record and then if activity fails
+
+581
+00:20:38,760 --> 00:20:40,710
+it will restarted you can say get last
+
+582
+00:20:40,720 --> 00:20:43,190
+hard bit data get your progress and
+
+583
+00:20:43,200 --> 00:20:44,789
+continue from that set so you can have
+
+584
+00:20:44,799 --> 00:20:46,430
+activities which are that and also
+
+585
+00:20:46,440 --> 00:20:48,029
+activities are cancelable so if activity
+
+586
+00:20:48,039 --> 00:20:50,029
+heartbeats it can be cancelled so it can
+
+587
+00:20:50,039 --> 00:20:52,270
+hand gracefully handle cancellation and
+
+588
+00:20:52,280 --> 00:20:53,990
+also we can route activity to specific
+
+589
+00:20:54,000 --> 00:20:55,710
+host so for example if you need to run
+
+590
+00:20:55,720 --> 00:20:58,669
+activity on host B of your Fleet for
+
+591
+00:20:58,679 --> 00:21:00,669
+because activity a downloaded some file
+
+592
+00:21:00,679 --> 00:21:02,510
+there you can route activity to that
+
+593
+00:21:02,520 --> 00:21:04,149
+host specifically so we have a lot of
+
+594
+00:21:04,159 --> 00:21:06,190
+kind of features and also activity if
+
+595
+00:21:06,200 --> 00:21:08,190
+they fail they retry exponentially we
+
+596
+00:21:08,200 --> 00:21:10,149
+have exponential retry and retry can be
+
+597
+00:21:10,159 --> 00:21:11,470
+as long as you want so if you want to
+
+598
+00:21:11,480 --> 00:21:13,430
+retry for a week you want to retry for a
+
+599
+00:21:13,440 --> 00:21:15,190
+months it's absolutely supported it's
+
+600
+00:21:15,200 --> 00:21:16,630
+very different from cues because
+
+601
+00:21:16,640 --> 00:21:18,669
+duration of activities and number of
+
+602
+00:21:18,679 --> 00:21:21,430
+retries is usually very very limited so
+
+603
+00:21:21,440 --> 00:21:23,190
+activities could definitely be on a
+
+604
+00:21:23,200 --> 00:21:25,549
+remote system some kind of remote
+
+605
+00:21:25,559 --> 00:21:28,630
+procedure call or web interface but are
+
+606
+00:21:28,640 --> 00:21:30,870
+there cases where even though it's in
+
+607
+00:21:30,880 --> 00:21:33,310
+the same process you'd want to consider
+
+608
+00:21:33,320 --> 00:21:35,710
+it an activity so practically it's a
+
+609
+00:21:35,720 --> 00:21:37,390
+temporal kind of limitation I wouldn't
+
+610
+00:21:37,400 --> 00:21:38,950
+say limitation it's just this designed
+
+611
+00:21:38,960 --> 00:21:41,110
+choice that every external iio should
+
+612
+00:21:41,120 --> 00:21:43,510
+live in an activity so we have a concept
+
+613
+00:21:43,520 --> 00:21:45,190
+of a local activity which runs in the
+
+614
+00:21:45,200 --> 00:21:46,789
+same process as a workflow as an
+
+615
+00:21:46,799 --> 00:21:48,630
+optimization in certain scenarios it
+
+616
+00:21:48,640 --> 00:21:50,830
+allows to do very very low latency
+
+617
+00:21:50,840 --> 00:21:53,149
+scenarios they might require that but
+
+618
+00:21:53,159 --> 00:21:54,830
+again if you for example your activity
+
+619
+00:21:54,840 --> 00:21:56,630
+sends an email this should be an
+
+620
+00:21:56,640 --> 00:21:58,630
+activity and then what workflow will
+
+621
+00:21:58,640 --> 00:22:01,310
+call send email activity I think we
+
+622
+00:22:01,320 --> 00:22:03,750
+talked about the need for determinism
+
+623
+00:22:03,760 --> 00:22:05,110
+there's another concept that always
+
+624
+00:22:05,120 --> 00:22:07,830
+comes up with distributed systems is
+
+625
+00:22:07,840 --> 00:22:10,750
+item potency I'm guessing that all your
+
+626
+00:22:10,760 --> 00:22:13,750
+activities need to be item potent or are
+
+627
+00:22:13,760 --> 00:22:16,190
+they only going ever be called once that
+
+628
+00:22:16,200 --> 00:22:18,710
+is a very good point so temporal doesn't
+
+629
+00:22:18,720 --> 00:22:21,310
+retry activities blindly if activity
+
+630
+00:22:21,320 --> 00:22:23,029
+fails or times out there is an
+
+631
+00:22:23,039 --> 00:22:25,350
+Associated retri policy if you specify
+
+632
+00:22:25,360 --> 00:22:27,789
+Max attempt in this policy maximum
+
+633
+00:22:27,799 --> 00:22:29,789
+number number of attempts to one it will
+
+634
+00:22:29,799 --> 00:22:31,990
+not be retried it also but what will
+
+635
+00:22:32,000 --> 00:22:33,510
+happen in this case in this case
+
+636
+00:22:33,520 --> 00:22:35,269
+workflow will get an error and we'll
+
+637
+00:22:35,279 --> 00:22:37,190
+need to handle that right and it's you
+
+638
+00:22:37,200 --> 00:22:39,230
+just use usual language obstructions for
+
+639
+00:22:39,240 --> 00:22:40,789
+example if it's Java you would say try
+
+640
+00:22:40,799 --> 00:22:42,870
+catch catch this exception activity
+
+641
+00:22:42,880 --> 00:22:45,310
+failed and then you can handle it anyway
+
+642
+00:22:45,320 --> 00:22:46,870
+for examp you can run compensations
+
+643
+00:22:46,880 --> 00:22:48,390
+different activities so it's a little
+
+644
+00:22:48,400 --> 00:22:49,990
+bit more sophisticated than just oh we
+
+645
+00:22:50,000 --> 00:22:52,630
+would blindly retry but in reality the
+
+646
+00:22:52,640 --> 00:22:54,830
+most common approach to deal with these
+
+647
+00:22:54,840 --> 00:22:56,909
+type of scenarios is make activities
+
+648
+00:22:56,919 --> 00:22:59,230
+important and just do blind retries by
+
+649
+00:22:59,240 --> 00:23:01,029
+default we retry them but I think
+
+650
+00:23:01,039 --> 00:23:02,510
+important point is temporal is fully
+
+651
+00:23:02,520 --> 00:23:04,549
+consistent system so it doesn't do blind
+
+652
+00:23:04,559 --> 00:23:06,470
+retries only if you ask them but if you
+
+653
+00:23:06,480 --> 00:23:08,390
+specify Max attempt to one there is
+
+654
+00:23:08,400 --> 00:23:09,710
+possibility that your activity will
+
+655
+00:23:09,720 --> 00:23:11,470
+never run right because maybe it's
+
+656
+00:23:11,480 --> 00:23:13,350
+delivered task is delivered timer is
+
+657
+00:23:13,360 --> 00:23:15,470
+started and then process crashed so in
+
+658
+00:23:15,480 --> 00:23:17,630
+this case temporal guarantees that after
+
+659
+00:23:17,640 --> 00:23:20,350
+timeout the exception will be erased and
+
+660
+00:23:20,360 --> 00:23:22,070
+it will be delivered to the workflow so
+
+661
+00:23:22,080 --> 00:23:24,190
+it cannot lose that activity but it can
+
+662
+00:23:24,200 --> 00:23:25,870
+get to the situation when it's never
+
+663
+00:23:25,880 --> 00:23:28,070
+executed if you have Max attempt of one
+
+664
+00:23:28,080 --> 00:23:29,669
+and then you will need to handle error
+
+665
+00:23:29,679 --> 00:23:31,630
+yourself so yes but if you do it
+
+666
+00:23:31,640 --> 00:23:32,990
+important then you don't think about it
+
+667
+00:23:33,000 --> 00:23:34,789
+right you just say Okay retry Forever
+
+668
+00:23:34,799 --> 00:23:38,070
+Until it's uh done so you mentioned Saga
+
+669
+00:23:38,080 --> 00:23:40,870
+pattern a while ago is that something
+
+670
+00:23:40,880 --> 00:23:43,430
+that temporal helps you implement I
+
+671
+00:23:43,440 --> 00:23:45,230
+guess first of all what is the Saga
+
+672
+00:23:45,240 --> 00:23:48,590
+pattern I think it relates to this idea
+
+673
+00:23:48,600 --> 00:23:52,669
+of I have multiple activities maybe I've
+
+674
+00:23:52,679 --> 00:23:55,070
+successfully performed some of them but
+
+675
+00:23:55,080 --> 00:23:57,669
+one of them fails and I want to undo the
+
+676
+00:23:57,679 --> 00:23:59,310
+other other ones or can you just kind of
+
+677
+00:23:59,320 --> 00:24:01,070
+tell us how that works I'm not sure how
+
+678
+00:24:01,080 --> 00:24:03,430
+it's exactly formulated but let me
+
+679
+00:24:03,440 --> 00:24:05,190
+describe how I see it the idea is
+
+680
+00:24:05,200 --> 00:24:06,909
+exactly that that if you execute
+
+681
+00:24:06,919 --> 00:24:09,830
+multiple API calls and these API calls
+
+682
+00:24:09,840 --> 00:24:12,029
+probably perform some storage changes
+
+683
+00:24:12,039 --> 00:24:14,269
+and perform some changes and as you
+
+684
+00:24:14,279 --> 00:24:15,669
+don't have transactions across those
+
+685
+00:24:15,679 --> 00:24:17,870
+calls if for example most obvious one
+
+686
+00:24:17,880 --> 00:24:19,590
+money transfer take money from one
+
+687
+00:24:19,600 --> 00:24:21,190
+account put money in another account you
+
+688
+00:24:21,200 --> 00:24:23,350
+took money from first account and then
+
+689
+00:24:23,360 --> 00:24:25,029
+you cannot put money on second account
+
+690
+00:24:25,039 --> 00:24:27,590
+because maybe your account ID is wrong
+
+691
+00:24:27,600 --> 00:24:29,190
+so what do you do in this case as
+
+692
+00:24:29,200 --> 00:24:30,750
+there's no transaction the only thing
+
+693
+00:24:30,760 --> 00:24:32,269
+you can technically do is run a
+
+694
+00:24:32,279 --> 00:24:33,830
+compensation action and compensation
+
+695
+00:24:33,840 --> 00:24:35,630
+action would be put money back on the
+
+696
+00:24:35,640 --> 00:24:37,669
+account a right and this scenario
+
+697
+00:24:37,679 --> 00:24:39,269
+appears all the time so you practicly
+
+698
+00:24:39,279 --> 00:24:41,430
+need to run compensations and Saga is
+
+699
+00:24:41,440 --> 00:24:43,590
+just a kind of pattern which says yes if
+
+700
+00:24:43,600 --> 00:24:45,750
+you run multiple activities so you run
+
+701
+00:24:45,760 --> 00:24:47,510
+like 10 of them and eight of them
+
+702
+00:24:47,520 --> 00:24:50,070
+succeeded but nine failed how do I go
+
+703
+00:24:50,080 --> 00:24:52,710
+and run compensations for previous eight
+
+704
+00:24:52,720 --> 00:24:54,149
+and I think important point about
+
+705
+00:24:54,159 --> 00:24:55,630
+temporal comparing to any other
+
+706
+00:24:55,640 --> 00:24:57,430
+framework especially all this existing
+
+707
+00:24:57,440 --> 00:24:59,669
+framework based on Json and yaml that
+
+708
+00:24:59,679 --> 00:25:01,990
+because code is very Dynamic it makes
+
+709
+00:25:02,000 --> 00:25:04,070
+implementing sagas very trivial because
+
+710
+00:25:04,080 --> 00:25:05,590
+think about what is Saga Saga is
+
+711
+00:25:05,600 --> 00:25:07,590
+guarantee of compensation temporal
+
+712
+00:25:07,600 --> 00:25:09,070
+guarantees that your function will keep
+
+713
+00:25:09,080 --> 00:25:11,149
+running even if processes crash or other
+
+714
+00:25:11,159 --> 00:25:13,230
+outages happen so temporal can easily
+
+715
+00:25:13,240 --> 00:25:15,029
+guarantee that this process will come
+
+716
+00:25:15,039 --> 00:25:16,909
+keep running if something happened and
+
+717
+00:25:16,919 --> 00:25:18,830
+if your process has TR cage block and if
+
+718
+00:25:18,840 --> 00:25:20,590
+you got exception and cage block you run
+
+719
+00:25:20,600 --> 00:25:22,510
+compensations it's very easy guarantee
+
+720
+00:25:22,520 --> 00:25:24,230
+for temporal and then you can write
+
+721
+00:25:24,240 --> 00:25:25,750
+special classes for examp temporal has
+
+722
+00:25:25,760 --> 00:25:27,990
+like Saga class in Java when all this is
+
+723
+00:25:28,000 --> 00:25:29,909
+just collection of callbacks right and
+
+724
+00:25:29,919 --> 00:25:31,590
+then when you say compensate we just go
+
+725
+00:25:31,600 --> 00:25:33,510
+and execute this callbacks and each of
+
+726
+00:25:33,520 --> 00:25:34,909
+the callbacks can contain some
+
+727
+00:25:34,919 --> 00:25:36,789
+compensation logic important part is
+
+728
+00:25:36,799 --> 00:25:38,630
+because it's Dynamic imagine you have
+
+729
+00:25:38,640 --> 00:25:40,789
+like 50 possible activities and you have
+
+730
+00:25:40,799 --> 00:25:42,789
+complex Branch branching logic that
+
+731
+00:25:42,799 --> 00:25:44,230
+every time you execute some transaction
+
+732
+00:25:44,240 --> 00:25:45,470
+you execute like I don't know five of
+
+733
+00:25:45,480 --> 00:25:47,669
+these activities but every time which
+
+734
+00:25:47,679 --> 00:25:49,750
+five activities you execute is different
+
+735
+00:25:49,760 --> 00:25:51,389
+this temporal you Willa just pass the
+
+736
+00:25:51,399 --> 00:25:53,990
+Saga down every practically Branch you
+
+737
+00:25:54,000 --> 00:25:55,510
+will accommodate which activities were
+
+738
+00:25:55,520 --> 00:25:57,190
+executed in the list and then when you
+
+739
+00:25:57,200 --> 00:25:58,630
+compensate you will compensate those
+
+740
+00:25:58,640 --> 00:26:00,830
+five activities try doing that any
+
+741
+00:26:00,840 --> 00:26:03,110
+static deck kind of graph generated
+
+742
+00:26:03,120 --> 00:26:05,029
+through yam XML because you don't have
+
+743
+00:26:05,039 --> 00:26:07,269
+Dynamic compensations you practically
+
+744
+00:26:07,279 --> 00:26:09,549
+need to go and model every path and
+
+745
+00:26:09,559 --> 00:26:11,430
+compensation path separately it
+
+746
+00:26:11,440 --> 00:26:12,830
+pratically becomes unmanageable after a
+
+747
+00:26:12,840 --> 00:26:14,950
+few possible branches we found that this
+
+748
+00:26:14,960 --> 00:26:16,590
+is very common misunderstanding how
+
+749
+00:26:16,600 --> 00:26:18,070
+sagas should be implemented and
+
+750
+00:26:18,080 --> 00:26:19,590
+something which is Trivial in temporal
+
+751
+00:26:19,600 --> 00:26:21,149
+practically impossible to do in any kind
+
+752
+00:26:21,159 --> 00:26:23,549
+of other configuration based language so
+
+753
+00:26:23,559 --> 00:26:25,669
+in that case it sounds like the per
+
+754
+00:26:25,679 --> 00:26:29,389
+language SDK is providing a pretty
+
+755
+00:26:29,399 --> 00:26:31,630
+sophisticated little piece of technology
+
+756
+00:26:31,640 --> 00:26:34,590
+to help you with this Saga whereas in a
+
+757
+00:26:34,600 --> 00:26:36,909
+workflow system based on a configuration
+
+758
+00:26:36,919 --> 00:26:39,750
+language that just isn't that element
+
+759
+00:26:39,760 --> 00:26:41,870
+unless the system were to provide it
+
+760
+00:26:41,880 --> 00:26:43,310
+interesting thing that Saga is not
+
+761
+00:26:43,320 --> 00:26:45,230
+sophisticated because sophisticated part
+
+762
+00:26:45,240 --> 00:26:46,950
+of the SDK is providing that your code
+
+763
+00:26:46,960 --> 00:26:48,549
+will keep running right and the full
+
+764
+00:26:48,559 --> 00:26:50,510
+state is preserved Saga itself as I said
+
+765
+00:26:50,520 --> 00:26:52,430
+is a class which you can write in 20
+
+766
+00:26:52,440 --> 00:26:53,990
+minutes because all it is is just list
+
+767
+00:26:54,000 --> 00:26:55,669
+of compensations and then you say
+
+768
+00:26:55,679 --> 00:26:57,310
+compensate you just go over a list and
+
+769
+00:26:57,320 --> 00:26:59,510
+run these callbacks I wrote this Saga
+
+770
+00:26:59,520 --> 00:27:01,710
+class in like less than one hour so
+
+771
+00:27:01,720 --> 00:27:03,230
+anyone can write their own and they can
+
+772
+00:27:03,240 --> 00:27:04,750
+write their this is thing it's code you
+
+773
+00:27:04,760 --> 00:27:05,870
+can write your own libraries you can
+
+774
+00:27:05,880 --> 00:27:08,590
+write your own Frameworks and temporal
+
+775
+00:27:08,600 --> 00:27:11,230
+as runtime guarantees completion of code
+
+776
+00:27:11,240 --> 00:27:13,789
+and guarantees varability so one way to
+
+777
+00:27:13,799 --> 00:27:16,269
+call this is Fault oblivious right your
+
+778
+00:27:16,279 --> 00:27:17,830
+code doesn't even need to know that some
+
+779
+00:27:17,840 --> 00:27:19,430
+fault happened because it recovered
+
+780
+00:27:19,440 --> 00:27:21,630
+seamlessly that brings to mind the term
+
+781
+00:27:21,640 --> 00:27:23,909
+like separation of concerns so the
+
+782
+00:27:23,919 --> 00:27:26,950
+workflow code as I'm looking at it is
+
+783
+00:27:26,960 --> 00:27:29,710
+focused on on this happy path of things
+
+784
+00:27:29,720 --> 00:27:31,549
+working and I don't necessarily have to
+
+785
+00:27:31,559 --> 00:27:33,669
+worry about the retries that's kind of
+
+786
+00:27:33,679 --> 00:27:36,269
+the goal I think are two type failures
+
+787
+00:27:36,279 --> 00:27:37,350
+there are failures which are
+
+788
+00:27:37,360 --> 00:27:38,789
+infrastructure failures and process
+
+789
+00:27:38,799 --> 00:27:41,310
+crashes Network going down right like
+
+790
+00:27:41,320 --> 00:27:43,950
+power outages like things which are not
+
+791
+00:27:43,960 --> 00:27:45,830
+relate to your business logic andoral
+
+792
+00:27:45,840 --> 00:27:47,509
+takes care of all of them seamlessly you
+
+793
+00:27:47,519 --> 00:27:48,710
+don't need to even think about that
+
+794
+00:27:48,720 --> 00:27:50,110
+they're not part of your code and you
+
+795
+00:27:50,120 --> 00:27:51,909
+don't need to persist state to survive
+
+796
+00:27:51,919 --> 00:27:53,630
+in recovery because state is always
+
+797
+00:27:53,640 --> 00:27:55,509
+persisted every local variable in your
+
+798
+00:27:55,519 --> 00:27:56,950
+code is durable but then there are
+
+799
+00:27:56,960 --> 00:27:58,430
+business level failures for examp as I
+
+800
+00:27:58,440 --> 00:28:00,350
+said for example if you say deposit to
+
+801
+00:28:00,360 --> 00:28:02,750
+account and account ID is wrong not much
+
+802
+00:28:02,760 --> 00:28:04,430
+you can do on the info level right this
+
+803
+00:28:04,440 --> 00:28:06,750
+is your business logic and then you can
+
+804
+00:28:06,760 --> 00:28:08,389
+practically throw an exception and you
+
+805
+00:28:08,399 --> 00:28:10,190
+can deal with that exception and in
+
+806
+00:28:10,200 --> 00:28:11,710
+activity you can differentiate which
+
+807
+00:28:11,720 --> 00:28:13,950
+exceptions are retriable and which
+
+808
+00:28:13,960 --> 00:28:15,669
+exceptions are non- retriable you proba
+
+809
+00:28:15,679 --> 00:28:17,110
+say Okay run account ID is non-
+
+810
+00:28:17,120 --> 00:28:18,710
+retriable exception then it will be
+
+811
+00:28:18,720 --> 00:28:19,950
+propagated to the workflow and then
+
+812
+00:28:19,960 --> 00:28:21,990
+workflow will run Saga compensation to
+
+813
+00:28:22,000 --> 00:28:23,710
+return money but if it's like activity
+
+814
+00:28:23,720 --> 00:28:25,830
+failed because of timeout or database or
+
+815
+00:28:25,840 --> 00:28:27,590
+some other random thing on all poter it
+
+816
+00:28:27,600 --> 00:28:29,389
+will be retried so that is kind of the
+
+817
+00:28:29,399 --> 00:28:31,389
+idea other interesting thing is that
+
+818
+00:28:31,399 --> 00:28:33,350
+intermittent problems can become
+
+819
+00:28:33,360 --> 00:28:34,870
+problems which you fix in two hours for
+
+820
+00:28:34,880 --> 00:28:36,549
+example you get now pointer you look at
+
+821
+00:28:36,559 --> 00:28:38,430
+the Cod oh yeah I have a bu for example
+
+822
+00:28:38,440 --> 00:28:40,070
+this is different Cod puff activity
+
+823
+00:28:40,080 --> 00:28:42,149
+keeps ret trying you just go deploy new
+
+824
+00:28:42,159 --> 00:28:44,630
+cod with the bu fix and 2 hours later it
+
+825
+00:28:44,640 --> 00:28:46,149
+can on the next ret TR it goes through
+
+826
+00:28:46,159 --> 00:28:47,389
+you don't need to do anything your workf
+
+827
+00:28:47,399 --> 00:28:48,669
+flows just keep running as nothing
+
+828
+00:28:48,679 --> 00:28:50,230
+happened because every deployment never
+
+829
+00:28:50,240 --> 00:28:51,590
+will interrupt them that is very
+
+830
+00:28:51,600 --> 00:28:53,389
+powerful Paradigm that can fix things in
+
+831
+00:28:53,399 --> 00:28:55,029
+production while they are going without
+
+832
+00:28:55,039 --> 00:28:56,909
+losing when people come to temporal
+
+833
+00:28:56,919 --> 00:28:58,389
+first approach is oh let me fail
+
+834
+00:28:58,399 --> 00:29:00,110
+workflow in any intermittent error they
+
+835
+00:29:00,120 --> 00:29:01,269
+like no you don't need to do that you
+
+836
+00:29:01,279 --> 00:29:02,830
+can keep retrying as long as you want
+
+837
+00:29:02,840 --> 00:29:04,149
+right so you don't need to even think
+
+838
+00:29:04,159 --> 00:29:06,669
+about this like try to introduce manual
+
+839
+00:29:06,679 --> 00:29:08,430
+processes which people right now deal
+
+840
+00:29:08,440 --> 00:29:09,870
+with manual process they have dead
+
+841
+00:29:09,880 --> 00:29:11,750
+letter qes which should be manually done
+
+842
+00:29:11,760 --> 00:29:14,070
+these all sort of processes scripts and
+
+843
+00:29:14,080 --> 00:29:16,110
+all of that goes away it takes some time
+
+844
+00:29:16,120 --> 00:29:18,190
+to internalize it's not something people
+
+845
+00:29:18,200 --> 00:29:19,789
+are used to that you don't even need to
+
+846
+00:29:19,799 --> 00:29:21,549
+think about this type of problems but I
+
+847
+00:29:21,559 --> 00:29:23,230
+think it's super powerful after you kind
+
+848
+00:29:23,240 --> 00:29:25,470
+of learn temporal deeply so you're
+
+849
+00:29:25,480 --> 00:29:27,389
+talking about a developer who's Maybe
+
+850
+00:29:27,399 --> 00:29:29,389
+working with operations or is dealing
+
+851
+00:29:29,399 --> 00:29:31,590
+with operations and the identify a
+
+852
+00:29:31,600 --> 00:29:34,070
+problem that's going to involve probably
+
+853
+00:29:34,080 --> 00:29:36,350
+the web interface of temporal can you
+
+854
+00:29:36,360 --> 00:29:37,549
+tell me a little bit about what
+
+855
+00:29:37,559 --> 00:29:40,269
+information that provides and what's the
+
+856
+00:29:40,279 --> 00:29:42,029
+usefulness of it uh nice thing about
+
+857
+00:29:42,039 --> 00:29:43,750
+temporal because as I said we record
+
+858
+00:29:43,760 --> 00:29:46,110
+every event in the workflow so we use
+
+859
+00:29:46,120 --> 00:29:47,710
+practically event sourcing to recover
+
+860
+00:29:47,720 --> 00:29:49,310
+state of the workflow it means that we
+
+861
+00:29:49,320 --> 00:29:51,070
+record everything so every activity in
+
+862
+00:29:51,080 --> 00:29:52,549
+vacation you see arguments every
+
+863
+00:29:52,559 --> 00:29:55,350
+activity completion you see result if
+
+864
+00:29:55,360 --> 00:29:57,430
+activity fails and your workflow stock
+
+865
+00:29:57,440 --> 00:29:59,070
+you can see why activities failing how
+
+866
+00:29:59,080 --> 00:30:01,430
+many retries where when the next retry
+
+867
+00:30:01,440 --> 00:30:03,110
+so you can see all the information you
+
+868
+00:30:03,120 --> 00:30:05,389
+can see all steps which executed so far
+
+869
+00:30:05,399 --> 00:30:07,269
+with all the arguments and everything so
+
+870
+00:30:07,279 --> 00:30:09,190
+and all timing like every timer and so
+
+871
+00:30:09,200 --> 00:30:11,110
+on so you can easily understand what's
+
+872
+00:30:11,120 --> 00:30:13,630
+going on so you have deep visibility in
+
+873
+00:30:13,640 --> 00:30:14,830
+worst case scenario let's say you're
+
+874
+00:30:14,840 --> 00:30:16,549
+getting null pointer and you don't
+
+875
+00:30:16,559 --> 00:30:17,310
+understand why you're getting that
+
+876
+00:30:17,320 --> 00:30:18,870
+because it's a very complex code PA you
+
+877
+00:30:18,880 --> 00:30:20,669
+can press a button download the workflow
+
+878
+00:30:20,679 --> 00:30:22,789
+history in Json format plug into your
+
+879
+00:30:22,799 --> 00:30:24,350
+debugger practically in your code in
+
+880
+00:30:24,360 --> 00:30:26,149
+your debugger and Replay that workflow
+
+881
+00:30:26,159 --> 00:30:28,029
+as many times as you want reproducing
+
+882
+00:30:28,039 --> 00:30:29,990
+that problem on your local machine so
+
+883
+00:30:30,000 --> 00:30:31,669
+it's super powerful like triple shooting
+
+884
+00:30:31,679 --> 00:30:33,669
+technique so UI gives you all sort of
+
+885
+00:30:33,679 --> 00:30:34,909
+visibility into single workflow
+
+886
+00:30:34,919 --> 00:30:36,590
+including history and different views
+
+887
+00:30:36,600 --> 00:30:38,149
+also we allow you listing because you
+
+888
+00:30:38,159 --> 00:30:39,669
+can have hundreds of millions of
+
+889
+00:30:39,679 --> 00:30:41,310
+workflows billions workflows running in
+
+890
+00:30:41,320 --> 00:30:43,590
+your system so we have prct index and
+
+891
+00:30:43,600 --> 00:30:45,269
+your custom attributes and you can list
+
+892
+00:30:45,279 --> 00:30:47,070
+workflows filter workflows based on
+
+893
+00:30:47,080 --> 00:30:49,070
+different criteria also count them based
+
+894
+00:30:49,080 --> 00:30:50,669
+on that criteria so you can find okay
+
+895
+00:30:50,679 --> 00:30:52,430
+give me all workflows from this customer
+
+896
+00:30:52,440 --> 00:30:54,149
+which failed yesterday and you can list
+
+897
+00:30:54,159 --> 00:30:56,029
+them and you can go investigate deeper
+
+898
+00:30:56,039 --> 00:30:58,269
+each of these workflows also temporal is
+
+899
+00:30:58,279 --> 00:31:00,830
+integrated with usual metrics context
+
+900
+00:31:00,840 --> 00:31:03,389
+propagation login so you get all the
+
+901
+00:31:03,399 --> 00:31:04,870
+normal Integrations which you ACC
+
+902
+00:31:04,880 --> 00:31:07,230
+company has these metrics for example so
+
+903
+00:31:07,240 --> 00:31:08,990
+to kind of be alarmed for example if
+
+904
+00:31:09,000 --> 00:31:10,389
+something goes wrong because we meet
+
+905
+00:31:10,399 --> 00:31:12,430
+metrics automatically on every activity
+
+906
+00:31:12,440 --> 00:31:14,950
+every workflow every retry so everything
+
+907
+00:31:14,960 --> 00:31:16,870
+which is important is emitted so you
+
+908
+00:31:16,880 --> 00:31:18,269
+don't need to actually add any custom
+
+909
+00:31:18,279 --> 00:31:20,190
+metrics to start making sense out of
+
+910
+00:31:20,200 --> 00:31:22,149
+your application I think we've covered
+
+911
+00:31:22,159 --> 00:31:24,190
+all the core concept workflows
+
+912
+00:31:24,200 --> 00:31:28,310
+activities timers how it runs the event
+
+913
+00:31:28,320 --> 00:31:31,830
+history replay retries on errors and the
+
+914
+00:31:31,840 --> 00:31:34,669
+web interface for debugging let's go
+
+915
+00:31:34,679 --> 00:31:36,629
+back to something you mentioned earlier
+
+916
+00:31:36,639 --> 00:31:40,230
+this idea of workflows as entities and I
+
+917
+00:31:40,240 --> 00:31:42,789
+think in that case these are workflows
+
+918
+00:31:42,799 --> 00:31:45,430
+that never finish or never terminate
+
+919
+00:31:45,440 --> 00:31:47,269
+unless the entity goes away I guess and
+
+920
+00:31:47,279 --> 00:31:49,870
+I think you alluded to two things there
+
+921
+00:31:49,880 --> 00:31:52,430
+signals and queries can you talk about
+
+922
+00:31:52,440 --> 00:31:54,990
+signals and queries because those didn't
+
+923
+00:31:55,000 --> 00:31:57,350
+immediately seem like workflow concept
+
+924
+00:31:57,360 --> 00:31:59,750
+that I was familiar with so we now have
+
+925
+00:31:59,760 --> 00:32:01,789
+signal queries and updates update was
+
+926
+00:32:01,799 --> 00:32:03,950
+recently added so a signal is one way
+
+927
+00:32:03,960 --> 00:32:05,710
+call into the workflow so practically
+
+928
+00:32:05,720 --> 00:32:07,350
+it's a delivering an event to the
+
+929
+00:32:07,360 --> 00:32:09,430
+workflow to specific workflow instance
+
+930
+00:32:09,440 --> 00:32:10,909
+so you say signal workflow you give
+
+931
+00:32:10,919 --> 00:32:13,669
+workflow ID by the way workflow ID is uh
+
+932
+00:32:13,679 --> 00:32:16,230
+provided by the application developer
+
+933
+00:32:16,240 --> 00:32:18,269
+and we guarantee uniqueness by workflows
+
+934
+00:32:18,279 --> 00:32:20,310
+by ID so there is hard guarantee that
+
+935
+00:32:20,320 --> 00:32:21,669
+you know will have two workflows with
+
+936
+00:32:21,679 --> 00:32:23,350
+the same ID running at the same time in
+
+937
+00:32:23,360 --> 00:32:25,430
+the system so you get practically
+
+938
+00:32:25,440 --> 00:32:27,230
+exactly once execution guarantees for
+
+939
+00:32:27,240 --> 00:32:29,710
+workflows so signal is just a vent and
+
+940
+00:32:29,720 --> 00:32:31,310
+how it's handled it depends on the
+
+941
+00:32:31,320 --> 00:32:32,870
+language for example in Java it will be
+
+942
+00:32:32,880 --> 00:32:35,110
+just a call back you say for this signal
+
+943
+00:32:35,120 --> 00:32:37,549
+type this is my arguments and every time
+
+944
+00:32:37,559 --> 00:32:39,149
+this event is sent to the workflow the
+
+945
+00:32:39,159 --> 00:32:40,789
+call back will be called and workflow
+
+946
+00:32:40,799 --> 00:32:43,149
+can react to that and it can be fully
+
+947
+00:32:43,159 --> 00:32:44,750
+asynchronous kind of piece of code a
+
+948
+00:32:44,760 --> 00:32:46,750
+query is the way to get information out
+
+949
+00:32:46,760 --> 00:32:48,629
+of the workflow synchronously So when
+
+950
+00:32:48,639 --> 00:32:50,950
+you say query you call back inside of
+
+951
+00:32:50,960 --> 00:32:52,350
+the workflow this call back cannot
+
+952
+00:32:52,360 --> 00:32:54,350
+mutate workflow state it only can return
+
+953
+00:32:54,360 --> 00:32:55,950
+data but it can return any data out of
+
+954
+00:32:55,960 --> 00:32:57,870
+your workflow it's your code so you can
+
+955
+00:32:57,880 --> 00:32:59,590
+return picture you can return just
+
+956
+00:32:59,600 --> 00:33:02,230
+status you can return whatever and color
+
+957
+00:33:02,240 --> 00:33:03,990
+blocks synchronously so if you want to
+
+958
+00:33:04,000 --> 00:33:05,830
+show something in UI about this workflow
+
+959
+00:33:05,840 --> 00:33:07,830
+you will say query it will block as soon
+
+960
+00:33:07,840 --> 00:33:09,549
+as data is returned it will show
+
+961
+00:33:09,559 --> 00:33:11,310
+something in the UI and the update is
+
+962
+00:33:11,320 --> 00:33:13,470
+kind of both together so update is you
+
+963
+00:33:13,480 --> 00:33:15,350
+send the request to the workflow and
+
+964
+00:33:15,360 --> 00:33:16,909
+this is a call back into the workflow
+
+965
+00:33:16,919 --> 00:33:18,830
+workflow will block this call back as
+
+966
+00:33:18,840 --> 00:33:21,230
+long as necessary and then it will
+
+967
+00:33:21,240 --> 00:33:22,710
+return result at some point and your
+
+968
+00:33:22,720 --> 00:33:24,310
+caller will be unblocked and there are
+
+969
+00:33:24,320 --> 00:33:26,070
+two ways to invoke update for them can
+
+970
+00:33:26,080 --> 00:33:27,590
+be synchronous for short lift requests
+
+971
+00:33:27,600 --> 00:33:29,269
+for example instant payments and things
+
+972
+00:33:29,279 --> 00:33:31,029
+like that but it also will have a
+
+973
+00:33:31,039 --> 00:33:32,990
+synchronous update when it can be
+
+974
+00:33:33,000 --> 00:33:34,669
+actually taken much longer time and it
+
+975
+00:33:34,679 --> 00:33:37,310
+will do some optimized long polling for
+
+976
+00:33:37,320 --> 00:33:39,110
+the result on the background but
+
+977
+00:33:39,120 --> 00:33:40,629
+conceptually we have signal which is one
+
+978
+00:33:40,639 --> 00:33:42,669
+way event query which is just get
+
+979
+00:33:42,679 --> 00:33:44,190
+information out of the workflow an
+
+980
+00:33:44,200 --> 00:33:46,230
+update which is practically say imagine
+
+981
+00:33:46,240 --> 00:33:47,669
+you have this entity workflow and you
+
+982
+00:33:47,679 --> 00:33:49,950
+want to say I want to I don't know take
+
+983
+00:33:49,960 --> 00:33:52,230
+some promo and do something so it will
+
+984
+00:33:52,240 --> 00:33:54,269
+be update VF will updates it State maybe
+
+985
+00:33:54,279 --> 00:33:55,750
+run some activities and then unblock
+
+986
+00:33:55,760 --> 00:33:57,350
+your update call giving you information
+
+987
+00:33:57,360 --> 00:33:59,590
+about success like or rejection of this
+
+988
+00:33:59,600 --> 00:34:01,830
+promo actually give me one more example
+
+989
+00:34:01,840 --> 00:34:03,789
+with update I'm not totally clear on
+
+990
+00:34:03,799 --> 00:34:05,870
+that just walk me through it again okay
+
+991
+00:34:05,880 --> 00:34:07,070
+let me give you a different example
+
+992
+00:34:07,080 --> 00:34:09,990
+imagine you want to implement page flow
+
+993
+00:34:10,000 --> 00:34:12,750
+like wizard right show page one like I
+
+994
+00:34:12,760 --> 00:34:14,349
+don't know you are implementing a
+
+995
+00:34:14,359 --> 00:34:16,790
+checkout pipeline right I I worked at
+
+996
+00:34:16,800 --> 00:34:18,710
+Amazon at the ordering service so I kind
+
+997
+00:34:18,720 --> 00:34:20,470
+of have some ideas there so you have
+
+998
+00:34:20,480 --> 00:34:22,389
+checkout pipeline so you show something
+
+999
+00:34:22,399 --> 00:34:24,430
+first page for example your shopping
+
+1000
+00:34:24,440 --> 00:34:26,750
+cart right then you select a few buttons
+
+1001
+00:34:26,760 --> 00:34:28,750
+that you say next right based what you
+
+1002
+00:34:28,760 --> 00:34:30,629
+selected next page will be different
+
+1003
+00:34:30,639 --> 00:34:31,869
+then you do whatever payments
+
+1004
+00:34:31,879 --> 00:34:33,710
+information you say next next page is
+
+1005
+00:34:33,720 --> 00:34:35,310
+different this update you could have
+
+1006
+00:34:35,320 --> 00:34:37,710
+let's say check out pipeline workflow
+
+1007
+00:34:37,720 --> 00:34:39,950
+and then you say here's my and you'll be
+
+1008
+00:34:39,960 --> 00:34:41,589
+blocked waiting practically for that
+
+1009
+00:34:41,599 --> 00:34:43,869
+page to return data and then you will
+
+1010
+00:34:43,879 --> 00:34:45,750
+say okay here's my data this will
+
+1011
+00:34:45,760 --> 00:34:47,869
+unblock boxl can execute any logic
+
+1012
+00:34:47,879 --> 00:34:49,750
+including running activities and then it
+
+1013
+00:34:49,760 --> 00:34:52,069
+can say okay now show different page
+
+1014
+00:34:52,079 --> 00:34:53,790
+right and it will return practically New
+
+1015
+00:34:53,800 --> 00:34:55,510
+Page information and also will get
+
+1016
+00:34:55,520 --> 00:34:57,910
+blocked there so you can model the whole
+
+1017
+00:34:57,920 --> 00:34:59,829
+wizard is this practically blocking
+
+1018
+00:34:59,839 --> 00:35:01,750
+workflow imagine right show page one
+
+1019
+00:35:01,760 --> 00:35:03,190
+blah blah blah business logic show page
+
+1020
+00:35:03,200 --> 00:35:04,750
+two blah blah blah business logic and it
+
+1021
+00:35:04,760 --> 00:35:05,950
+can be as complex as you want because
+
+1022
+00:35:05,960 --> 00:35:07,870
+it's code and it practically State full
+
+1023
+00:35:07,880 --> 00:35:09,750
+session as a workflow dat is a very good
+
+1024
+00:35:09,760 --> 00:35:11,310
+way to implement that how about
+
+1025
+00:35:11,320 --> 00:35:13,510
+interceptors that's something that maybe
+
+1026
+00:35:13,520 --> 00:35:16,430
+is strictly on the client side I wasn't
+
+1027
+00:35:16,440 --> 00:35:18,670
+sure so at this point we only have
+
+1028
+00:35:18,680 --> 00:35:20,150
+client side interceptors we are
+
+1029
+00:35:20,160 --> 00:35:21,510
+considering server side because there
+
+1030
+00:35:21,520 --> 00:35:23,430
+are some scenarios for them but the idea
+
+1031
+00:35:23,440 --> 00:35:25,270
+of Interceptor is that sometimes you
+
+1032
+00:35:25,280 --> 00:35:27,510
+want to create functionality which is
+
+1033
+00:35:27,520 --> 00:35:29,430
+kind of AAL to the specific business use
+
+1034
+00:35:29,440 --> 00:35:31,910
+case for example I don't know can be as
+
+1035
+00:35:31,920 --> 00:35:34,870
+simple as I want to save every time some
+
+1036
+00:35:34,880 --> 00:35:36,470
+activity completes I want to save it in
+
+1037
+00:35:36,480 --> 00:35:39,150
+some emit event right an event to Kafka
+
+1038
+00:35:39,160 --> 00:35:41,270
+to go to my warehouse you can write an
+
+1039
+00:35:41,280 --> 00:35:43,109
+Interceptor because we intercept all the
+
+1040
+00:35:43,119 --> 00:35:44,870
+API calls to workflow and from the
+
+1041
+00:35:44,880 --> 00:35:46,750
+workflow and you can say Interceptor
+
+1042
+00:35:46,760 --> 00:35:47,950
+which will run an activity which
+
+1043
+00:35:47,960 --> 00:35:49,710
+publishes to Kafka for example after
+
+1044
+00:35:49,720 --> 00:35:51,589
+every activity completion and then you
+
+1045
+00:35:51,599 --> 00:35:53,309
+just register this Interceptor with the
+
+1046
+00:35:53,319 --> 00:35:55,190
+Walker and every workflow will
+
+1047
+00:35:55,200 --> 00:35:56,990
+automatically get that function and are
+
+1048
+00:35:57,000 --> 00:35:58,710
+obviously a lot of use cases for
+
+1049
+00:35:58,720 --> 00:36:01,349
+interceptors they allow not to wrap apis
+
+1050
+00:36:01,359 --> 00:36:02,990
+because before interceptors existed
+
+1051
+00:36:03,000 --> 00:36:04,589
+people would say oh now I need to wrap
+
+1052
+00:36:04,599 --> 00:36:06,550
+temporal apis to get this functionality
+
+1053
+00:36:06,560 --> 00:36:08,910
+but now you can write an Interceptor and
+
+1054
+00:36:08,920 --> 00:36:10,950
+your normal workflows using standard
+
+1055
+00:36:10,960 --> 00:36:12,990
+apis will get these benefits out of the
+
+1056
+00:36:13,000 --> 00:36:15,270
+box so you have some cross cutting
+
+1057
+00:36:15,280 --> 00:36:17,470
+concern that you want to kind of inject
+
+1058
+00:36:17,480 --> 00:36:19,390
+into every workflow you're writing
+
+1059
+00:36:19,400 --> 00:36:21,510
+exactly or activity I think that'll let
+
+1060
+00:36:21,520 --> 00:36:24,589
+us segue into talking about the client
+
+1061
+00:36:24,599 --> 00:36:28,309
+sdks the per language sdks so I think we
+
+1062
+00:36:28,319 --> 00:36:30,550
+covered the Core Concepts and we covered
+
+1063
+00:36:30,560 --> 00:36:33,190
+some more additional Concepts so you
+
+1064
+00:36:33,200 --> 00:36:36,430
+have sdks for go Java PHP Python
+
+1065
+00:36:36,440 --> 00:36:39,230
+typescript and coming soon
+
+1066
+00:36:39,240 --> 00:36:42,109
+isnet I read though that at least some
+
+1067
+00:36:42,119 --> 00:36:44,589
+of the client libraries are built on a
+
+1068
+00:36:44,599 --> 00:36:46,950
+rust core can you talk about how that
+
+1069
+00:36:46,960 --> 00:36:49,790
+came about and yet there's no rust SDK
+
+1070
+00:36:49,800 --> 00:36:51,750
+so can you kind of just tell us what the
+
+1071
+00:36:51,760 --> 00:36:54,470
+structure of the client sdks is so our
+
+1072
+00:36:54,480 --> 00:36:56,950
+clients are pretty fat clients because
+
+1073
+00:36:56,960 --> 00:36:59,510
+they Implement a pretty complex State
+
+1074
+00:36:59,520 --> 00:37:01,230
+machine because you need to make sure
+
+1075
+00:37:01,240 --> 00:37:03,150
+that this code execution re execution is
+
+1076
+00:37:03,160 --> 00:37:05,349
+correct and the API of the server just
+
+1077
+00:37:05,359 --> 00:37:06,990
+gives you a history so proba get a bunch
+
+1078
+00:37:07,000 --> 00:37:09,829
+of events and you to convert that pra
+
+1079
+00:37:09,839 --> 00:37:12,030
+through a lot of State machine to actual
+
+1080
+00:37:12,040 --> 00:37:13,950
+code execution we also want to make
+
+1081
+00:37:13,960 --> 00:37:17,270
+every SDK as native to the language user
+
+1082
+00:37:17,280 --> 00:37:19,990
+as possible right so if you are using
+
+1083
+00:37:20,000 --> 00:37:21,910
+typescript you want to feel like you run
+
+1084
+00:37:21,920 --> 00:37:23,630
+normal typescript you don't do anything
+
+1085
+00:37:23,640 --> 00:37:25,790
+unnatural right if you're using another
+
+1086
+00:37:25,800 --> 00:37:27,910
+net you want to use normal a I sync from
+
+1087
+00:37:27,920 --> 00:37:29,990
+net right if you are doing pyone for
+
+1088
+00:37:30,000 --> 00:37:32,430
+example we use iyn iio from pyone and if
+
+1089
+00:37:32,440 --> 00:37:34,630
+you do jav we actually do blocking calls
+
+1090
+00:37:34,640 --> 00:37:36,270
+you just do synchronous calls because
+
+1091
+00:37:36,280 --> 00:37:38,190
+Java doesn't have really something like
+
+1092
+00:37:38,200 --> 00:37:40,870
+a we I thinkc yet right and then every
+
+1093
+00:37:40,880 --> 00:37:42,030
+like if you do go you want to do
+
+1094
+00:37:42,040 --> 00:37:44,109
+channels and select and so on so it
+
+1095
+00:37:44,119 --> 00:37:46,109
+means that every DEC is pretty first
+
+1096
+00:37:46,119 --> 00:37:48,790
+contains this logic how to make it as
+
+1097
+00:37:48,800 --> 00:37:50,829
+language Native as possible but then
+
+1098
+00:37:50,839 --> 00:37:52,150
+underneath there is very complex State
+
+1099
+00:37:52,160 --> 00:37:54,790
+machine and we found is that this common
+
+1100
+00:37:54,800 --> 00:37:56,710
+state machine is probably 80% of the the
+
+1101
+00:37:56,720 --> 00:37:58,870
+code and the complexity and what we did
+
+1102
+00:37:58,880 --> 00:38:01,230
+we decided to write a single Library
+
+1103
+00:38:01,240 --> 00:38:02,750
+which will kind of encapsulate all this
+
+1104
+00:38:02,760 --> 00:38:04,589
+complexity and we'll kind of thought
+
+1105
+00:38:04,599 --> 00:38:06,670
+about what we would write it in and we
+
+1106
+00:38:06,680 --> 00:38:08,069
+found that rust would be actually very
+
+1107
+00:38:08,079 --> 00:38:10,829
+good fit first because rust integrates a
+
+1108
+00:38:10,839 --> 00:38:12,630
+with a lot of Li languages pretty well
+
+1109
+00:38:12,640 --> 00:38:13,990
+so there are very good native
+
+1110
+00:38:14,000 --> 00:38:16,069
+Integrations with python for example
+
+1111
+00:38:16,079 --> 00:38:18,030
+with like a lot of languag also allows
+
+1112
+00:38:18,040 --> 00:38:20,230
+you to do cpis as well if you need and
+
+1113
+00:38:20,240 --> 00:38:22,829
+so and also we just our development team
+
+1114
+00:38:22,839 --> 00:38:24,870
+just like Ras for obvious reasons like
+
+1115
+00:38:24,880 --> 00:38:26,630
+it's let's say this way after we wrot it
+
+1116
+00:38:26,640 --> 00:38:28,430
+project took a year it's a very complex
+
+1117
+00:38:28,440 --> 00:38:30,150
+project I don't think we ever had any
+
+1118
+00:38:30,160 --> 00:38:32,270
+like crashes right or anything which is
+
+1119
+00:38:32,280 --> 00:38:34,630
+beyond logical bug we had logical bugs
+
+1120
+00:38:34,640 --> 00:38:36,829
+in it obviously but we never had like
+
+1121
+00:38:36,839 --> 00:38:38,510
+bugs related to the implementation which
+
+1122
+00:38:38,520 --> 00:38:40,349
+is amazing for this such a complex piece
+
+1123
+00:38:40,359 --> 00:38:42,670
+of technology so the rust core is just
+
+1124
+00:38:42,680 --> 00:38:46,270
+library and then pyone net typescript
+
+1125
+00:38:46,280 --> 00:38:48,069
+they all sit on top of that library and
+
+1126
+00:38:48,079 --> 00:38:49,390
+then just much much simpler
+
+1127
+00:38:49,400 --> 00:38:51,670
+implementations our Java and go which
+
+1128
+00:38:51,680 --> 00:38:53,990
+were written before the core they still
+
+1129
+00:38:54,000 --> 00:38:55,430
+implement this state machines
+
+1130
+00:38:55,440 --> 00:38:57,150
+independently there are some benefits to
+
+1131
+00:38:57,160 --> 00:38:58,630
+that because mostly for example I know
+
+1132
+00:38:58,640 --> 00:39:00,349
+that go Java developers don't like
+
+1133
+00:39:00,359 --> 00:39:01,710
+libraries for examp python developers
+
+1134
+00:39:01,720 --> 00:39:03,829
+are okay having shared Library linked to
+
+1135
+00:39:03,839 --> 00:39:05,710
+their code but Java developers don't
+
+1136
+00:39:05,720 --> 00:39:07,190
+like that so we are not sure if we going
+
+1137
+00:39:07,200 --> 00:39:09,030
+to ever like put core there we are
+
+1138
+00:39:09,040 --> 00:39:10,870
+thinking about different ways to do that
+
+1139
+00:39:10,880 --> 00:39:12,510
+but conceptually it would be ideal if
+
+1140
+00:39:12,520 --> 00:39:14,910
+you put put every SDK on the core but
+
+1141
+00:39:14,920 --> 00:39:16,829
+we'll see and we one day we absolutely
+
+1142
+00:39:16,839 --> 00:39:18,790
+we just wasn't a priority we absolutely
+
+1143
+00:39:18,800 --> 00:39:20,870
+will have rust core rust SDK on top of
+
+1144
+00:39:20,880 --> 00:39:23,230
+this core SDK we didn't have enough time
+
+1145
+00:39:23,240 --> 00:39:25,550
+and resources to prioritize that one
+
+1146
+00:39:25,560 --> 00:39:28,349
+workflow feature that I imagine is
+
+1147
+00:39:28,359 --> 00:39:30,230
+required in all of these languages would
+
+1148
+00:39:30,240 --> 00:39:33,390
+be parallel execution so I have five
+
+1149
+00:39:33,400 --> 00:39:35,950
+tasks I want to run all at the same time
+
+1150
+00:39:35,960 --> 00:39:37,510
+I don't necessarily know which one is
+
+1151
+00:39:37,520 --> 00:39:39,349
+going to take the longest can you
+
+1152
+00:39:39,359 --> 00:39:42,030
+describe that process in whichever
+
+1153
+00:39:42,040 --> 00:39:43,670
+language you like to use it as an
+
+1154
+00:39:43,680 --> 00:39:46,150
+example how do we do parallel execution
+
+1155
+00:39:46,160 --> 00:39:47,670
+uh yeah it depends very heavily depends
+
+1156
+00:39:47,680 --> 00:39:49,910
+on the language let's say Java you would
+
+1157
+00:39:49,920 --> 00:39:52,270
+just invoke them asynchronously get a
+
+1158
+00:39:52,280 --> 00:39:54,069
+back promise promise very similar to
+
+1159
+00:39:54,079 --> 00:39:56,430
+future but it's temporal specific for
+
+1160
+00:39:56,440 --> 00:39:58,390
+practical reasons of determinism and
+
+1161
+00:39:58,400 --> 00:40:00,150
+then you will just say Loop over those
+
+1162
+00:40:00,160 --> 00:40:02,390
+promises and say promise. get and block
+
+1163
+00:40:02,400 --> 00:40:05,470
+there until or you can just say wait for
+
+1164
+00:40:05,480 --> 00:40:07,390
+first promise to be ready from this list
+
+1165
+00:40:07,400 --> 00:40:09,309
+if you want a more complex logic and if
+
+1166
+00:40:09,319 --> 00:40:11,349
+you're using something like I don't net
+
+1167
+00:40:11,359 --> 00:40:13,270
+you will just use quing functions right
+
+1168
+00:40:13,280 --> 00:40:14,910
+and then you will wait on those tasks
+
+1169
+00:40:14,920 --> 00:40:16,630
+which we returned from those calls so
+
+1170
+00:40:16,640 --> 00:40:18,430
+you just use normal language constructs
+
+1171
+00:40:18,440 --> 00:40:19,829
+to do parallel execution there is
+
+1172
+00:40:19,839 --> 00:40:22,230
+nothing magical about that so in go you
+
+1173
+00:40:22,240 --> 00:40:23,870
+could use gortin so you could run just
+
+1174
+00:40:23,880 --> 00:40:25,950
+five parallel gortin other option is in
+
+1175
+00:40:25,960 --> 00:40:28,430
+go you can invoke activities and it will
+
+1176
+00:40:28,440 --> 00:40:30,430
+return future so you can just use a sync
+
+1177
+00:40:30,440 --> 00:40:32,550
+type of programming using future get so
+
+1178
+00:40:32,560 --> 00:40:34,190
+you have options but you have full power
+
+1179
+00:40:34,200 --> 00:40:36,150
+of go language including go routines to
+
+1180
+00:40:36,160 --> 00:40:38,550
+implement parallel processing so echoing
+
+1181
+00:40:38,560 --> 00:40:40,790
+back to how temporal works and how
+
+1182
+00:40:40,800 --> 00:40:43,510
+replaying event works but tying it to
+
+1183
+00:40:43,520 --> 00:40:46,190
+this parallel execution case suppose I
+
+1184
+00:40:46,200 --> 00:40:49,190
+do launch Five tasks in parallel and
+
+1185
+00:40:49,200 --> 00:40:51,349
+let's say they're all long running I'm
+
+1186
+00:40:51,359 --> 00:40:54,349
+curious what happens when one of them
+
+1187
+00:40:54,359 --> 00:40:56,109
+finishes now let's say my code is going
+
+1188
+00:40:56,119 --> 00:40:58,069
+to wait on all of them to finish does my
+
+1189
+00:40:58,079 --> 00:41:01,109
+workflow keep getting rerun sort of as
+
+1190
+00:41:01,119 --> 00:41:02,910
+each one finishes or does the system
+
+1191
+00:41:02,920 --> 00:41:05,390
+know to wait for all of them right now
+
+1192
+00:41:05,400 --> 00:41:07,470
+we don't have server site weight for all
+
+1193
+00:41:07,480 --> 00:41:09,589
+of them workflow will be notified about
+
+1194
+00:41:09,599 --> 00:41:11,829
+each of them completed and then it will
+
+1195
+00:41:11,839 --> 00:41:13,750
+continue blocking so they are not very
+
+1196
+00:41:13,760 --> 00:41:15,670
+long running bflow will be cashed so it
+
+1197
+00:41:15,680 --> 00:41:17,589
+won't be very expensive but still there
+
+1198
+00:41:17,599 --> 00:41:20,230
+is some overhead there if they are very
+
+1199
+00:41:20,240 --> 00:41:22,190
+long running yes vflow will be recovered
+
+1200
+00:41:22,200 --> 00:41:23,870
+multiple times but again if they're so
+
+1201
+00:41:23,880 --> 00:41:25,430
+long running probably it's not a problem
+
+1202
+00:41:25,440 --> 00:41:27,470
+we consider it some feature more like
+
+1203
+00:41:27,480 --> 00:41:29,550
+okay N5 workflow only when all of them
+
+1204
+00:41:29,560 --> 00:41:31,510
+are already but so far just it's an
+
+1205
+00:41:31,520 --> 00:41:33,829
+optimization I don't think it was really
+
+1206
+00:41:33,839 --> 00:41:36,309
+paino for everyone so far so let's
+
+1207
+00:41:36,319 --> 00:41:37,790
+finish up with talking about the client
+
+1208
+00:41:37,800 --> 00:41:40,069
+sdks then we're going to move on to
+
+1209
+00:41:40,079 --> 00:41:42,589
+temporal cluster and temporal Cloud
+
+1210
+00:41:42,599 --> 00:41:44,589
+let's start with the cluster can you
+
+1211
+00:41:44,599 --> 00:41:47,430
+talk about what is involved in setting
+
+1212
+00:41:47,440 --> 00:41:49,950
+that up as a developer I know there's a
+
+1213
+00:41:49,960 --> 00:41:52,030
+single binary how that works and then
+
+1214
+00:41:52,040 --> 00:41:54,069
+how would you move on to a production
+
+1215
+00:41:54,079 --> 00:41:55,750
+implementation yeah so for local
+
+1216
+00:41:55,760 --> 00:41:57,190
+development and if you're on Mac you
+
+1217
+00:41:57,200 --> 00:41:59,109
+just do bro install temporal you get
+
+1218
+00:41:59,119 --> 00:42:01,870
+temporal binary temporal CLI plus full
+
+1219
+00:42:01,880 --> 00:42:04,950
+featur it server in a single binary and
+
+1220
+00:42:04,960 --> 00:42:07,670
+then just say temporal start Dev server
+
+1221
+00:42:07,680 --> 00:42:09,589
+and by default it can start server with
+
+1222
+00:42:09,599 --> 00:42:12,510
+in memory sqlite database so it's pretty
+
+1223
+00:42:12,520 --> 00:42:13,910
+good for development because every time
+
+1224
+00:42:13,920 --> 00:42:15,790
+you restart that you just remove all the
+
+1225
+00:42:15,800 --> 00:42:18,430
+state which is nice so and you also get
+
+1226
+00:42:18,440 --> 00:42:20,829
+the UI so you just have a UI ring on
+
+1227
+00:42:20,839 --> 00:42:23,109
+Local Host so you can web UI so as soon
+
+1228
+00:42:23,119 --> 00:42:24,309
+as you have the single binary you have
+
+1229
+00:42:24,319 --> 00:42:27,230
+full environment to to do development I
+
+1230
+00:42:27,240 --> 00:42:29,030
+think one thing I forgot to mention we
+
+1231
+00:42:29,040 --> 00:42:30,710
+also have unit testing Frameworks which
+
+1232
+00:42:30,720 --> 00:42:32,870
+don't require server so it means that
+
+1233
+00:42:32,880 --> 00:42:34,470
+for example if in Java you want to unit
+
+1234
+00:42:34,480 --> 00:42:36,790
+test your workflow you just use our
+
+1235
+00:42:36,800 --> 00:42:38,950
+supporting classes and they will work
+
+1236
+00:42:38,960 --> 00:42:40,510
+even if your workflow blocks for a long
+
+1237
+00:42:40,520 --> 00:42:43,069
+time for example if uh workflow says
+
+1238
+00:42:43,079 --> 00:42:45,309
+sleep two weeks and unit testing
+
+1239
+00:42:45,319 --> 00:42:47,589
+Frameworks will discover that and jump
+
+1240
+00:42:47,599 --> 00:42:49,470
+time two weeks ahead the moment workflow
+
+1241
+00:42:49,480 --> 00:42:50,870
+is blocked so you can test in
+
+1242
+00:42:50,880 --> 00:42:52,589
+milliseconds workflows which run for
+
+1243
+00:42:52,599 --> 00:42:54,349
+weeks it's unit testing but then if you
+
+1244
+00:42:54,359 --> 00:42:55,790
+want to do real development then you do
+
+1245
+00:42:55,800 --> 00:42:58,870
+single binary but then you can deploy to
+
+1246
+00:42:58,880 --> 00:43:00,710
+your infrastructure and then it depends
+
+1247
+00:43:00,720 --> 00:43:02,430
+how you also can locally some people use
+
+1248
+00:43:02,440 --> 00:43:04,870
+Docker compost if you want to have mooic
+
+1249
+00:43:04,880 --> 00:43:06,430
+installations you absolutely can use
+
+1250
+00:43:06,440 --> 00:43:08,710
+Docker compost which runs temporal roles
+
+1251
+00:43:08,720 --> 00:43:10,750
+as separate Docker containers and you
+
+1252
+00:43:10,760 --> 00:43:12,710
+can for example if you want to look how
+
+1253
+00:43:12,720 --> 00:43:14,470
+metrics look then you would use Docker
+
+1254
+00:43:14,480 --> 00:43:16,069
+compost because single binary doesn't
+
+1255
+00:43:16,079 --> 00:43:18,549
+include Prometheus for example then how
+
+1256
+00:43:18,559 --> 00:43:21,349
+people deploy temporal itself is just
+
+1257
+00:43:21,359 --> 00:43:23,390
+binary compil from go backend server
+
+1258
+00:43:23,400 --> 00:43:25,190
+written in go so you can deploy it any
+
+1259
+00:43:25,200 --> 00:43:26,790
+way you want so if you want to run it on
+
+1260
+00:43:26,800 --> 00:43:28,309
+bare metal you absolutely can deploy
+
+1261
+00:43:28,319 --> 00:43:30,630
+temporal binaries SCP those binaries to
+
+1262
+00:43:30,640 --> 00:43:33,349
+50 machines and configure them correctly
+
+1263
+00:43:33,359 --> 00:43:34,870
+make sure that this machines can talk to
+
+1264
+00:43:34,880 --> 00:43:37,230
+each other because temporal requires
+
+1265
+00:43:37,240 --> 00:43:39,349
+direct communication and after that it
+
+1266
+00:43:39,359 --> 00:43:40,950
+just will work and then you probably
+
+1267
+00:43:40,960 --> 00:43:42,390
+want to make sure you put load balancer
+
+1268
+00:43:42,400 --> 00:43:44,030
+in front of your front ends but
+
+1269
+00:43:44,040 --> 00:43:45,589
+obviously these days most people don't
+
+1270
+00:43:45,599 --> 00:43:48,470
+do that they use kubernetes or use some
+
+1271
+00:43:48,480 --> 00:43:51,230
+other similar technology and then you
+
+1272
+00:43:51,240 --> 00:43:53,349
+just deploy temporal through Helm chart
+
+1273
+00:43:53,359 --> 00:43:55,230
+there is Helm chart and or you write
+
+1274
+00:43:55,240 --> 00:43:56,790
+your own Helm chart to to deploy that or
+
+1275
+00:43:56,800 --> 00:43:59,390
+you use whatever ECS and so on so
+
+1276
+00:43:59,400 --> 00:44:01,109
+temporals absolutely not opiate how you
+
+1277
+00:44:01,119 --> 00:44:02,549
+run those binaries right there are
+
+1278
+00:44:02,559 --> 00:44:04,510
+certain requirements around frontend
+
+1279
+00:44:04,520 --> 00:44:06,430
+load balancer and communication between
+
+1280
+00:44:06,440 --> 00:44:08,589
+nodes and then you need database you
+
+1281
+00:44:08,599 --> 00:44:10,670
+need to provision database you need to
+
+1282
+00:44:10,680 --> 00:44:12,430
+provision schema and then you just give
+
+1283
+00:44:12,440 --> 00:44:13,950
+connection temporal cluster to the
+
+1284
+00:44:13,960 --> 00:44:16,069
+database speaking of database you
+
+1285
+00:44:16,079 --> 00:44:18,349
+mentioned the inmemory I think it was my
+
+1286
+00:44:18,359 --> 00:44:20,990
+SQL for the single binary sqlite oh
+
+1287
+00:44:21,000 --> 00:44:22,630
+sorry sqlite and then you mentioned
+
+1288
+00:44:22,640 --> 00:44:24,630
+restarting it is in a way a good thing
+
+1289
+00:44:24,640 --> 00:44:27,190
+because it resets the state so what
+
+1290
+00:44:27,200 --> 00:44:29,430
+exactly is in the database is it
+
+1291
+00:44:29,440 --> 00:44:32,430
+strictly workflows that are currently
+
+1292
+00:44:32,440 --> 00:44:35,150
+executing with maybe some history for
+
+1293
+00:44:35,160 --> 00:44:37,790
+debugging or what else is contained in
+
+1294
+00:44:37,800 --> 00:44:40,390
+there so it contains workflow State
+
+1295
+00:44:40,400 --> 00:44:42,910
+history of the workflow and index of
+
+1296
+00:44:42,920 --> 00:44:45,270
+workflows if you need to list workflows
+
+1297
+00:44:45,280 --> 00:44:47,630
+across like list multiple workflows and
+
+1298
+00:44:47,640 --> 00:44:49,150
+uh there are technical things for
+
+1299
+00:44:49,160 --> 00:44:51,349
+example durable timers that because
+
+1300
+00:44:51,359 --> 00:44:52,950
+workflow state by itself is not enough
+
+1301
+00:44:52,960 --> 00:44:54,030
+right for example if it's sleeping for
+
+1302
+00:44:54,040 --> 00:44:55,829
+30 days you want to have a durable timer
+
+1303
+00:44:55,839 --> 00:44:57,069
+and and we have a lot of kind of other
+
+1304
+00:44:57,079 --> 00:44:59,030
+moving Parts but conceptually from your
+
+1305
+00:44:59,040 --> 00:45:01,589
+point of view yes workflow State history
+
+1306
+00:45:01,599 --> 00:45:04,190
+tasks and uh index in production
+
+1307
+00:45:04,200 --> 00:45:05,750
+deployment we recommend especially if
+
+1308
+00:45:05,760 --> 00:45:07,870
+you have large scale we integrate with
+
+1309
+00:45:07,880 --> 00:45:10,030
+elastic search for that so index would
+
+1310
+00:45:10,040 --> 00:45:12,069
+be in the elastic search going back to
+
+1311
+00:45:12,079 --> 00:45:15,589
+the workflows as entities if in that
+
+1312
+00:45:15,599 --> 00:45:17,750
+case some of my workflows will run
+
+1313
+00:45:17,760 --> 00:45:20,790
+potentially forever is there a decision
+
+1314
+00:45:20,800 --> 00:45:23,430
+to be made about how much State I allow
+
+1315
+00:45:23,440 --> 00:45:25,510
+to be in the workflow versus still
+
+1316
+00:45:25,520 --> 00:45:27,750
+having separate database of my own is
+
+1317
+00:45:27,760 --> 00:45:29,950
+that a decision to be made and what do
+
+1318
+00:45:29,960 --> 00:45:32,190
+you feel people tend to do with that
+
+1319
+00:45:32,200 --> 00:45:34,630
+it's a very good question so for example
+
+1320
+00:45:34,640 --> 00:45:36,950
+the use case I described for airline
+
+1321
+00:45:36,960 --> 00:45:38,910
+points I know very large scale
+
+1322
+00:45:38,920 --> 00:45:40,309
+production use cases which don't use
+
+1323
+00:45:40,319 --> 00:45:42,109
+database they just store State there at
+
+1324
+00:45:42,119 --> 00:45:43,549
+the same time it's not that much state
+
+1325
+00:45:43,559 --> 00:45:46,150
+right it just points and maybe IDs to
+
+1326
+00:45:46,160 --> 00:45:48,670
+the dup of events uh like some recent
+
+1327
+00:45:48,680 --> 00:45:51,230
+events to the dup so but just some basic
+
+1328
+00:45:51,240 --> 00:45:53,349
+limitations we don't store state of the
+
+1329
+00:45:53,359 --> 00:45:55,470
+workflow directly we only store state of
+
+1330
+00:45:55,480 --> 00:45:57,510
+the results of activities because we
+
+1331
+00:45:57,520 --> 00:45:59,750
+record events so workflow input
+
+1332
+00:45:59,760 --> 00:46:01,910
+arguments and activity State results
+
+1333
+00:46:01,920 --> 00:46:04,109
+would be the state so if you activ and
+
+1334
+00:46:04,119 --> 00:46:06,790
+we limit the size of the history to 50
+
+1335
+00:46:06,800 --> 00:46:09,230
+megabytes so if you have every activity
+
+1336
+00:46:09,240 --> 00:46:11,470
+result cannot be larger than 2 megabytes
+
+1337
+00:46:11,480 --> 00:46:14,270
+so technically even 25 activities
+
+1338
+00:46:14,280 --> 00:46:16,270
+returning 2 megabytes will exceed that
+
+1339
+00:46:16,280 --> 00:46:18,069
+limit so we recommend that so if you
+
+1340
+00:46:18,079 --> 00:46:20,309
+need to pass large blobs temporal is not
+
+1341
+00:46:20,319 --> 00:46:21,910
+the technology to pass large blobs
+
+1342
+00:46:21,920 --> 00:46:23,950
+around we recommend storing blobs in
+
+1343
+00:46:23,960 --> 00:46:26,190
+some other system and passing poters
+
+1344
+00:46:26,200 --> 00:46:28,230
+around so we're not Big Data System One
+
+1345
+00:46:28,240 --> 00:46:30,150
+caveat with always run in workflows with
+
+1346
+00:46:30,160 --> 00:46:32,109
+entity workflows is Imagine they run
+
+1347
+00:46:32,119 --> 00:46:33,510
+forever let's say they have some event
+
+1348
+00:46:33,520 --> 00:46:36,390
+Loop processing events and size of this
+
+1349
+00:46:36,400 --> 00:46:38,109
+history becomes unbounded right because
+
+1350
+00:46:38,119 --> 00:46:39,750
+it will keep growing so we have special
+
+1351
+00:46:39,760 --> 00:46:41,910
+mechanism we call it Contin is new when
+
+1352
+00:46:41,920 --> 00:46:43,430
+you can practically kind of do this tail
+
+1353
+00:46:43,440 --> 00:46:44,950
+recursion elimination when you kind of
+
+1354
+00:46:44,960 --> 00:46:46,549
+call this workflow again from the
+
+1355
+00:46:46,559 --> 00:46:49,309
+beginning and you pass States explicitly
+
+1356
+00:46:49,319 --> 00:46:51,750
+and then history is reset to the new to
+
+1357
+00:46:51,760 --> 00:46:53,309
+zero so practicly this workflows are
+
+1358
+00:46:53,319 --> 00:46:54,630
+expected periodically call this
+
+1359
+00:46:54,640 --> 00:46:56,870
+operation to reset set the history size
+
+1360
+00:46:56,880 --> 00:46:58,790
+so this way they can run forever and
+
+1361
+00:46:58,800 --> 00:47:00,349
+have unlimited practical duration and
+
+1362
+00:47:00,359 --> 00:47:01,950
+length that is kind of the mechanism we
+
+1363
+00:47:01,960 --> 00:47:03,750
+provide also it allows to upgrade code
+
+1364
+00:47:03,760 --> 00:47:05,589
+because upgrading code is nontrivial
+
+1365
+00:47:05,599 --> 00:47:07,470
+when theflow already started so if you
+
+1366
+00:47:07,480 --> 00:47:09,470
+call this continues new periodically
+
+1367
+00:47:09,480 --> 00:47:11,470
+there is guarantee around code upgrade
+
+1368
+00:47:11,480 --> 00:47:13,150
+so it makes it also easier I think
+
+1369
+00:47:13,160 --> 00:47:15,069
+you're alluding to workflow versioning
+
+1370
+00:47:15,079 --> 00:47:16,790
+which is something I was going to touch
+
+1371
+00:47:16,800 --> 00:47:18,829
+on but now might be a good time that
+
+1372
+00:47:18,839 --> 00:47:20,870
+does seem like a challenge so especially
+
+1373
+00:47:20,880 --> 00:47:22,030
+if you have these workflows that are
+
+1374
+00:47:22,040 --> 00:47:24,069
+running a long time the code can
+
+1375
+00:47:24,079 --> 00:47:26,710
+potentially change how do you know if
+
+1376
+00:47:26,720 --> 00:47:29,109
+workflow execution is compatible with
+
+1377
+00:47:29,119 --> 00:47:31,630
+the new code or vice versa yeah that is
+
+1378
+00:47:31,640 --> 00:47:33,349
+in general a hard problem imagine
+
+1379
+00:47:33,359 --> 00:47:35,430
+updating code while something is in
+
+1380
+00:47:35,440 --> 00:47:37,549
+Flight right so there are two approaches
+
+1381
+00:47:37,559 --> 00:47:39,990
+to versioning in all kind of workflow
+
+1382
+00:47:40,000 --> 00:47:41,870
+like long running systems one is you
+
+1383
+00:47:41,880 --> 00:47:43,910
+just pin the version the moment you
+
+1384
+00:47:43,920 --> 00:47:45,670
+start the workflow you pratically say
+
+1385
+00:47:45,680 --> 00:47:47,430
+this workflow started with version one
+
+1386
+00:47:47,440 --> 00:47:49,150
+and then you deploy version two and you
+
+1387
+00:47:49,160 --> 00:47:51,270
+say this workflow is pined to version
+
+1388
+00:47:51,280 --> 00:47:54,150
+two and then uh you cannot really fix
+
+1389
+00:47:54,160 --> 00:47:55,790
+the back in version one right because
+
+1390
+00:47:55,800 --> 00:47:57,950
+all new workflows will benefit from the
+
+1391
+00:47:57,960 --> 00:47:59,589
+changes it works very well for
+
+1392
+00:47:59,599 --> 00:48:00,790
+relatively short workflows if your
+
+1393
+00:48:00,800 --> 00:48:03,349
+workflows up to 1 hour like a day it's
+
+1394
+00:48:03,359 --> 00:48:05,349
+actually very common approach and we
+
+1395
+00:48:05,359 --> 00:48:06,990
+recommend that because it just makes
+
+1396
+00:48:07,000 --> 00:48:08,630
+your life easier but if you have
+
+1397
+00:48:08,640 --> 00:48:10,630
+workflow which runs for a months and it
+
+1398
+00:48:10,640 --> 00:48:12,030
+doesn't call contain is new because it's
+
+1399
+00:48:12,040 --> 00:48:13,510
+just sequence of steps which takes a
+
+1400
+00:48:13,520 --> 00:48:16,270
+month then being able to deploy and run
+
+1401
+00:48:16,280 --> 00:48:18,109
+pool of walkers for every version
+
+1402
+00:48:18,119 --> 00:48:20,589
+becomes down in task and it can be just
+
+1403
+00:48:20,599 --> 00:48:22,630
+not practical so temporal provides a way
+
+1404
+00:48:22,640 --> 00:48:24,549
+to still provide what we call it
+
+1405
+00:48:24,559 --> 00:48:26,510
+patching being able to patch workflows
+
+1406
+00:48:26,520 --> 00:48:28,390
+which are already running and we do it
+
+1407
+00:48:28,400 --> 00:48:30,230
+by just practically keeping two versions
+
+1408
+00:48:30,240 --> 00:48:32,109
+of the code you have old version of the
+
+1409
+00:48:32,119 --> 00:48:33,430
+code and new version of the code inside
+
+1410
+00:48:33,440 --> 00:48:35,190
+of your code and you can put it any
+
+1411
+00:48:35,200 --> 00:48:37,109
+place you can be Library it can be just
+
+1412
+00:48:37,119 --> 00:48:38,549
+one function you can do it multiple
+
+1413
+00:48:38,559 --> 00:48:40,990
+places but you just say if old version
+
+1414
+00:48:41,000 --> 00:48:42,950
+keep old code new version new code and
+
+1415
+00:48:42,960 --> 00:48:44,630
+then when you have API call you can
+
+1416
+00:48:44,640 --> 00:48:46,430
+verify that all workflows on the old
+
+1417
+00:48:46,440 --> 00:48:48,069
+version completed then you can remove
+
+1418
+00:48:48,079 --> 00:48:49,630
+old branches but it allows you
+
+1419
+00:48:49,640 --> 00:48:51,309
+practically to fix bugs in workflows
+
+1420
+00:48:51,319 --> 00:48:53,309
+which already running and guarantee that
+
+1421
+00:48:53,319 --> 00:48:54,630
+they're compatible because we have
+
+1422
+00:48:54,640 --> 00:48:56,109
+special practically conditions in
+
+1423
+00:48:56,119 --> 00:48:58,030
+versioning and then we provide ways to
+
+1424
+00:48:58,040 --> 00:49:00,150
+test that so we have unit testing
+
+1425
+00:49:00,160 --> 00:49:02,150
+support and replay support to ensure
+
+1426
+00:49:02,160 --> 00:49:03,750
+that you didn't broke compatibility by
+
+1427
+00:49:03,760 --> 00:49:05,630
+mistake versioning does sound like it
+
+1428
+00:49:05,640 --> 00:49:08,150
+can get complicated but I imagine if you
+
+1429
+00:49:08,160 --> 00:49:10,109
+didn't even have an explicit
+
+1430
+00:49:10,119 --> 00:49:13,230
+representation of your workflow at all
+
+1431
+00:49:13,240 --> 00:49:15,230
+then versioning is still going to be a
+
+1432
+00:49:15,240 --> 00:49:17,630
+huge problem if you just weren't using a
+
+1433
+00:49:17,640 --> 00:49:20,030
+workflow system like this it's much
+
+1434
+00:49:20,040 --> 00:49:21,789
+worse it's impossible because you can do
+
+1435
+00:49:21,799 --> 00:49:23,589
+trivial changes back is compatible
+
+1436
+00:49:23,599 --> 00:49:25,549
+change but the moment you need to do in
+
+1437
+00:49:25,559 --> 00:49:27,470
+aable change because your logic is
+
+1438
+00:49:27,480 --> 00:49:29,430
+spread out across multiple Services your
+
+1439
+00:49:29,440 --> 00:49:32,109
+sequen in logic is just everywhere and
+
+1440
+00:49:32,119 --> 00:49:33,829
+it's not in one place it's practically
+
+1441
+00:49:33,839 --> 00:49:35,390
+impossible I can tell you we had
+
+1442
+00:49:35,400 --> 00:49:36,870
+customers we said they're stuck they
+
+1443
+00:49:36,880 --> 00:49:38,510
+cannot do changes they're scared because
+
+1444
+00:49:38,520 --> 00:49:39,829
+they don't know what's going to break
+
+1445
+00:49:39,839 --> 00:49:41,309
+because like event driven systems
+
+1446
+00:49:41,319 --> 00:49:42,630
+especially like choreography based
+
+1447
+00:49:42,640 --> 00:49:44,470
+systems you can think them as like one
+
+1448
+00:49:44,480 --> 00:49:46,230
+big Global set of global variables
+
+1449
+00:49:46,240 --> 00:49:47,750
+because when people say oh it's good
+
+1450
+00:49:47,760 --> 00:49:48,990
+that you can publish message and some
+
+1451
+00:49:49,000 --> 00:49:50,829
+service will consume it without ever me
+
+1452
+00:49:50,839 --> 00:49:52,430
+knowing it's not a good idea it's like
+
+1453
+00:49:52,440 --> 00:49:53,950
+Global variable you update it you have
+
+1454
+00:49:53,960 --> 00:49:55,510
+no clue which other parts of your code
+
+1455
+00:49:55,520 --> 00:49:58,190
+will be broken so this systems extremely
+
+1456
+00:49:58,200 --> 00:50:00,150
+hard to maintain and guarantee that
+
+1457
+00:50:00,160 --> 00:50:01,950
+they're not going to break with changes
+
+1458
+00:50:01,960 --> 00:50:04,910
+so these next topics about temporal
+
+1459
+00:50:04,920 --> 00:50:06,390
+cluster I think are going to lead us
+
+1460
+00:50:06,400 --> 00:50:08,109
+into talking about temporal Cloud
+
+1461
+00:50:08,119 --> 00:50:10,150
+because we're going to talk about when
+
+1462
+00:50:10,160 --> 00:50:12,230
+you need to scale up what happens and
+
+1463
+00:50:12,240 --> 00:50:14,470
+how do you manage that so there's an
+
+1464
+00:50:14,480 --> 00:50:16,829
+idea of multicluster
+
+1465
+00:50:16,839 --> 00:50:20,030
+replication is that for performance or
+
+1466
+00:50:20,040 --> 00:50:22,750
+for reliability or both it's purely for
+
+1467
+00:50:22,760 --> 00:50:24,190
+reliability let me talk about
+
+1468
+00:50:24,200 --> 00:50:25,870
+performance first and scalability and
+
+1469
+00:50:25,880 --> 00:50:28,030
+then we talk about multicluster temporal
+
+1470
+00:50:28,040 --> 00:50:31,109
+as it's designed is designed to scale uh
+
+1471
+00:50:31,119 --> 00:50:32,910
+almost infinitely practically it can
+
+1472
+00:50:32,920 --> 00:50:34,829
+saturate any database so far we couldn't
+
+1473
+00:50:34,839 --> 00:50:36,950
+find database we couldn't saturate so it
+
+1474
+00:50:36,960 --> 00:50:38,910
+means that if you have an application on
+
+1475
+00:50:38,920 --> 00:50:40,829
+temporal and it's configured correctly
+
+1476
+00:50:40,839 --> 00:50:42,589
+and your cluster is configured correctly
+
+1477
+00:50:42,599 --> 00:50:44,430
+the bottleneck is always a database and
+
+1478
+00:50:44,440 --> 00:50:46,589
+a CPU on database so what happens is
+
+1479
+00:50:46,599 --> 00:50:49,150
+that MySQL and post grass there is no
+
+1480
+00:50:49,160 --> 00:50:51,829
+Shing built in so you can only scale up
+
+1481
+00:50:51,839 --> 00:50:54,109
+I know that some companies use vs uh so
+
+1482
+00:50:54,119 --> 00:50:55,950
+it's possible to scale them out out we
+
+1483
+00:50:55,960 --> 00:50:57,549
+don't provide direct support for that
+
+1484
+00:50:57,559 --> 00:50:59,270
+but in most cases you kind of can get
+
+1485
+00:50:59,280 --> 00:51:00,990
+the biggest I don't know Aurora instance
+
+1486
+00:51:01,000 --> 00:51:02,549
+and you can scale up to certain point
+
+1487
+00:51:02,559 --> 00:51:04,030
+but then you hit the wall if you use
+
+1488
+00:51:04,040 --> 00:51:06,309
+Cassandra Cassandra allows you to scale
+
+1489
+00:51:06,319 --> 00:51:08,670
+out adding more hosts and this Cassandra
+
+1490
+00:51:08,680 --> 00:51:11,390
+you can go much larger scale so we seen
+
+1491
+00:51:11,400 --> 00:51:12,870
+people running 100 not Cassandra
+
+1492
+00:51:12,880 --> 00:51:15,190
+clusters to run certain workloads and
+
+1493
+00:51:15,200 --> 00:51:17,190
+temporal can keep up like cluster itself
+
+1494
+00:51:17,200 --> 00:51:19,349
+can always keep up this database so that
+
+1495
+00:51:19,359 --> 00:51:20,829
+is how you would do that if your use
+
+1496
+00:51:20,839 --> 00:51:23,430
+case is a low rate you can pick my SQL
+
+1497
+00:51:23,440 --> 00:51:26,109
+of postgress fine but if you to go high
+
+1498
+00:51:26,119 --> 00:51:27,430
+rates then you will need to probably
+
+1499
+00:51:27,440 --> 00:51:29,109
+Cassandra if you're running a self-
+
+1500
+00:51:29,119 --> 00:51:30,789
+served version of temporal and going
+
+1501
+00:51:30,799 --> 00:51:32,990
+back to the multicluster so temporal has
+
+1502
+00:51:33,000 --> 00:51:35,270
+very unique way to guarantee relability
+
+1503
+00:51:35,280 --> 00:51:38,309
+across regions and across availability
+
+1504
+00:51:38,319 --> 00:51:40,030
+like so every cluster can be deployed to
+
+1505
+00:51:40,040 --> 00:51:41,270
+availability zones right you can
+
+1506
+00:51:41,280 --> 00:51:42,950
+absolutely deploy Cassandra to be in
+
+1507
+00:51:42,960 --> 00:51:44,470
+free availability zones you can deploy
+
+1508
+00:51:44,480 --> 00:51:46,390
+temporo cluster to be distributed so it
+
+1509
+00:51:46,400 --> 00:51:49,069
+can sustain single zone outage without
+
+1510
+00:51:49,079 --> 00:51:50,950
+problem but what happens if the whole
+
+1511
+00:51:50,960 --> 00:51:52,549
+region goes down or database gets
+
+1512
+00:51:52,559 --> 00:51:54,710
+corrupted so temporal allows you to run
+
+1513
+00:51:54,720 --> 00:51:56,670
+more cluster in different regions and
+
+1514
+00:51:56,680 --> 00:51:58,109
+these clusters absolutely independent
+
+1515
+00:51:58,119 --> 00:51:59,390
+they have their own storage even
+
+1516
+00:51:59,400 --> 00:52:01,109
+different type of storage so one cluster
+
+1517
+00:52:01,119 --> 00:52:02,910
+can run my SQL another cluster can run
+
+1518
+00:52:02,920 --> 00:52:04,710
+Cassandra for example and they
+
+1519
+00:52:04,720 --> 00:52:06,549
+communicate through top level like high
+
+1520
+00:52:06,559 --> 00:52:08,190
+level application protocol which is
+
+1521
+00:52:08,200 --> 00:52:09,670
+temporal specific we should practice
+
+1522
+00:52:09,680 --> 00:52:11,069
+ship events right we ship the same
+
+1523
+00:52:11,079 --> 00:52:13,069
+events we put into the event history and
+
+1524
+00:52:13,079 --> 00:52:14,950
+what it means is that temporal this
+
+1525
+00:52:14,960 --> 00:52:16,710
+cluster is so independent that there is
+
+1526
+00:52:16,720 --> 00:52:18,589
+no bless radius problem you cannot give
+
+1527
+00:52:18,599 --> 00:52:20,950
+a single command which would break for
+
+1528
+00:52:20,960 --> 00:52:22,870
+example both clusters so architecture
+
+1529
+00:52:22,880 --> 00:52:24,510
+it's much more available system with
+
+1530
+00:52:24,520 --> 00:52:26,349
+anything you see out there especially
+
+1531
+00:52:26,359 --> 00:52:27,670
+databases which are multi- region
+
+1532
+00:52:27,680 --> 00:52:29,589
+databases because these databases you
+
+1533
+00:52:29,599 --> 00:52:31,589
+can always give single schema update or
+
+1534
+00:52:31,599 --> 00:52:33,750
+single B command which will bring down
+
+1535
+00:52:33,760 --> 00:52:35,430
+the whole system as we know most of the
+
+1536
+00:52:35,440 --> 00:52:37,510
+outages are operatory error upgrade
+
+1537
+00:52:37,520 --> 00:52:40,470
+error version error andoral allows you
+
+1538
+00:52:40,480 --> 00:52:42,109
+to run this clusters even on different
+
+1539
+00:52:42,119 --> 00:52:44,950
+versions so by Design this multi- region
+
+1540
+00:52:44,960 --> 00:52:47,270
+set up and fill overs are very very
+
+1541
+00:52:47,280 --> 00:52:49,349
+highly available and it's also because
+
+1542
+00:52:49,359 --> 00:52:50,789
+it's a synchronous replication for
+
+1543
+00:52:50,799 --> 00:52:52,190
+because for performance we don't want to
+
+1544
+00:52:52,200 --> 00:52:54,549
+do like wait for round trips to the
+
+1545
+00:52:54,559 --> 00:52:57,069
+remote region they actually have
+
+1546
+00:52:57,079 --> 00:52:58,390
+conflict resolution code because
+
+1547
+00:52:58,400 --> 00:52:59,789
+databases they just look at the last
+
+1548
+00:52:59,799 --> 00:53:01,630
+time stamp and drop data which is beyond
+
+1549
+00:53:01,640 --> 00:53:04,109
+that temporal actually detects conflicts
+
+1550
+00:53:04,119 --> 00:53:05,950
+and has conflict resolution code which
+
+1551
+00:53:05,960 --> 00:53:07,710
+allows for them not losing data and
+
+1552
+00:53:07,720 --> 00:53:10,109
+events even in case of conflicts for
+
+1553
+00:53:10,119 --> 00:53:12,309
+example if there was not every event was
+
+1554
+00:53:12,319 --> 00:53:14,190
+propagated before fail over things like
+
+1555
+00:53:14,200 --> 00:53:15,870
+that so certainly our multi- region
+
+1556
+00:53:15,880 --> 00:53:17,910
+support is very very powerful and a lot
+
+1557
+00:53:17,920 --> 00:53:19,750
+of companies when it was written a tuber
+
+1558
+00:53:19,760 --> 00:53:21,589
+that was main requirement to run like
+
+1559
+00:53:21,599 --> 00:53:23,109
+important workloads you couldn't run
+
+1560
+00:53:23,119 --> 00:53:25,230
+tier one workload without having this
+
+1561
+00:53:25,240 --> 00:53:27,630
+surviving full data center outage multi
+
+1562
+00:53:27,640 --> 00:53:29,789
+full region outage that doesn't mean
+
+1563
+00:53:29,799 --> 00:53:31,470
+that it doesn't create performance right
+
+1564
+00:53:31,480 --> 00:53:33,390
+this is purely for availability because
+
+1565
+00:53:33,400 --> 00:53:34,870
+every cluster is independent it has its
+
+1566
+00:53:34,880 --> 00:53:36,829
+own scale limits assumption is that
+
+1567
+00:53:36,839 --> 00:53:38,789
+remote cluster can keep up with the same
+
+1568
+00:53:38,799 --> 00:53:40,950
+scale so usually they have the same size
+
+1569
+00:53:40,960 --> 00:53:43,069
+but each individual name space can be
+
+1570
+00:53:43,079 --> 00:53:44,670
+fill over individually temporal has
+
+1571
+00:53:44,680 --> 00:53:46,030
+notion of name spaces so it's
+
+1572
+00:53:46,040 --> 00:53:47,870
+multitenant system so you don't need to
+
+1573
+00:53:47,880 --> 00:53:49,190
+fill over the whole cluster you can fill
+
+1574
+00:53:49,200 --> 00:53:51,150
+over individual name space if necessary
+
+1575
+00:53:51,160 --> 00:53:52,910
+but it does make cluster faster it just
+
+1576
+00:53:52,920 --> 00:53:54,829
+make it more reliable so I think that's
+
+1577
+00:53:54,839 --> 00:53:57,030
+a good introduction to temporal Cloud
+
+1578
+00:53:57,040 --> 00:53:59,150
+cuz you mentioned Nam spaces and I think
+
+1579
+00:53:59,160 --> 00:54:01,349
+you're building the cloud as a nam space
+
+1580
+00:54:01,359 --> 00:54:03,870
+as a service and not just a hosted
+
+1581
+00:54:03,880 --> 00:54:05,870
+cluster can you tell me the difference
+
+1582
+00:54:05,880 --> 00:54:07,549
+between those two concepts and what are
+
+1583
+00:54:07,559 --> 00:54:10,270
+the advantages of namespace as a service
+
+1584
+00:54:10,280 --> 00:54:12,230
+so open source has notion of namespace
+
+1585
+00:54:12,240 --> 00:54:13,750
+so if you deploy a cluster you can
+
+1586
+00:54:13,760 --> 00:54:15,670
+create multiple name spaces in that but
+
+1587
+00:54:15,680 --> 00:54:17,430
+you still have a cluster in temporal
+
+1588
+00:54:17,440 --> 00:54:20,309
+Cloud we just give you name space and
+
+1589
+00:54:20,319 --> 00:54:22,549
+cluster concept is not even exposed
+
+1590
+00:54:22,559 --> 00:54:24,390
+obviously behind the scenes we still
+
+1591
+00:54:24,400 --> 00:54:26,630
+have clusters but it's our problem it's
+
+1592
+00:54:26,640 --> 00:54:28,789
+not problem of the user of the cloud
+
+1593
+00:54:28,799 --> 00:54:30,510
+it's the same as you go to S3 and you
+
+1594
+00:54:30,520 --> 00:54:32,309
+say create new bucket you absolutely
+
+1595
+00:54:32,319 --> 00:54:35,069
+unaware about the back end of S3 right
+
+1596
+00:54:35,079 --> 00:54:36,390
+maybe they have clusters maybe they
+
+1597
+00:54:36,400 --> 00:54:38,510
+don't right maybe it's one I doubt it's
+
+1598
+00:54:38,520 --> 00:54:40,549
+one right but it's absolutely hidden the
+
+1599
+00:54:40,559 --> 00:54:42,270
+same thing with temporal Cloud you get a
+
+1600
+00:54:42,280 --> 00:54:43,870
+namespace you probably go through API
+
+1601
+00:54:43,880 --> 00:54:45,390
+say create new namespace you get
+
+1602
+00:54:45,400 --> 00:54:46,870
+namespace and point you can start using
+
+1603
+00:54:46,880 --> 00:54:49,309
+it right away and temporal to provide
+
+1604
+00:54:49,319 --> 00:54:51,349
+scalability and reliability of that name
+
+1605
+00:54:51,359 --> 00:54:53,190
+space and we can scale up practically
+
+1606
+00:54:53,200 --> 00:54:55,309
+infinitely on a single name space we ran
+
+1607
+00:54:55,319 --> 00:54:57,910
+tests when we ran 300,000 actions per
+
+1608
+00:54:57,920 --> 00:55:00,030
+second and we could go higher just we
+
+1609
+00:55:00,040 --> 00:55:01,670
+didn't want to pay higher at the B bill
+
+1610
+00:55:01,680 --> 00:55:03,950
+for that so we can go very high frut use
+
+1611
+00:55:03,960 --> 00:55:05,870
+cases on that and the reason we can do
+
+1612
+00:55:05,880 --> 00:55:07,630
+that because we practically wrote Our
+
+1613
+00:55:07,640 --> 00:55:09,870
+Own storage as I said storage is
+
+1614
+00:55:09,880 --> 00:55:11,270
+pluggable so we can have different
+
+1615
+00:55:11,280 --> 00:55:13,589
+databases and we wrote Our Own database
+
+1616
+00:55:13,599 --> 00:55:15,109
+and the reason we can do it because we
+
+1617
+00:55:15,119 --> 00:55:16,750
+wrote database practic for a single API
+
+1618
+00:55:16,760 --> 00:55:18,829
+call certainly we don't have resources
+
+1619
+00:55:18,839 --> 00:55:20,470
+to write general purpose database and
+
+1620
+00:55:20,480 --> 00:55:22,670
+maintain our system but what we did we
+
+1621
+00:55:22,680 --> 00:55:25,069
+realized that temporal has very specific
+
+1622
+00:55:25,079 --> 00:55:27,549
+access patterns and it's built for very
+
+1623
+00:55:27,559 --> 00:55:29,870
+specific update and read patterns and we
+
+1624
+00:55:29,880 --> 00:55:31,430
+wrote database just for that practic
+
+1625
+00:55:31,440 --> 00:55:33,710
+single like very very narrow use case it
+
+1626
+00:55:33,720 --> 00:55:35,750
+allows to be super super efficient and
+
+1627
+00:55:35,760 --> 00:55:37,549
+super fast and scalable just for that
+
+1628
+00:55:37,559 --> 00:55:39,230
+use case it's certainly not a general
+
+1629
+00:55:39,240 --> 00:55:41,150
+purpose database but it allows our Cloud
+
+1630
+00:55:41,160 --> 00:55:42,670
+scale well beyond for example anything
+
+1631
+00:55:42,680 --> 00:55:44,950
+you can reach with Cassandra or and also
+
+1632
+00:55:44,960 --> 00:55:46,630
+provide higher availability than any of
+
+1633
+00:55:46,640 --> 00:55:48,390
+the existing databases out there you
+
+1634
+00:55:48,400 --> 00:55:50,349
+mentioned as three and I imagine your
+
+1635
+00:55:50,359 --> 00:55:51,990
+situation is similar where you need to
+
+1636
+00:55:52,000 --> 00:55:54,510
+accommodate a large dynamic range of
+
+1637
+00:55:54,520 --> 00:55:56,069
+customers exer sizes so you might have a
+
+1638
+00:55:56,079 --> 00:55:57,910
+lot of customers starting out they're
+
+1639
+00:55:57,920 --> 00:56:00,029
+just getting used to temporal and
+
+1640
+00:56:00,039 --> 00:56:02,109
+they're really using a fraction of a
+
+1641
+00:56:02,119 --> 00:56:04,349
+cluster on your side but then you have
+
+1642
+00:56:04,359 --> 00:56:06,630
+customers that have hit their stride
+
+1643
+00:56:06,640 --> 00:56:08,789
+maybe multiple teams are adopting
+
+1644
+00:56:08,799 --> 00:56:10,670
+temporal they could scale up and
+
+1645
+00:56:10,680 --> 00:56:12,589
+essentially be using multiple clusters
+
+1646
+00:56:12,599 --> 00:56:14,870
+worth of compute behind the scenes we
+
+1647
+00:56:14,880 --> 00:56:16,870
+are multitenant we actually don't
+
+1648
+00:56:16,880 --> 00:56:19,309
+provide clusters as I said so every
+
+1649
+00:56:19,319 --> 00:56:21,549
+cluster can run multiple customers name
+
+1650
+00:56:21,559 --> 00:56:23,510
+spaces for multiple customers and we
+
+1651
+00:56:23,520 --> 00:56:27,069
+certainly perform some logic to allocate
+
+1652
+00:56:27,079 --> 00:56:29,309
+name spaces to clusters to make sure
+
+1653
+00:56:29,319 --> 00:56:31,309
+that they evenly distributed also we
+
+1654
+00:56:31,319 --> 00:56:33,069
+obviously give enough Headroom and we
+
+1655
+00:56:33,079 --> 00:56:34,910
+also a some ofos scaling features to be
+
+1656
+00:56:34,920 --> 00:56:37,430
+able to sustain spikes and we can have
+
+1657
+00:56:37,440 --> 00:56:39,029
+customers which have very high frut and
+
+1658
+00:56:39,039 --> 00:56:40,710
+low frut also as you said if you have
+
+1659
+00:56:40,720 --> 00:56:42,710
+multiple teams using temporal every team
+
+1660
+00:56:42,720 --> 00:56:44,470
+probably will have their own name spaces
+
+1661
+00:56:44,480 --> 00:56:46,270
+so they are not even need to be in the
+
+1662
+00:56:46,280 --> 00:56:47,950
+same cluster but at the same time if you
+
+1663
+00:56:47,960 --> 00:56:49,309
+have Nam space and use case which
+
+1664
+00:56:49,319 --> 00:56:50,670
+requires extremely high rate we
+
+1665
+00:56:50,680 --> 00:56:52,670
+absolutely can support that an example
+
+1666
+00:56:52,680 --> 00:56:54,910
+for example every Snapchat story update
+
+1667
+00:56:54,920 --> 00:56:56,510
+is a temporal workflow going through our
+
+1668
+00:56:56,520 --> 00:56:58,950
+Cloud so we can go very high rate an
+
+1669
+00:56:58,960 --> 00:57:00,870
+imagine number of Snapchat stories at
+
+1670
+00:57:00,880 --> 00:57:04,349
+New Year's Eve or Super Bowl so one of
+
+1671
+00:57:04,359 --> 00:57:06,390
+the reasons SN is using our servic is
+
+1672
+00:57:06,400 --> 00:57:07,750
+they don't need to think about scaling
+
+1673
+00:57:07,760 --> 00:57:09,349
+up for these events because it's on
+
+1674
+00:57:09,359 --> 00:57:11,309
+temporal service itself how about
+
+1675
+00:57:11,319 --> 00:57:14,029
+retention with temporal cloud or
+
+1676
+00:57:14,039 --> 00:57:16,789
+analytics I imagine that you don't want
+
+1677
+00:57:16,799 --> 00:57:18,990
+the same database being used for the
+
+1678
+00:57:19,000 --> 00:57:21,910
+real time workflows as I might want to
+
+1679
+00:57:21,920 --> 00:57:24,510
+use to run analytics on the last year's
+
+1680
+00:57:24,520 --> 00:57:27,109
+worth of jobs is there any combination
+
+1681
+00:57:27,119 --> 00:57:29,710
+for that yeah so you can store workflows
+
+1682
+00:57:29,720 --> 00:57:32,270
+in side of namespace up to 3 months into
+
+1683
+00:57:32,280 --> 00:57:34,150
+Pro Cloud right now we might increase
+
+1684
+00:57:34,160 --> 00:57:36,109
+that in the future but after that or
+
+1685
+00:57:36,119 --> 00:57:38,069
+before it can any time you have option
+
+1686
+00:57:38,079 --> 00:57:40,589
+to configure expert feature an expert is
+
+1687
+00:57:40,599 --> 00:57:42,990
+practically just taking your workflow
+
+1688
+00:57:43,000 --> 00:57:45,789
+history in appropriate format and just
+
+1689
+00:57:45,799 --> 00:57:48,069
+putting that into your own s fre bucket
+
+1690
+00:57:48,079 --> 00:57:49,789
+so practically all after workflow is
+
+1691
+00:57:49,799 --> 00:57:52,670
+complete we give it to you and then you
+
+1692
+00:57:52,680 --> 00:57:54,109
+can do whatever you want with them so
+
+1693
+00:57:54,119 --> 00:57:55,750
+you want to run just keep them for
+
+1694
+00:57:55,760 --> 00:57:57,589
+compliance forever or you want to run
+
+1695
+00:57:57,599 --> 00:57:59,349
+some a redu job on them you absolutely
+
+1696
+00:57:59,359 --> 00:58:01,510
+can do all of that so that is a very
+
+1697
+00:58:01,520 --> 00:58:03,950
+common scenario for export and that kind
+
+1698
+00:58:03,960 --> 00:58:06,630
+of relates to observability in general
+
+1699
+00:58:06,640 --> 00:58:09,349
+since this is running in the cloud what
+
+1700
+00:58:09,359 --> 00:58:11,510
+sort of hooks do I have if I want to do
+
+1701
+00:58:11,520 --> 00:58:13,470
+my own I don't know debugging or
+
+1702
+00:58:13,480 --> 00:58:15,470
+accounting or first you obviously you
+
+1703
+00:58:15,480 --> 00:58:17,349
+get the UI one thing I forgot to mention
+
+1704
+00:58:17,359 --> 00:58:19,670
+we also everything UI does is doing for
+
+1705
+00:58:19,680 --> 00:58:21,710
+the well- defined JPC interface so you
+
+1706
+00:58:21,720 --> 00:58:23,870
+absolutely can build your own version of
+
+1707
+00:58:23,880 --> 00:58:26,549
+UI let's say doing that second is that
+
+1708
+00:58:26,559 --> 00:58:28,870
+we have CLI so everything you do in UI
+
+1709
+00:58:28,880 --> 00:58:31,190
+even more you can do for CLI which talks
+
+1710
+00:58:31,200 --> 00:58:33,750
+to the same interface so absolutely can
+
+1711
+00:58:33,760 --> 00:58:35,990
+look at the workflow list workflows like
+
+1712
+00:58:36,000 --> 00:58:38,309
+send signals send commands and so on uh
+
+1713
+00:58:38,319 --> 00:58:40,549
+queries through CLI so CLI is pretty
+
+1714
+00:58:40,559 --> 00:58:42,630
+powerful in the cloud you also get
+
+1715
+00:58:42,640 --> 00:58:44,910
+access to the same UI even more powerful
+
+1716
+00:58:44,920 --> 00:58:47,309
+and then you have CLI and for metrics we
+
+1717
+00:58:47,319 --> 00:58:49,029
+can expose specific and point to do
+
+1718
+00:58:49,039 --> 00:58:51,029
+Prometheus metrix so you can configure
+
+1719
+00:58:51,039 --> 00:58:52,829
+your own endpoint through like with your
+
+1720
+00:58:52,839 --> 00:58:54,309
+own certificate so you would be able to
+
+1721
+00:58:54,319 --> 00:58:56,549
+access your own metrics also sdks most
+
+1722
+00:58:56,559 --> 00:58:58,430
+of the metrics actually mitted by sdks
+
+1723
+00:58:58,440 --> 00:59:00,470
+so only some metrics which are server
+
+1724
+00:59:00,480 --> 00:59:03,029
+side only and not visible by sdks I Meed
+
+1725
+00:59:03,039 --> 00:59:04,710
+through that endpoint mostly performance
+
+1726
+00:59:04,720 --> 00:59:06,430
+related which are needed to optimize
+
+1727
+00:59:06,440 --> 00:59:08,430
+your workload which exposed by through
+
+1728
+00:59:08,440 --> 00:59:10,510
+the cloud but you have access to that
+
+1729
+00:59:10,520 --> 00:59:13,630
+and if I need to encrypt my inputs and
+
+1730
+00:59:13,640 --> 00:59:16,670
+outputs and so I can't natively observe
+
+1731
+00:59:16,680 --> 00:59:20,670
+them on the UI there's a codec server
+
+1732
+00:59:20,680 --> 00:59:21,950
+something that's going to allow me to
+
+1733
+00:59:21,960 --> 00:59:24,349
+see the actual data yeah okay let me
+
+1734
+00:59:24,359 --> 00:59:26,270
+just give a big picture here first I
+
+1735
+00:59:26,280 --> 00:59:28,069
+think the first thing when we say oh if
+
+1736
+00:59:28,079 --> 00:59:29,109
+you don't want to for example you want
+
+1737
+00:59:29,119 --> 00:59:31,109
+to use temporal Cloud versus open open
+
+1738
+00:59:31,119 --> 00:59:32,789
+source version very common answer
+
+1739
+00:59:32,799 --> 00:59:34,150
+immediately there is no way we would
+
+1740
+00:59:34,160 --> 00:59:35,750
+ever use your SAS offering right like
+
+1741
+00:59:35,760 --> 00:59:36,990
+this temporal Cloud it's your SAS
+
+1742
+00:59:37,000 --> 00:59:39,430
+offering and it's a usual reaction what
+
+1743
+00:59:39,440 --> 00:59:41,430
+happens is that after we go and explain
+
+1744
+00:59:41,440 --> 00:59:44,069
+how temporal Cloud works most people say
+
+1745
+00:59:44,079 --> 00:59:45,510
+oh yeah it's absolutely practical and we
+
+1746
+00:59:45,520 --> 00:59:46,870
+can pass security review and we pass
+
+1747
+00:59:46,880 --> 00:59:48,390
+security reviews of biggest banks in the
+
+1748
+00:59:48,400 --> 00:59:50,630
+world so which are very very strict why
+
+1749
+00:59:50,640 --> 00:59:52,029
+few things first as you mentioned
+
+1750
+00:59:52,039 --> 00:59:54,710
+encryption so temporal is not a database
+
+1751
+00:59:54,720 --> 00:59:56,309
+doesn't need to look into the data sent
+
+1752
+00:59:56,319 --> 00:59:58,309
+to the backend cluster right first is
+
+1753
+00:59:58,319 --> 01:00:00,950
+that code runs on your premises right
+
+1754
+01:00:00,960 --> 01:00:02,789
+because temporal just keeps the backend
+
+1755
+01:00:02,799 --> 01:00:04,470
+cluster the same way is confluent runs
+
+1756
+01:00:04,480 --> 01:00:06,430
+your kasaa cluster and you run your
+
+1757
+01:00:06,440 --> 01:00:08,230
+application which publishes and reads
+
+1758
+01:00:08,240 --> 01:00:09,990
+from that cluster on your premises the
+
+1759
+01:00:10,000 --> 01:00:11,750
+same way is temporal you link the SDK
+
+1760
+01:00:11,760 --> 01:00:14,430
+you deploy application into your system
+
+1761
+01:00:14,440 --> 01:00:16,109
+any way you want temporal doesn't know
+
+1762
+01:00:16,119 --> 01:00:17,589
+how you deploy your application all it
+
+1763
+01:00:17,599 --> 01:00:18,829
+needs to do is connection to the
+
+1764
+01:00:18,839 --> 01:00:20,950
+temporal cluster you need only outgoing
+
+1765
+01:00:20,960 --> 01:00:23,109
+connection from your VPC or your data
+
+1766
+01:00:23,119 --> 01:00:24,950
+center to temporal because temporal
+
+1767
+01:00:24,960 --> 01:00:27,029
+never connects back it's always your
+
+1768
+01:00:27,039 --> 01:00:29,829
+code to temporal it's through JPC so you
+
+1769
+01:00:29,839 --> 01:00:31,670
+need only one port to open there and
+
+1770
+01:00:31,680 --> 01:00:33,589
+then you run your code it's only
+
+1771
+01:00:33,599 --> 01:00:35,230
+outgoing connections and then you can
+
+1772
+01:00:35,240 --> 01:00:37,109
+encrypt everything before sending there
+
+1773
+01:00:37,119 --> 01:00:38,309
+because temporal never looks in the
+
+1774
+01:00:38,319 --> 01:00:40,029
+payloads so if you have an activity
+
+1775
+01:00:40,039 --> 01:00:41,990
+input of workflow input it will be
+
+1776
+01:00:42,000 --> 01:00:44,470
+encrypted using your codec server your
+
+1777
+01:00:44,480 --> 01:00:47,029
+encryption algorithm your keys and you
+
+1778
+01:00:47,039 --> 01:00:48,750
+never temporal will never see anything
+
+1779
+01:00:48,760 --> 01:00:51,750
+clear text and then we have a special UI
+
+1780
+01:00:51,760 --> 01:00:53,950
+plugin practically in UI you can say
+
+1781
+01:00:53,960 --> 01:00:55,470
+okay I'm running JavaScript in my
+
+1782
+01:00:55,480 --> 01:00:57,510
+browser I want a cadc which is local to
+
+1783
+01:00:57,520 --> 01:00:59,950
+my VPC and browser will directly connect
+
+1784
+01:00:59,960 --> 01:01:02,150
+to that cadc server and decrypt things
+
+1785
+01:01:02,160 --> 01:01:04,349
+if I have permissions so temporal Cloud
+
+1786
+01:01:04,359 --> 01:01:06,069
+never sees that because UI runs in your
+
+1787
+01:01:06,079 --> 01:01:08,150
+browser so everything un encrypted data
+
+1788
+01:01:08,160 --> 01:01:10,069
+never leaves your kind of internal data
+
+1789
+01:01:10,079 --> 01:01:12,309
+center or your VPC so I think this is
+
+1790
+01:01:12,319 --> 01:01:13,750
+important to understand is that like
+
+1791
+01:01:13,760 --> 01:01:15,549
+three things you don't tempor doesn't
+
+1792
+01:01:15,559 --> 01:01:17,150
+run your code it never sees anything in
+
+1793
+01:01:17,160 --> 01:01:19,630
+clear text and no connections besides
+
+1794
+01:01:19,640 --> 01:01:21,470
+the connection to the temporal endpoint
+
+1795
+01:01:21,480 --> 01:01:22,750
+and these three things are enough to
+
+1796
+01:01:22,760 --> 01:01:24,789
+pass practice security view of the most
+
+1797
+01:01:24,799 --> 01:01:26,589
+strict organizations and I think that
+
+1798
+01:01:26,599 --> 01:01:28,029
+goes back to the start of the show
+
+1799
+01:01:28,039 --> 01:01:29,990
+talking about separation of concerns
+
+1800
+01:01:30,000 --> 01:01:31,789
+which is that temporal doesn't need to
+
+1801
+01:01:31,799 --> 01:01:35,029
+know these inner details of my code
+
+1802
+01:01:35,039 --> 01:01:36,950
+because that's just not its domain
+
+1803
+01:01:36,960 --> 01:01:38,990
+that's not what it's responsible for
+
+1804
+01:01:39,000 --> 01:01:40,829
+correct yeah because temporal doesn't
+
+1805
+01:01:40,839 --> 01:01:41,829
+understand your workflow logic it
+
+1806
+01:01:41,839 --> 01:01:43,870
+doesn't see any of your code all it sees
+
+1807
+01:01:43,880 --> 01:01:45,750
+is practically events right run this
+
+1808
+01:01:45,760 --> 01:01:48,390
+activity complete this activity and
+
+1809
+01:01:48,400 --> 01:01:50,630
+create this timer run this timer so it's
+
+1810
+01:01:50,640 --> 01:01:53,150
+very kind of lowlevel details but your
+
+1811
+01:01:53,160 --> 01:01:54,910
+business logic lives in your code and
+
+1812
+01:01:54,920 --> 01:01:57,029
+temporal never sees it okay that makes a
+
+1813
+01:01:57,039 --> 01:01:59,109
+lot of sense how about pricing how does
+
+1814
+01:01:59,119 --> 01:02:02,069
+that work with temporal Cloud so we are
+
+1815
+01:02:02,079 --> 01:02:04,870
+100% consumption based so it means that
+
+1816
+01:02:04,880 --> 01:02:07,750
+you pay only for what you use and unit
+
+1817
+01:02:07,760 --> 01:02:10,710
+of consumption is what we call Action so
+
+1818
+01:02:10,720 --> 01:02:12,349
+every activity execution is an action
+
+1819
+01:02:12,359 --> 01:02:14,630
+every signal is an action and we charge
+
+1820
+01:02:14,640 --> 01:02:16,750
+I think the highest price without any
+
+1821
+01:02:16,760 --> 01:02:18,750
+discounts is like $25 for million
+
+1822
+01:02:18,760 --> 01:02:21,230
+actions which means that for a lot of
+
+1823
+01:02:21,240 --> 01:02:23,470
+use cases it's almost free only if you
+
+1824
+01:02:23,480 --> 01:02:25,109
+run something hundred thousands times
+
+1825
+01:02:25,119 --> 01:02:26,589
+per second then these things can add up
+
+1826
+01:02:26,599 --> 01:02:28,109
+to larger numbers but then we have
+
+1827
+01:02:28,119 --> 01:02:30,029
+discounts we have volume discounts up to
+
+1828
+01:02:30,039 --> 01:02:32,630
+70% based on what you do this are also
+
+1829
+01:02:32,640 --> 01:02:34,710
+allows us to actually close deals with
+
+1830
+01:02:34,720 --> 01:02:37,190
+even large companies Because the actual
+
+1831
+01:02:37,200 --> 01:02:39,589
+deal contains zero dollars right because
+
+1832
+01:02:39,599 --> 01:02:41,349
+it's all about permission to run
+
+1833
+01:02:41,359 --> 01:02:43,710
+workloads and then you just there is no
+
+1834
+01:02:43,720 --> 01:02:45,549
+upfront cost you don't need to go and
+
+1835
+01:02:45,559 --> 01:02:47,230
+invest in temporal I know whatever
+
+1836
+01:02:47,240 --> 01:02:49,109
+amount of money to buy seats and so on
+
+1837
+01:02:49,119 --> 01:02:51,390
+it's purely how much we are going to use
+
+1838
+01:02:51,400 --> 01:02:53,109
+one interesting detail about our
+
+1839
+01:02:53,119 --> 01:02:55,269
+organization our sales people are paid
+
+1840
+01:02:55,279 --> 01:02:57,510
+only on consumption so they not paid if
+
+1841
+01:02:57,520 --> 01:02:59,269
+you buy credits they're not paid if you
+
+1842
+01:02:59,279 --> 01:03:01,190
+sign some deal they don't pay every time
+
+1843
+01:03:01,200 --> 01:03:02,950
+you sign paperwork they only get paid
+
+1844
+01:03:02,960 --> 01:03:04,750
+when there is actual consumption on our
+
+1845
+01:03:04,760 --> 01:03:06,349
+cloud and it creates such a huge
+
+1846
+01:03:06,359 --> 01:03:08,470
+alignment that we've got feedback from
+
+1847
+01:03:08,480 --> 01:03:10,670
+our customers that the probably most
+
+1848
+01:03:10,680 --> 01:03:12,309
+friendly sales organization they
+
+1849
+01:03:12,319 --> 01:03:13,910
+encounter it all right I think that
+
+1850
+01:03:13,920 --> 01:03:15,710
+covers temporal Cloud we have to start
+
+1851
+01:03:15,720 --> 01:03:17,630
+wrapping up now you mentioned the single
+
+1852
+01:03:17,640 --> 01:03:20,750
+binary is been a good way to get started
+
+1853
+01:03:20,760 --> 01:03:22,910
+with temporal is there any other advice
+
+1854
+01:03:22,920 --> 01:03:24,710
+you have for someone just start out
+
+1855
+01:03:24,720 --> 01:03:27,510
+where do they look is it on the website
+
+1856
+01:03:27,520 --> 01:03:29,349
+videos what do you recommend I
+
+1857
+01:03:29,359 --> 01:03:31,750
+absolutely recommend doing our courses
+
+1858
+01:03:31,760 --> 01:03:33,549
+so if you go to our website and I think
+
+1859
+01:03:33,559 --> 01:03:35,789
+in resources we have links to how to
+
+1860
+01:03:35,799 --> 01:03:37,710
+learn temporal and we have getting
+
+1861
+01:03:37,720 --> 01:03:39,510
+started guides and we also have courses
+
+1862
+01:03:39,520 --> 01:03:40,910
+absolutely recommend doing courses we
+
+1863
+01:03:40,920 --> 01:03:42,789
+have one one one or two courses for all
+
+1864
+01:03:42,799 --> 01:03:45,150
+major languages and if you want to just
+
+1865
+01:03:45,160 --> 01:03:46,910
+learn temporal understand temporal
+
+1866
+01:03:46,920 --> 01:03:48,309
+anyone who starts with that absolutely
+
+1867
+01:03:48,319 --> 01:03:50,390
+recommend to do the course because it's
+
+1868
+01:03:50,400 --> 01:03:51,710
+code but you need to understand how
+
+1869
+01:03:51,720 --> 01:03:52,870
+these things works right there is too
+
+1870
+01:03:52,880 --> 01:03:54,470
+much magic because the way I describe it
+
+1871
+01:03:54,480 --> 01:03:56,349
+looks like magic but when you do the
+
+1872
+01:03:56,359 --> 01:03:58,230
+course you understand how magic works it
+
+1873
+01:03:58,240 --> 01:04:00,829
+becomes obvious and then you just can
+
+1874
+01:04:00,839 --> 01:04:02,710
+focus on your application without kind
+
+1875
+01:04:02,720 --> 01:04:04,950
+of thinking and running into some age
+
+1876
+01:04:04,960 --> 01:04:07,029
+cases so absolutely please do the
+
+1877
+01:04:07,039 --> 01:04:09,510
+courses also join our slack community so
+
+1878
+01:04:09,520 --> 01:04:11,470
+we have Community Forum we have our
+
+1879
+01:04:11,480 --> 01:04:14,630
+slack around 9,000 people in the slack I
+
+1880
+01:04:14,640 --> 01:04:16,630
+think right now so we have pretty
+
+1881
+01:04:16,640 --> 01:04:18,990
+healthy Community which people get help
+
+1882
+01:04:19,000 --> 01:04:21,029
+there all the time so please and you can
+
+1883
+01:04:21,039 --> 01:04:22,789
+find me there as well so if you go stra
+
+1884
+01:04:22,799 --> 01:04:25,109
+now slack my name is there so Max fa you
+
+1885
+01:04:25,119 --> 01:04:26,589
+can always find me there and ask
+
+1886
+01:04:26,599 --> 01:04:28,750
+questions how about when users are
+
+1887
+01:04:28,760 --> 01:04:30,630
+Advanced and they want to get involved
+
+1888
+01:04:30,640 --> 01:04:32,789
+in implementations since it is open
+
+1889
+01:04:32,799 --> 01:04:35,589
+source is there special channels on the
+
+1890
+01:04:35,599 --> 01:04:37,750
+slack for that or is there mailing list
+
+1891
+01:04:37,760 --> 01:04:39,990
+there is a channel on the slack and also
+
+1892
+01:04:40,000 --> 01:04:41,470
+it's all in GitHub so you can always
+
+1893
+01:04:41,480 --> 01:04:43,430
+file issues and requests and so on so
+
+1894
+01:04:43,440 --> 01:04:44,910
+you can communicate with that as well
+
+1895
+01:04:44,920 --> 01:04:45,990
+there are quite a few large
+
+1896
+01:04:46,000 --> 01:04:47,269
+contributions especially around these
+
+1897
+01:04:47,279 --> 01:04:49,510
+Decay for example Ruby's DEC was
+
+1898
+01:04:49,520 --> 01:04:51,589
+contributed by coinbase and I think
+
+1899
+01:04:51,599 --> 01:04:53,230
+right now stripe and coinbase maintain
+
+1900
+01:04:53,240 --> 01:04:56,430
+that together so I think there is also
+
+1901
+01:04:56,440 --> 01:04:58,710
+scull SDK there is uh there are some
+
+1902
+01:04:58,720 --> 01:05:00,470
+other sdks being written so these are
+
+1903
+01:05:00,480 --> 01:05:02,349
+the biggest contributors I think right
+
+1904
+01:05:02,359 --> 01:05:04,069
+now also there are companies Building
+
+1905
+01:05:04,079 --> 01:05:05,990
+open source project like people build
+
+1906
+01:05:06,000 --> 01:05:07,549
+open source project using temporal as an
+
+1907
+01:05:07,559 --> 01:05:10,349
+engine so that is also pretty common use
+
+1908
+01:05:10,359 --> 01:05:12,230
+case oh can you explain that for a
+
+1909
+01:05:12,240 --> 01:05:13,910
+little bit I wasn't clear so as an
+
+1910
+01:05:13,920 --> 01:05:16,029
+engine how does that work so one example
+
+1911
+01:05:16,039 --> 01:05:17,990
+I can give probably is Netflix for
+
+1912
+01:05:18,000 --> 01:05:19,870
+example the internal version of Spiner
+
+1913
+01:05:19,880 --> 01:05:22,710
+required practically cicd pipeline right
+
+1914
+01:05:22,720 --> 01:05:24,670
+and deployment pipeline they rewrote
+
+1915
+01:05:24,680 --> 01:05:26,349
+that using temporal as an underline
+
+1916
+01:05:26,359 --> 01:05:28,269
+implementation so imagine you are trying
+
+1917
+01:05:28,279 --> 01:05:29,950
+to do startup which creates new machine
+
+1918
+01:05:29,960 --> 01:05:31,829
+learning whatever platform and it's open
+
+1919
+01:05:31,839 --> 01:05:33,190
+source for example you absolutely can
+
+1920
+01:05:33,200 --> 01:05:35,789
+build you take temporal as a core and
+
+1921
+01:05:35,799 --> 01:05:37,190
+then build your business logic around
+
+1922
+01:05:37,200 --> 01:05:39,309
+that so you can absolutely build much
+
+1923
+01:05:39,319 --> 01:05:41,230
+more complex applications and save a lot
+
+1924
+01:05:41,240 --> 01:05:42,950
+of time right because you probably just
+
+1925
+01:05:42,960 --> 01:05:44,470
+write your business logic and we
+
+1926
+01:05:44,480 --> 01:05:45,829
+actually have startup program I forgot
+
+1927
+01:05:45,839 --> 01:05:47,230
+to mention that because a lot of
+
+1928
+01:05:47,240 --> 01:05:49,150
+startups like us it's a very good value
+
+1929
+01:05:49,160 --> 01:05:50,589
+proposition because you write your code
+
+1930
+01:05:50,599 --> 01:05:52,829
+faster you write less code it's easier
+
+1931
+01:05:52,839 --> 01:05:54,750
+to troubleshoot and we granteed will
+
+1932
+01:05:54,760 --> 01:05:56,789
+scale infinitely if your company becomes
+
+1933
+01:05:56,799 --> 01:05:58,750
+successful we had startups growing like
+
+1934
+01:05:58,760 --> 01:06:01,549
+THX 10,000x within a few months on their
+
+1935
+01:06:01,559 --> 01:06:03,510
+traffic and they just didn't need to
+
+1936
+01:06:03,520 --> 01:06:05,549
+change a line of code we just kept like
+
+1937
+01:06:05,559 --> 01:06:07,190
+just our Cloud was able to handle all
+
+1938
+01:06:07,200 --> 01:06:09,109
+their load I'll put links for the
+
+1939
+01:06:09,119 --> 01:06:11,549
+courses and other resources how about
+
+1940
+01:06:11,559 --> 01:06:14,109
+what's next for temporal and temporal
+
+1941
+01:06:14,119 --> 01:06:16,190
+Cloud I think we're looking at quarter
+
+1942
+01:06:16,200 --> 01:06:20,950
+one of 2024 or into 2024 uh so a few big
+
+1943
+01:06:20,960 --> 01:06:22,510
+things going on one is that we are
+
+1944
+01:06:22,520 --> 01:06:24,190
+productizing this multi-region support I
+
+1945
+01:06:24,200 --> 01:06:26,029
+mentioned we didn't have it in the cloud
+
+1946
+01:06:26,039 --> 01:06:27,670
+working so it will be available
+
+1947
+01:06:27,680 --> 01:06:29,630
+beginning next year so would we call
+
+1948
+01:06:29,640 --> 01:06:31,829
+Global namespace so name space which is
+
+1949
+01:06:31,839 --> 01:06:33,950
+distributed across multiple regions so
+
+1950
+01:06:33,960 --> 01:06:35,510
+it will allow you to have very high
+
+1951
+01:06:35,520 --> 01:06:37,349
+availability for your workloads the
+
+1952
+01:06:37,359 --> 01:06:38,990
+other thing uh we still don't have
+
+1953
+01:06:39,000 --> 01:06:41,190
+ability to sign up for our Cloud just
+
+1954
+01:06:41,200 --> 01:06:43,309
+through sign up flow without just
+
+1955
+01:06:43,319 --> 01:06:45,069
+passing your credit card information you
+
+1956
+01:06:45,079 --> 01:06:47,029
+still need to kind of fill up the form
+
+1957
+01:06:47,039 --> 01:06:49,029
+and we will send you email it's a little
+
+1958
+01:06:49,039 --> 01:06:51,150
+bit more complicated if necessary so
+
+1959
+01:06:51,160 --> 01:06:52,589
+beginning next year we will kind of
+
+1960
+01:06:52,599 --> 01:06:54,510
+create fully self Ser pip line for
+
+1961
+01:06:54,520 --> 01:06:56,710
+signing up accounts that is another big
+
+1962
+01:06:56,720 --> 01:06:58,870
+thing and then other important project
+
+1963
+01:06:58,880 --> 01:07:01,390
+we call Nexus it's a kind of new way to
+
+1964
+01:07:01,400 --> 01:07:03,309
+think about because think about temporal
+
+1965
+01:07:03,319 --> 01:07:05,510
+it's not just workflow temporal is a
+
+1966
+01:07:05,520 --> 01:07:07,549
+service mesh for long running operations
+
+1967
+01:07:07,559 --> 01:07:09,109
+because when you invoke an activity you
+
+1968
+01:07:09,119 --> 01:07:11,029
+technically call a function in a block
+
+1969
+01:07:11,039 --> 01:07:12,670
+in way right depending on your language
+
+1970
+01:07:12,680 --> 01:07:14,390
+maybe it's a sync Block in but it's
+
+1971
+01:07:14,400 --> 01:07:17,109
+maybe real Block in in Java and you this
+
+1972
+01:07:17,119 --> 01:07:18,950
+function runs on remote machine so
+
+1973
+01:07:18,960 --> 01:07:21,109
+you're technically Cor in RPC an RPC can
+
+1974
+01:07:21,119 --> 01:07:22,789
+take 5 days it's a very powerful
+
+1975
+01:07:22,799 --> 01:07:25,029
+Paradigm it makes life is developer much
+
+1976
+01:07:25,039 --> 01:07:26,710
+simpler than think trying to model that
+
+1977
+01:07:26,720 --> 01:07:28,269
+as a bunch of I think events and
+
+1978
+01:07:28,279 --> 01:07:30,309
+temporal we want to make it very first
+
+1979
+01:07:30,319 --> 01:07:32,029
+class citizen so pra will be able to
+
+1980
+01:07:32,039 --> 01:07:34,269
+Define apis and every API would be able
+
+1981
+01:07:34,279 --> 01:07:36,029
+to have like as could run as long as
+
+1982
+01:07:36,039 --> 01:07:37,549
+necessary so we kind of have this notion
+
+1983
+01:07:37,559 --> 01:07:39,670
+of arbitrary length operations operation
+
+1984
+01:07:39,680 --> 01:07:41,870
+which can take any amount of time and
+
+1985
+01:07:41,880 --> 01:07:43,549
+that will allow you to practically use
+
+1986
+01:07:43,559 --> 01:07:45,190
+temporal as a service mesh to link all
+
+1987
+01:07:45,200 --> 01:07:47,190
+services you Enterprise together and
+
+1988
+01:07:47,200 --> 01:07:49,309
+don't rely on cues or events just
+
+1989
+01:07:49,319 --> 01:07:51,309
+practically doing this long run in RPC
+
+1990
+01:07:51,319 --> 01:07:53,069
+we call it project Nexus so I think
+
+1991
+01:07:53,079 --> 01:07:54,190
+first version of that should should come
+
+1992
+01:07:54,200 --> 01:07:56,470
+out beginning next year yeah it's really
+
+1993
+01:07:56,480 --> 01:07:57,670
+interesting to see how things are
+
+1994
+01:07:57,680 --> 01:07:59,349
+evolving and I think there's a lot of
+
+1995
+01:07:59,359 --> 01:08:01,710
+potential yet to be tapped even so I'll
+
+1996
+01:08:01,720 --> 01:08:03,750
+put all the links for these resources in
+
+1997
+01:08:03,760 --> 01:08:05,789
+the show notes thank you for joining me
+
+1998
+01:08:05,799 --> 01:08:08,109
+today Maxim thanks a lot for inviting me
+
+1999
+01:08:08,119 --> 01:08:10,589
+it was pleasure this has been Philip
+
+2000
+01:08:10,599 --> 01:08:12,789
+Winston for software engineering radio
+
+2001
+01:08:12,799 --> 01:08:14,309
+thanks for
+
+2002
+01:08:14,319 --> 01:08:16,349
+listening thanks for listening to SC
+
+2003
+01:08:16,359 --> 01:08:18,110
+radio an educational program brought to
+
+2004
+01:08:18,120 --> 01:08:20,630
+you by It software magazine for more
+
+2005
+01:08:20,640 --> 01:08:22,030
+about the podcast including other
+
+2006
+01:08:22,040 --> 01:08:25,189
+episodes visit our website at C-
+
+2007
+01:08:25,199 --> 01:08:27,390
+radio.net to provide feedback you can
+
+2008
+01:08:27,400 --> 01:08:29,229
+comment on each episode on the website
+
+2009
+01:08:29,239 --> 01:08:32,269
+or reach us on LinkedIn Facebook Twitter
+
+2010
+01:08:32,279 --> 01:08:34,229
+or through our slack Channel at
+
+2011
+01:08:34,239 --> 01:08:38,669
+seo. slack.com you can also email us at
+
+2012
+01:08:38,679 --> 01:08:40,550
+team-
+
+2013
+01:08:40,560 --> 01:08:42,829
+radio.net this and all other episodes of
+
+2014
+01:08:42,839 --> 01:08:44,630
+SC radio is licensed under creative
+
+2015
+01:08:44,640 --> 01:08:45,990
+comments license
+
+2016
+01:08:46,000 --> 01:08:48,139
+2.5 thanks for
+
+2017
+01:08:48,149 --> 01:08:52,789
+[Music]

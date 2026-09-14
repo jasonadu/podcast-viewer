@@ -1,0 +1,4539 @@
+1
+00:00:02,510 --> 00:00:02,520
+software engineering radio episode 59
+
+2
+00:00:02,520 --> 00:00:06,140
+static code analysis
+
+3
+00:00:06,150 --> 00:00:19,310
+[Music]
+
+4
+00:00:29,519 --> 00:00:29,529
+okay welcome listeners to this new
+
+5
+00:00:29,529 --> 00:00:31,409
+episode of software engineering radio
+
+6
+00:00:31,419 --> 00:00:34,680
+this episode is about static analysis
+
+7
+00:00:34,690 --> 00:00:36,930
+techniques concepts and tools I guess
+
+8
+00:00:36,940 --> 00:00:40,680
+and to do this we have a guest and this
+
+9
+00:00:40,690 --> 00:00:44,040
+guest is Jonathan Aldridge and before we
+
+10
+00:00:44,050 --> 00:00:45,479
+talk about the topic I think Jonathan
+
+11
+00:00:45,489 --> 00:00:46,950
+it's a good idea that you introduce
+
+12
+00:00:46,960 --> 00:00:48,090
+yourself and talk a little bit about
+
+13
+00:00:48,100 --> 00:00:49,290
+your background what you do in real life
+
+14
+00:00:49,300 --> 00:00:52,709
+all right thank you I'm a system
+
+15
+00:00:52,719 --> 00:00:53,990
+professor at Carnegie Mellon University
+
+16
+00:00:54,000 --> 00:00:57,599
+where I I do research in the area of
+
+17
+00:00:57,609 --> 00:00:59,639
+static analysis programming language
+
+18
+00:00:59,649 --> 00:01:03,779
+design and also teach classes and in the
+
+19
+00:01:03,789 --> 00:01:05,609
+area of static analysis and this
+
+20
+00:01:05,619 --> 00:01:08,550
+material is actually from a tutorial
+
+21
+00:01:08,560 --> 00:01:10,529
+here at Uppsala but also from some of my
+
+22
+00:01:10,539 --> 00:01:13,190
+some of the classes that I teach there
+
+23
+00:01:13,200 --> 00:01:17,279
+okay so I think to get started we might
+
+24
+00:01:17,289 --> 00:01:19,859
+want to discuss why you would want to do
+
+25
+00:01:19,869 --> 00:01:21,870
+static analysis and what it is actually
+
+26
+00:01:21,880 --> 00:01:23,760
+so give us an introduction to the topic
+
+27
+00:01:23,770 --> 00:01:28,740
+so static analysis is basically what I
+
+28
+00:01:28,750 --> 00:01:31,319
+like to to think of it as a way of
+
+29
+00:01:31,329 --> 00:01:33,179
+exploring the different ways that the
+
+30
+00:01:33,189 --> 00:01:37,499
+program might execute in an abstract way
+
+31
+00:01:37,509 --> 00:01:42,060
+typically so you can look at testing as
+
+32
+00:01:42,070 --> 00:01:45,780
+a as a point of contrast testing will
+
+33
+00:01:45,790 --> 00:01:49,800
+we'll go through and execute the program
+
+34
+00:01:49,810 --> 00:01:51,779
+with a number of concrete inputs and
+
+35
+00:01:51,789 --> 00:01:53,670
+your goal is the tester is to exercise
+
+36
+00:01:53,680 --> 00:01:56,490
+the program in many different ways to
+
+37
+00:01:56,500 --> 00:01:58,469
+try to see what it does and see if in
+
+38
+00:01:58,479 --> 00:02:00,170
+particular does what you expect it to
+
+39
+00:02:00,180 --> 00:02:02,219
+static analysis is taking a different
+
+40
+00:02:02,229 --> 00:02:04,590
+perspective on this instead of taking
+
+41
+00:02:04,600 --> 00:02:07,699
+particular concrete executions it will
+
+42
+00:02:07,709 --> 00:02:09,779
+execute the program in more abstract
+
+43
+00:02:09,789 --> 00:02:14,819
+ways and examine it for for generic
+
+44
+00:02:14,829 --> 00:02:16,710
+kinds of flaws the advantages with the
+
+45
+00:02:16,720 --> 00:02:19,440
+the abstract program X exploration you
+
+46
+00:02:19,450 --> 00:02:21,780
+can find a lot of problems that you
+
+47
+00:02:21,790 --> 00:02:24,660
+wouldn't necessarily find with
+
+48
+00:02:24,670 --> 00:02:26,340
+particular concrete executions because
+
+49
+00:02:26,350 --> 00:02:27,120
+you have to find the right one
+
+50
+00:02:27,130 --> 00:02:29,039
+essentially you don't think about using
+
+51
+00:02:29,049 --> 00:02:30,659
+the correct input values in order to
+
+52
+00:02:30,669 --> 00:02:32,910
+cover this kind of problem exactly right
+
+53
+00:02:32,920 --> 00:02:35,400
+so what kinds of arrows can you actually
+
+54
+00:02:35,410 --> 00:02:37,350
+find using static analysis are there
+
+55
+00:02:37,360 --> 00:02:39,420
+particular types of errors that are that
+
+56
+00:02:39,430 --> 00:02:41,580
+can be easily found others can't well
+
+57
+00:02:41,590 --> 00:02:43,770
+there's a there's a fairly broad range
+
+58
+00:02:43,780 --> 00:02:47,699
+of areas static analysis can find right
+
+59
+00:02:47,709 --> 00:02:51,300
+now security vulnerabilities are a
+
+60
+00:02:51,310 --> 00:02:52,890
+critical issue for a lot of companies
+
+61
+00:02:52,900 --> 00:02:54,750
+today things like buffer overruns
+
+62
+00:02:54,760 --> 00:02:56,400
+unvalidated input which could be
+
+63
+00:02:56,410 --> 00:03:01,770
+attained a data or attacks for sequel
+
+64
+00:03:01,780 --> 00:03:03,330
+injection command injection cross-site
+
+65
+00:03:03,340 --> 00:03:07,670
+scripting memory or Zaroff are another
+
+66
+00:03:07,680 --> 00:03:10,590
+common programming error that impacts
+
+67
+00:03:10,600 --> 00:03:12,270
+reliability and things like Naldi
+
+68
+00:03:12,280 --> 00:03:15,380
+references accessing uninitialized data
+
+69
+00:03:15,390 --> 00:03:19,530
+memory leaks issues a lot of developers
+
+70
+00:03:19,540 --> 00:03:22,920
+grapple with that are often difficult to
+
+71
+00:03:22,930 --> 00:03:24,990
+find using testing and inspection and
+
+72
+00:03:25,000 --> 00:03:26,910
+other kinds of techniques those are
+
+73
+00:03:26,920 --> 00:03:28,830
+typical ones but there's a lot of other
+
+74
+00:03:28,840 --> 00:03:30,240
+possibilities people have been looking
+
+75
+00:03:30,250 --> 00:03:32,300
+at from the research point of view
+
+76
+00:03:32,310 --> 00:03:35,040
+anything from how do you use an API or a
+
+77
+00:03:35,050 --> 00:03:38,370
+framework to looking at exceptions and
+
+78
+00:03:38,380 --> 00:03:39,840
+their flow through the program to even
+
+79
+00:03:39,850 --> 00:03:41,699
+looking at design kinds of issues such
+
+80
+00:03:41,709 --> 00:03:45,990
+as violations of encapsulation etc and
+
+81
+00:03:46,000 --> 00:03:48,750
+so to just get this straight this kind
+
+82
+00:03:48,760 --> 00:03:50,819
+of static analysis is not about you know
+
+83
+00:03:50,829 --> 00:03:53,759
+coding conventions and and capitals were
+
+84
+00:03:53,769 --> 00:03:56,699
+small letters in variables it's really
+
+85
+00:03:56,709 --> 00:03:58,259
+about semantic analysis of what the
+
+86
+00:03:58,269 --> 00:03:59,819
+program does and not about trivialities
+
+87
+00:03:59,829 --> 00:04:01,800
+in it in the best case yes I'm here
+
+88
+00:04:01,810 --> 00:04:04,110
+there are certainly one can use static
+
+89
+00:04:04,120 --> 00:04:06,390
+analysis to enforce sort of formatting
+
+90
+00:04:06,400 --> 00:04:09,780
+and coding conventions and and and
+
+91
+00:04:09,790 --> 00:04:12,240
+people have used that in certain
+
+92
+00:04:12,250 --> 00:04:13,380
+environments where they feel strongly
+
+93
+00:04:13,390 --> 00:04:16,229
+about those constraints and what I think
+
+94
+00:04:16,239 --> 00:04:18,900
+the real value of static analysis comes
+
+95
+00:04:18,910 --> 00:04:20,819
+in looking at the kinds of issues that
+
+96
+00:04:20,829 --> 00:04:22,590
+the humans are actually not very good at
+
+97
+00:04:22,600 --> 00:04:24,630
+assuring you can do a code review and
+
+98
+00:04:24,640 --> 00:04:26,250
+you could find a lots of lots of style
+
+99
+00:04:26,260 --> 00:04:28,650
+issues but a code review may find it
+
+100
+00:04:28,660 --> 00:04:30,150
+very difficult to find a memory leak
+
+101
+00:04:30,160 --> 00:04:33,000
+because to understand the code you're
+
+102
+00:04:33,010 --> 00:04:35,190
+reviewing you need to know the context
+
+103
+00:04:35,200 --> 00:04:36,779
+who allocated this memory who's
+
+104
+00:04:36,789 --> 00:04:39,990
+responsible for freeing it if I let a
+
+105
+00:04:40,000 --> 00:04:41,880
+pointer drop on the ground well you know
+
+106
+00:04:41,890 --> 00:04:44,460
+maybe I'm not the one responsible for it
+
+107
+00:04:44,470 --> 00:04:46,290
+anyway and so maybe that's okay
+
+108
+00:04:46,300 --> 00:04:47,460
+I have to know the context and the
+
+109
+00:04:47,470 --> 00:04:49,529
+context is the most difficult thing to
+
+110
+00:04:49,539 --> 00:04:51,779
+get and in the context of say a source
+
+111
+00:04:51,789 --> 00:04:55,050
+code review but how do you actually know
+
+112
+00:04:55,060 --> 00:04:57,689
+this context I mean typically code is
+
+113
+00:04:57,699 --> 00:04:59,850
+called from many different parts of the
+
+114
+00:04:59,860 --> 00:05:02,159
+system under certain partially
+
+115
+00:05:02,169 --> 00:05:04,920
+convoluted conditions how do you
+
+116
+00:05:04,930 --> 00:05:08,070
+actually find out the context in static
+
+117
+00:05:08,080 --> 00:05:09,960
+analysis doesn't actually work well I
+
+118
+00:05:09,970 --> 00:05:11,490
+think that's one of the big challenges
+
+119
+00:05:11,500 --> 00:05:13,230
+in the design of static analysis is how
+
+120
+00:05:13,240 --> 00:05:16,140
+you find the context and there there are
+
+121
+00:05:16,150 --> 00:05:17,730
+a couple of there are many technical
+
+122
+00:05:17,740 --> 00:05:19,320
+approaches they fall into a couple of
+
+123
+00:05:19,330 --> 00:05:22,170
+categories one is simply exhaustive
+
+124
+00:05:22,180 --> 00:05:24,570
+exploration if you were as a code review
+
+125
+00:05:24,580 --> 00:05:27,480
+or you could find out the context just
+
+126
+00:05:27,490 --> 00:05:29,490
+by reviewing all the code around now you
+
+127
+00:05:29,500 --> 00:05:30,899
+don't have time to do that
+
+128
+00:05:30,909 --> 00:05:34,909
+but a computer may have time to do that
+
+129
+00:05:34,919 --> 00:05:37,320
+certainly it has time to to look at all
+
+130
+00:05:37,330 --> 00:05:38,640
+the code because it's compiling all the
+
+131
+00:05:38,650 --> 00:05:42,089
+code anyway in cases where the context
+
+132
+00:05:42,099 --> 00:05:45,839
+is more interesting you have you may
+
+133
+00:05:45,849 --> 00:05:48,749
+have a lot of challenge figuring it out
+
+134
+00:05:48,759 --> 00:05:50,640
+just by analyzing the entire program at
+
+135
+00:05:50,650 --> 00:05:54,300
+once because it requires say essentially
+
+136
+00:05:54,310 --> 00:05:56,159
+inferring the programmers intent a good
+
+137
+00:05:56,169 --> 00:05:58,830
+example is a concurrency analysis how to
+
+138
+00:05:58,840 --> 00:06:01,110
+get concurrency right typically the way
+
+139
+00:06:01,120 --> 00:06:03,200
+programmers will make it work is they
+
+140
+00:06:03,210 --> 00:06:05,339
+associate each bit of state with a lock
+
+141
+00:06:05,349 --> 00:06:07,290
+and they hold that lock before they
+
+142
+00:06:07,300 --> 00:06:09,390
+access the state right not the only way
+
+143
+00:06:09,400 --> 00:06:11,070
+of correct concurrency but a very common
+
+144
+00:06:11,080 --> 00:06:16,379
+one so so to assure a program you have
+
+145
+00:06:16,389 --> 00:06:17,760
+to figure out what's the association
+
+146
+00:06:17,770 --> 00:06:19,709
+between locks and state that's something
+
+147
+00:06:19,719 --> 00:06:22,110
+that is very difficult to infer
+
+148
+00:06:22,120 --> 00:06:24,589
+automatically but in that case actually
+
+149
+00:06:24,599 --> 00:06:26,790
+having a programmer help you out a
+
+150
+00:06:26,800 --> 00:06:29,070
+little bit can make the static analysis
+
+151
+00:06:29,080 --> 00:06:30,719
+much more effective having him help out
+
+152
+00:06:30,729 --> 00:06:32,850
+like annotating the code or having some
+
+153
+00:06:32,860 --> 00:06:34,439
+meta information that have passed to the
+
+154
+00:06:34,449 --> 00:06:36,959
+tool precisely writing writing little
+
+155
+00:06:36,969 --> 00:06:38,369
+annotations that talk about for example
+
+156
+00:06:38,379 --> 00:06:40,110
+what kinds of locks are associated with
+
+157
+00:06:40,120 --> 00:06:43,709
+what kinds of objects can give the tool
+
+158
+00:06:43,719 --> 00:06:45,149
+just enough information and then check
+
+159
+00:06:45,159 --> 00:06:46,740
+the consistency of locking from that
+
+160
+00:06:46,750 --> 00:06:48,869
+point on so that is probably in line
+
+161
+00:06:48,879 --> 00:06:52,320
+with some of the pro that some of some
+
+162
+00:06:52,330 --> 00:06:55,379
+JS are in the java world where people
+
+163
+00:06:55,389 --> 00:06:57,899
+try to define that certain variables
+
+164
+00:06:57,909 --> 00:07:00,030
+must not be now never ever
+
+165
+00:07:00,040 --> 00:07:01,890
+not expected to be now and then you can
+
+166
+00:07:01,900 --> 00:07:03,390
+have some kind of analysis tool that
+
+167
+00:07:03,400 --> 00:07:05,040
+verifies that the variable isn't
+
+168
+00:07:05,050 --> 00:07:07,050
+everyone now that's right is the
+
+169
+00:07:07,060 --> 00:07:09,120
+reference so this is an ideal match for
+
+170
+00:07:09,130 --> 00:07:13,020
+the the kinds of annotations have been
+
+171
+00:07:13,030 --> 00:07:16,200
+added to Java and.net recently and I
+
+172
+00:07:16,210 --> 00:07:17,940
+know there's a jsr specifically looking
+
+173
+00:07:17,950 --> 00:07:21,840
+at annotations like not null too and I
+
+174
+00:07:21,850 --> 00:07:23,430
+think they were thinking of locking
+
+175
+00:07:23,440 --> 00:07:25,920
+issues as well in that context yeah that
+
+176
+00:07:25,930 --> 00:07:27,870
+yesterday I was in the in the tutorial
+
+177
+00:07:27,880 --> 00:07:31,550
+by Brian gets about Java concurrency and
+
+178
+00:07:31,560 --> 00:07:34,320
+he said he showed this this additional
+
+179
+00:07:34,330 --> 00:07:36,330
+annotation on a member variable that
+
+180
+00:07:36,340 --> 00:07:38,610
+says guarded by such and such but the
+
+181
+00:07:38,620 --> 00:07:39,780
+problem is that this is just
+
+182
+00:07:39,790 --> 00:07:42,660
+documentation so there is no easy way of
+
+183
+00:07:42,670 --> 00:07:44,850
+finding out whether when you access the
+
+184
+00:07:44,860 --> 00:07:47,070
+variable the lock is actually held and
+
+185
+00:07:47,080 --> 00:07:50,160
+and my thinking in that in that context
+
+186
+00:07:50,170 --> 00:07:52,140
+was that maybe one of the problems is
+
+187
+00:07:52,150 --> 00:07:54,060
+that today's languages aren't
+
+188
+00:07:54,070 --> 00:07:56,370
+declarative enough you have a lot of
+
+189
+00:07:56,380 --> 00:07:59,150
+behavior you know in more or less
+
+190
+00:07:59,160 --> 00:08:01,050
+understandable and obvious lines of code
+
+191
+00:08:01,060 --> 00:08:03,510
+then that lock or don't lock so would
+
+192
+00:08:03,520 --> 00:08:05,310
+you agree that that may be making
+
+193
+00:08:05,320 --> 00:08:08,460
+languages more explicit about third and
+
+194
+00:08:08,470 --> 00:08:10,470
+saying things such as concurrency that
+
+195
+00:08:10,480 --> 00:08:13,170
+this would make such analysis things
+
+196
+00:08:13,180 --> 00:08:15,300
+simple to implement I think that's
+
+197
+00:08:15,310 --> 00:08:16,250
+absolutely true
+
+198
+00:08:16,260 --> 00:08:19,440
+in fact if you look at concurrency
+
+199
+00:08:19,450 --> 00:08:21,030
+analysis in Java it's considerably
+
+200
+00:08:21,040 --> 00:08:23,190
+easier than concurrency analysis in
+
+201
+00:08:23,200 --> 00:08:26,610
+languages like C++ because Java has a
+
+202
+00:08:26,620 --> 00:08:29,340
+built-in synchronization construct and
+
+203
+00:08:29,350 --> 00:08:32,730
+so what single analysis can build in the
+
+204
+00:08:32,740 --> 00:08:34,800
+concept of synchronization and check the
+
+205
+00:08:34,810 --> 00:08:36,780
+common idioms that people use now of
+
+206
+00:08:36,790 --> 00:08:39,270
+course one doesn't have to use the
+
+207
+00:08:39,280 --> 00:08:41,070
+synchronization statement bear in Java
+
+208
+00:08:41,080 --> 00:08:43,440
+one can use library abstractions for
+
+209
+00:08:43,450 --> 00:08:44,880
+locks like the ones have recently been
+
+210
+00:08:44,890 --> 00:08:46,500
+added to Java and of course that only
+
+211
+00:08:46,510 --> 00:08:49,560
+makes concurrency checking more more
+
+212
+00:08:49,570 --> 00:08:51,930
+challenging but certainly raising the
+
+213
+00:08:51,940 --> 00:08:54,060
+level of abstraction can help the
+
+214
+00:08:54,070 --> 00:08:57,330
+analysis okay but we were talking about
+
+215
+00:08:57,340 --> 00:08:59,760
+idioms and conventions that are
+
+216
+00:08:59,770 --> 00:09:02,370
+documented that brings up the question
+
+217
+00:09:02,380 --> 00:09:04,950
+how many false negatives do you actually
+
+218
+00:09:04,960 --> 00:09:08,280
+get I mean people might use a convention
+
+219
+00:09:08,290 --> 00:09:10,770
+90% of the time but in the rest the code
+
+220
+00:09:10,780 --> 00:09:12,480
+may not necessarily be wrong they just
+
+221
+00:09:12,490 --> 00:09:13,530
+weren't using the conven
+
+222
+00:09:13,540 --> 00:09:16,290
+and this is one of the the things that
+
+223
+00:09:16,300 --> 00:09:18,030
+has given static analysis a bad name
+
+224
+00:09:18,040 --> 00:09:20,940
+sometimes but saying it sort of reduces
+
+225
+00:09:20,950 --> 00:09:23,040
+the things you can actually do it forces
+
+226
+00:09:23,050 --> 00:09:24,870
+you to code in a special way is that
+
+227
+00:09:24,880 --> 00:09:28,020
+still true I think that's that's clearly
+
+228
+00:09:28,030 --> 00:09:29,790
+one of the big challenges for static
+
+229
+00:09:29,800 --> 00:09:34,110
+analysis and I think in a sense it's a
+
+230
+00:09:34,120 --> 00:09:38,010
+fundamental limitation because the
+
+231
+00:09:38,020 --> 00:09:40,470
+static analysis all static analysis
+
+232
+00:09:40,480 --> 00:09:42,330
+basically is looking for some kind of
+
+233
+00:09:42,340 --> 00:09:45,150
+pattern of correct usage and if you have
+
+234
+00:09:45,160 --> 00:09:47,100
+a what's called a sound analysis one
+
+235
+00:09:47,110 --> 00:09:49,950
+that that will tell you if any error in
+
+236
+00:09:49,960 --> 00:09:51,570
+a particular category if there is such
+
+237
+00:09:51,580 --> 00:09:55,530
+an error in your program it has to find
+
+238
+00:09:55,540 --> 00:09:57,840
+particular patterns that are reasonable
+
+239
+00:09:57,850 --> 00:09:59,490
+to check right the analysis will
+
+240
+00:09:59,500 --> 00:10:02,040
+terminate and and give you a response
+
+241
+00:10:02,050 --> 00:10:03,840
+and in a short amount of time and so
+
+242
+00:10:03,850 --> 00:10:07,950
+forth but unfortunately then of course
+
+243
+00:10:07,960 --> 00:10:09,180
+as you said there are other patterns
+
+244
+00:10:09,190 --> 00:10:10,800
+that could be used that you don't encode
+
+245
+00:10:10,810 --> 00:10:13,710
+now I don't think this is necessarily a
+
+246
+00:10:13,720 --> 00:10:15,900
+huge problem in principle because I
+
+247
+00:10:15,910 --> 00:10:17,400
+think human engineers work the same way
+
+248
+00:10:17,410 --> 00:10:19,770
+right I don't know very many human
+
+249
+00:10:19,780 --> 00:10:23,190
+engineers who reason about a concurrent
+
+250
+00:10:23,200 --> 00:10:25,350
+system by actually considering all the
+
+251
+00:10:25,360 --> 00:10:26,670
+interleavings between threads that
+
+252
+00:10:26,680 --> 00:10:27,990
+impossible and whether any of those
+
+253
+00:10:28,000 --> 00:10:29,700
+could lead to a problem that's right
+
+254
+00:10:29,710 --> 00:10:31,740
+they actually use these higher-level
+
+255
+00:10:31,750 --> 00:10:35,040
+patterns themselves and so while it may
+
+256
+00:10:35,050 --> 00:10:36,570
+take us some work to figure out what all
+
+257
+00:10:36,580 --> 00:10:38,100
+those patterns are that engineers are
+
+258
+00:10:38,110 --> 00:10:39,870
+using if we can do that then I think we
+
+259
+00:10:39,880 --> 00:10:41,850
+can get an analysis with acceptable e
+
+260
+00:10:41,860 --> 00:10:45,390
+low false positive error rates mm-hmm
+
+261
+00:10:45,400 --> 00:10:47,610
+yeah that don't the other thing from a
+
+262
+00:10:47,620 --> 00:10:48,870
+software engineering point of view of
+
+263
+00:10:48,880 --> 00:10:53,820
+course is that there's nothing if
+
+264
+00:10:53,830 --> 00:10:55,290
+there's parts of the program that you
+
+265
+00:10:55,300 --> 00:10:57,030
+can't assure with static analysis
+
+266
+00:10:57,040 --> 00:10:58,860
+don't try to assure them necessarily
+
+267
+00:10:58,870 --> 00:11:01,620
+with a static analysis if you need to do
+
+268
+00:11:01,630 --> 00:11:03,540
+things a different way all that means is
+
+269
+00:11:03,550 --> 00:11:05,820
+that you know maybe for your reviewing
+
+270
+00:11:05,830 --> 00:11:07,470
+or your testing methodologies you spend
+
+271
+00:11:07,480 --> 00:11:08,550
+a little more time in that part of the
+
+272
+00:11:08,560 --> 00:11:10,530
+program and the static analysis reduces
+
+273
+00:11:10,540 --> 00:11:11,760
+the effort you have in the rest of the
+
+274
+00:11:11,770 --> 00:11:14,160
+program yeah so you you find the stuff
+
+275
+00:11:14,170 --> 00:11:16,050
+that static analysis is good for with
+
+276
+00:11:16,060 --> 00:11:17,610
+static analysis and you have more time
+
+277
+00:11:17,620 --> 00:11:19,410
+for the real health problems that's
+
+278
+00:11:19,420 --> 00:11:23,490
+right I think the the the best use of
+
+279
+00:11:23,500 --> 00:11:24,990
+static analysis in an engineering
+
+280
+00:11:25,000 --> 00:11:26,879
+context is to
+
+281
+00:11:26,889 --> 00:11:29,720
+arrey what computers do best which is
+
+282
+00:11:29,730 --> 00:11:32,280
+being very thorough and complete and
+
+283
+00:11:32,290 --> 00:11:33,900
+they're checking with what humans do
+
+284
+00:11:33,910 --> 00:11:36,539
+best which is the insight behind the
+
+285
+00:11:36,549 --> 00:11:37,949
+correctness of the program that might be
+
+286
+00:11:37,959 --> 00:11:40,590
+expressed in annotations or or you know
+
+287
+00:11:40,600 --> 00:11:43,559
+might be put to work in these you know
+
+288
+00:11:43,569 --> 00:11:45,299
+detailed examples or patterns that
+
+289
+00:11:45,309 --> 00:11:46,710
+perhaps the static analysis might not
+
+290
+00:11:46,720 --> 00:11:49,259
+catch so how does static analysis
+
+291
+00:11:49,269 --> 00:11:51,599
+actually work in the slides that we were
+
+292
+00:11:51,609 --> 00:11:53,099
+using as a basis for this interview I
+
+293
+00:11:53,109 --> 00:11:54,960
+see terms like termination soundness
+
+294
+00:11:54,970 --> 00:11:56,849
+imprecision it seems like these are the
+
+295
+00:11:56,859 --> 00:11:58,979
+the core concepts in implementing such
+
+296
+00:11:58,989 --> 00:12:00,659
+tools do you want to elaborate a little
+
+297
+00:12:00,669 --> 00:12:03,239
+bit about this maybe three principles or
+
+298
+00:12:03,249 --> 00:12:05,819
+whatever you call these sure well so
+
+299
+00:12:05,829 --> 00:12:08,220
+these are qualities one would like to
+
+300
+00:12:08,230 --> 00:12:10,229
+have in a static analysis termination
+
+301
+00:12:10,239 --> 00:12:13,139
+obviously you want it to run and in you
+
+302
+00:12:13,149 --> 00:12:16,009
+won't want it to terminate ideally in a
+
+303
+00:12:16,019 --> 00:12:20,460
+reasonable amount of time you want you'd
+
+304
+00:12:20,470 --> 00:12:21,900
+like your analysis to be sound and that
+
+305
+00:12:21,910 --> 00:12:24,269
+it doesn't miss errors because the real
+
+306
+00:12:24,279 --> 00:12:25,530
+strength the computers of course is
+
+307
+00:12:25,540 --> 00:12:28,590
+their exhaustive nests and so while not
+
+308
+00:12:28,600 --> 00:12:30,629
+all analysis can be useful without being
+
+309
+00:12:30,639 --> 00:12:31,859
+sound is certainly a desirable
+
+310
+00:12:31,869 --> 00:12:33,739
+characteristic when you can get it now
+
+311
+00:12:33,749 --> 00:12:35,819
+precision is the last one and this goes
+
+312
+00:12:35,829 --> 00:12:38,900
+to really the cost-benefit trade off
+
+313
+00:12:38,910 --> 00:12:41,100
+your your static analysis is going to
+
+314
+00:12:41,110 --> 00:12:43,169
+tell you a lot of errors you'd like it
+
+315
+00:12:43,179 --> 00:12:44,639
+to be as precise as possible in other
+
+316
+00:12:44,649 --> 00:12:45,780
+words one that gives you an area you
+
+317
+00:12:45,790 --> 00:12:49,739
+want it to be a real error so the
+
+318
+00:12:49,749 --> 00:12:51,210
+question is how do you how do you get
+
+319
+00:12:51,220 --> 00:12:53,609
+all of these and and that that goes into
+
+320
+00:12:53,619 --> 00:12:57,109
+the details of how static analysis works
+
+321
+00:12:57,119 --> 00:12:59,519
+essentially the core idea behind static
+
+322
+00:12:59,529 --> 00:13:02,549
+analysis is one of abstraction you want
+
+323
+00:13:02,559 --> 00:13:05,489
+to take the program and look at the ways
+
+324
+00:13:05,499 --> 00:13:06,929
+in which it can execute but you want to
+
+325
+00:13:06,939 --> 00:13:08,819
+look at those more abstractly an example
+
+326
+00:13:08,829 --> 00:13:13,979
+might be let's see say you were doing an
+
+327
+00:13:13,989 --> 00:13:15,720
+array bounds analysis to avoid buffer
+
+328
+00:13:15,730 --> 00:13:19,489
+overruns you might try to keep track of
+
+329
+00:13:19,499 --> 00:13:21,419
+variables in the program that might be
+
+330
+00:13:21,429 --> 00:13:23,220
+indexes into the array for example and
+
+331
+00:13:23,230 --> 00:13:25,199
+whether each one of those variables is
+
+332
+00:13:25,209 --> 00:13:26,970
+less than equal to or greater than the
+
+333
+00:13:26,980 --> 00:13:29,159
+bound of the array and so your
+
+334
+00:13:29,169 --> 00:13:31,439
+abstraction might be a very simple
+
+335
+00:13:31,449 --> 00:13:33,659
+abstraction and and a realistic checker
+
+336
+00:13:33,669 --> 00:13:34,949
+would actually use more interesting ones
+
+337
+00:13:34,959 --> 00:13:36,600
+but let's pick this one for just as a
+
+338
+00:13:36,610 --> 00:13:38,370
+simple illustration
+
+339
+00:13:38,380 --> 00:13:40,650
+so you you you've reduced your variable
+
+340
+00:13:40,660 --> 00:13:42,480
+which might be an integer with two to
+
+341
+00:13:42,490 --> 00:13:45,900
+the thirty two states right to just
+
+342
+00:13:45,910 --> 00:13:48,270
+three states less than equal to or
+
+343
+00:13:48,280 --> 00:13:50,700
+greater than so basically you're taking
+
+344
+00:13:50,710 --> 00:13:52,980
+you're keeping track of the values of
+
+345
+00:13:52,990 --> 00:13:55,620
+all variables that might be used as
+
+346
+00:13:55,630 --> 00:13:58,620
+indexes and then you keep track where
+
+347
+00:13:58,630 --> 00:14:00,990
+they are in this range statically that's
+
+348
+00:14:01,000 --> 00:14:03,450
+right and what you do is you essentially
+
+349
+00:14:03,460 --> 00:14:06,060
+execute the program and you look given
+
+350
+00:14:06,070 --> 00:14:07,350
+the state of the variables in the
+
+351
+00:14:07,360 --> 00:14:09,600
+previous state and the the integer
+
+352
+00:14:09,610 --> 00:14:10,980
+expression what can you tell about the
+
+353
+00:14:10,990 --> 00:14:14,190
+states in this abstraction in the next
+
+354
+00:14:14,200 --> 00:14:17,730
+state okay okay and you you propagate
+
+355
+00:14:17,740 --> 00:14:19,380
+that around the program until you've
+
+356
+00:14:19,390 --> 00:14:21,300
+seen all the different states of the
+
+357
+00:14:21,310 --> 00:14:22,830
+variables and all the states they can
+
+358
+00:14:22,840 --> 00:14:24,240
+reach at every point of the program okay
+
+359
+00:14:24,250 --> 00:14:26,820
+but um isn't that a problematic
+
+360
+00:14:26,830 --> 00:14:29,460
+abstraction given that you might add
+
+361
+00:14:29,470 --> 00:14:33,060
+indexes or add variable values to index
+
+362
+00:14:33,070 --> 00:14:35,940
+so if you only know it was less than the
+
+363
+00:14:35,950 --> 00:14:39,060
+maximum possible value and then you add
+
+364
+00:14:39,070 --> 00:14:40,890
+five you don't know anything about it
+
+365
+00:14:40,900 --> 00:14:42,750
+right so this goes exactly to the
+
+366
+00:14:42,760 --> 00:14:45,390
+problem of abstraction right because
+
+367
+00:14:45,400 --> 00:14:47,430
+when we abstract we lose some
+
+368
+00:14:47,440 --> 00:14:51,870
+information and that's both the
+
+369
+00:14:51,880 --> 00:14:53,460
+strengths of static analysis because
+
+370
+00:14:53,470 --> 00:14:55,110
+abstraction is what allows us to be
+
+371
+00:14:55,120 --> 00:14:58,020
+exhaustive essentially we've reduced the
+
+372
+00:14:58,030 --> 00:14:59,790
+essentially infinite number of states in
+
+373
+00:14:59,800 --> 00:15:01,230
+a real program to a finite number of
+
+374
+00:15:01,240 --> 00:15:02,610
+states which that means we can now
+
+375
+00:15:02,620 --> 00:15:05,940
+explore them all in some sense right so
+
+376
+00:15:05,950 --> 00:15:07,290
+we can we can be completed and
+
+377
+00:15:07,300 --> 00:15:09,900
+exhaustive but we've lost a lot of
+
+378
+00:15:09,910 --> 00:15:11,430
+information about the details and so as
+
+379
+00:15:11,440 --> 00:15:16,170
+you say as soon as we add a constant we
+
+380
+00:15:16,180 --> 00:15:18,990
+might lose all information about the
+
+381
+00:15:19,000 --> 00:15:21,120
+range of this thing and we might be we
+
+382
+00:15:21,130 --> 00:15:22,890
+might get a false warning I guess the
+
+383
+00:15:22,900 --> 00:15:24,690
+key thing here is to find the right
+
+384
+00:15:24,700 --> 00:15:26,760
+abstractions and that's probably where
+
+385
+00:15:26,770 --> 00:15:29,520
+the the tools need to be smart but lots
+
+386
+00:15:29,530 --> 00:15:31,770
+of experience goes into how the tools
+
+387
+00:15:31,780 --> 00:15:33,180
+actually choose their abstractions
+
+388
+00:15:33,190 --> 00:15:35,490
+exactly so a more a more realistic
+
+389
+00:15:35,500 --> 00:15:39,870
+abstraction although one that's also
+
+390
+00:15:39,880 --> 00:15:42,150
+more computationally intensive expensive
+
+391
+00:15:42,160 --> 00:15:45,390
+for this example would be Pressburger
+
+392
+00:15:45,400 --> 00:15:47,520
+arithmetic essentially addition and
+
+393
+00:15:47,530 --> 00:15:49,890
+multiplication by constants because
+
+394
+00:15:49,900 --> 00:15:50,860
+that's a
+
+395
+00:15:50,870 --> 00:15:53,829
+a kind of arithmetic that is expressive
+
+396
+00:15:53,839 --> 00:15:55,450
+enough to represent a lot of the things
+
+397
+00:15:55,460 --> 00:15:57,640
+you actually see index indexing arrays
+
+398
+00:15:57,650 --> 00:16:00,310
+you know maybe not complicated multiple
+
+399
+00:16:00,320 --> 00:16:02,320
+dimensional arrays but but fairly simple
+
+400
+00:16:02,330 --> 00:16:04,960
+arrays you can express with this and the
+
+401
+00:16:04,970 --> 00:16:08,590
+big benefit is that it's decidable so
+
+402
+00:16:08,600 --> 00:16:10,420
+you can run an analysis that will will
+
+403
+00:16:10,430 --> 00:16:12,160
+terminate and give you response and and
+
+404
+00:16:12,170 --> 00:16:14,380
+it's also abstract because it doesn't
+
+405
+00:16:14,390 --> 00:16:16,180
+look at one particular execution it
+
+406
+00:16:16,190 --> 00:16:17,650
+looks at the relationships between
+
+407
+00:16:17,660 --> 00:16:20,019
+variables mathematically or
+
+408
+00:16:20,029 --> 00:16:23,290
+algorithmically and so it can see if
+
+409
+00:16:23,300 --> 00:16:24,820
+there's a corner case that you might
+
+410
+00:16:24,830 --> 00:16:26,380
+otherwise a missed that's that is an
+
+411
+00:16:26,390 --> 00:16:29,800
+error so again to look at this from from
+
+412
+00:16:29,810 --> 00:16:32,530
+another perspective isn't is it fair to
+
+413
+00:16:32,540 --> 00:16:34,780
+say that one of the main problems is
+
+414
+00:16:34,790 --> 00:16:38,470
+that programs as we use them today don't
+
+415
+00:16:38,480 --> 00:16:40,630
+necessarily represent the intent of the
+
+416
+00:16:40,640 --> 00:16:42,070
+programmer so you have to kind of
+
+417
+00:16:42,080 --> 00:16:44,440
+reverse engineer what the programmer
+
+418
+00:16:44,450 --> 00:16:46,360
+wants to do in order to limit the state
+
+419
+00:16:46,370 --> 00:16:48,220
+space in which the program should or can
+
+420
+00:16:48,230 --> 00:16:52,720
+be yes I think I think that's exactly
+
+421
+00:16:52,730 --> 00:16:54,340
+what a lot of analysis is trying to do
+
+422
+00:16:54,350 --> 00:16:56,019
+it's trying to you know the engineer
+
+423
+00:16:56,029 --> 00:16:57,820
+wrote the code and they were probably
+
+424
+00:16:57,830 --> 00:16:59,769
+thinking about the correctness of issues
+
+425
+00:16:59,779 --> 00:17:02,199
+like lengths of arrays and no pointers
+
+426
+00:17:02,209 --> 00:17:03,370
+and memory dereferences and they
+
+427
+00:17:03,380 --> 00:17:05,590
+probably had abstractions the problem is
+
+428
+00:17:05,600 --> 00:17:06,579
+of course some of those might have been
+
+429
+00:17:06,589 --> 00:17:08,530
+wrong and so what analysis is trying to
+
+430
+00:17:08,540 --> 00:17:10,480
+do often is reconstructing those
+
+431
+00:17:10,490 --> 00:17:12,309
+sometimes with annotations from the
+
+432
+00:17:12,319 --> 00:17:14,650
+programmer sometimes more automatically
+
+433
+00:17:14,660 --> 00:17:18,010
+and and then verify them of course you
+
+434
+00:17:18,020 --> 00:17:19,990
+could say well let's just put all the
+
+435
+00:17:20,000 --> 00:17:24,480
+intent in the program but of course
+
+436
+00:17:24,490 --> 00:17:27,040
+expressing intent is expensive yeah but
+
+437
+00:17:27,050 --> 00:17:29,200
+but um so you have to choose a
+
+438
+00:17:29,210 --> 00:17:31,630
+compromise right but so just to compare
+
+439
+00:17:31,640 --> 00:17:33,610
+this to other validation approaches if
+
+440
+00:17:33,620 --> 00:17:35,470
+you consider like the the model-based
+
+441
+00:17:35,480 --> 00:17:38,799
+world where people use formalism such as
+
+442
+00:17:38,809 --> 00:17:40,660
+state machines or Petri Nets to express
+
+443
+00:17:40,670 --> 00:17:42,790
+behavior and maybe some higher-level
+
+444
+00:17:42,800 --> 00:17:44,830
+constructs to describe dependencies you
+
+445
+00:17:44,840 --> 00:17:47,290
+can then run the analyses on model level
+
+446
+00:17:47,300 --> 00:17:49,510
+and because they are less cluttered with
+
+447
+00:17:49,520 --> 00:17:53,919
+detail and more related to the actual
+
+448
+00:17:53,929 --> 00:17:55,600
+problem domain so they represent the
+
+449
+00:17:55,610 --> 00:17:57,520
+intent better you can probably more
+
+450
+00:17:57,530 --> 00:18:00,580
+easily do these kinds of analyses so the
+
+451
+00:18:00,590 --> 00:18:02,500
+central challenge although the the
+
+452
+00:18:02,510 --> 00:18:04,989
+reason why code analysis probably more
+
+453
+00:18:04,999 --> 00:18:06,939
+complex is that these domain-specific
+
+454
+00:18:06,949 --> 00:18:08,859
+abstractions aren't there anymore you
+
+455
+00:18:08,869 --> 00:18:10,209
+have reduced things to a very low-level
+
+456
+00:18:10,219 --> 00:18:12,189
+way of expressing things so you have to
+
+457
+00:18:12,199 --> 00:18:15,219
+reconstruct all these things yes I think
+
+458
+00:18:15,229 --> 00:18:16,749
+that's absolutely true
+
+459
+00:18:16,759 --> 00:18:18,789
+and where you have a higher level model
+
+460
+00:18:18,799 --> 00:18:20,499
+there's a lot of benefit from applying
+
+461
+00:18:20,509 --> 00:18:22,359
+analysis at that level of abstraction as
+
+462
+00:18:22,369 --> 00:18:25,659
+well I think the challenge is that not
+
+463
+00:18:25,669 --> 00:18:27,969
+all programs not all domains can be
+
+464
+00:18:27,979 --> 00:18:29,919
+captured in these simple sort of state
+
+465
+00:18:29,929 --> 00:18:31,719
+machine like abstractions right some at
+
+466
+00:18:31,729 --> 00:18:32,979
+some point you need Turing completeness
+
+467
+00:18:32,989 --> 00:18:35,619
+hmm and then at that point you have to
+
+468
+00:18:35,629 --> 00:18:36,729
+bottom out in code and what are you
+
+469
+00:18:36,739 --> 00:18:37,239
+gonna do
+
+470
+00:18:37,249 --> 00:18:40,089
+you need some kind of analysis M hmm so
+
+471
+00:18:40,099 --> 00:18:43,029
+it's huming that we have actually well
+
+472
+00:18:43,039 --> 00:18:46,059
+left this abstract model level of
+
+473
+00:18:46,069 --> 00:18:48,159
+abstraction and gone into the code then
+
+474
+00:18:48,169 --> 00:18:49,959
+we have things like conditions and loops
+
+475
+00:18:49,969 --> 00:18:53,139
+and things which sort of make the number
+
+476
+00:18:53,149 --> 00:18:55,509
+of cases the number of paths explode
+
+477
+00:18:55,519 --> 00:18:57,429
+how does static analysis deal with these
+
+478
+00:18:57,439 --> 00:19:00,069
+cases well this you know with the
+
+479
+00:19:00,079 --> 00:19:02,409
+intention of terminating in an in a
+
+480
+00:19:02,419 --> 00:19:04,419
+finite time absolutely and this is one
+
+481
+00:19:04,429 --> 00:19:08,049
+of the major challenges so the key is it
+
+482
+00:19:08,059 --> 00:19:11,559
+goes back to abstraction if you think
+
+483
+00:19:11,569 --> 00:19:15,429
+about analyzing a loop one thing you
+
+484
+00:19:15,439 --> 00:19:18,039
+might do is is run through it once run
+
+485
+00:19:18,049 --> 00:19:19,179
+through it a second time run through two
+
+486
+00:19:19,189 --> 00:19:22,089
+third time and and gradually explore all
+
+487
+00:19:22,099 --> 00:19:24,459
+the paths but but of course you don't
+
+488
+00:19:24,469 --> 00:19:25,779
+know when to stop cuz they're good
+
+489
+00:19:25,789 --> 00:19:27,249
+enough in a number of times through loop
+
+490
+00:19:27,259 --> 00:19:30,279
+the trick is when you're actually
+
+491
+00:19:30,289 --> 00:19:32,499
+analyzing program variables more
+
+492
+00:19:32,509 --> 00:19:35,019
+abstractly you only have a finite number
+
+493
+00:19:35,029 --> 00:19:36,879
+of states the program could be in and so
+
+494
+00:19:36,889 --> 00:19:39,249
+your index which is incrementing you
+
+495
+00:19:39,259 --> 00:19:40,839
+know plus one every time you go through
+
+496
+00:19:40,849 --> 00:19:43,809
+the loop now you know it only goes
+
+497
+00:19:43,819 --> 00:19:46,569
+through two or three states and now when
+
+498
+00:19:46,579 --> 00:19:48,219
+you go around again it's in one of the
+
+499
+00:19:48,229 --> 00:19:50,769
+states that's been and before States at
+
+500
+00:19:50,779 --> 00:19:52,629
+this level of abstraction level
+
+501
+00:19:52,639 --> 00:19:54,969
+introduced giving your understanding of
+
+502
+00:19:54,979 --> 00:19:56,769
+the program exactly and your
+
+503
+00:19:56,779 --> 00:19:58,029
+understanding the problem you're trying
+
+504
+00:19:58,039 --> 00:19:59,559
+to check because the abstraction you use
+
+505
+00:19:59,569 --> 00:20:01,059
+for array bounds may be completely
+
+506
+00:20:01,069 --> 00:20:02,109
+different than the one used for
+
+507
+00:20:02,119 --> 00:20:05,559
+concurrency but the abstraction is key
+
+508
+00:20:05,569 --> 00:20:08,619
+because once I come around the loop and
+
+509
+00:20:08,629 --> 00:20:10,629
+I've already been at that point in the
+
+510
+00:20:10,639 --> 00:20:13,029
+loop at that state then I know that even
+
+511
+00:20:13,039 --> 00:20:14,709
+though the concrete program may go
+
+512
+00:20:14,719 --> 00:20:16,220
+through the loop many more times
+
+513
+00:20:16,230 --> 00:20:18,980
+it won't change what I know about the
+
+514
+00:20:18,990 --> 00:20:20,690
+values in the abstract space any more
+
+515
+00:20:20,700 --> 00:20:22,879
+than it already has and so I can stop my
+
+516
+00:20:22,889 --> 00:20:26,029
+analysis but still represent all the
+
+517
+00:20:26,039 --> 00:20:27,440
+possible executions that may have gone
+
+518
+00:20:27,450 --> 00:20:29,450
+through the loop many many more times so
+
+519
+00:20:29,460 --> 00:20:31,159
+the key again is to find the right
+
+520
+00:20:31,169 --> 00:20:34,100
+abstractions or even to have a tool that
+
+521
+00:20:34,110 --> 00:20:36,169
+finds the right abstractions from the
+
+522
+00:20:36,179 --> 00:20:38,259
+source code extracts them and then
+
+523
+00:20:38,269 --> 00:20:40,340
+partitions the cases in the path
+
+524
+00:20:40,350 --> 00:20:42,560
+according to these abstractions exactly
+
+525
+00:20:42,570 --> 00:20:45,769
+and a lot of a lot of recent
+
+526
+00:20:45,779 --> 00:20:47,330
+state-of-the-art research and static
+
+527
+00:20:47,340 --> 00:20:49,580
+analysis has been looking at novel
+
+528
+00:20:49,590 --> 00:20:51,440
+abstractions novel ways of representing
+
+529
+00:20:51,450 --> 00:20:53,090
+abstractions ways of inferring as you
+
+530
+00:20:53,100 --> 00:20:55,639
+said abstractions automatically from the
+
+531
+00:20:55,649 --> 00:20:57,830
+source code das that actually work in
+
+532
+00:20:57,840 --> 00:21:00,950
+practice I mean in a non-trivial system
+
+533
+00:21:00,960 --> 00:21:03,649
+for a number of cases that actually is
+
+534
+00:21:03,659 --> 00:21:10,190
+useful absolutely so one of the one of
+
+535
+00:21:10,200 --> 00:21:15,889
+the key ideas in a recent recent static
+
+536
+00:21:15,899 --> 00:21:17,509
+analysis is the idea of counter example
+
+537
+00:21:17,519 --> 00:21:20,870
+guided abstraction refinement it's a
+
+538
+00:21:20,880 --> 00:21:24,100
+it's a mouthful but the idea is that
+
+539
+00:21:24,110 --> 00:21:26,600
+it's a way of finding precise
+
+540
+00:21:26,610 --> 00:21:28,549
+abstractions automatically from from
+
+541
+00:21:28,559 --> 00:21:31,940
+program text it's used in most notably
+
+542
+00:21:31,950 --> 00:21:33,980
+perhaps in the Microsoft slam tool now
+
+543
+00:21:33,990 --> 00:21:35,930
+part of the static driver verifier which
+
+544
+00:21:35,940 --> 00:21:36,769
+you can download from the Microsoft
+
+545
+00:21:36,779 --> 00:21:38,330
+website if you're building device
+
+546
+00:21:38,340 --> 00:21:41,899
+drivers it's a it's a tool basically for
+
+547
+00:21:41,909 --> 00:21:43,460
+encoding device driver rules and making
+
+548
+00:21:43,470 --> 00:21:45,460
+sure you write those drivers correctly
+
+549
+00:21:45,470 --> 00:21:47,810
+but the internal piece of the
+
+550
+00:21:47,820 --> 00:21:49,820
+abstraction works and that tool is is
+
+551
+00:21:49,830 --> 00:21:53,330
+very interesting the basic idea is you
+
+552
+00:21:53,340 --> 00:21:56,269
+start with an abstraction that isn't
+
+553
+00:21:56,279 --> 00:21:57,500
+really tracking very much about the
+
+554
+00:21:57,510 --> 00:21:59,330
+program maybe you're you're looking at
+
+555
+00:21:59,340 --> 00:22:01,250
+whether you acquire and release a lock
+
+556
+00:22:01,260 --> 00:22:03,680
+and you discover there's a path through
+
+557
+00:22:03,690 --> 00:22:06,769
+the program where you lock the lock and
+
+558
+00:22:06,779 --> 00:22:08,419
+then you go and lock it again and that
+
+559
+00:22:08,429 --> 00:22:09,950
+second time would be a deadlock and in
+
+560
+00:22:09,960 --> 00:22:11,779
+some implementations of locks right so
+
+561
+00:22:11,789 --> 00:22:14,570
+that would be an erroneous path but it
+
+562
+00:22:14,580 --> 00:22:16,820
+turns out that if you reported that to
+
+563
+00:22:16,830 --> 00:22:18,470
+the user in some cases it might be a
+
+564
+00:22:18,480 --> 00:22:22,070
+false positive right because it might be
+
+565
+00:22:22,080 --> 00:22:24,590
+that those are both in an if statement
+
+566
+00:22:24,600 --> 00:22:27,590
+right okay yeah yes if you take one
+
+567
+00:22:27,600 --> 00:22:28,430
+branch then your
+
+568
+00:22:28,440 --> 00:22:30,020
+to take the other way so you're never
+
+569
+00:22:30,030 --> 00:22:31,480
+actually going to lock it twice in a row
+
+570
+00:22:31,490 --> 00:22:34,430
+so the idea and counterexample grata
+
+571
+00:22:34,440 --> 00:22:37,910
+Depp's traction refinement is from this
+
+572
+00:22:37,920 --> 00:22:41,890
+error path generates a counterexample
+
+573
+00:22:46,730 --> 00:22:46,740
+essentially a place where there's a it
+
+574
+00:22:46,740 --> 00:22:48,050
+generates a path through the program
+
+575
+00:22:48,060 --> 00:22:50,810
+that that exhibits this error which you
+
+576
+00:22:50,820 --> 00:22:52,850
+can then do is then do a different kind
+
+577
+00:22:52,860 --> 00:22:56,330
+of analysis that symbolically executes
+
+578
+00:22:56,340 --> 00:22:57,620
+the program along that path
+
+579
+00:22:57,630 --> 00:22:58,940
+one sees if that path is actually
+
+580
+00:22:58,950 --> 00:23:01,550
+feasible uh-huh and you might discover
+
+581
+00:23:01,560 --> 00:23:04,130
+oh there's this predicate that says you
+
+582
+00:23:04,140 --> 00:23:06,260
+know it's this flag that means I can't
+
+583
+00:23:06,270 --> 00:23:08,090
+go both places at once because I check
+
+584
+00:23:08,100 --> 00:23:10,340
+flag is true on one path and flag is
+
+585
+00:23:10,350 --> 00:23:13,460
+false on on the second branch right so
+
+586
+00:23:13,470 --> 00:23:16,520
+in that case that tells me this flag is
+
+587
+00:23:16,530 --> 00:23:18,740
+an interesting piece of data that I
+
+588
+00:23:18,750 --> 00:23:20,300
+should be tracking and now I'll do the
+
+589
+00:23:20,310 --> 00:23:21,860
+analysis again and I'll track the value
+
+590
+00:23:21,870 --> 00:23:23,210
+of that flag and I'll discover oh
+
+591
+00:23:23,220 --> 00:23:24,620
+there's actually no error in this node
+
+592
+00:23:24,630 --> 00:23:26,150
+so that's a way of discovering
+
+593
+00:23:26,160 --> 00:23:28,280
+abstractions automatically do you have
+
+594
+00:23:28,290 --> 00:23:31,400
+some kind of numbers and impressive case
+
+595
+00:23:31,410 --> 00:23:33,260
+study where you can say you know there
+
+596
+00:23:33,270 --> 00:23:36,590
+was this project or development team and
+
+597
+00:23:36,600 --> 00:23:38,540
+they had so many bugs and then they used
+
+598
+00:23:38,550 --> 00:23:39,980
+static analysis and the world was so
+
+599
+00:23:39,990 --> 00:23:42,230
+much better so is there something you
+
+600
+00:23:42,240 --> 00:23:45,320
+can you know tell us off the top of your
+
+601
+00:23:45,330 --> 00:23:46,940
+head that convinces listeners that this
+
+602
+00:23:46,950 --> 00:23:49,910
+is really something that is working well
+
+603
+00:23:49,920 --> 00:23:52,400
+I think exhibit a for me is the way that
+
+604
+00:23:52,410 --> 00:23:54,740
+Microsoft has used static analysis in
+
+605
+00:23:54,750 --> 00:23:56,770
+their development of the windows process
+
+606
+00:23:56,780 --> 00:24:00,140
+monitor das originally at Microsoft
+
+607
+00:24:00,150 --> 00:24:04,520
+Research has recently in the last year
+
+608
+00:24:04,530 --> 00:24:07,730
+or two led a team developing static
+
+609
+00:24:07,740 --> 00:24:12,070
+analysis for the windows team and
+
+610
+00:24:12,080 --> 00:24:14,840
+they've applied a lot of these ideas to
+
+611
+00:24:14,850 --> 00:24:16,280
+some of the most vexing bugs that
+
+612
+00:24:16,290 --> 00:24:19,280
+Microsoft exhibits things like buffer
+
+613
+00:24:19,290 --> 00:24:22,820
+overflows in terms of you know security
+
+614
+00:24:22,830 --> 00:24:25,540
+holes other kinds of memory management
+
+615
+00:24:25,550 --> 00:24:30,380
+problems and they've they've applied
+
+616
+00:24:30,390 --> 00:24:34,070
+this set of tools comprehensively
+
+617
+00:24:34,080 --> 00:24:36,560
+throughout their process in many ways so
+
+618
+00:24:36,570 --> 00:24:38,990
+you have to run the static analysis
+
+619
+00:24:39,000 --> 00:24:41,000
+tools before you check in code and the
+
+620
+00:24:41,010 --> 00:24:42,230
+code actually has to pass
+
+621
+00:24:42,240 --> 00:24:45,620
+analysis before you can check it in so
+
+622
+00:24:45,630 --> 00:24:47,710
+it's it's a part of the process there
+
+623
+00:24:47,720 --> 00:24:50,830
+there are other analyses tools that run
+
+624
+00:24:50,840 --> 00:24:56,299
+over the main main branch of this source
+
+625
+00:24:56,309 --> 00:24:59,270
+code for Windows and generate different
+
+626
+00:24:59,280 --> 00:25:03,169
+kinds of errors and the great thing is
+
+627
+00:25:03,179 --> 00:25:05,000
+you know if you're Microsoft and and
+
+628
+00:25:05,010 --> 00:25:08,180
+you're really sick of shipping out a bug
+
+629
+00:25:08,190 --> 00:25:09,950
+fix every month right on on a particular
+
+630
+00:25:09,960 --> 00:25:12,380
+schedule yeah right it's it's it's just
+
+631
+00:25:12,390 --> 00:25:14,060
+not good for your image and it costs
+
+632
+00:25:14,070 --> 00:25:16,580
+your customers thousands of dollars and
+
+633
+00:25:16,590 --> 00:25:18,380
+millions of dollars in time to upgrade
+
+634
+00:25:18,390 --> 00:25:20,090
+their software and even more when an
+
+635
+00:25:20,100 --> 00:25:22,250
+actual bug escapes and and gets that in
+
+636
+00:25:22,260 --> 00:25:25,370
+the wild right now so you're very
+
+637
+00:25:25,380 --> 00:25:27,500
+motivated to fix these and static
+
+638
+00:25:27,510 --> 00:25:29,540
+analysis I think is is giving you the
+
+639
+00:25:29,550 --> 00:25:32,919
+potential of reducing those dramatically
+
+640
+00:25:32,929 --> 00:25:36,320
+even to zero in the case of a sound
+
+641
+00:25:36,330 --> 00:25:39,080
+analysis for again four classes of
+
+642
+00:25:39,090 --> 00:25:40,340
+errors that can be checked this way
+
+643
+00:25:40,350 --> 00:25:41,000
+mm-hmm
+
+644
+00:25:41,010 --> 00:25:42,980
+so so Microsoft actually uses this
+
+645
+00:25:42,990 --> 00:25:45,799
+approach today in all of their products
+
+646
+00:25:45,809 --> 00:25:47,780
+or I don't have information to say all
+
+647
+00:25:47,790 --> 00:25:49,340
+of the products I know the windows team
+
+648
+00:25:49,350 --> 00:25:52,220
+I know it felt everything filters within
+
+649
+00:25:52,230 --> 00:25:53,720
+that organization from the windows team
+
+650
+00:25:53,730 --> 00:25:56,270
+to other parts so I'd expect offices is
+
+651
+00:25:56,280 --> 00:25:57,620
+using these tools and some of the other
+
+652
+00:25:57,630 --> 00:26:01,010
+teams as well and are these tools
+
+653
+00:26:01,020 --> 00:26:03,530
+available for everybody to use some of
+
+654
+00:26:03,540 --> 00:26:05,960
+these tools are there's a tool called
+
+655
+00:26:05,970 --> 00:26:08,990
+pre fast which is which will run on your
+
+656
+00:26:09,000 --> 00:26:10,790
+desktop it's included with the team
+
+657
+00:26:10,800 --> 00:26:13,810
+edition of Microsoft Visual Studio 2005
+
+658
+00:26:13,820 --> 00:26:16,310
+pre fast is also available as part of
+
+659
+00:26:16,320 --> 00:26:19,490
+the Windows SDK which you can download
+
+660
+00:26:19,500 --> 00:26:23,030
+even without if you if you don't have
+
+661
+00:26:23,040 --> 00:26:24,620
+the team edition of the Microsoft Studio
+
+662
+00:26:24,630 --> 00:26:26,990
+tool so that's something you can use and
+
+663
+00:26:27,000 --> 00:26:29,540
+what's interesting is that the the
+
+664
+00:26:29,550 --> 00:26:31,880
+buffer overrun checker actually uses the
+
+665
+00:26:31,890 --> 00:26:33,650
+same ideas that I was talking about in
+
+666
+00:26:33,660 --> 00:26:35,660
+terms of expressing design intent in
+
+667
+00:26:35,670 --> 00:26:37,490
+your source code there's a language
+
+668
+00:26:37,500 --> 00:26:39,320
+called standard annotation language or
+
+669
+00:26:39,330 --> 00:26:42,530
+Sal this was developed at Microsoft and
+
+670
+00:26:42,540 --> 00:26:45,080
+is used by pre fast in which you can
+
+671
+00:26:45,090 --> 00:26:48,110
+associate say the length of an array you
+
+672
+00:26:48,120 --> 00:26:49,549
+have to a function with some other
+
+673
+00:26:49,559 --> 00:26:51,530
+parameter that you also pass that
+
+674
+00:26:51,540 --> 00:26:55,470
+function and then the analysis uses that
+
+675
+00:26:55,480 --> 00:26:58,140
+little piece of design intent to check
+
+676
+00:26:58,150 --> 00:27:01,010
+the function and make sure that any
+
+677
+00:27:01,020 --> 00:27:03,300
+array access is within the function are
+
+678
+00:27:03,310 --> 00:27:05,850
+consistent okay so after talking about
+
+679
+00:27:05,860 --> 00:27:08,430
+these conceptual issues and the theory
+
+680
+00:27:08,440 --> 00:27:10,620
+so to speak let's now move to to
+
+681
+00:27:10,630 --> 00:27:12,630
+practice in the sense that you probably
+
+682
+00:27:12,640 --> 00:27:14,400
+have a good overview over the tools that
+
+683
+00:27:14,410 --> 00:27:15,690
+exist for the various different
+
+684
+00:27:15,700 --> 00:27:17,610
+platforms and languages so do you want
+
+685
+00:27:17,620 --> 00:27:19,200
+to give our listeners a quick overview
+
+686
+00:27:19,210 --> 00:27:21,510
+of which tools exist and maybe what are
+
+687
+00:27:21,520 --> 00:27:23,850
+the characterizing features and we'll
+
+688
+00:27:23,860 --> 00:27:25,230
+put the links to these tools into the
+
+689
+00:27:25,240 --> 00:27:28,710
+show notes of course certainly there's I
+
+690
+00:27:28,720 --> 00:27:30,270
+think one of the most exciting things
+
+691
+00:27:30,280 --> 00:27:32,010
+today is that we are seeing more of
+
+692
+00:27:32,020 --> 00:27:33,810
+these tools come out and be available to
+
+693
+00:27:33,820 --> 00:27:36,330
+developers and they range from open
+
+694
+00:27:36,340 --> 00:27:37,710
+source tools that you can download for
+
+695
+00:27:37,720 --> 00:27:41,040
+free to desktop tools like pre fast that
+
+696
+00:27:41,050 --> 00:27:43,080
+you can and the static driver verifier
+
+697
+00:27:43,090 --> 00:27:45,120
+that you can download from places like
+
+698
+00:27:45,130 --> 00:27:49,620
+Microsoft to enterprise scale analysis
+
+699
+00:27:49,630 --> 00:27:53,490
+tools that you know are packed with a
+
+700
+00:27:53,500 --> 00:27:57,330
+wide variety of other features so I
+
+701
+00:27:57,340 --> 00:28:00,480
+don't claim to to be comprehensive but
+
+702
+00:28:00,490 --> 00:28:02,700
+I'll tell you some of the tools I think
+
+703
+00:28:02,710 --> 00:28:05,970
+are the most prominent in this space I
+
+704
+00:28:05,980 --> 00:28:07,860
+think at the open source world findbugs
+
+705
+00:28:07,870 --> 00:28:11,930
+may be the most prominent is actually
+
+706
+00:28:11,940 --> 00:28:15,960
+published in uppsala a year ago as the
+
+707
+00:28:15,970 --> 00:28:17,580
+name suggests is looking at bug finding
+
+708
+00:28:17,590 --> 00:28:20,430
+their slogan is their slogan is finding
+
+709
+00:28:20,440 --> 00:28:23,960
+bugs is easy and they have some some
+
+710
+00:28:23,970 --> 00:28:27,180
+data to back that up the great thing
+
+711
+00:28:27,190 --> 00:28:28,770
+about fine bugs obviously it's free
+
+712
+00:28:28,780 --> 00:28:29,880
+there's a large community that's
+
+713
+00:28:29,890 --> 00:28:33,570
+contributed to it and the big thing for
+
+714
+00:28:33,580 --> 00:28:35,100
+an organization is that you can go ahead
+
+715
+00:28:35,110 --> 00:28:37,740
+and adapt this to your process your set
+
+716
+00:28:37,750 --> 00:28:39,600
+of tools whatever they may be you can
+
+717
+00:28:39,610 --> 00:28:41,130
+customize it with analyses that you
+
+718
+00:28:41,140 --> 00:28:43,500
+write yourself and that's a real value
+
+719
+00:28:43,510 --> 00:28:46,530
+because a lot of the the biggest bang
+
+720
+00:28:46,540 --> 00:28:49,470
+for the buck is is taking those ideas
+
+721
+00:28:49,480 --> 00:28:50,970
+that those concepts that are most
+
+722
+00:28:50,980 --> 00:28:52,770
+important you know with the set of
+
+723
+00:28:52,780 --> 00:28:54,390
+libraries you use the set of coding
+
+724
+00:28:54,400 --> 00:28:56,250
+idioms and patterns in your organization
+
+725
+00:28:56,260 --> 00:28:58,200
+the set of problems in the domain you're
+
+726
+00:28:58,210 --> 00:29:01,650
+facing and write static analyses simple
+
+727
+00:29:01,660 --> 00:29:07,170
+ones that that capture those those kinds
+
+728
+00:29:07,180 --> 00:29:08,669
+of problems mmm-hmm fine
+
+729
+00:29:08,679 --> 00:29:10,409
+he's also has a very large selection of
+
+730
+00:29:10,419 --> 00:29:15,570
+already-built analyses generally fairly
+
+731
+00:29:15,580 --> 00:29:21,139
+simple analyses this is not science well
+
+732
+00:29:21,149 --> 00:29:23,430
+they're the kinds of bugs I mentioned
+
+733
+00:29:23,440 --> 00:29:26,639
+earlier okay in terms of you know array
+
+734
+00:29:26,649 --> 00:29:29,580
+bounds errors memory errors simple kinds
+
+735
+00:29:29,590 --> 00:29:32,519
+of concurrency errors what's what's
+
+736
+00:29:32,529 --> 00:29:34,739
+interesting about fine bugs is they they
+
+737
+00:29:34,749 --> 00:29:37,560
+tend to be very local analyses local
+
+738
+00:29:37,570 --> 00:29:39,539
+meaning only analyzing within a
+
+739
+00:29:39,549 --> 00:29:42,330
+procedure or or within a small snippet
+
+740
+00:29:42,340 --> 00:29:44,279
+of byte code and by the way it's pub
+
+741
+00:29:44,289 --> 00:29:46,859
+Java I think we did your job yes that's
+
+742
+00:29:46,869 --> 00:29:50,220
+a very good so uh other tools for other
+
+743
+00:29:50,230 --> 00:29:53,909
+languages perhaps but so you're not
+
+744
+00:29:53,919 --> 00:29:55,830
+going to find some of the really deep
+
+745
+00:29:55,840 --> 00:29:57,509
+bugs that reach across procedures and so
+
+746
+00:29:57,519 --> 00:30:00,029
+forth although it's it's but it could
+
+747
+00:30:00,039 --> 00:30:01,470
+potentially be extended to some of those
+
+748
+00:30:01,480 --> 00:30:03,869
+okay um but I think there's a lot of
+
+749
+00:30:03,879 --> 00:30:06,680
+value to be had potentially there okay
+
+750
+00:30:06,690 --> 00:30:11,210
+in the world of commercial tools there's
+
+751
+00:30:11,220 --> 00:30:14,789
+there's a set of a number of tools that
+
+752
+00:30:14,799 --> 00:30:17,899
+are really aimed at the enterprise
+
+753
+00:30:17,909 --> 00:30:19,830
+Coverity is one that builds on some
+
+754
+00:30:19,840 --> 00:30:21,060
+research coming out of Stanford
+
+755
+00:30:21,070 --> 00:30:24,769
+University some of their strengths are
+
+756
+00:30:24,779 --> 00:30:29,310
+focused on C and C++ low false positive
+
+757
+00:30:29,320 --> 00:30:30,690
+rates they're not gonna waste your time
+
+758
+00:30:30,700 --> 00:30:33,029
+with a lot of error messages that are
+
+759
+00:30:33,039 --> 00:30:37,470
+bad that are useless another one in kind
+
+760
+00:30:37,480 --> 00:30:38,850
+of the same space is grammar check code
+
+761
+00:30:38,860 --> 00:30:46,999
+sonar C C++ and Aida Aida okay yes
+
+762
+00:30:47,009 --> 00:30:48,629
+that's right
+
+763
+00:30:48,639 --> 00:30:51,690
+and it's surprising there's a number of
+
+764
+00:30:51,700 --> 00:30:55,710
+static analysis research based on an ADA
+
+765
+00:30:55,720 --> 00:30:57,419
+a spark aid as another tool Lyford I
+
+766
+00:30:57,429 --> 00:30:59,609
+know knows much about one of the reasons
+
+767
+00:30:59,619 --> 00:31:01,350
+is probably that it's easier to analyze
+
+768
+00:31:01,360 --> 00:31:03,529
+than C++ I'd I'd guess
+
+769
+00:31:03,539 --> 00:31:06,899
+well I think in the same vein as Java
+
+770
+00:31:06,909 --> 00:31:09,060
+it's a statically typed language with
+
+771
+00:31:09,070 --> 00:31:11,639
+more reasonable semantics yeah and the
+
+772
+00:31:11,649 --> 00:31:13,409
+other easier might be that it's used a
+
+773
+00:31:13,419 --> 00:31:15,090
+lot in these safety critical
+
+774
+00:31:15,100 --> 00:31:16,739
+environments like in the military area
+
+775
+00:31:16,749 --> 00:31:18,330
+where validations are probably even
+
+776
+00:31:18,340 --> 00:31:21,770
+required sometimes that's right and in
+
+777
+00:31:21,780 --> 00:31:23,790
+listeners who are building embedded
+
+778
+00:31:23,800 --> 00:31:26,850
+systems may find that the quality
+
+779
+00:31:26,860 --> 00:31:29,100
+constraints of that domain are such that
+
+780
+00:31:29,110 --> 00:31:31,500
+static analysis becomes even more
+
+781
+00:31:31,510 --> 00:31:31,920
+worthwhile
+
+782
+00:31:31,930 --> 00:31:35,820
+mm-hmm so so a lot of these tools
+
+783
+00:31:35,830 --> 00:31:37,800
+actually have significant constituencies
+
+784
+00:31:37,810 --> 00:31:41,420
+in that in that area
+
+785
+00:31:44,550 --> 00:31:44,560
+clockwork is another tool in the space
+
+786
+00:31:44,560 --> 00:31:47,670
+clockwork focuses I think equally on
+
+787
+00:31:47,680 --> 00:31:50,580
+security and n bugs they have C C++ and
+
+788
+00:31:50,590 --> 00:31:56,190
+Java support and they talk a lot about
+
+789
+00:31:56,200 --> 00:31:58,290
+support for enterprise tracking bugs
+
+790
+00:31:58,300 --> 00:32:00,030
+over time some architectural
+
+791
+00:32:00,040 --> 00:32:02,100
+visualization which i think is a nice a
+
+792
+00:32:02,110 --> 00:32:04,920
+nice feature to prevent bugs from coming
+
+793
+00:32:04,930 --> 00:32:06,420
+in the future as well as ones that are
+
+794
+00:32:06,430 --> 00:32:09,690
+there right now looking at tools more
+
+795
+00:32:09,700 --> 00:32:11,310
+focused specifically on security
+
+796
+00:32:11,320 --> 00:32:14,430
+although they'll find some some coding
+
+797
+00:32:14,440 --> 00:32:17,610
+bugs as well fortify and ounce labs are
+
+798
+00:32:17,620 --> 00:32:20,130
+both in this space fortify actually has
+
+799
+00:32:20,140 --> 00:32:21,930
+this treated strategic relationship with
+
+800
+00:32:21,940 --> 00:32:23,580
+fine bugs so I don't know there may be
+
+801
+00:32:23,590 --> 00:32:25,050
+some coordination coming there at some
+
+802
+00:32:25,060 --> 00:32:28,950
+point fortify will handle c-sharp as
+
+803
+00:32:28,960 --> 00:32:31,710
+well as cease C++ and Java and some web
+
+804
+00:32:31,720 --> 00:32:35,130
+database web and database languages so a
+
+805
+00:32:35,140 --> 00:32:38,250
+lot of cross-platform compatibility
+
+806
+00:32:38,260 --> 00:32:41,610
+there for embedded systems we were
+
+807
+00:32:41,620 --> 00:32:43,290
+mentioned mentioning before as a tool
+
+808
+00:32:43,300 --> 00:32:46,680
+called poly space which is more
+
+809
+00:32:46,690 --> 00:32:48,510
+specifically focused on embedded systems
+
+810
+00:32:48,520 --> 00:32:52,830
+they support data as you see and they'll
+
+811
+00:32:52,840 --> 00:32:55,200
+be focusing on some issues like integer
+
+812
+00:32:55,210 --> 00:32:57,150
+over-and-under flow which might sort of
+
+813
+00:32:57,160 --> 00:32:58,710
+fall below the radar on a lot of systems
+
+814
+00:32:58,720 --> 00:33:00,450
+but if you have an embedded system and
+
+815
+00:33:00,460 --> 00:33:03,060
+you don't want your rocket to go off
+
+816
+00:33:03,070 --> 00:33:06,360
+course then that's a critical issue for
+
+817
+00:33:06,370 --> 00:33:08,940
+people in this domain and for those we
+
+818
+00:33:08,950 --> 00:33:11,040
+don't know this is a real case right so
+
+819
+00:33:11,050 --> 00:33:12,420
+that's right I think you're around five
+
+820
+00:33:12,430 --> 00:33:14,280
+that was the problem there that's right
+
+821
+00:33:14,290 --> 00:33:19,860
+so so poly spaces is may have the answer
+
+822
+00:33:19,870 --> 00:33:22,920
+there and of course the when you're in
+
+823
+00:33:22,930 --> 00:33:25,530
+the bedded space some of these vendors
+
+824
+00:33:25,540 --> 00:33:29,130
+will will err more on the side of
+
+825
+00:33:29,140 --> 00:33:32,470
+reporting more possible warnings
+
+826
+00:33:32,480 --> 00:33:34,480
+at the expense of having more false
+
+827
+00:33:34,490 --> 00:33:37,390
+positives which is probably a good idea
+
+828
+00:33:37,400 --> 00:33:39,760
+for safety crew exactly and so I've
+
+829
+00:33:39,770 --> 00:33:41,200
+talked with people in poly space and
+
+830
+00:33:41,210 --> 00:33:42,640
+they say you know this is this is a
+
+831
+00:33:42,650 --> 00:33:44,050
+trade-off that we've explicitly taken
+
+832
+00:33:44,060 --> 00:33:45,700
+which is exactly the right thing for the
+
+833
+00:33:45,710 --> 00:33:49,840
+domain they're targeting but it's it's a
+
+834
+00:33:49,850 --> 00:33:51,220
+trade-off you have to make based on your
+
+835
+00:33:51,230 --> 00:33:54,910
+your specific needs but when I would
+
+836
+00:33:54,920 --> 00:33:56,590
+took a look at quite a lot of static
+
+837
+00:33:56,600 --> 00:33:59,050
+analysis tools that are targeted at
+
+838
+00:33:59,060 --> 00:33:59,980
+finding bugs
+
+839
+00:33:59,990 --> 00:34:02,620
+there are also static analysis tools
+
+840
+00:34:02,630 --> 00:34:04,780
+that are targeted at sort of helping you
+
+841
+00:34:04,790 --> 00:34:06,640
+visualize understand the design the
+
+842
+00:34:06,650 --> 00:34:09,040
+architecture it's both called static
+
+843
+00:34:09,050 --> 00:34:10,900
+analysis are there relationships between
+
+844
+00:34:10,910 --> 00:34:12,730
+the tools between the companies I mean
+
+845
+00:34:12,740 --> 00:34:14,050
+the target is obviously different but
+
+846
+00:34:14,060 --> 00:34:17,560
+still yes I think it's certainly true
+
+847
+00:34:17,570 --> 00:34:21,690
+that some of the same techniques apply
+
+848
+00:34:24,820 --> 00:34:24,830
+grammar Tech which I already mentioned
+
+849
+00:34:24,830 --> 00:34:28,060
+has some support for say visualizing the
+
+850
+00:34:28,070 --> 00:34:30,970
+in their code so in their code surfer
+
+851
+00:34:30,980 --> 00:34:33,820
+project product they have support for
+
+852
+00:34:33,830 --> 00:34:37,570
+looking at the aliases in your program
+
+853
+00:34:37,580 --> 00:34:40,540
+the runtime heap structure there's also
+
+854
+00:34:40,550 --> 00:34:42,370
+products that are looking more at
+
+855
+00:34:42,380 --> 00:34:45,310
+software architecture two of those are
+
+856
+00:34:45,320 --> 00:34:49,570
+latex which is a takes the idea of
+
+857
+00:34:49,580 --> 00:34:51,390
+design structure matrices from
+
+858
+00:34:51,400 --> 00:34:53,410
+engineering practice in many different
+
+859
+00:34:53,420 --> 00:34:56,020
+fields and we'll will show you the
+
+860
+00:34:56,030 --> 00:34:57,580
+degree to which your system Falls say a
+
+861
+00:34:57,590 --> 00:35:00,930
+layered architecture I see yeah
+
+862
+00:35:00,940 --> 00:35:03,130
+basically they'll they'll layout to your
+
+863
+00:35:03,140 --> 00:35:04,300
+modules at a high level of abstraction
+
+864
+00:35:04,310 --> 00:35:11,350
+along a couple of axes and show you at
+
+865
+00:35:11,360 --> 00:35:13,090
+two intersections in those axes where
+
+866
+00:35:13,100 --> 00:35:14,800
+one depends on the other and if you can
+
+867
+00:35:14,810 --> 00:35:17,380
+lay out those modules so that all of the
+
+868
+00:35:17,390 --> 00:35:20,470
+interactions are along the lower lower
+
+869
+00:35:20,480 --> 00:35:23,140
+left and the triangle for example if you
+
+870
+00:35:23,150 --> 00:35:26,790
+if you can visualize that you then you
+
+871
+00:35:26,800 --> 00:35:29,770
+you have a layered architecture but it
+
+872
+00:35:29,780 --> 00:35:31,330
+can be very interesting to see where say
+
+873
+00:35:31,340 --> 00:35:32,770
+cycles in your architecture are because
+
+874
+00:35:32,780 --> 00:35:36,280
+those might be points at which things
+
+875
+00:35:36,290 --> 00:35:37,990
+might be more difficult to evolve or
+
+876
+00:35:38,000 --> 00:35:40,300
+there might be more dependencies so this
+
+877
+00:35:40,310 --> 00:35:41,470
+sounds to me a little bit like this
+
+878
+00:35:41,480 --> 00:35:43,330
+heuristic stuff like cyclomatic
+
+879
+00:35:43,340 --> 00:35:45,970
+dependency and all these kinds of things
+
+880
+00:35:45,980 --> 00:35:48,069
+again that that's out of the scope of
+
+881
+00:35:48,079 --> 00:35:49,569
+what we've been discussing today but
+
+882
+00:35:49,579 --> 00:35:51,760
+that's another way of analyzing software
+
+883
+00:35:51,770 --> 00:35:53,230
+but not for PACs but rather for
+
+884
+00:35:53,240 --> 00:35:54,910
+maintainability complexity and stuff
+
+885
+00:35:54,920 --> 00:35:59,770
+that's right in heuristics one else has
+
+886
+00:35:59,780 --> 00:36:01,599
+be careful with heuristics because one
+
+887
+00:36:01,609 --> 00:36:03,370
+can one can optimize the heuristic
+
+888
+00:36:03,380 --> 00:36:05,559
+without optimizing the code itself but
+
+889
+00:36:05,569 --> 00:36:07,809
+they can also tell you point you to
+
+890
+00:36:07,819 --> 00:36:09,039
+places where you might want to look more
+
+891
+00:36:09,049 --> 00:36:10,930
+close yeah but I think the similarity
+
+892
+00:36:10,940 --> 00:36:14,859
+here we actually finding bugs by making
+
+893
+00:36:14,869 --> 00:36:17,400
+assumptions about patterns of usage
+
+894
+00:36:17,410 --> 00:36:19,750
+because that's also heuristic in a
+
+895
+00:36:19,760 --> 00:36:25,660
+certain way yes that's true I think one
+
+896
+00:36:25,670 --> 00:36:30,819
+could point to a difference in that one
+
+897
+00:36:30,829 --> 00:36:33,309
+can validate that certain patterns lead
+
+898
+00:36:33,319 --> 00:36:37,900
+to actually prove that there are no
+
+899
+00:36:37,910 --> 00:36:39,789
+there are no bugs in a system all right
+
+900
+00:36:39,799 --> 00:36:40,359
+yeah
+
+901
+00:36:40,369 --> 00:36:43,000
+whereas metrics such as cyclomatic
+
+902
+00:36:43,010 --> 00:36:46,109
+complexity are not directly related to
+
+903
+00:36:46,119 --> 00:36:48,520
+if it's redness in the same way or
+
+904
+00:36:48,530 --> 00:36:52,510
+around quality right but there's a there
+
+905
+00:36:52,520 --> 00:36:54,780
+certainly is a relationship in that
+
+906
+00:36:54,790 --> 00:36:56,680
+understanding the way to engineers
+
+907
+00:36:56,690 --> 00:36:58,329
+typically build software in the way good
+
+908
+00:36:58,339 --> 00:37:00,760
+software is is typically built as is the
+
+909
+00:37:00,770 --> 00:37:03,339
+thing is requires understanding of the
+
+910
+00:37:03,349 --> 00:37:05,740
+patterns of usage at a deep level okay
+
+911
+00:37:05,750 --> 00:37:07,589
+so now that we took a look at the tools
+
+912
+00:37:07,599 --> 00:37:10,270
+how do we actually go about introducing
+
+913
+00:37:10,280 --> 00:37:12,400
+static analysis into your company into
+
+914
+00:37:12,410 --> 00:37:14,920
+your development teams well I think
+
+915
+00:37:14,930 --> 00:37:16,480
+that's a very there's a very tricky
+
+916
+00:37:16,490 --> 00:37:20,109
+question because there's a cost to using
+
+917
+00:37:20,119 --> 00:37:21,910
+static analysis tools right the cost of
+
+918
+00:37:21,920 --> 00:37:23,609
+running them the cost of paying for them
+
+919
+00:37:23,619 --> 00:37:26,170
+but most importantly the cost dimension
+
+920
+00:37:26,180 --> 00:37:28,420
+your time looking at the output seeing
+
+921
+00:37:28,430 --> 00:37:30,730
+if these errors are real and it's so
+
+922
+00:37:30,740 --> 00:37:32,260
+sorting through the false positives and
+
+923
+00:37:32,270 --> 00:37:34,660
+so it's important to be very careful
+
+924
+00:37:34,670 --> 00:37:36,700
+about how to introduce this I think a
+
+925
+00:37:36,710 --> 00:37:38,049
+big part of it is choosing the right
+
+926
+00:37:38,059 --> 00:37:39,430
+tool choosing a tool that's well
+
+927
+00:37:39,440 --> 00:37:41,319
+designed that fits the needs of your
+
+928
+00:37:41,329 --> 00:37:43,210
+organization and actually doing a little
+
+929
+00:37:43,220 --> 00:37:44,980
+bit of customization to making it fit in
+
+930
+00:37:44,990 --> 00:37:47,200
+if you take fine bugs off the shelf for
+
+931
+00:37:47,210 --> 00:37:49,210
+example you'll see there are literally
+
+932
+00:37:49,220 --> 00:37:51,220
+hundreds of checkers in there
+
+933
+00:37:51,230 --> 00:37:54,039
+many of those may produce false
+
+934
+00:37:54,049 --> 00:37:56,799
+positives for you either because you
+
+935
+00:37:56,809 --> 00:37:58,030
+don't care about them they're not a
+
+936
+00:37:58,040 --> 00:37:59,440
+problem in your domain
+
+937
+00:37:59,450 --> 00:38:01,660
+you commonly use idioms that don't match
+
+938
+00:38:01,670 --> 00:38:03,760
+when the analysis is looking for can you
+
+939
+00:38:03,770 --> 00:38:05,230
+give an example I thought it bug is a
+
+940
+00:38:05,240 --> 00:38:07,650
+bug no matter what the context well uh
+
+941
+00:38:07,660 --> 00:38:10,059
+errors in using concurrency or not bugs
+
+942
+00:38:10,069 --> 00:38:11,740
+if you don't have multiple threads in
+
+943
+00:38:11,750 --> 00:38:14,559
+your program as a perhaps trivial
+
+944
+00:38:14,569 --> 00:38:17,980
+example but okay so these checks sort of
+
+945
+00:38:17,990 --> 00:38:19,660
+assume that there are several threads
+
+946
+00:38:19,670 --> 00:38:21,010
+without checking that the threads are
+
+947
+00:38:21,020 --> 00:38:23,319
+there and then saying if there is a
+
+948
+00:38:23,329 --> 00:38:25,480
+thread second thread calling the same
+
+949
+00:38:25,490 --> 00:38:27,099
+method then there would be a problem
+
+950
+00:38:27,109 --> 00:38:28,480
+that's oh that's right well especially
+
+951
+00:38:28,490 --> 00:38:30,789
+for a very simple kind of analysis that
+
+952
+00:38:30,799 --> 00:38:33,549
+just looks very locally um it may not be
+
+953
+00:38:33,559 --> 00:38:34,720
+aware of whether you're actually in the
+
+954
+00:38:34,730 --> 00:38:37,839
+context of a multi-threaded system okay
+
+955
+00:38:37,849 --> 00:38:39,720
+there's certainly many more examples but
+
+956
+00:38:39,730 --> 00:38:42,760
+some of the things that find bugs my
+
+957
+00:38:42,770 --> 00:38:44,890
+check for might just be you know
+
+958
+00:38:44,900 --> 00:38:46,539
+generally considered bad practice but
+
+959
+00:38:46,549 --> 00:38:48,460
+perhaps in your specific setting it's
+
+960
+00:38:48,470 --> 00:38:51,039
+not an issue or you may disagree with
+
+961
+00:38:51,049 --> 00:38:52,539
+the authors of the analysis about what's
+
+962
+00:38:52,549 --> 00:38:54,190
+good okay so so again this is about
+
+963
+00:38:54,200 --> 00:38:56,770
+heuristics which are also always sort of
+
+964
+00:38:56,780 --> 00:39:00,549
+subject to opinion in in some cases yes
+
+965
+00:39:00,559 --> 00:39:03,789
+so but what you'll find is the typical
+
+966
+00:39:03,799 --> 00:39:05,140
+pattern of an organization is they'll
+
+967
+00:39:05,150 --> 00:39:07,120
+take a off the shelf tool like this and
+
+968
+00:39:07,130 --> 00:39:08,589
+they'll have to say these are the
+
+969
+00:39:08,599 --> 00:39:11,650
+analyses that are really the points of
+
+970
+00:39:11,660 --> 00:39:13,450
+pain for us those the ones we're gonna
+
+971
+00:39:13,460 --> 00:39:15,460
+turn on those might even be the ones
+
+972
+00:39:15,470 --> 00:39:17,559
+that we integrate into a process in some
+
+973
+00:39:17,569 --> 00:39:20,140
+way and like saying all of these must be
+
+974
+00:39:20,150 --> 00:39:22,960
+dealt with before we transition from no
+
+975
+00:39:22,970 --> 00:39:24,960
+coding to testing or testing to release
+
+976
+00:39:24,970 --> 00:39:27,220
+in the software life cycle of
+
+977
+00:39:27,230 --> 00:39:29,380
+standardizing the usage of the tool and
+
+978
+00:39:29,390 --> 00:39:31,420
+integrating it into the enterprise-wide
+
+979
+00:39:31,430 --> 00:39:34,750
+process is exactly another piece is is
+
+980
+00:39:34,760 --> 00:39:36,700
+really winning the hearts and minds of
+
+981
+00:39:36,710 --> 00:39:41,319
+the developers if you yes so starting
+
+982
+00:39:41,329 --> 00:39:43,900
+with a core team of developers who are
+
+983
+00:39:43,910 --> 00:39:45,280
+willing to experiment to try out
+
+984
+00:39:45,290 --> 00:39:46,930
+something new given a little bit of
+
+985
+00:39:46,940 --> 00:39:51,250
+leverage leeway for management and get
+
+986
+00:39:51,260 --> 00:39:53,170
+the tool working well with those
+
+987
+00:39:53,180 --> 00:39:54,549
+developers and then use those as
+
+988
+00:39:54,559 --> 00:39:55,599
+evangelists in the rest of the
+
+989
+00:39:55,609 --> 00:39:57,430
+organization for a larger organization
+
+990
+00:39:57,440 --> 00:39:58,720
+you're not going to be able push
+
+991
+00:39:58,730 --> 00:40:00,400
+something like this strictly from the
+
+992
+00:40:00,410 --> 00:40:02,589
+top down yeah I see it has to work well
+
+993
+00:40:02,599 --> 00:40:03,940
+but you also have to get some people
+
+994
+00:40:03,950 --> 00:40:05,319
+behind that they're willing to say hey
+
+995
+00:40:05,329 --> 00:40:09,039
+look you know I've been coding here for
+
+996
+00:40:09,049 --> 00:40:10,900
+ten years and last week the static
+
+997
+00:40:10,910 --> 00:40:12,090
+analysis
+
+998
+00:40:12,100 --> 00:40:14,670
+a bug a buffer overflow right in
+
+999
+00:40:14,680 --> 00:40:16,350
+critical code I introduced five years
+
+1000
+00:40:16,360 --> 00:40:19,620
+ago and you know let me tell you I
+
+1001
+00:40:19,630 --> 00:40:21,270
+didn't want to wait until the hackers
+
+1002
+00:40:21,280 --> 00:40:24,060
+found that one yeah it's a time bomb so
+
+1003
+00:40:24,070 --> 00:40:26,940
+I think stories like that when you find
+
+1004
+00:40:26,950 --> 00:40:30,540
+analysis and it's you know it's really
+
+1005
+00:40:30,550 --> 00:40:32,640
+focused on the issues that are critical
+
+1006
+00:40:32,650 --> 00:40:35,310
+for your company for your setting that's
+
+1007
+00:40:35,320 --> 00:40:37,440
+when you're gonna be able sell it and
+
+1008
+00:40:37,450 --> 00:40:39,720
+that's where you can really justify the
+
+1009
+00:40:39,730 --> 00:40:41,250
+cost in the investment in this
+
+1010
+00:40:41,260 --> 00:40:44,310
+technology so sort of get buy-in of some
+
+1011
+00:40:44,320 --> 00:40:46,380
+developers and have them tell the others
+
+1012
+00:40:46,390 --> 00:40:48,270
+how created book yeah that's right I
+
+1013
+00:40:48,280 --> 00:40:50,370
+think what excites me about static
+
+1014
+00:40:50,380 --> 00:40:52,740
+analysis is that the technology is just
+
+1015
+00:40:52,750 --> 00:40:54,360
+getting to the point where we can
+
+1016
+00:40:54,370 --> 00:40:56,280
+address some really deep problems mm-hmm
+
+1017
+00:40:56,290 --> 00:40:58,850
+I give the example in my tutorial of
+
+1018
+00:40:58,860 --> 00:41:01,110
+fluid the fluid research project from
+
+1019
+00:41:01,120 --> 00:41:03,330
+Carnegie Mellon which is focused on
+
+1020
+00:41:03,340 --> 00:41:05,190
+concurrency yeah a concurrency is
+
+1021
+00:41:05,200 --> 00:41:07,860
+notoriously difficult to deal with is
+
+1022
+00:41:07,870 --> 00:41:10,190
+certainly calm and it's because
+
+1023
+00:41:10,200 --> 00:41:12,870
+everything is non-local you know you
+
+1024
+00:41:12,880 --> 00:41:14,340
+have interference between threads
+
+1025
+00:41:14,350 --> 00:41:15,420
+running in different parts of the
+
+1026
+00:41:15,430 --> 00:41:19,800
+program you have you know this
+
+1027
+00:41:19,810 --> 00:41:22,170
+complicated design intent relationship
+
+1028
+00:41:22,180 --> 00:41:23,880
+between the locks and objects that you
+
+1029
+00:41:23,890 --> 00:41:27,600
+have to track and if you have a bug you
+
+1030
+00:41:27,610 --> 00:41:29,730
+know you may find it you may run a
+
+1031
+00:41:29,740 --> 00:41:31,350
+thousand tests and not find it but you
+
+1032
+00:41:31,360 --> 00:41:33,000
+can call your software and it gets at a
+
+1033
+00:41:33,010 --> 00:41:35,190
+million times a day and now it happens
+
+1034
+00:41:35,200 --> 00:41:37,020
+every couple of hours or it happens in
+
+1035
+00:41:37,030 --> 00:41:38,640
+the release version but not in the debug
+
+1036
+00:41:38,650 --> 00:41:40,470
+version and all signs of with yeah
+
+1037
+00:41:40,480 --> 00:41:41,910
+that's right that's why we have this
+
+1038
+00:41:41,920 --> 00:41:43,920
+term of the highs and back you have my
+
+1039
+00:41:43,930 --> 00:41:46,800
+robot yes trying to measure the box
+
+1040
+00:41:46,810 --> 00:41:49,380
+changes to the back itself exactly so
+
+1041
+00:41:49,390 --> 00:41:51,270
+this kind of error is exactly the one
+
+1042
+00:41:51,280 --> 00:41:53,820
+that static analysis is is as good at
+
+1043
+00:41:53,830 --> 00:41:55,800
+applying and the fluid technology is is
+
+1044
+00:41:55,810 --> 00:41:57,270
+being actually commercialized right now
+
+1045
+00:41:57,280 --> 00:41:58,620
+hopefully you'll be able buy it from a
+
+1046
+00:41:58,630 --> 00:42:00,510
+company called sure logic and E and in
+
+1047
+00:42:00,520 --> 00:42:04,470
+the near future but I think we're seeing
+
+1048
+00:42:04,480 --> 00:42:05,940
+from that and from some of these
+
+1049
+00:42:05,950 --> 00:42:07,650
+commercial companies from the experience
+
+1050
+00:42:07,660 --> 00:42:10,110
+at Microsoft static analysis is really
+
+1051
+00:42:10,120 --> 00:42:12,270
+maturing it's becoming practical it's
+
+1052
+00:42:12,280 --> 00:42:14,310
+hitting the problems that are really
+
+1053
+00:42:14,320 --> 00:42:17,070
+hurting development organizations and I
+
+1054
+00:42:17,080 --> 00:42:18,900
+think within the next 5-10 years we're
+
+1055
+00:42:18,910 --> 00:42:20,790
+gonna see it become a ubiquitous part of
+
+1056
+00:42:20,800 --> 00:42:22,140
+the quality assurance landscape that
+
+1057
+00:42:22,150 --> 00:42:25,170
+sounds really cool because it sounds
+
+1058
+00:42:25,180 --> 00:42:26,010
+like it's true
+
+1059
+00:42:26,020 --> 00:42:28,710
+very helpful very useful and once the
+
+1060
+00:42:28,720 --> 00:42:30,840
+false-positives and false-negatives
+
+1061
+00:42:30,850 --> 00:42:33,240
+already used sounds like it's there's no
+
+1062
+00:42:33,250 --> 00:42:35,190
+downside to using actually that's right
+
+1063
+00:42:35,200 --> 00:42:36,450
+and it's you know it's not a silver
+
+1064
+00:42:36,460 --> 00:42:38,280
+bullet Quality Assurance is always gonna
+
+1065
+00:42:38,290 --> 00:42:40,590
+be hard um there's some I we should
+
+1066
+00:42:40,600 --> 00:42:42,990
+there's something we should talk briefly
+
+1067
+00:42:43,000 --> 00:42:45,030
+about as actually the applicability of
+
+1068
+00:42:45,040 --> 00:42:47,430
+static analysis there are problems too
+
+1069
+00:42:47,440 --> 00:42:49,350
+which is very poorly suited problems
+
+1070
+00:42:49,360 --> 00:42:51,690
+where the property you're trying to
+
+1071
+00:42:51,700 --> 00:42:53,400
+assure doesn't fit into a well-defined
+
+1072
+00:42:53,410 --> 00:42:55,320
+pattern that works across many programs
+
+1073
+00:42:55,330 --> 00:42:57,150
+and as you know sort of worth compiling
+
+1074
+00:42:57,160 --> 00:43:01,140
+into an analysis classic you know UI
+
+1075
+00:43:01,150 --> 00:43:04,110
+testing functional does it give me the
+
+1076
+00:43:04,120 --> 00:43:05,790
+answer I wanted that kind of testing yes
+
+1077
+00:43:05,800 --> 00:43:07,530
+I realize that conformance to the
+
+1078
+00:43:07,540 --> 00:43:10,980
+rhymings does it look like users wanted
+
+1079
+00:43:10,990 --> 00:43:13,380
+to look is it well usable into to this
+
+1080
+00:43:13,390 --> 00:43:15,960
+other thing obviously exactly but we
+
+1081
+00:43:15,970 --> 00:43:18,180
+already have testing and review
+
+1082
+00:43:18,190 --> 00:43:19,890
+methodologies they're very good for
+
+1083
+00:43:19,900 --> 00:43:21,870
+assuring those kinds of issues what we
+
+1084
+00:43:21,880 --> 00:43:24,090
+don't have is ways of addressing these
+
+1085
+00:43:24,100 --> 00:43:26,840
+kinds of you know memory errors
+
+1086
+00:43:26,850 --> 00:43:29,760
+concurrency errors so these things we're
+
+1087
+00:43:29,770 --> 00:43:31,170
+seeing there's no static analysis really
+
+1088
+00:43:31,180 --> 00:43:33,360
+low-level technical domains the
+
+1089
+00:43:33,370 --> 00:43:34,710
+computers have the strength obviously
+
+1090
+00:43:34,720 --> 00:43:37,260
+rather than humans they sort of we tend
+
+1091
+00:43:37,270 --> 00:43:39,510
+to lose our way there it's true exactly
+
+1092
+00:43:39,520 --> 00:43:40,970
+and so I think from that perspective
+
+1093
+00:43:40,980 --> 00:43:43,380
+static analysis is really feel filling a
+
+1094
+00:43:43,390 --> 00:43:46,770
+hole and and has a potential in those
+
+1095
+00:43:46,780 --> 00:43:48,270
+areas to increase quality very
+
+1096
+00:43:48,280 --> 00:43:50,690
+substantially and and I think this
+
+1097
+00:43:50,700 --> 00:43:52,920
+people are always asking for the killer
+
+1098
+00:43:52,930 --> 00:43:55,020
+application of a new technology and I
+
+1099
+00:43:55,030 --> 00:43:56,850
+think for static analysis this killer
+
+1100
+00:43:56,860 --> 00:43:58,380
+application is probably going to be if
+
+1101
+00:43:58,390 --> 00:44:00,960
+you can detect meaningful complex
+
+1102
+00:44:00,970 --> 00:44:02,940
+concurrency problems because they are as
+
+1103
+00:44:02,950 --> 00:44:05,310
+we all know really really tough so if
+
+1104
+00:44:05,320 --> 00:44:06,960
+the tools get to a point where they can
+
+1105
+00:44:06,970 --> 00:44:08,520
+help there I think that will be the
+
+1106
+00:44:08,530 --> 00:44:11,280
+argument of introducing these types of
+
+1107
+00:44:11,290 --> 00:44:13,170
+tools into the process especially since
+
+1108
+00:44:13,180 --> 00:44:14,760
+everybody has to do with concurrency now
+
+1109
+00:44:14,770 --> 00:44:15,930
+because although because of all those
+
+1110
+00:44:15,940 --> 00:44:19,020
+multi-core CPUs right I think I think
+
+1111
+00:44:19,030 --> 00:44:20,670
+it's a issue as you say that's only
+
+1112
+00:44:20,680 --> 00:44:23,250
+going to increase ok thank you very much
+
+1113
+00:44:23,260 --> 00:44:26,190
+for talking to us about static analysis
+
+1114
+00:44:26,200 --> 00:44:28,950
+and thanks everybody for listening thank
+
+1115
+00:44:28,960 --> 00:44:29,350
+you
+
+1116
+00:44:29,360 --> 00:44:52,450
+[Music]
+
+1117
+00:44:52,460 --> 00:44:54,530
+thanks for listening to software
+
+1118
+00:44:54,540 --> 00:44:56,630
+engineering radio if you want to get
+
+1119
+00:44:56,640 --> 00:44:57,950
+more information about software
+
+1120
+00:44:57,960 --> 00:44:59,810
+engineering radio or if you want to give
+
+1121
+00:44:59,820 --> 00:45:02,450
+us feedback please go to our website at
+
+1122
+00:45:02,460 --> 00:45:06,680
+se - radio dot net you can also contact
+
+1123
+00:45:06,690 --> 00:45:11,540
+the team at team at SAE - radio net
+
+1124
+00:45:11,550 --> 00:45:13,580
+although we prefer entries in our
+
+1125
+00:45:13,590 --> 00:45:15,740
+comment system on the website so other
+
+1126
+00:45:15,750 --> 00:45:17,420
+people can see what you think
+
+1127
+00:45:17,430 --> 00:45:19,250
+software engineering radio wants to
+
+1128
+00:45:19,260 --> 00:45:21,349
+thank Henning poly for the intro and
+
+1129
+00:45:21,359 --> 00:45:24,020
+outro music as well as Lipson for
+
+1130
+00:45:24,030 --> 00:45:27,109
+providing the bandwidth this episode of
+
+1131
+00:45:27,119 --> 00:45:29,780
+se radio as well as all other episodes
+
+1132
+00:45:29,790 --> 00:45:32,060
+is licensed under Creative Commons
+
+1133
+00:45:32,070 --> 00:45:33,080
+license
+
+1134
+00:45:33,090 --> 00:45:35,120
+see the software engineering radio
+
+1135
+00:45:35,130 --> 00:45:43,910
+website for details

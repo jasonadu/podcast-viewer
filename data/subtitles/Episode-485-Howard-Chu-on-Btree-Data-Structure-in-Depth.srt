@@ -1,0 +1,7067 @@
+1
+00:00:00,870 --> 00:00:00,880
+[Music]
+
+2
+00:00:00,880 --> 00:00:02,790
+this is software engineering radio the
+
+3
+00:00:02,800 --> 00:00:04,789
+podcast for professional developers on
+
+4
+00:00:04,799 --> 00:00:07,749
+the web at se-radio.net
+
+5
+00:00:07,759 --> 00:00:09,750
+sc radio is brought to you by the ieee
+
+6
+00:00:09,760 --> 00:00:11,830
+computer society by ieee software
+
+7
+00:00:11,840 --> 00:00:16,710
+magazine online at computer.org software
+
+8
+00:00:16,720 --> 00:00:18,550
+welcome to software engineering radio
+
+9
+00:00:18,560 --> 00:00:20,230
+i'm your host gavin henry and today my
+
+10
+00:00:20,240 --> 00:00:21,750
+guest is howard chu
+
+11
+00:00:21,760 --> 00:00:23,590
+howard shear has been writing free in
+
+12
+00:00:23,600 --> 00:00:26,070
+open source software since the 1980s
+
+13
+00:00:26,080 --> 00:00:27,910
+his work has spanned a range of
+
+14
+00:00:27,920 --> 00:00:29,830
+computing topics including most of the
+
+15
+00:00:29,840 --> 00:00:30,870
+gnu
+
+16
+00:00:30,880 --> 00:00:33,430
+utilities for example gcc
+
+17
+00:00:33,440 --> 00:00:35,830
+gdb gmat etc
+
+18
+00:00:35,840 --> 00:00:38,150
+networking protocols and tools kernel
+
+19
+00:00:38,160 --> 00:00:40,310
+and file system drivers and focused on
+
+20
+00:00:40,320 --> 00:00:42,790
+maximizing the useful workflow system
+
+21
+00:00:42,800 --> 00:00:44,630
+howard founded simus corporation with
+
+22
+00:00:44,640 --> 00:00:47,029
+five other partners in 1999
+
+23
+00:00:47,039 --> 00:00:49,910
+and serves as a cto his current focus is
+
+24
+00:00:49,920 --> 00:00:53,350
+database oriented covering ldap protocol
+
+25
+00:00:53,360 --> 00:00:55,910
+lmdb and other non-relational database
+
+26
+00:00:55,920 --> 00:00:57,110
+technologies
+
+27
+00:00:57,120 --> 00:00:58,709
+howard welcome to software engineering
+
+28
+00:00:58,719 --> 00:01:00,310
+radio is there anything i missed in your
+
+29
+00:01:00,320 --> 00:01:02,389
+bio that you'd like to add
+
+30
+00:01:02,399 --> 00:01:04,869
+i think that covers it for now yeah
+
+31
+00:01:04,879 --> 00:01:06,950
+that's quite an extensive list
+
+32
+00:01:06,960 --> 00:01:09,109
+cool so today's show is
+
+33
+00:01:09,119 --> 00:01:12,550
+on a pretty meaty topic called b plus
+
+34
+00:01:12,560 --> 00:01:14,550
+tree data structures and they keep
+
+35
+00:01:14,560 --> 00:01:15,830
+coming up in
+
+36
+00:01:15,840 --> 00:01:17,910
+other related software engineering radio
+
+37
+00:01:17,920 --> 00:01:20,710
+shows we touched on them in
+
+38
+00:01:20,720 --> 00:01:22,710
+my first show that i did for software
+
+39
+00:01:22,720 --> 00:01:25,350
+engineering radio with you on lmdb
+
+40
+00:01:25,360 --> 00:01:29,190
+we did it summon episode 454
+
+41
+00:01:29,200 --> 00:01:31,990
+with thomas richter on postgres as an ol
+
+42
+00:01:32,000 --> 00:01:35,030
+ap database simon riggs on postgres
+
+43
+00:01:35,040 --> 00:01:38,550
+episodes 362 and database engines
+
+44
+00:01:38,560 --> 00:01:40,789
+episode 415 so
+
+45
+00:01:40,799 --> 00:01:42,870
+someone has to try and tackle the topic
+
+46
+00:01:42,880 --> 00:01:43,830
+and
+
+47
+00:01:43,840 --> 00:01:45,670
+i know you're an expert in it so here we
+
+48
+00:01:45,680 --> 00:01:46,389
+go
+
+49
+00:01:46,399 --> 00:01:49,749
+okay i think because it's so complex i'm
+
+50
+00:01:49,759 --> 00:01:52,389
+gonna split the show into three parts
+
+51
+00:01:52,399 --> 00:01:54,069
+we're gonna dig into what tree
+
+52
+00:01:54,079 --> 00:01:56,550
+algorithms are b trees lay the
+
+53
+00:01:56,560 --> 00:01:58,149
+foundation
+
+54
+00:01:58,159 --> 00:02:00,310
+move on to b trees in a bit of depth
+
+55
+00:02:00,320 --> 00:02:02,630
+from what's involved and then
+
+56
+00:02:02,640 --> 00:02:04,069
+probably halfway through the show we
+
+57
+00:02:04,079 --> 00:02:05,350
+should have enough
+
+58
+00:02:05,360 --> 00:02:08,150
+laid down to tackle b plus trees so here
+
+59
+00:02:08,160 --> 00:02:10,630
+we go i'd like to start with an overview
+
+60
+00:02:10,640 --> 00:02:13,430
+our tree algorithm is its terms and its
+
+61
+00:02:13,440 --> 00:02:16,150
+history so we can lay a good foundation
+
+62
+00:02:16,160 --> 00:02:17,830
+i'll then move us on to b trees and
+
+63
+00:02:17,840 --> 00:02:19,990
+finally on to b plus trees
+
+64
+00:02:20,000 --> 00:02:24,550
+so what do we need to understand first
+
+65
+00:02:27,270 --> 00:02:27,280
+well alright so these data structures
+
+66
+00:02:27,280 --> 00:02:28,630
+are used
+
+67
+00:02:28,640 --> 00:02:32,790
+to quickly search for items in a large
+
+68
+00:02:32,800 --> 00:02:34,070
+data set
+
+69
+00:02:34,080 --> 00:02:35,030
+and
+
+70
+00:02:35,040 --> 00:02:37,110
+the tree structure
+
+71
+00:02:37,120 --> 00:02:38,630
+is used because it
+
+72
+00:02:38,640 --> 00:02:39,750
+allows you to
+
+73
+00:02:39,760 --> 00:02:41,990
+search more quickly than for example
+
+74
+00:02:42,000 --> 00:02:43,430
+just a
+
+75
+00:02:43,440 --> 00:02:45,589
+linear list layout
+
+76
+00:02:45,599 --> 00:02:46,949
+and um
+
+77
+00:02:46,959 --> 00:02:48,630
+how would you describe a
+
+78
+00:02:48,640 --> 00:02:50,309
+tree algorithm is that where you can
+
+79
+00:02:50,319 --> 00:02:53,350
+search things quickly or
+
+80
+00:02:53,360 --> 00:02:55,350
+well it's it's called a tree just
+
+81
+00:02:55,360 --> 00:02:56,790
+because of the
+
+82
+00:02:56,800 --> 00:03:01,190
+the logical way the data is arranged
+
+83
+00:03:01,200 --> 00:03:02,830
+you start with a
+
+84
+00:03:02,840 --> 00:03:05,670
+central root point
+
+85
+00:03:05,680 --> 00:03:07,670
+and then it branches out
+
+86
+00:03:07,680 --> 00:03:09,430
+two different levels
+
+87
+00:03:09,440 --> 00:03:11,670
+to cover the entire span of the data
+
+88
+00:03:11,680 --> 00:03:12,790
+range
+
+89
+00:03:12,800 --> 00:03:14,550
+so if you're just to think about a
+
+90
+00:03:14,560 --> 00:03:16,550
+regular tree in the ground the root
+
+91
+00:03:16,560 --> 00:03:18,550
+would be the trunk and you turn it
+
+92
+00:03:18,560 --> 00:03:21,350
+upside down and think about from
+
+93
+00:03:21,360 --> 00:03:22,229
+yeah
+
+94
+00:03:22,239 --> 00:03:24,470
+so the computer science version of a
+
+95
+00:03:24,480 --> 00:03:26,229
+tree is upside down from what you would
+
+96
+00:03:26,239 --> 00:03:28,710
+see in nature yes okay i'll keep that
+
+97
+00:03:28,720 --> 00:03:30,229
+image in my head
+
+98
+00:03:30,239 --> 00:03:32,149
+so there's a few terms coming up that
+
+99
+00:03:32,159 --> 00:03:34,390
+you know have a stab at um so we can try
+
+100
+00:03:34,400 --> 00:03:35,910
+and break these up
+
+101
+00:03:35,920 --> 00:03:38,470
+so what's a binary search tree
+
+102
+00:03:38,480 --> 00:03:40,710
+okay so that would be
+
+103
+00:03:40,720 --> 00:03:42,869
+the most fundamental you know the
+
+104
+00:03:42,879 --> 00:03:44,550
+starting point for most of these tree
+
+105
+00:03:44,560 --> 00:03:45,670
+designs
+
+106
+00:03:45,680 --> 00:03:47,670
+and it's based on the
+
+107
+00:03:47,680 --> 00:03:50,949
+a simple search algorithm where
+
+108
+00:03:50,959 --> 00:03:52,470
+let's go back to our
+
+109
+00:03:52,480 --> 00:03:53,670
+flat list
+
+110
+00:03:53,680 --> 00:03:56,149
+let's say you have a list of 100 items
+
+111
+00:03:56,159 --> 00:03:58,869
+and you want to find one specific item
+
+112
+00:03:58,879 --> 00:04:01,990
+in that list the slow way to find it is
+
+113
+00:04:02,000 --> 00:04:03,429
+to just start at the beginning of the
+
+114
+00:04:03,439 --> 00:04:05,990
+list and check every element until you
+
+115
+00:04:06,000 --> 00:04:07,670
+find the one you're looking for
+
+116
+00:04:07,680 --> 00:04:11,030
+and on average it will take you
+
+117
+00:04:11,040 --> 00:04:13,509
+one half of the number of elements in
+
+118
+00:04:13,519 --> 00:04:15,509
+the list to find
+
+119
+00:04:15,519 --> 00:04:17,430
+the item you want so if you've got 100
+
+120
+00:04:17,440 --> 00:04:19,590
+items on average it will take you 50
+
+121
+00:04:19,600 --> 00:04:21,670
+lookups to find what you're looking for
+
+122
+00:04:21,680 --> 00:04:22,950
+okay
+
+123
+00:04:22,960 --> 00:04:24,310
+so
+
+124
+00:04:24,320 --> 00:04:25,590
+we can
+
+125
+00:04:25,600 --> 00:04:28,070
+we can improve that drastically using a
+
+126
+00:04:28,080 --> 00:04:31,270
+binary search in binary search you take
+
+127
+00:04:31,280 --> 00:04:33,189
+whatever list you have
+
+128
+00:04:33,199 --> 00:04:34,710
+and you
+
+129
+00:04:34,720 --> 00:04:37,110
+examine the element in the middle
+
+130
+00:04:37,120 --> 00:04:39,670
+right so if we've got our 50 items sorry
+
+131
+00:04:39,680 --> 00:04:41,990
+if we have 100 items we look at the 50th
+
+132
+00:04:42,000 --> 00:04:43,830
+item and see
+
+133
+00:04:43,840 --> 00:04:46,070
+you know is it the one we're looking for
+
+134
+00:04:46,080 --> 00:04:47,830
+and sorry i forgot to mention that this
+
+135
+00:04:47,840 --> 00:04:49,830
+only works if the list is in sorted
+
+136
+00:04:49,840 --> 00:04:51,590
+order right
+
+137
+00:04:51,600 --> 00:04:53,749
+so you go to the halfway point you find
+
+138
+00:04:53,759 --> 00:04:56,070
+the 50th item you see is this what i
+
+139
+00:04:56,080 --> 00:04:58,469
+want if not you see
+
+140
+00:04:58,479 --> 00:05:00,629
+say is it higher or lower than what i
+
+141
+00:05:00,639 --> 00:05:01,510
+want
+
+142
+00:05:01,520 --> 00:05:03,749
+if it's higher than what i want then i
+
+143
+00:05:03,759 --> 00:05:05,510
+go and divide
+
+144
+00:05:05,520 --> 00:05:08,150
+the next interval down so
+
+145
+00:05:08,160 --> 00:05:10,790
+from the middle of the 50th i go down to
+
+146
+00:05:10,800 --> 00:05:12,710
+the 25th
+
+147
+00:05:12,720 --> 00:05:15,430
+okay so at each point if i don't find
+
+148
+00:05:15,440 --> 00:05:17,270
+what i'm looking for
+
+149
+00:05:17,280 --> 00:05:18,950
+i can either go
+
+150
+00:05:18,960 --> 00:05:21,029
+higher or lower and divide the next
+
+151
+00:05:21,039 --> 00:05:22,629
+interval in half
+
+152
+00:05:22,639 --> 00:05:25,270
+and so that that's the essence of a
+
+153
+00:05:25,280 --> 00:05:26,950
+binary search
+
+154
+00:05:26,960 --> 00:05:28,390
+and
+
+155
+00:05:28,400 --> 00:05:29,510
+the way this
+
+156
+00:05:29,520 --> 00:05:31,270
+the way this improves things is that
+
+157
+00:05:31,280 --> 00:05:32,629
+every step
+
+158
+00:05:32,639 --> 00:05:34,390
+you eliminate
+
+159
+00:05:34,400 --> 00:05:37,270
+at least one half of the elements from
+
+160
+00:05:37,280 --> 00:05:39,670
+consideration
+
+161
+00:05:39,680 --> 00:05:41,749
+so it's it'll get you to the one you're
+
+162
+00:05:41,759 --> 00:05:44,150
+looking for much faster than a simple
+
+163
+00:05:44,160 --> 00:05:46,150
+linear search
+
+164
+00:05:46,160 --> 00:05:47,430
+excellent i think you've answered my
+
+165
+00:05:47,440 --> 00:05:49,189
+question of why we need
+
+166
+00:05:49,199 --> 00:05:51,909
+a tree algorithm and binary search tree
+
+167
+00:05:51,919 --> 00:05:54,790
+so is there a particular
+
+168
+00:05:54,800 --> 00:05:55,590
+time
+
+169
+00:05:55,600 --> 00:05:57,510
+you would use them or
+
+170
+00:05:57,520 --> 00:05:59,270
+you know a certain type of data or does
+
+171
+00:05:59,280 --> 00:06:00,309
+it matter
+
+172
+00:06:00,319 --> 00:06:02,150
+it could be used with any kind of data
+
+173
+00:06:02,160 --> 00:06:04,070
+so the the other thing
+
+174
+00:06:04,080 --> 00:06:06,469
+that gets us to the tree structure so
+
+175
+00:06:06,479 --> 00:06:08,469
+first of all what i described as binary
+
+176
+00:06:08,479 --> 00:06:09,350
+search
+
+177
+00:06:09,360 --> 00:06:12,230
+is how you execute it if you have a flat
+
+178
+00:06:12,240 --> 00:06:15,110
+linear list right but you can basically
+
+179
+00:06:15,120 --> 00:06:17,430
+encode all of those
+
+180
+00:06:17,440 --> 00:06:18,830
+halvings and
+
+181
+00:06:18,840 --> 00:06:21,830
+subdivisions by rearranging your flat
+
+182
+00:06:21,840 --> 00:06:22,629
+list
+
+183
+00:06:22,639 --> 00:06:25,749
+into a tree structure right so at the
+
+184
+00:06:25,759 --> 00:06:28,230
+root of the tree you put your
+
+185
+00:06:28,240 --> 00:06:31,590
+50th element and then at the two
+
+186
+00:06:31,600 --> 00:06:33,029
+children of
+
+187
+00:06:33,039 --> 00:06:36,230
+that you put on the left half say you
+
+188
+00:06:36,240 --> 00:06:39,029
+put the lower 50 items and the right
+
+189
+00:06:39,039 --> 00:06:40,469
+half you put the
+
+190
+00:06:40,479 --> 00:06:42,790
+upper 50 items and then at each level
+
+191
+00:06:42,800 --> 00:06:44,790
+below that you subdivide
+
+192
+00:06:44,800 --> 00:06:48,070
+and keep on branching out and the other
+
+193
+00:06:48,080 --> 00:06:49,670
+thing to point out is
+
+194
+00:06:49,680 --> 00:06:51,990
+you know every element every node in
+
+195
+00:06:52,000 --> 00:06:54,230
+this binary tree has
+
+196
+00:06:54,240 --> 00:06:56,469
+up to two children
+
+197
+00:06:56,479 --> 00:06:58,150
+yeah i was just trying to visualize that
+
+198
+00:06:58,160 --> 00:07:00,150
+see just how if you imagine
+
+199
+00:07:00,160 --> 00:07:03,350
+the root is a dot and then you draw a
+
+200
+00:07:03,360 --> 00:07:05,589
+triangle shape with a dot at the top and
+
+201
+00:07:05,599 --> 00:07:07,990
+then two dots on the other side join
+
+202
+00:07:08,000 --> 00:07:09,270
+them together that's your triangle and
+
+203
+00:07:09,280 --> 00:07:10,870
+they're the two
+
+204
+00:07:10,880 --> 00:07:12,390
+two leafs
+
+205
+00:07:12,400 --> 00:07:18,230
+two children as it were
+
+206
+00:07:20,390 --> 00:07:20,400
+if you have the dot and draw a straight
+
+207
+00:07:20,400 --> 00:07:21,990
+line down
+
+208
+00:07:22,000 --> 00:07:23,830
+at most you're going to split that into
+
+209
+00:07:23,840 --> 00:07:26,070
+two and then have two more dots split
+
+210
+00:07:26,080 --> 00:07:27,589
+them down again
+
+211
+00:07:27,599 --> 00:07:28,390
+so
+
+212
+00:07:28,400 --> 00:07:32,150
+maybe like um visualize a um deck of
+
+213
+00:07:32,160 --> 00:07:33,350
+house of cards you know when you're
+
+214
+00:07:33,360 --> 00:07:36,390
+stacking cards well yeah yeah very
+
+215
+00:07:36,400 --> 00:07:38,710
+similar yes so you've got the two cards
+
+216
+00:07:38,720 --> 00:07:40,710
+waiting to get at the top with the one
+
+217
+00:07:40,720 --> 00:07:42,070
+card base
+
+218
+00:07:42,080 --> 00:07:43,749
+and then every end of the card is
+
+219
+00:07:43,759 --> 00:07:45,990
+another two points of a card isn't it if
+
+220
+00:07:46,000 --> 00:07:47,430
+you if you're looking at that front on
+
+221
+00:07:47,440 --> 00:07:49,270
+you'd see the root structure and the two
+
+222
+00:07:49,280 --> 00:07:50,390
+points
+
+223
+00:07:50,400 --> 00:07:51,749
+yeah exactly
+
+224
+00:07:51,759 --> 00:07:53,189
+yeah that's
+
+225
+00:07:53,199 --> 00:07:56,469
+good i just figured that on the spot
+
+226
+00:07:56,479 --> 00:07:58,790
+that's a good good analogy
+
+227
+00:07:58,800 --> 00:08:01,029
+so you're asking why do we need them or
+
+228
+00:08:01,039 --> 00:08:02,790
+when do we use them
+
+229
+00:08:02,800 --> 00:08:07,749
+yeah how and when is it used
+
+230
+00:08:10,309 --> 00:08:10,319
+the original the generic binary tree
+
+231
+00:08:10,319 --> 00:08:12,869
+that we just described you know these
+
+232
+00:08:12,879 --> 00:08:16,309
+days it's only used as a teaching tool
+
+233
+00:08:16,319 --> 00:08:18,390
+to give you the idea
+
+234
+00:08:18,400 --> 00:08:20,469
+of what you're trying to accomplish you
+
+235
+00:08:20,479 --> 00:08:21,990
+know in practice
+
+236
+00:08:22,000 --> 00:08:23,990
+a plain binary tree
+
+237
+00:08:24,000 --> 00:08:25,909
+has a lot of uh
+
+238
+00:08:25,919 --> 00:08:27,909
+management problems
+
+239
+00:08:27,919 --> 00:08:28,950
+so
+
+240
+00:08:28,960 --> 00:08:31,990
+it really isn't used in real life
+
+241
+00:08:32,000 --> 00:08:33,430
+you know it's you it's
+
+242
+00:08:33,440 --> 00:08:35,350
+it's used in computer science classes to
+
+243
+00:08:35,360 --> 00:08:37,589
+teach you about binary searches
+
+244
+00:08:37,599 --> 00:08:40,310
+okay well that's at least it helps us
+
+245
+00:08:40,320 --> 00:08:41,909
+discuss the terms
+
+246
+00:08:41,919 --> 00:08:44,630
+which we've touched on a route being the
+
+247
+00:08:44,640 --> 00:08:46,150
+base of that tree or the top of the
+
+248
+00:08:46,160 --> 00:08:47,430
+house of course
+
+249
+00:08:47,440 --> 00:08:49,430
+a leaf is that
+
+250
+00:08:49,440 --> 00:08:51,509
+joining a root to the next node to the
+
+251
+00:08:51,519 --> 00:08:54,070
+next leaf would be the bottom most a
+
+252
+00:08:54,080 --> 00:08:55,430
+terminal node
+
+253
+00:08:55,440 --> 00:08:57,910
+and anything between a root and a leaf
+
+254
+00:08:57,920 --> 00:09:00,470
+is generally called a branch
+
+255
+00:09:00,480 --> 00:09:03,110
+okay okay so is that enough foundation
+
+256
+00:09:03,120 --> 00:09:05,350
+to understand what a b tree is do you
+
+257
+00:09:05,360 --> 00:09:06,389
+think or
+
+258
+00:09:06,399 --> 00:09:07,750
+should
+
+259
+00:09:07,760 --> 00:09:11,350
+you know that covers binary trees so
+
+260
+00:09:11,360 --> 00:09:13,509
+i as i alluded to you know there are
+
+261
+00:09:13,519 --> 00:09:15,590
+some problems when you work with just a
+
+262
+00:09:15,600 --> 00:09:18,230
+plain binary tree and that would lead us
+
+263
+00:09:18,240 --> 00:09:21,350
+into you know discussing bee trees
+
+264
+00:09:21,360 --> 00:09:22,550
+would you want to touch on some of the
+
+265
+00:09:22,560 --> 00:09:25,110
+problems i know it's academic but
+
+266
+00:09:25,120 --> 00:09:27,750
+yeah well the first thing is
+
+267
+00:09:27,760 --> 00:09:30,389
+you know it's easy to con construct a
+
+268
+00:09:30,399 --> 00:09:33,670
+binary tree if all of your input data is
+
+269
+00:09:33,680 --> 00:09:37,269
+already sorted when you begin okay
+
+270
+00:09:37,279 --> 00:09:39,190
+but if you're
+
+271
+00:09:39,200 --> 00:09:41,430
+if you have a very naive algorithm that
+
+272
+00:09:41,440 --> 00:09:43,750
+says
+
+273
+00:09:43,760 --> 00:09:46,070
+for example you start with
+
+274
+00:09:46,080 --> 00:09:49,030
+a node with any particular value and you
+
+275
+00:09:49,040 --> 00:09:51,509
+want to insert the next node
+
+276
+00:09:51,519 --> 00:09:53,670
+and you could say is the new node less
+
+277
+00:09:53,680 --> 00:09:54,630
+than
+
+278
+00:09:54,640 --> 00:09:56,230
+the current node or is it greater than
+
+279
+00:09:56,240 --> 00:09:58,230
+the current node and if it's less you
+
+280
+00:09:58,240 --> 00:09:59,829
+make it the left child and if it's
+
+281
+00:09:59,839 --> 00:10:01,910
+greater you make it the right child if
+
+282
+00:10:01,920 --> 00:10:03,590
+you actually start with a perfectly
+
+283
+00:10:03,600 --> 00:10:04,389
+sorted
+
+284
+00:10:04,399 --> 00:10:07,829
+input data set then this very simple
+
+285
+00:10:07,839 --> 00:10:10,470
+binary tree construction algorithm
+
+286
+00:10:10,480 --> 00:10:11,430
+will
+
+287
+00:10:11,440 --> 00:10:13,269
+actually
+
+288
+00:10:13,279 --> 00:10:15,990
+give you a
+
+289
+00:10:16,000 --> 00:10:18,870
+linear linked list because
+
+290
+00:10:18,880 --> 00:10:21,750
+every new node will always be
+
+291
+00:10:21,760 --> 00:10:23,670
+either greater than
+
+292
+00:10:23,680 --> 00:10:25,910
+okay say you have a list that's sorted
+
+293
+00:10:25,920 --> 00:10:27,829
+in ascending order then every new node
+
+294
+00:10:27,839 --> 00:10:29,269
+will always be greater than the one that
+
+295
+00:10:29,279 --> 00:10:31,350
+preceded it so every time you do an
+
+296
+00:10:31,360 --> 00:10:33,350
+insert you'll always insert onto the
+
+297
+00:10:33,360 --> 00:10:36,389
+rightmost branch and so
+
+298
+00:10:36,399 --> 00:10:39,110
+you'll get a degenerate tree which
+
+299
+00:10:39,120 --> 00:10:41,269
+actually looks like a straight line
+
+300
+00:10:41,279 --> 00:10:42,630
+which is
+
+301
+00:10:42,640 --> 00:10:44,230
+not very useful
+
+302
+00:10:44,240 --> 00:10:45,910
+for the other search properties of the
+
+303
+00:10:45,920 --> 00:10:48,389
+tree yeah because the left
+
+304
+00:10:48,399 --> 00:10:49,829
+the left
+
+305
+00:10:49,839 --> 00:10:50,710
+leaf
+
+306
+00:10:50,720 --> 00:10:53,030
+is the lower side and the right leaf is
+
+307
+00:10:53,040 --> 00:10:54,790
+the upper side so
+
+308
+00:10:54,800 --> 00:10:56,150
+if everything's
+
+309
+00:10:56,160 --> 00:10:57,350
+higher than the previous one then you're
+
+310
+00:10:57,360 --> 00:10:58,550
+only going to be popular in the right
+
+311
+00:10:58,560 --> 00:11:00,310
+side aren't you that's right yeah you'll
+
+312
+00:11:00,320 --> 00:11:02,550
+never populate the left side so this is
+
+313
+00:11:02,560 --> 00:11:04,389
+one of the problems with a plane binary
+
+314
+00:11:04,399 --> 00:11:06,630
+tree is that it's very easy to get into
+
+315
+00:11:06,640 --> 00:11:09,030
+these degenerate forms that aren't
+
+316
+00:11:09,040 --> 00:11:11,430
+balanced right and if it's not balanced
+
+317
+00:11:11,440 --> 00:11:14,069
+then you don't get any advantage of the
+
+318
+00:11:14,079 --> 00:11:16,630
+binary search properties
+
+319
+00:11:16,640 --> 00:11:18,310
+yeah where you split it in half and look
+
+320
+00:11:18,320 --> 00:11:19,750
+at the higher or lower because there's
+
+321
+00:11:19,760 --> 00:11:21,190
+never a lower
+
+322
+00:11:21,200 --> 00:11:23,350
+exactly so you'd be better off just
+
+323
+00:11:23,360 --> 00:11:25,190
+going back to the
+
+324
+00:11:25,200 --> 00:11:27,430
+original way and counting
+
+325
+00:11:27,440 --> 00:11:30,230
+yeah yeah and so that's the most
+
+326
+00:11:30,240 --> 00:11:32,550
+fundamental problem that motivated you
+
+327
+00:11:32,560 --> 00:11:34,630
+know the uh the development of
+
+328
+00:11:34,640 --> 00:11:36,790
+something like a bee tree
+
+329
+00:11:36,800 --> 00:11:38,389
+and this isn't new is it it's been
+
+330
+00:11:38,399 --> 00:11:39,829
+around
+
+331
+00:11:39,839 --> 00:11:41,110
+yeah it's it's been around at least
+
+332
+00:11:41,120 --> 00:11:44,069
+since the 1970s yeah i think the first
+
+333
+00:11:44,079 --> 00:11:49,190
+first published paper uh is 1971 or 72.
+
+334
+00:11:49,200 --> 00:11:51,910
+okay just before we move on to what
+
+335
+00:11:51,920 --> 00:11:54,069
+b-tree issues
+
+336
+00:11:54,079 --> 00:11:56,710
+solve can we just revisit a root a leaf
+
+337
+00:11:56,720 --> 00:11:58,790
+and a a node
+
+338
+00:11:58,800 --> 00:12:00,949
+was that the right word root leaf and
+
+339
+00:12:00,959 --> 00:12:02,550
+they're all nodes right there's a root
+
+340
+00:12:02,560 --> 00:12:04,310
+node there's a leaf node and there are
+
+341
+00:12:04,320 --> 00:12:07,829
+branch nodes in between yeah yeah
+
+342
+00:12:07,839 --> 00:12:11,590
+so a leaf is yeah you describe it again
+
+343
+00:12:11,600 --> 00:12:13,030
+i won't get in the way
+
+344
+00:12:13,040 --> 00:12:16,150
+so all right so the root is you know the
+
+345
+00:12:16,160 --> 00:12:18,790
+starting point right and the leaf is a
+
+346
+00:12:18,800 --> 00:12:21,910
+terminal point there's a leaf has no
+
+347
+00:12:21,920 --> 00:12:23,190
+children
+
+348
+00:12:23,200 --> 00:12:25,910
+okay that makes more sense it's the end
+
+349
+00:12:25,920 --> 00:12:27,350
+of the line right
+
+350
+00:12:27,360 --> 00:12:29,269
+and anything that
+
+351
+00:12:29,279 --> 00:12:30,150
+is
+
+352
+00:12:30,160 --> 00:12:31,509
+you know interposed anything that
+
+353
+00:12:31,519 --> 00:12:33,829
+connects between the root and the leaf
+
+354
+00:12:33,839 --> 00:12:35,590
+is a branch
+
+355
+00:12:35,600 --> 00:12:37,190
+okay and a
+
+356
+00:12:37,200 --> 00:12:39,829
+a node can only have two branches
+
+357
+00:12:39,839 --> 00:12:42,230
+in a binary tree yes i know it can only
+
+358
+00:12:42,240 --> 00:12:44,790
+have two branches okay and if it has
+
+359
+00:12:44,800 --> 00:12:47,030
+your children that's a leaf yeah
+
+360
+00:12:47,040 --> 00:12:49,190
+a node can have up to two branches it
+
+361
+00:12:49,200 --> 00:12:52,310
+could have zero it could have one
+
+362
+00:12:52,320 --> 00:12:53,590
+and that could be a right or left
+
+363
+00:12:53,600 --> 00:12:55,269
+depending on whether the value is higher
+
+364
+00:12:55,279 --> 00:12:56,790
+or lower i think
+
+365
+00:12:56,800 --> 00:12:58,230
+we had a good start but covering the
+
+366
+00:12:58,240 --> 00:12:59,509
+basics
+
+367
+00:12:59,519 --> 00:13:01,750
+and the history there so if we feel
+
+368
+00:13:01,760 --> 00:13:03,030
+ready
+
+369
+00:13:03,040 --> 00:13:06,069
+let's move on to the main types of b3
+
+370
+00:13:06,079 --> 00:13:08,069
+so what is a balanced tree if we could
+
+371
+00:13:08,079 --> 00:13:09,910
+revisit that
+
+372
+00:13:09,920 --> 00:13:12,550
+okay so you know we mentioned that you
+
+373
+00:13:12,560 --> 00:13:14,550
+know if you just naively construct a
+
+374
+00:13:14,560 --> 00:13:17,030
+binary tree and you have
+
+375
+00:13:17,040 --> 00:13:19,110
+data of a particular arrangement for
+
+376
+00:13:19,120 --> 00:13:21,910
+example sorted in ascending order then
+
+377
+00:13:21,920 --> 00:13:23,350
+you won't have a very good tree
+
+378
+00:13:23,360 --> 00:13:25,670
+structure maybe it won't be balanced
+
+379
+00:13:25,680 --> 00:13:26,949
+and it won't give you any search
+
+380
+00:13:26,959 --> 00:13:28,470
+advantages
+
+381
+00:13:28,480 --> 00:13:29,509
+so
+
+382
+00:13:29,519 --> 00:13:30,870
+you know this problem was recognized
+
+383
+00:13:30,880 --> 00:13:33,269
+pretty early on and people thought about
+
+384
+00:13:33,279 --> 00:13:35,190
+ways to
+
+385
+00:13:35,200 --> 00:13:38,590
+to make the tree structure
+
+386
+00:13:38,600 --> 00:13:42,150
+self-managing and self-balancing so that
+
+387
+00:13:42,160 --> 00:13:45,110
+as you insert data to it you know it
+
+388
+00:13:45,120 --> 00:13:46,949
+always
+
+389
+00:13:46,959 --> 00:13:48,870
+manages to
+
+390
+00:13:48,880 --> 00:13:50,870
+check its own status
+
+391
+00:13:50,880 --> 00:13:54,790
+and rebalance things as necessary
+
+392
+00:13:54,800 --> 00:13:57,350
+and rebalancing in this case
+
+393
+00:13:57,360 --> 00:13:59,670
+means actually changing the shape of the
+
+394
+00:13:59,680 --> 00:14:00,629
+tree
+
+395
+00:14:00,639 --> 00:14:04,069
+you know for example let's say i
+
+396
+00:14:04,079 --> 00:14:06,150
+i construct a tree with three nodes
+
+397
+00:14:06,160 --> 00:14:07,990
+right and i'm just inserting the values
+
+398
+00:14:08,000 --> 00:14:10,310
+one two and three
+
+399
+00:14:10,320 --> 00:14:12,550
+and if i start naively by just say
+
+400
+00:14:12,560 --> 00:14:13,350
+saying
+
+401
+00:14:13,360 --> 00:14:15,509
+uh i insert node one
+
+402
+00:14:15,519 --> 00:14:18,470
+and then i insert node two and since two
+
+403
+00:14:18,480 --> 00:14:19,990
+is greater than one i put it on the
+
+404
+00:14:20,000 --> 00:14:21,269
+right child
+
+405
+00:14:21,279 --> 00:14:23,670
+and then i insert nodes three and three
+
+406
+00:14:23,680 --> 00:14:25,829
+is greater than two so
+
+407
+00:14:25,839 --> 00:14:28,230
+i may put three as the right child of
+
+408
+00:14:28,240 --> 00:14:30,389
+two okay so now i have
+
+409
+00:14:30,399 --> 00:14:32,389
+a three a three node tree that's a
+
+410
+00:14:32,399 --> 00:14:34,150
+straight line right
+
+411
+00:14:34,160 --> 00:14:35,030
+and
+
+412
+00:14:35,040 --> 00:14:37,670
+a rebalancing operation in this case
+
+413
+00:14:37,680 --> 00:14:39,990
+would look at that tree and say well
+
+414
+00:14:40,000 --> 00:14:41,269
+that's no good
+
+415
+00:14:41,279 --> 00:14:45,030
+we're going to rotate it left by one
+
+416
+00:14:45,040 --> 00:14:46,389
+position
+
+417
+00:14:46,399 --> 00:14:47,350
+so that
+
+418
+00:14:47,360 --> 00:14:49,910
+node number two becomes the root
+
+419
+00:14:49,920 --> 00:14:52,310
+the node number one becomes the left
+
+420
+00:14:52,320 --> 00:14:55,110
+child and node number three is still the
+
+421
+00:14:55,120 --> 00:14:57,110
+right child of node two
+
+422
+00:14:57,120 --> 00:14:58,629
+and then we have a perfectly balanced
+
+423
+00:14:58,639 --> 00:14:59,990
+tree
+
+424
+00:15:00,000 --> 00:15:01,910
+yeah i'm thinking of um
+
+425
+00:15:01,920 --> 00:15:03,189
+might be totally irrelevant but you know
+
+426
+00:15:03,199 --> 00:15:04,470
+when you go to a website and they've got
+
+427
+00:15:04,480 --> 00:15:06,150
+one of those looks like molecule
+
+428
+00:15:06,160 --> 00:15:07,910
+structure when your mouse hovers over it
+
+429
+00:15:07,920 --> 00:15:09,189
+and moves about
+
+430
+00:15:09,199 --> 00:15:11,110
+kind of like one of those where you've
+
+431
+00:15:11,120 --> 00:15:13,670
+started with the root as one
+
+432
+00:15:13,680 --> 00:15:15,750
+and then two three so you just drag
+
+433
+00:15:15,760 --> 00:15:18,069
+number two and put that at the top and
+
+434
+00:15:18,079 --> 00:15:20,710
+then you've got one below it and three
+
+435
+00:15:20,720 --> 00:15:21,910
+reforming
+
+436
+00:15:21,920 --> 00:15:22,710
+the
+
+437
+00:15:22,720 --> 00:15:25,030
+tree structure yeah i get that that
+
+438
+00:15:25,040 --> 00:15:26,629
+makes sense so
+
+439
+00:15:26,639 --> 00:15:29,350
+what we just described is a balancing
+
+440
+00:15:29,360 --> 00:15:30,710
+operation
+
+441
+00:15:30,720 --> 00:15:32,389
+and the idea
+
+442
+00:15:32,399 --> 00:15:35,670
+is to you know develop an algorithm that
+
+443
+00:15:35,680 --> 00:15:38,230
+manages a tree structure so that it
+
+444
+00:15:38,240 --> 00:15:40,949
+balances itself automatically
+
+445
+00:15:40,959 --> 00:15:43,110
+so that it it can do the analysis that
+
+446
+00:15:43,120 --> 00:15:44,629
+we just described
+
+447
+00:15:44,639 --> 00:15:46,710
+and just automatically keep a tree
+
+448
+00:15:46,720 --> 00:15:47,910
+balanced
+
+449
+00:15:47,920 --> 00:15:51,430
+and the b tree is actually only one of
+
+450
+00:15:51,440 --> 00:15:54,389
+several ways that have come up you know
+
+451
+00:15:54,399 --> 00:15:57,430
+in in computing to solve this problem to
+
+452
+00:15:57,440 --> 00:15:59,590
+solve the self-balancing problem
+
+453
+00:15:59,600 --> 00:16:01,749
+and two other ones that are very common
+
+454
+00:16:01,759 --> 00:16:03,590
+again they're they're taught early on in
+
+455
+00:16:03,600 --> 00:16:06,230
+computer science courses you know is
+
+456
+00:16:06,240 --> 00:16:10,150
+a red black tree and an avl tree
+
+457
+00:16:10,160 --> 00:16:11,749
+so
+
+458
+00:16:11,759 --> 00:16:14,629
+let me just chat about those two
+
+459
+00:16:14,639 --> 00:16:16,310
+where we talk about an algorithm that
+
+460
+00:16:16,320 --> 00:16:18,069
+rebalances the tree
+
+461
+00:16:18,079 --> 00:16:19,670
+some practical
+
+462
+00:16:19,680 --> 00:16:21,670
+way of that might be
+
+463
+00:16:21,680 --> 00:16:22,790
+there's an
+
+464
+00:16:22,800 --> 00:16:25,670
+insert value and part of that function
+
+465
+00:16:25,680 --> 00:16:27,430
+looks to see what is there already and
+
+466
+00:16:27,440 --> 00:16:29,670
+then make some decisions and
+
+467
+00:16:29,680 --> 00:16:31,269
+gives you an okay but behind the scenes
+
+468
+00:16:31,279 --> 00:16:32,790
+it's rejig things
+
+469
+00:16:32,800 --> 00:16:35,269
+is that how that sort of looks
+
+470
+00:16:35,279 --> 00:16:37,590
+behind the scenes it's rebalancing
+
+471
+00:16:37,600 --> 00:16:40,069
+yeah yeah so you have an api that you're
+
+472
+00:16:40,079 --> 00:16:41,910
+using to insert
+
+473
+00:16:41,920 --> 00:16:44,150
+a child or a value
+
+474
+00:16:44,160 --> 00:16:46,389
+and then part of the algorithm and the
+
+475
+00:16:46,399 --> 00:16:48,230
+library that you're using looks
+
+476
+00:16:48,240 --> 00:16:49,749
+everything behind the scenes and
+
+477
+00:16:49,759 --> 00:16:52,470
+rearranges it but gives you like a
+
+478
+00:16:52,480 --> 00:16:56,389
+return value of one or okay or something
+
+479
+00:16:56,399 --> 00:16:58,389
+yeah you know generally it's
+
+480
+00:16:58,399 --> 00:17:01,269
+for example in the case of a b tree
+
+481
+00:17:01,279 --> 00:17:04,069
+it will attempt to do the insert first
+
+482
+00:17:04,079 --> 00:17:06,870
+and then fix up anything that needs to
+
+483
+00:17:06,880 --> 00:17:09,750
+be fixed up afterwards
+
+484
+00:17:09,760 --> 00:17:11,669
+okay so i'll take the data as quick as
+
+485
+00:17:11,679 --> 00:17:13,110
+possible and then
+
+486
+00:17:13,120 --> 00:17:15,350
+i mean you know the effect is the same
+
+487
+00:17:15,360 --> 00:17:16,309
+because
+
+488
+00:17:16,319 --> 00:17:17,909
+you know the caller will have to wait
+
+489
+00:17:17,919 --> 00:17:20,630
+for whatever clean up or rebalancing to
+
+490
+00:17:20,640 --> 00:17:22,150
+finish before
+
+491
+00:17:22,160 --> 00:17:24,390
+the api returns
+
+492
+00:17:24,400 --> 00:17:27,189
+okay just like a normal api okay um
+
+493
+00:17:27,199 --> 00:17:28,549
+since you mentioned those other two
+
+494
+00:17:28,559 --> 00:17:29,909
+types of trees
+
+495
+00:17:29,919 --> 00:17:31,590
+that you're familiar with
+
+496
+00:17:31,600 --> 00:17:32,789
+if you can give us a bit of information
+
+497
+00:17:32,799 --> 00:17:34,549
+about that that'd be great
+
+498
+00:17:34,559 --> 00:17:36,470
+well they're they're both
+
+499
+00:17:36,480 --> 00:17:39,270
+improved versions of a binary tree
+
+500
+00:17:39,280 --> 00:17:43,110
+for example in an avl tree
+
+501
+00:17:43,120 --> 00:17:44,150
+first of all we were talking about
+
+502
+00:17:44,160 --> 00:17:46,070
+binary trees where we inserted a node
+
+503
+00:17:46,080 --> 00:17:48,789
+with a with a simple value right node
+
+504
+00:17:48,799 --> 00:17:51,029
+with a value 1 a node with a value 2 and
+
+505
+00:17:51,039 --> 00:17:54,390
+a node with a value 3. in an avl tree we
+
+506
+00:17:54,400 --> 00:17:55,270
+add
+
+507
+00:17:55,280 --> 00:17:57,430
+a little extra information to each node
+
+508
+00:17:57,440 --> 00:18:01,830
+we call it a balance factor so
+
+509
+00:18:01,840 --> 00:18:04,710
+when you insert a value into a node or
+
+510
+00:18:04,720 --> 00:18:07,190
+into the tree it goes into a node and
+
+511
+00:18:07,200 --> 00:18:09,590
+the node starts off with a balance
+
+512
+00:18:09,600 --> 00:18:11,110
+factor
+
+513
+00:18:11,120 --> 00:18:13,430
+say of zero that says it that means it's
+
+514
+00:18:13,440 --> 00:18:14,710
+balanced
+
+515
+00:18:14,720 --> 00:18:15,830
+and
+
+516
+00:18:15,840 --> 00:18:18,310
+if you add a left child to it it might
+
+517
+00:18:18,320 --> 00:18:21,510
+get a balance factor of minus one that
+
+518
+00:18:21,520 --> 00:18:23,750
+says okay there's something on the left
+
+519
+00:18:23,760 --> 00:18:24,549
+side
+
+520
+00:18:24,559 --> 00:18:26,070
+or if you add
+
+521
+00:18:26,080 --> 00:18:28,390
+a child on the right side it might get a
+
+522
+00:18:28,400 --> 00:18:30,630
+balance factor of plus one meaning that
+
+523
+00:18:30,640 --> 00:18:32,870
+it's got a child on the
+
+524
+00:18:32,880 --> 00:18:34,230
+right side
+
+525
+00:18:34,240 --> 00:18:35,350
+and
+
+526
+00:18:35,360 --> 00:18:37,990
+the algorithm that maintains the tree
+
+527
+00:18:38,000 --> 00:18:40,470
+will go up and down examine these
+
+528
+00:18:40,480 --> 00:18:41,990
+balance factors and if the balance
+
+529
+00:18:42,000 --> 00:18:44,710
+factor ever exceeds
+
+530
+00:18:44,720 --> 00:18:46,549
+plus one or
+
+531
+00:18:46,559 --> 00:18:48,230
+minus one like if the balance factor
+
+532
+00:18:48,240 --> 00:18:51,270
+gets to two or it gets to minus two then
+
+533
+00:18:51,280 --> 00:18:54,070
+then it knows oh this tree is now too
+
+534
+00:18:54,080 --> 00:18:57,270
+heavy on one side and it'll know that it
+
+535
+00:18:57,280 --> 00:18:59,510
+needs to rebalance it that's the basic
+
+536
+00:18:59,520 --> 00:19:01,110
+idea behind
+
+537
+00:19:01,120 --> 00:19:02,950
+an avl tree
+
+538
+00:19:02,960 --> 00:19:05,669
+and is that how to be value something
+
+539
+00:19:05,679 --> 00:19:08,789
+what does the avl stand for as i recall
+
+540
+00:19:08,799 --> 00:19:11,029
+they were the initials of the people who
+
+541
+00:19:11,039 --> 00:19:14,150
+invented it okay so just a name
+
+542
+00:19:14,160 --> 00:19:15,750
+yeah just a name
+
+543
+00:19:15,760 --> 00:19:17,750
+a red black tree is
+
+544
+00:19:17,760 --> 00:19:20,230
+is actually named you know they maintain
+
+545
+00:19:20,240 --> 00:19:22,150
+balance factors as well but they they
+
+546
+00:19:22,160 --> 00:19:24,710
+name them as colors red and black but
+
+547
+00:19:24,720 --> 00:19:28,150
+it's the same general idea
+
+548
+00:19:28,160 --> 00:19:29,110
+okay
+
+549
+00:19:29,120 --> 00:19:31,190
+rm array
+
+550
+00:19:31,200 --> 00:19:33,510
+how do i say this
+
+551
+00:19:33,520 --> 00:19:35,590
+mre search trees
+
+552
+00:19:35,600 --> 00:19:36,549
+okay
+
+553
+00:19:36,559 --> 00:19:37,270
+so
+
+554
+00:19:37,280 --> 00:19:39,510
+so far we've been talking about a binary
+
+555
+00:19:39,520 --> 00:19:41,430
+search tree where every node can have
+
+556
+00:19:41,440 --> 00:19:44,630
+two children right an m-ary tree is
+
+557
+00:19:44,640 --> 00:19:46,390
+where any node can have
+
+558
+00:19:46,400 --> 00:19:48,789
+that's just collecting children sorry to
+
+559
+00:19:48,799 --> 00:19:51,190
+interrupt that's just collect why it's a
+
+560
+00:19:51,200 --> 00:19:53,430
+binary search tree because there's only
+
+561
+00:19:53,440 --> 00:19:55,990
+you know one of two values
+
+562
+00:19:56,000 --> 00:19:58,310
+that's it yes this is more from me this
+
+563
+00:19:58,320 --> 00:20:01,110
+episode okay
+
+564
+00:20:01,120 --> 00:20:02,870
+so yeah binary cert you know binary
+
+565
+00:20:02,880 --> 00:20:04,630
+search tree is
+
+566
+00:20:04,640 --> 00:20:06,549
+a branch factor of two
+
+567
+00:20:06,559 --> 00:20:08,230
+you know any node can have up to two
+
+568
+00:20:08,240 --> 00:20:09,909
+children and then
+
+569
+00:20:09,919 --> 00:20:12,470
+m area tree is just the more generalized
+
+570
+00:20:12,480 --> 00:20:14,470
+form where any node can have up to m
+
+571
+00:20:14,480 --> 00:20:17,510
+children where m is whatever
+
+572
+00:20:17,520 --> 00:20:19,510
+you know arbitrary number that you want
+
+573
+00:20:19,520 --> 00:20:21,830
+to assign it to
+
+574
+00:20:21,840 --> 00:20:23,270
+but they have to be equal don't they
+
+575
+00:20:23,280 --> 00:20:24,950
+they have to
+
+576
+00:20:24,960 --> 00:20:25,990
+all
+
+577
+00:20:26,000 --> 00:20:28,070
+levels of the tree need to have up to
+
+578
+00:20:28,080 --> 00:20:29,350
+that amount
+
+579
+00:20:29,360 --> 00:20:31,029
+that's right yeah
+
+580
+00:20:31,039 --> 00:20:33,830
+you know this we're going to
+
+581
+00:20:33,840 --> 00:20:35,909
+diverging soon from
+
+582
+00:20:35,919 --> 00:20:38,549
+typical computer science teaching on
+
+583
+00:20:38,559 --> 00:20:39,350
+this
+
+584
+00:20:39,360 --> 00:20:41,110
+as we go a little further into this but
+
+585
+00:20:41,120 --> 00:20:43,270
+but for now okay we're talking about b
+
+586
+00:20:43,280 --> 00:20:44,870
+trees and
+
+587
+00:20:44,880 --> 00:20:47,830
+a fixed branching factor branch factor
+
+588
+00:20:47,840 --> 00:20:50,470
+being the the maximum number of children
+
+589
+00:20:50,480 --> 00:20:52,789
+a particular node can have yeah we
+
+590
+00:20:52,799 --> 00:20:55,909
+should probably just stick to e3
+
+591
+00:20:55,919 --> 00:20:56,789
+okay
+
+592
+00:20:56,799 --> 00:20:59,110
+um so i think we touched upon
+
+593
+00:20:59,120 --> 00:21:01,669
+logarithmic and big o notation in our
+
+594
+00:21:01,679 --> 00:21:04,710
+first show together and probably quite
+
+595
+00:21:04,720 --> 00:21:06,149
+across quite a few other shows we've
+
+596
+00:21:06,159 --> 00:21:08,470
+done on software engineering radio we
+
+597
+00:21:08,480 --> 00:21:10,230
+would just like to give a
+
+598
+00:21:10,240 --> 00:21:11,750
+summary of that because
+
+599
+00:21:11,760 --> 00:21:13,669
+that's what this all brings us isn't it
+
+600
+00:21:13,679 --> 00:21:15,350
+that's how it's all measured
+
+601
+00:21:15,360 --> 00:21:17,750
+sure well yes the big o notation
+
+602
+00:21:17,760 --> 00:21:19,029
+basically
+
+603
+00:21:19,039 --> 00:21:21,669
+you know you'll see capital o and
+
+604
+00:21:21,679 --> 00:21:24,390
+parentheses and some factor inside and
+
+605
+00:21:24,400 --> 00:21:25,669
+that means
+
+606
+00:21:25,679 --> 00:21:28,230
+you know semantically means on the order
+
+607
+00:21:28,240 --> 00:21:31,909
+of right so if you say something is
+
+608
+00:21:31,919 --> 00:21:34,870
+big o of log n that means
+
+609
+00:21:34,880 --> 00:21:37,190
+the complexity of that
+
+610
+00:21:37,200 --> 00:21:39,590
+function is on the order of a
+
+611
+00:21:39,600 --> 00:21:41,909
+logarithmic value
+
+612
+00:21:41,919 --> 00:21:44,870
+a logarithm of the number of elements
+
+613
+00:21:44,880 --> 00:21:45,909
+so
+
+614
+00:21:45,919 --> 00:21:47,830
+you know if we look at our very first
+
+615
+00:21:47,840 --> 00:21:50,230
+example of the linear search
+
+616
+00:21:50,240 --> 00:21:52,470
+you know in big o notation that's big o
+
+617
+00:21:52,480 --> 00:21:54,070
+of n where the
+
+618
+00:21:54,080 --> 00:21:57,029
+complexity of searching that element
+
+619
+00:21:57,039 --> 00:21:59,510
+searching that structure
+
+620
+00:21:59,520 --> 00:22:00,549
+is
+
+621
+00:22:00,559 --> 00:22:02,149
+basically equal to the number of
+
+622
+00:22:02,159 --> 00:22:04,549
+elements in the structure
+
+623
+00:22:04,559 --> 00:22:06,870
+so it's a form of notation to let you
+
+624
+00:22:06,880 --> 00:22:08,149
+know how
+
+625
+00:22:08,159 --> 00:22:09,669
+fast or slow something's going to be
+
+626
+00:22:09,679 --> 00:22:12,230
+well how complex something is which
+
+627
+00:22:12,240 --> 00:22:14,549
+usually means how fast or slow it is
+
+628
+00:22:14,559 --> 00:22:17,029
+yeah uh you know the the larger the
+
+629
+00:22:17,039 --> 00:22:19,510
+number the slower it is
+
+630
+00:22:19,520 --> 00:22:20,870
+and so
+
+631
+00:22:20,880 --> 00:22:24,390
+you know the logarithm of n is
+
+632
+00:22:24,400 --> 00:22:26,710
+always smaller than the value of n
+
+633
+00:22:26,720 --> 00:22:30,230
+and and it increases much more slowly
+
+634
+00:22:30,240 --> 00:22:32,870
+than n itself increases right and so
+
+635
+00:22:32,880 --> 00:22:35,669
+that's that's a very desirable property
+
+636
+00:22:35,679 --> 00:22:37,510
+in algorithm because it means the
+
+637
+00:22:37,520 --> 00:22:40,470
+complexity grows very slowly that means
+
+638
+00:22:40,480 --> 00:22:41,669
+as
+
+639
+00:22:41,679 --> 00:22:43,990
+data volumes increase
+
+640
+00:22:44,000 --> 00:22:47,909
+the performance decreases very slowly
+
+641
+00:22:47,919 --> 00:22:49,270
+you know ideally you would want the
+
+642
+00:22:49,280 --> 00:22:52,070
+performance to not decrease at all but
+
+643
+00:22:52,080 --> 00:22:54,710
+this is normally the graph that starts
+
+644
+00:22:54,720 --> 00:22:56,070
+level and then
+
+645
+00:22:56,080 --> 00:22:58,470
+curves up near the end or the other way
+
+646
+00:22:58,480 --> 00:22:59,590
+around
+
+647
+00:22:59,600 --> 00:23:01,510
+when you see
+
+648
+00:23:01,520 --> 00:23:03,029
+starts and
+
+649
+00:23:03,039 --> 00:23:06,070
+curves up slowly yeah yeah that's right
+
+650
+00:23:06,080 --> 00:23:07,350
+so
+
+651
+00:23:07,360 --> 00:23:08,950
+b3
+
+652
+00:23:08,960 --> 00:23:11,190
+is a balanced tree that's just a short
+
+653
+00:23:11,200 --> 00:23:13,590
+way of it of saying isn't it
+
+654
+00:23:13,600 --> 00:23:15,830
+yeah it's it is one of the
+
+655
+00:23:15,840 --> 00:23:19,270
+self-balancing binary trees yeah yeah
+
+656
+00:23:19,280 --> 00:23:20,870
+except it's not it's not necessarily
+
+657
+00:23:20,880 --> 00:23:23,110
+binary right it's it's m area it's an
+
+658
+00:23:23,120 --> 00:23:25,110
+arbitrary factor
+
+659
+00:23:25,120 --> 00:23:26,470
+okay
+
+660
+00:23:26,480 --> 00:23:28,549
+and is there a
+
+661
+00:23:28,559 --> 00:23:30,549
+proven statistic of how fast they are
+
+662
+00:23:30,559 --> 00:23:33,430
+you know if you follow that structure
+
+663
+00:23:33,440 --> 00:23:36,149
+well it you know it is a logarithmic
+
+664
+00:23:36,159 --> 00:23:38,870
+algorithm you know it's big o of log n
+
+665
+00:23:38,880 --> 00:23:41,510
+and the base of the logarithm just
+
+666
+00:23:41,520 --> 00:23:44,470
+depends on you know the m the branch
+
+667
+00:23:44,480 --> 00:23:45,510
+factor
+
+668
+00:23:45,520 --> 00:23:46,789
+if you have
+
+669
+00:23:46,799 --> 00:23:48,390
+a binary
+
+670
+00:23:48,400 --> 00:23:50,549
+if you have a b tree that has
+
+671
+00:23:50,559 --> 00:23:53,909
+you know m equals two then it will be
+
+672
+00:23:53,919 --> 00:23:56,390
+this is log of base two
+
+673
+00:23:56,400 --> 00:23:57,590
+if you
+
+674
+00:23:57,600 --> 00:23:59,830
+give it a branch factor of four then you
+
+675
+00:23:59,840 --> 00:24:03,510
+know it'll be o log to base four
+
+676
+00:24:03,520 --> 00:24:04,710
+and then
+
+677
+00:24:04,720 --> 00:24:06,549
+how would you decide
+
+678
+00:24:06,559 --> 00:24:07,590
+between
+
+679
+00:24:07,600 --> 00:24:09,830
+a binary tree and you know
+
+680
+00:24:09,840 --> 00:24:12,549
+instead of two nodes some larger factor
+
+681
+00:24:12,559 --> 00:24:13,350
+yeah
+
+682
+00:24:13,360 --> 00:24:16,149
+so that is really
+
+683
+00:24:16,159 --> 00:24:18,310
+that's really a judgment call that needs
+
+684
+00:24:18,320 --> 00:24:21,590
+to be tuned for the use case because one
+
+685
+00:24:21,600 --> 00:24:24,310
+thing you're tr well you're trading off
+
+686
+00:24:24,320 --> 00:24:26,230
+a couple of things here
+
+687
+00:24:26,240 --> 00:24:27,510
+the more
+
+688
+00:24:27,520 --> 00:24:29,750
+branches the more yeah the more elements
+
+689
+00:24:29,760 --> 00:24:30,950
+you can pack
+
+690
+00:24:30,960 --> 00:24:33,110
+to a node more branches you can put to a
+
+691
+00:24:33,120 --> 00:24:35,909
+node the fewer nodes you need
+
+692
+00:24:35,919 --> 00:24:38,789
+okay
+
+693
+00:24:39,909 --> 00:24:39,919
+but
+
+694
+00:24:39,919 --> 00:24:41,510
+you know the
+
+695
+00:24:41,520 --> 00:24:44,310
+the larger a node becomes
+
+696
+00:24:44,320 --> 00:24:46,870
+you know the more work it takes to
+
+697
+00:24:46,880 --> 00:24:48,789
+maintain
+
+698
+00:24:48,799 --> 00:24:51,110
+the pointers inside
+
+699
+00:24:51,120 --> 00:24:52,230
+you know so
+
+700
+00:24:52,240 --> 00:24:54,789
+like if i have a node that has
+
+701
+00:24:54,799 --> 00:24:56,549
+a hundred elements
+
+702
+00:24:56,559 --> 00:24:58,390
+that would be slower to manage than the
+
+703
+00:24:58,400 --> 00:25:01,350
+node that only has four elements
+
+704
+00:25:01,360 --> 00:25:02,950
+yeah and if the
+
+705
+00:25:02,960 --> 00:25:04,390
+if you're doing
+
+706
+00:25:04,400 --> 00:25:05,909
+i think anyway this is just how i'm
+
+707
+00:25:05,919 --> 00:25:08,149
+understanding it if you've got a binary
+
+708
+00:25:08,159 --> 00:25:09,669
+tree and the node's just got two
+
+709
+00:25:09,679 --> 00:25:10,789
+children
+
+710
+00:25:10,799 --> 00:25:11,510
+and
+
+711
+00:25:11,520 --> 00:25:14,230
+the right leaf is the higher value on
+
+712
+00:25:14,240 --> 00:25:16,870
+the left but then if you go to four or
+
+713
+00:25:16,880 --> 00:25:19,029
+seven or whatever you've got to then
+
+714
+00:25:19,039 --> 00:25:20,950
+order all those in the right
+
+715
+00:25:20,960 --> 00:25:22,470
+way don't you of each number yeah you
+
+716
+00:25:22,480 --> 00:25:24,310
+have to keep all of them sorted and you
+
+717
+00:25:24,320 --> 00:25:25,269
+have to
+
+718
+00:25:25,279 --> 00:25:27,190
+you actually have to execute a binary
+
+719
+00:25:27,200 --> 00:25:29,430
+search within that node to find what
+
+720
+00:25:29,440 --> 00:25:31,029
+you're looking for
+
+721
+00:25:31,039 --> 00:25:32,149
+yeah so
+
+722
+00:25:32,159 --> 00:25:33,750
+and you've got to keep that all in your
+
+723
+00:25:33,760 --> 00:25:35,909
+head as you're thinking about it when
+
+724
+00:25:35,919 --> 00:25:38,310
+you write the code
+
+725
+00:25:38,320 --> 00:25:39,990
+yeah
+
+726
+00:25:40,000 --> 00:25:41,990
+generally you're going to find you know
+
+727
+00:25:42,000 --> 00:25:44,870
+in examples in textbook examples of a b
+
+728
+00:25:44,880 --> 00:25:45,830
+tree that
+
+729
+00:25:45,840 --> 00:25:47,269
+you know the
+
+730
+00:25:47,279 --> 00:25:50,070
+they'll pick some fixed number and and
+
+731
+00:25:50,080 --> 00:25:52,390
+never worry about it again it'll be like
+
+732
+00:25:52,400 --> 00:25:54,070
+okay we're going to do
+
+733
+00:25:54,080 --> 00:25:56,710
+8 nodes or 16.
+
+734
+00:25:56,720 --> 00:25:58,710
+16 leafs per node or whatever and and
+
+735
+00:25:58,720 --> 00:26:01,029
+then just forget about it you just
+
+736
+00:26:01,039 --> 00:26:02,630
+set it and
+
+737
+00:26:02,640 --> 00:26:05,029
+not worry again
+
+738
+00:26:05,039 --> 00:26:07,669
+and is it something that
+
+739
+00:26:07,679 --> 00:26:09,669
+you would come back and revisit at some
+
+740
+00:26:09,679 --> 00:26:11,430
+point or
+
+741
+00:26:11,440 --> 00:26:12,310
+well
+
+742
+00:26:12,320 --> 00:26:14,230
+you know we're talking about the general
+
+743
+00:26:14,240 --> 00:26:16,710
+b tree here when when we get to b plus
+
+744
+00:26:16,720 --> 00:26:17,669
+trees
+
+745
+00:26:17,679 --> 00:26:19,430
+you know
+
+746
+00:26:19,440 --> 00:26:21,669
+those those considerations go out the
+
+747
+00:26:21,679 --> 00:26:25,029
+window so okay
+
+748
+00:26:25,039 --> 00:26:27,029
+so we've talked about
+
+749
+00:26:27,039 --> 00:26:29,190
+a b tree we know we're gonna move on to
+
+750
+00:26:29,200 --> 00:26:30,789
+our b plus tree
+
+751
+00:26:30,799 --> 00:26:32,630
+but there's a b minus three can you tell
+
+752
+00:26:32,640 --> 00:26:34,070
+us a bit about that
+
+753
+00:26:34,080 --> 00:26:36,710
+oh no b minus three is just
+
+754
+00:26:36,720 --> 00:26:40,630
+another way of writing b3 that's
+
+755
+00:26:42,230 --> 00:26:42,240
+maybe it's a type of
+
+756
+00:26:42,240 --> 00:26:45,190
+minor
+
+757
+00:26:47,750 --> 00:26:47,760
+okay we've covered logarithmic time
+
+758
+00:26:47,760 --> 00:26:50,230
+so a b3 is well suited for storage
+
+759
+00:26:50,240 --> 00:26:52,390
+systems that read and write relatively
+
+760
+00:26:52,400 --> 00:26:55,590
+large blocks of data such as disks
+
+761
+00:26:55,600 --> 00:26:57,350
+do you agree with that
+
+762
+00:26:57,360 --> 00:26:59,029
+i think that's more
+
+763
+00:26:59,039 --> 00:27:01,990
+uh more suitable for b-plus tree
+
+764
+00:27:02,000 --> 00:27:03,430
+a b-tree
+
+765
+00:27:03,440 --> 00:27:06,230
+the general form of a b-tree
+
+766
+00:27:06,240 --> 00:27:08,470
+it can be
+
+767
+00:27:08,480 --> 00:27:09,750
+tailored for
+
+768
+00:27:09,760 --> 00:27:13,510
+block storage and and the idea again is
+
+769
+00:27:13,520 --> 00:27:15,029
+you make
+
+770
+00:27:15,039 --> 00:27:18,389
+your nodes the same size as your disk
+
+771
+00:27:18,399 --> 00:27:20,549
+blocks
+
+772
+00:27:20,559 --> 00:27:23,110
+okay yeah so this is the actual link of
+
+773
+00:27:23,120 --> 00:27:24,549
+getting back to
+
+774
+00:27:24,559 --> 00:27:28,230
+file systems and why it's used there yes
+
+775
+00:27:28,240 --> 00:27:30,549
+okay that makes sense so if if the block
+
+776
+00:27:30,559 --> 00:27:34,549
+size which nowadays is 496. kilobytes
+
+777
+00:27:34,559 --> 00:27:35,590
+isn't it
+
+778
+00:27:35,600 --> 00:27:38,310
+4096 bytes yeah right yeah
+
+779
+00:27:38,320 --> 00:27:40,149
+and that would be your biggest
+
+780
+00:27:40,159 --> 00:27:42,549
+leaf node what would that be
+
+781
+00:27:42,559 --> 00:27:44,950
+that would be the size of your node yeah
+
+782
+00:27:44,960 --> 00:27:45,990
+yeah
+
+783
+00:27:46,000 --> 00:27:48,630
+in the b tree all of your nodes should
+
+784
+00:27:48,640 --> 00:27:50,870
+be the same size
+
+785
+00:27:50,880 --> 00:27:52,070
+okay so
+
+786
+00:27:52,080 --> 00:27:53,909
+let's start the big one
+
+787
+00:27:53,919 --> 00:27:57,269
+so just to recap we've gone over
+
+788
+00:27:57,279 --> 00:27:59,350
+a binary search tree
+
+789
+00:27:59,360 --> 00:28:00,789
+so that's a
+
+790
+00:28:00,799 --> 00:28:02,470
+a root node
+
+791
+00:28:02,480 --> 00:28:03,909
+and then children
+
+792
+00:28:03,919 --> 00:28:05,909
+each uh leaf can have
+
+793
+00:28:05,919 --> 00:28:08,230
+two children left and right
+
+794
+00:28:08,240 --> 00:28:09,990
+the right generally the higher value and
+
+795
+00:28:10,000 --> 00:28:11,750
+the left is the lower
+
+796
+00:28:11,760 --> 00:28:14,230
+and everything sort of founded upon that
+
+797
+00:28:14,240 --> 00:28:16,630
+we've moved on to balanced trees
+
+798
+00:28:16,640 --> 00:28:19,430
+so there's always a left and the right
+
+799
+00:28:19,440 --> 00:28:21,269
+we've discussed big o and logarithmic
+
+800
+00:28:21,279 --> 00:28:22,149
+time
+
+801
+00:28:22,159 --> 00:28:25,190
+and the current uses for b trees
+
+802
+00:28:25,200 --> 00:28:26,870
+now we're going to move on to b plus
+
+803
+00:28:26,880 --> 00:28:28,549
+trees
+
+804
+00:28:28,559 --> 00:28:29,430
+right
+
+805
+00:28:29,440 --> 00:28:31,029
+so let's start again
+
+806
+00:28:31,039 --> 00:28:33,590
+what is the b plus 3 data structure used
+
+807
+00:28:33,600 --> 00:28:34,789
+for
+
+808
+00:28:34,799 --> 00:28:36,149
+today
+
+809
+00:28:36,159 --> 00:28:39,430
+it it finds a lot of use in all kinds of
+
+810
+00:28:39,440 --> 00:28:41,909
+data management applications
+
+811
+00:28:41,919 --> 00:28:45,110
+for example in many
+
+812
+00:28:45,120 --> 00:28:47,590
+say sql databases
+
+813
+00:28:47,600 --> 00:28:50,870
+relational databases a b tree is almost
+
+814
+00:28:50,880 --> 00:28:53,990
+always used for indexing
+
+815
+00:28:54,000 --> 00:28:57,350
+and in some cases it's also used for
+
+816
+00:28:57,360 --> 00:28:59,990
+primary data tables
+
+817
+00:29:00,000 --> 00:29:01,029
+and
+
+818
+00:29:01,039 --> 00:29:02,950
+why is that
+
+819
+00:29:02,960 --> 00:29:04,470
+well it's always used for indexing
+
+820
+00:29:04,480 --> 00:29:05,909
+because you know it is
+
+821
+00:29:05,919 --> 00:29:08,389
+a structure it's an ordered structure
+
+822
+00:29:08,399 --> 00:29:09,430
+right so
+
+823
+00:29:09,440 --> 00:29:10,630
+it's uh
+
+824
+00:29:10,640 --> 00:29:14,230
+it's fast to look up elements in
+
+825
+00:29:14,240 --> 00:29:15,990
+and
+
+826
+00:29:16,000 --> 00:29:17,590
+you know it lets you
+
+827
+00:29:17,600 --> 00:29:18,389
+move
+
+828
+00:29:18,399 --> 00:29:19,669
+sequentially
+
+829
+00:29:19,679 --> 00:29:21,669
+through the data set so if you want to
+
+830
+00:29:21,679 --> 00:29:23,590
+retrieve elements in this sorted order
+
+831
+00:29:23,600 --> 00:29:25,669
+in a particular range it's very it's
+
+832
+00:29:25,679 --> 00:29:27,590
+very well suited for that
+
+833
+00:29:27,600 --> 00:29:30,470
+in for the primary data sets
+
+834
+00:29:30,480 --> 00:29:32,789
+it's not always used
+
+835
+00:29:32,799 --> 00:29:34,389
+because
+
+836
+00:29:34,399 --> 00:29:35,990
+you know generally
+
+837
+00:29:36,000 --> 00:29:37,990
+a b plus tree
+
+838
+00:29:38,000 --> 00:29:39,190
+has
+
+839
+00:29:39,200 --> 00:29:41,830
+range limits on the sizes of items you
+
+840
+00:29:41,840 --> 00:29:44,070
+can put into it
+
+841
+00:29:44,080 --> 00:29:44,950
+so
+
+842
+00:29:44,960 --> 00:29:47,110
+while you might have data with
+
+843
+00:29:47,120 --> 00:29:49,510
+relatively small keys say
+
+844
+00:29:49,520 --> 00:29:51,990
+you know eight byte integer keys
+
+845
+00:29:52,000 --> 00:29:53,269
+if you're
+
+846
+00:29:53,279 --> 00:29:54,630
+attaching
+
+847
+00:29:54,640 --> 00:29:58,710
+say a 200 megabyte value to that key
+
+848
+00:29:58,720 --> 00:30:00,470
+you know it may not
+
+849
+00:30:00,480 --> 00:30:03,269
+be so easy to manage in a b plus tree
+
+850
+00:30:03,279 --> 00:30:05,029
+and so you might use a different data
+
+851
+00:30:05,039 --> 00:30:07,350
+structure to store the actual
+
+852
+00:30:07,360 --> 00:30:10,310
+data that goes with the keys
+
+853
+00:30:10,320 --> 00:30:13,350
+okay um what relation so it was a say it
+
+854
+00:30:13,360 --> 00:30:16,310
+was a simple key value
+
+855
+00:30:16,320 --> 00:30:18,389
+store you're trying to implement
+
+856
+00:30:18,399 --> 00:30:21,350
+what relationship does the b3
+
+857
+00:30:21,360 --> 00:30:23,669
+are half to the key and the value
+
+858
+00:30:23,679 --> 00:30:25,669
+is the is the node a key or is the key
+
+859
+00:30:25,679 --> 00:30:27,990
+just a bit of data in that tree
+
+860
+00:30:28,000 --> 00:30:30,870
+okay so if we back up and look at you
+
+861
+00:30:30,880 --> 00:30:33,110
+know what we talked about in b trees you
+
+862
+00:30:33,120 --> 00:30:33,909
+know
+
+863
+00:30:33,919 --> 00:30:36,789
+we actually were using a much more
+
+864
+00:30:36,799 --> 00:30:39,029
+simplified example where a node only
+
+865
+00:30:39,039 --> 00:30:42,070
+contained a single value like an integer
+
+866
+00:30:42,080 --> 00:30:43,990
+right one two or three
+
+867
+00:30:44,000 --> 00:30:46,470
+so in in that case in the terms that
+
+868
+00:30:46,480 --> 00:30:47,990
+you're talking about
+
+869
+00:30:48,000 --> 00:30:49,510
+it would be
+
+870
+00:30:49,520 --> 00:30:52,789
+a key only database
+
+871
+00:30:52,799 --> 00:30:54,950
+okay yeah because the only thing we were
+
+872
+00:30:54,960 --> 00:30:56,470
+storing in there was
+
+873
+00:30:56,480 --> 00:30:59,590
+a searchable value that was a key
+
+874
+00:30:59,600 --> 00:31:02,070
+in the case of the b plus tree
+
+875
+00:31:02,080 --> 00:31:04,070
+you know we have those keys those
+
+876
+00:31:04,080 --> 00:31:05,669
+numeric keys
+
+877
+00:31:05,679 --> 00:31:09,110
+but we can also associate with them
+
+878
+00:31:09,120 --> 00:31:11,669
+an arbitrary blob of data
+
+879
+00:31:11,679 --> 00:31:13,110
+and
+
+880
+00:31:13,120 --> 00:31:16,230
+in a b plus tree structure
+
+881
+00:31:16,240 --> 00:31:17,669
+you know the
+
+882
+00:31:17,679 --> 00:31:20,070
+only the leaves of the tree actually
+
+883
+00:31:20,080 --> 00:31:21,350
+store
+
+884
+00:31:21,360 --> 00:31:22,870
+the data values
+
+885
+00:31:22,880 --> 00:31:25,590
+all of the root and interior
+
+886
+00:31:25,600 --> 00:31:27,110
+uh nodes
+
+887
+00:31:27,120 --> 00:31:30,630
+will always store only the keys
+
+888
+00:31:30,640 --> 00:31:32,230
+okay so your
+
+889
+00:31:32,240 --> 00:31:34,230
+the key coming in for example in a
+
+890
+00:31:34,240 --> 00:31:35,750
+database search
+
+891
+00:31:35,760 --> 00:31:36,789
+part of
+
+892
+00:31:36,799 --> 00:31:38,870
+a select and because you've got an index
+
+893
+00:31:38,880 --> 00:31:39,909
+created
+
+894
+00:31:39,919 --> 00:31:40,870
+form
+
+895
+00:31:40,880 --> 00:31:42,950
+where such and such equals something
+
+896
+00:31:42,960 --> 00:31:44,630
+then you know that's the key so then you
+
+897
+00:31:44,640 --> 00:31:45,509
+can
+
+898
+00:31:45,519 --> 00:31:47,350
+reliably predict how quickly that's
+
+899
+00:31:47,360 --> 00:31:48,470
+going to take you know it's going to be
+
+900
+00:31:48,480 --> 00:31:49,990
+fast
+
+901
+00:31:50,000 --> 00:31:52,710
+if you find an index which will then
+
+902
+00:31:52,720 --> 00:31:56,070
+recover the value which is the the row
+
+903
+00:31:56,080 --> 00:31:58,310
+where the information stored
+
+904
+00:31:58,320 --> 00:31:59,509
+yeah
+
+905
+00:31:59,519 --> 00:32:01,509
+and again you know in
+
+906
+00:32:01,519 --> 00:32:04,230
+if you're using a b plus tree only as an
+
+907
+00:32:04,240 --> 00:32:05,990
+index then
+
+908
+00:32:06,000 --> 00:32:07,509
+the value that you get back is just
+
+909
+00:32:07,519 --> 00:32:09,269
+going to be a pointer to the data that
+
+910
+00:32:09,279 --> 00:32:11,029
+lives somewhere else
+
+911
+00:32:11,039 --> 00:32:12,630
+right
+
+912
+00:32:12,640 --> 00:32:16,470
+yeah i think i'm getting it now
+
+913
+00:32:18,230 --> 00:32:18,240
+and again there's the alternative where
+
+914
+00:32:18,240 --> 00:32:19,909
+you actually use the b plus tree to
+
+915
+00:32:19,919 --> 00:32:22,070
+store the primary data as well you know
+
+916
+00:32:22,080 --> 00:32:23,990
+in that case the value that you retrieve
+
+917
+00:32:24,000 --> 00:32:27,029
+will be you know the complete data item
+
+918
+00:32:27,039 --> 00:32:29,509
+that was associated to that key
+
+919
+00:32:29,519 --> 00:32:31,509
+yeah because if you've got a quick look
+
+920
+00:32:31,519 --> 00:32:33,509
+up and the index
+
+921
+00:32:33,519 --> 00:32:35,509
+you want still want a quick way to find
+
+922
+00:32:35,519 --> 00:32:37,830
+the actual data you're asking for
+
+923
+00:32:37,840 --> 00:32:39,430
+as well so
+
+924
+00:32:39,440 --> 00:32:40,549
+you would
+
+925
+00:32:40,559 --> 00:32:42,230
+you could potentially have the two b
+
+926
+00:32:42,240 --> 00:32:44,630
+plus trees like you just said
+
+927
+00:32:44,640 --> 00:32:45,830
+yeah
+
+928
+00:32:45,840 --> 00:32:48,020
+okay we can move on to question three
+
+929
+00:32:48,030 --> 00:32:50,310
+[Laughter]
+
+930
+00:32:50,320 --> 00:32:52,870
+so what extent is adoption driven by
+
+931
+00:32:52,880 --> 00:32:56,389
+some of the newest hardware like ssds or
+
+932
+00:32:56,399 --> 00:32:58,470
+newer types of memory for
+
+933
+00:32:58,480 --> 00:33:00,549
+this tree structure does that do they
+
+934
+00:33:00,559 --> 00:33:02,230
+have to change it for
+
+935
+00:33:02,240 --> 00:33:03,909
+where blocks are stored or anything like
+
+936
+00:33:03,919 --> 00:33:06,310
+that or is that sort of transparent
+
+937
+00:33:06,320 --> 00:33:07,990
+you know it's
+
+938
+00:33:08,000 --> 00:33:09,990
+a lot of the answer to that question
+
+939
+00:33:10,000 --> 00:33:11,350
+depends on
+
+940
+00:33:11,360 --> 00:33:13,509
+what the operating system is doing with
+
+941
+00:33:13,519 --> 00:33:15,990
+the different memory structures or the
+
+942
+00:33:16,000 --> 00:33:17,509
+you know the newer types of memory as
+
+943
+00:33:17,519 --> 00:33:19,110
+you were talking about you know there's
+
+944
+00:33:19,120 --> 00:33:21,190
+persistent memory or
+
+945
+00:33:21,200 --> 00:33:23,750
+like obtain
+
+946
+00:33:23,760 --> 00:33:26,870
+memory or some other things like that
+
+947
+00:33:26,880 --> 00:33:31,110
+you have you have the option of
+
+948
+00:33:31,120 --> 00:33:32,389
+making that
+
+949
+00:33:32,399 --> 00:33:34,310
+memory transparently
+
+950
+00:33:34,320 --> 00:33:35,909
+usable
+
+951
+00:33:35,919 --> 00:33:37,990
+or you have the option of making it an
+
+952
+00:33:38,000 --> 00:33:39,909
+explicit block device
+
+953
+00:33:39,919 --> 00:33:40,710
+so
+
+954
+00:33:40,720 --> 00:33:42,230
+it really depends on what the operating
+
+955
+00:33:42,240 --> 00:33:44,070
+system has done one of the things that
+
+956
+00:33:44,080 --> 00:33:46,070
+we we didn't
+
+957
+00:33:46,080 --> 00:33:47,110
+state
+
+958
+00:33:47,120 --> 00:33:50,149
+explicitly here is that in
+
+959
+00:33:50,159 --> 00:33:52,870
+in the b plus tree again we're talking
+
+960
+00:33:52,880 --> 00:33:54,710
+about nodes
+
+961
+00:33:54,720 --> 00:33:57,269
+or yeah nodes that are the size of disk
+
+962
+00:33:57,279 --> 00:33:59,990
+blocks right and yeah in the b plus tree
+
+963
+00:34:00,000 --> 00:34:01,430
+terminology we're gonna we're going to
+
+964
+00:34:01,440 --> 00:34:04,549
+call those pages okay so one page of a b
+
+965
+00:34:04,559 --> 00:34:05,750
+plus tree
+
+966
+00:34:05,760 --> 00:34:08,550
+equals one page in a file system one
+
+967
+00:34:08,560 --> 00:34:11,109
+page on disk
+
+968
+00:34:11,119 --> 00:34:12,710
+yeah i think um
+
+969
+00:34:12,720 --> 00:34:15,829
+thinking back to the lmdb show
+
+970
+00:34:15,839 --> 00:34:18,069
+and we were talking about
+
+971
+00:34:18,079 --> 00:34:20,470
+cpu caches and all sorts of things like
+
+972
+00:34:20,480 --> 00:34:21,589
+that
+
+973
+00:34:21,599 --> 00:34:23,270
+keeping the data
+
+974
+00:34:23,280 --> 00:34:25,430
+that can be held in cache small and that
+
+975
+00:34:25,440 --> 00:34:26,230
+is
+
+976
+00:34:26,240 --> 00:34:28,230
+what you're trying to do here isn't it
+
+977
+00:34:28,240 --> 00:34:30,629
+yeah that's why we only store keys in
+
+978
+00:34:30,639 --> 00:34:32,710
+the interior pages
+
+979
+00:34:32,720 --> 00:34:34,550
+and keep
+
+980
+00:34:34,560 --> 00:34:37,349
+the actual data at the leaf
+
+981
+00:34:37,359 --> 00:34:40,710
+that means you can fit the maximum
+
+982
+00:34:40,720 --> 00:34:43,349
+proportion of the
+
+983
+00:34:43,359 --> 00:34:45,109
+key index
+
+984
+00:34:45,119 --> 00:34:47,510
+in memory
+
+985
+00:34:47,520 --> 00:34:48,869
+so you're not always having to go back
+
+986
+00:34:48,879 --> 00:34:50,950
+to the file system to get the keys
+
+987
+00:34:50,960 --> 00:34:51,750
+right
+
+988
+00:34:51,760 --> 00:34:53,510
+yeah so when you're doing key lookups
+
+989
+00:34:53,520 --> 00:34:55,589
+they can all be in memory and very fast
+
+990
+00:34:55,599 --> 00:34:57,670
+and then when you actually you know get
+
+991
+00:34:57,680 --> 00:35:00,069
+to the bottom of the tree and find the
+
+992
+00:35:00,079 --> 00:35:01,670
+value that you want then you might
+
+993
+00:35:01,680 --> 00:35:03,589
+actually have to go out to disk
+
+994
+00:35:03,599 --> 00:35:06,069
+or some other slower storage
+
+995
+00:35:06,079 --> 00:35:09,190
+and that's the idealized case right but
+
+996
+00:35:09,200 --> 00:35:11,270
+obviously if you have a very small
+
+997
+00:35:11,280 --> 00:35:13,589
+database it could all be entirely in
+
+998
+00:35:13,599 --> 00:35:15,670
+memory and if you have a very large
+
+999
+00:35:15,680 --> 00:35:18,230
+database you could wind up with you know
+
+1000
+00:35:18,240 --> 00:35:19,910
+portions of the
+
+1001
+00:35:19,920 --> 00:35:22,870
+interior index also
+
+1002
+00:35:22,880 --> 00:35:25,670
+just pushed outside of memory
+
+1003
+00:35:25,680 --> 00:35:27,270
+and
+
+1004
+00:35:27,280 --> 00:35:29,270
+when we're talking about
+
+1005
+00:35:29,280 --> 00:35:31,990
+a b plus 3 data structure
+
+1006
+00:35:32,000 --> 00:35:33,510
+obviously that's a thing but what does
+
+1007
+00:35:33,520 --> 00:35:35,589
+that thing look like on
+
+1008
+00:35:35,599 --> 00:35:37,430
+on a computer or
+
+1009
+00:35:37,440 --> 00:35:39,829
+a hard disk
+
+1010
+00:35:39,839 --> 00:35:41,829
+well there's you know there's certainly
+
+1011
+00:35:41,839 --> 00:35:45,430
+a lot of leeway in how you construct it
+
+1012
+00:35:45,440 --> 00:35:48,710
+you know at the bits and bytes level but
+
+1013
+00:35:48,720 --> 00:35:50,310
+conceptually
+
+1014
+00:35:50,320 --> 00:35:53,670
+it's not much different than the b tree
+
+1015
+00:35:53,680 --> 00:35:55,109
+right
+
+1016
+00:35:55,119 --> 00:35:56,950
+you have a root
+
+1017
+00:35:56,960 --> 00:36:00,390
+page the root page can have
+
+1018
+00:36:00,400 --> 00:36:02,150
+some number of pointers in it to
+
+1019
+00:36:02,160 --> 00:36:03,510
+children
+
+1020
+00:36:03,520 --> 00:36:05,910
+and in this case as i mentioned before
+
+1021
+00:36:05,920 --> 00:36:08,150
+we no longer talk about it as an mary
+
+1022
+00:36:08,160 --> 00:36:09,510
+tree
+
+1023
+00:36:09,520 --> 00:36:10,870
+it's
+
+1024
+00:36:10,880 --> 00:36:12,790
+as many
+
+1025
+00:36:12,800 --> 00:36:15,349
+child pointers as will fit
+
+1026
+00:36:15,359 --> 00:36:16,870
+in a page
+
+1027
+00:36:16,880 --> 00:36:18,950
+so it's not a fixed number
+
+1028
+00:36:18,960 --> 00:36:21,109
+it's just you you cram in as much as
+
+1029
+00:36:21,119 --> 00:36:22,950
+will fit before you have to overflow
+
+1030
+00:36:22,960 --> 00:36:25,589
+into a new page
+
+1031
+00:36:25,599 --> 00:36:26,710
+okay
+
+1032
+00:36:26,720 --> 00:36:28,630
+i'm still asking some really basic
+
+1033
+00:36:28,640 --> 00:36:30,230
+questions here sorry
+
+1034
+00:36:30,240 --> 00:36:34,230
+um so is is this data structure
+
+1035
+00:36:34,240 --> 00:36:36,150
+constructed from something on a file
+
+1036
+00:36:36,160 --> 00:36:37,109
+system
+
+1037
+00:36:37,119 --> 00:36:39,670
+or in a text file or something like that
+
+1038
+00:36:39,680 --> 00:36:40,870
+how do i
+
+1039
+00:36:40,880 --> 00:36:43,190
+my question's coming from thinking about
+
+1040
+00:36:43,200 --> 00:36:47,430
+the data.mdb file you know that lmdb
+
+1041
+00:36:47,440 --> 00:36:48,790
+creates in the first show we did
+
+1042
+00:36:48,800 --> 00:36:49,910
+together
+
+1043
+00:36:49,920 --> 00:36:51,589
+what's inside that you know what's
+
+1044
+00:36:51,599 --> 00:36:52,950
+inside well
+
+1045
+00:36:52,960 --> 00:36:54,790
+that is a
+
+1046
+00:36:54,800 --> 00:36:57,030
+just a sequence of pages
+
+1047
+00:36:57,040 --> 00:37:00,230
+and each page you know has pointers to
+
+1048
+00:37:00,240 --> 00:37:01,750
+other pages
+
+1049
+00:37:01,760 --> 00:37:05,109
+okay
+
+1050
+00:37:07,190 --> 00:37:07,200
+so in in the textbooks
+
+1051
+00:37:07,200 --> 00:37:09,270
+they will give you an example of a
+
+1052
+00:37:09,280 --> 00:37:10,950
+b-plus tree where
+
+1053
+00:37:10,960 --> 00:37:13,829
+you know all of the dimensions are fixed
+
+1054
+00:37:13,839 --> 00:37:15,990
+constants you know it'll say
+
+1055
+00:37:16,000 --> 00:37:17,910
+you're going to create a b-plus tree
+
+1056
+00:37:17,920 --> 00:37:21,750
+where every key is eight bytes long and
+
+1057
+00:37:21,760 --> 00:37:23,430
+there are
+
+1058
+00:37:23,440 --> 00:37:25,589
+eight keys per page
+
+1059
+00:37:25,599 --> 00:37:28,230
+that's it you're done in the real world
+
+1060
+00:37:28,240 --> 00:37:31,589
+you know keys can be various sizes and
+
+1061
+00:37:31,599 --> 00:37:34,870
+because the sizes vary that means the
+
+1062
+00:37:34,880 --> 00:37:37,430
+number of items that you can fit per
+
+1063
+00:37:37,440 --> 00:37:39,910
+page also varies
+
+1064
+00:37:39,920 --> 00:37:40,870
+so
+
+1065
+00:37:40,880 --> 00:37:42,230
+this is where
+
+1066
+00:37:42,240 --> 00:37:45,030
+like a database engine like lmdb
+
+1067
+00:37:45,040 --> 00:37:46,790
+departs from
+
+1068
+00:37:46,800 --> 00:37:49,349
+what the textbook tells you
+
+1069
+00:37:49,359 --> 00:37:51,430
+because the textbooks give you a very
+
+1070
+00:37:51,440 --> 00:37:53,190
+simplified version
+
+1071
+00:37:53,200 --> 00:37:53,990
+where
+
+1072
+00:37:54,000 --> 00:37:56,230
+you know there's there are no variables
+
+1073
+00:37:56,240 --> 00:37:57,109
+and
+
+1074
+00:37:57,119 --> 00:37:58,550
+in reality you
+
+1075
+00:37:58,560 --> 00:38:00,950
+need to accommodate you know
+
+1076
+00:38:00,960 --> 00:38:01,990
+keys and
+
+1077
+00:38:02,000 --> 00:38:04,870
+records of varying sizes yeah real world
+
+1078
+00:38:04,880 --> 00:38:06,069
+data
+
+1079
+00:38:06,079 --> 00:38:08,950
+can you revisit and provide a simple
+
+1080
+00:38:08,960 --> 00:38:11,750
+description of a b plus tree
+
+1081
+00:38:11,760 --> 00:38:12,870
+okay
+
+1082
+00:38:12,880 --> 00:38:15,190
+so if that's a thing
+
+1083
+00:38:15,200 --> 00:38:16,310
+yeah it's
+
+1084
+00:38:16,320 --> 00:38:18,950
+we'll start again we have a root page
+
+1085
+00:38:18,960 --> 00:38:20,390
+which can have
+
+1086
+00:38:20,400 --> 00:38:24,390
+for example you know a list of up to
+
+1087
+00:38:24,400 --> 00:38:26,950
+eight pointers two children
+
+1088
+00:38:26,960 --> 00:38:27,910
+right
+
+1089
+00:38:27,920 --> 00:38:30,470
+and the children will be
+
+1090
+00:38:30,480 --> 00:38:32,630
+pages as well so all of the pages are
+
+1091
+00:38:32,640 --> 00:38:34,310
+always the same size
+
+1092
+00:38:34,320 --> 00:38:35,910
+so a branch page
+
+1093
+00:38:35,920 --> 00:38:38,710
+again points to more children
+
+1094
+00:38:38,720 --> 00:38:40,710
+and then at the bottom of the tree you
+
+1095
+00:38:40,720 --> 00:38:42,630
+have the leaf page
+
+1096
+00:38:42,640 --> 00:38:43,589
+which
+
+1097
+00:38:43,599 --> 00:38:47,589
+points to actual data and within each
+
+1098
+00:38:47,599 --> 00:38:49,510
+page
+
+1099
+00:38:49,520 --> 00:38:53,190
+of the root or the branch pages you have
+
+1100
+00:38:53,200 --> 00:38:54,710
+the only thing that you store in those
+
+1101
+00:38:54,720 --> 00:38:56,870
+pages are keys
+
+1102
+00:38:56,880 --> 00:38:59,109
+keys and a pointer to the next level
+
+1103
+00:38:59,119 --> 00:39:00,790
+down
+
+1104
+00:39:00,800 --> 00:39:02,150
+or the next thing that you're looking
+
+1105
+00:39:02,160 --> 00:39:02,950
+for
+
+1106
+00:39:02,960 --> 00:39:06,150
+does that make sense yeah i was just
+
+1107
+00:39:06,160 --> 00:39:09,030
+following it down my my brain there
+
+1108
+00:39:09,040 --> 00:39:11,990
+and b 3 is a replacement for b trees or
+
+1109
+00:39:12,000 --> 00:39:15,109
+are they just different options yeah i
+
+1110
+00:39:15,119 --> 00:39:17,190
+would say it's a replacement you know
+
+1111
+00:39:17,200 --> 00:39:18,470
+you find
+
+1112
+00:39:18,480 --> 00:39:21,510
+b plus trees being used everywhere and b
+
+1113
+00:39:21,520 --> 00:39:24,150
+trees not so much
+
+1114
+00:39:24,160 --> 00:39:25,510
+okay well we don't really need to
+
+1115
+00:39:25,520 --> 00:39:27,589
+discuss trade-offs between them if
+
+1116
+00:39:27,599 --> 00:39:29,990
+everyone just uses b plus 3.
+
+1117
+00:39:30,000 --> 00:39:31,109
+we touched on it before you know the
+
+1118
+00:39:31,119 --> 00:39:33,030
+main the main reason is
+
+1119
+00:39:33,040 --> 00:39:34,310
+that by
+
+1120
+00:39:34,320 --> 00:39:35,829
+keeping all of the
+
+1121
+00:39:35,839 --> 00:39:38,790
+data values at the bottom leaf pages you
+
+1122
+00:39:38,800 --> 00:39:42,470
+get more keys in memory which is that
+
+1123
+00:39:42,480 --> 00:39:43,990
+should be the smaller
+
+1124
+00:39:44,000 --> 00:39:46,550
+structure for that small that's right
+
+1125
+00:39:46,560 --> 00:39:48,630
+and we've touched on um
+
+1126
+00:39:48,640 --> 00:39:51,190
+our dbms's sql databases that use them
+
+1127
+00:39:51,200 --> 00:39:51,910
+for
+
+1128
+00:39:51,920 --> 00:39:54,470
+primary keys and actually looking up
+
+1129
+00:39:54,480 --> 00:39:57,109
+the data that the keys point to as well
+
+1130
+00:39:57,119 --> 00:39:58,550
+can you think of any
+
+1131
+00:39:58,560 --> 00:40:00,710
+bigger products examples
+
+1132
+00:40:00,720 --> 00:40:02,470
+that use them
+
+1133
+00:40:02,480 --> 00:40:05,270
+or is it mainly just indexes
+
+1134
+00:40:05,280 --> 00:40:08,069
+yeah well um you know for example
+
+1135
+00:40:08,079 --> 00:40:10,390
+sql lite uh you know
+
+1136
+00:40:10,400 --> 00:40:13,589
+uses b plus trees for its indexes and
+
+1137
+00:40:13,599 --> 00:40:15,910
+for some of its tables as well
+
+1138
+00:40:15,920 --> 00:40:19,349
+obviously open ldap uses lmdb so that's
+
+1139
+00:40:19,359 --> 00:40:21,670
+using b plus trees for
+
+1140
+00:40:21,680 --> 00:40:25,510
+indexes and for you know main data
+
+1141
+00:40:25,520 --> 00:40:29,430
+the other popular databases postgres
+
+1142
+00:40:29,440 --> 00:40:30,710
+uh is
+
+1143
+00:40:30,720 --> 00:40:33,109
+based on b plus trees
+
+1144
+00:40:33,119 --> 00:40:36,790
+mariadb or mysql they're actually using
+
+1145
+00:40:36,800 --> 00:40:38,470
+something called
+
+1146
+00:40:38,480 --> 00:40:40,150
+i sam
+
+1147
+00:40:40,160 --> 00:40:42,150
+completely different structure
+
+1148
+00:40:42,160 --> 00:40:44,230
+yeah that's right i've seen that a few
+
+1149
+00:40:44,240 --> 00:40:45,109
+times
+
+1150
+00:40:45,119 --> 00:40:47,589
+okay are there any places that
+
+1151
+00:40:47,599 --> 00:40:49,190
+you think could benefit from people's
+
+1152
+00:40:49,200 --> 00:40:50,870
+trees where you don't see them
+
+1153
+00:40:50,880 --> 00:40:53,430
+mainly in the database world
+
+1154
+00:40:53,440 --> 00:40:55,670
+i'm gonna guess that
+
+1155
+00:40:55,680 --> 00:40:57,510
+you know the database world has been
+
+1156
+00:40:57,520 --> 00:40:59,510
+around this for long enough you know
+
+1157
+00:40:59,520 --> 00:41:01,670
+they know pretty well
+
+1158
+00:41:01,680 --> 00:41:03,430
+where they can leverage it i would say
+
+1159
+00:41:03,440 --> 00:41:05,430
+in databases they're already using it
+
+1160
+00:41:05,440 --> 00:41:07,349
+where it needs to be
+
+1161
+00:41:07,359 --> 00:41:08,630
+and um
+
+1162
+00:41:08,640 --> 00:41:10,790
+have we touched upon the term height
+
+1163
+00:41:10,800 --> 00:41:13,349
+when we talk about leaf nodes
+
+1164
+00:41:13,359 --> 00:41:14,710
+heights
+
+1165
+00:41:14,720 --> 00:41:15,510
+well
+
+1166
+00:41:15,520 --> 00:41:17,750
+height is just you know a description of
+
+1167
+00:41:17,760 --> 00:41:19,190
+you know how many
+
+1168
+00:41:19,200 --> 00:41:23,349
+levels of pages are in the tree you know
+
+1169
+00:41:23,359 --> 00:41:25,109
+yeah so how big the house of cards could
+
+1170
+00:41:25,119 --> 00:41:27,670
+be how many exactly yeah so if you if
+
+1171
+00:41:27,680 --> 00:41:29,510
+you have a tree that's just a single
+
+1172
+00:41:29,520 --> 00:41:31,910
+root page then you've got a height of
+
+1173
+00:41:31,920 --> 00:41:34,390
+one there's there's nothing going on you
+
+1174
+00:41:34,400 --> 00:41:36,069
+know if that root has
+
+1175
+00:41:36,079 --> 00:41:38,150
+just a bunch of leaf
+
+1176
+00:41:38,160 --> 00:41:40,150
+pages immediately under it then it's got
+
+1177
+00:41:40,160 --> 00:41:41,670
+a height of two
+
+1178
+00:41:41,680 --> 00:41:42,950
+if it's got
+
+1179
+00:41:42,960 --> 00:41:46,390
+a root page and then some branch pages
+
+1180
+00:41:46,400 --> 00:41:48,069
+and then immediately under that some
+
+1181
+00:41:48,079 --> 00:41:50,069
+leaf pages then we've got a height of
+
+1182
+00:41:50,079 --> 00:41:51,270
+three
+
+1183
+00:41:51,280 --> 00:41:52,630
+so
+
+1184
+00:41:52,640 --> 00:41:54,470
+okay
+
+1185
+00:41:54,480 --> 00:41:56,230
+and um
+
+1186
+00:41:56,240 --> 00:41:58,710
+do you have any tips on how to keep
+
+1187
+00:41:58,720 --> 00:42:00,230
+where you're working on in your head
+
+1188
+00:42:00,240 --> 00:42:02,950
+while you're dealing with these is it
+
+1189
+00:42:02,960 --> 00:42:04,470
+best to
+
+1190
+00:42:04,480 --> 00:42:06,309
+visualize things
+
+1191
+00:42:06,319 --> 00:42:08,950
+write some sketches down or do you just
+
+1192
+00:42:08,960 --> 00:42:11,190
+get used to them when you're doing it
+
+1193
+00:42:11,200 --> 00:42:13,270
+i suppose sketching on paper when you
+
+1194
+00:42:13,280 --> 00:42:15,510
+need to but you know
+
+1195
+00:42:15,520 --> 00:42:17,109
+or when you're using a library doesn't
+
+1196
+00:42:17,119 --> 00:42:17,990
+matter
+
+1197
+00:42:18,000 --> 00:42:19,190
+it doesn't matter you know when you're
+
+1198
+00:42:19,200 --> 00:42:21,430
+using the library all you care about is
+
+1199
+00:42:21,440 --> 00:42:24,390
+here insert this key and here
+
+1200
+00:42:24,400 --> 00:42:26,710
+find this key and give me this value so
+
+1201
+00:42:26,720 --> 00:42:28,790
+yeah you don't really care what what the
+
+1202
+00:42:28,800 --> 00:42:31,030
+structure looks like underneath
+
+1203
+00:42:31,040 --> 00:42:32,309
+and um
+
+1204
+00:42:32,319 --> 00:42:34,630
+you did your own b plus 3 algorithm
+
+1205
+00:42:34,640 --> 00:42:36,390
+didn't you
+
+1206
+00:42:36,400 --> 00:42:37,270
+for l
+
+1207
+00:42:37,280 --> 00:42:38,630
+yes yeah
+
+1208
+00:42:38,640 --> 00:42:40,550
+you obviously know the front end and the
+
+1209
+00:42:40,560 --> 00:42:42,309
+back end of that thing
+
+1210
+00:42:42,319 --> 00:42:45,349
+were there any um lessons learned or
+
+1211
+00:42:45,359 --> 00:42:47,270
+tips if
+
+1212
+00:42:47,280 --> 00:42:50,150
+or warnings to never do it yourself you
+
+1213
+00:42:50,160 --> 00:42:50,870
+know
+
+1214
+00:42:50,880 --> 00:42:53,910
+if someone's thinking about it
+
+1215
+00:42:53,920 --> 00:42:55,589
+you know your takeaways from actually
+
+1216
+00:42:55,599 --> 00:42:56,870
+doing the b plus three algorithm
+
+1217
+00:42:56,880 --> 00:42:58,550
+yourself
+
+1218
+00:42:58,560 --> 00:42:59,990
+first of all
+
+1219
+00:43:00,000 --> 00:43:01,670
+as i mentioned before what you learn in
+
+1220
+00:43:01,680 --> 00:43:03,109
+the textbooks
+
+1221
+00:43:03,119 --> 00:43:05,430
+is only a very simplified version of
+
+1222
+00:43:05,440 --> 00:43:06,870
+what you're going to need in the real
+
+1223
+00:43:06,880 --> 00:43:08,870
+world so if you want to write one of
+
+1224
+00:43:08,880 --> 00:43:11,670
+these yourself you'll be prepared
+
+1225
+00:43:11,680 --> 00:43:12,470
+for
+
+1226
+00:43:12,480 --> 00:43:14,870
+the textbooks to not tell you everything
+
+1227
+00:43:14,880 --> 00:43:17,670
+you need to know
+
+1228
+00:43:17,680 --> 00:43:18,790
+and then
+
+1229
+00:43:18,800 --> 00:43:21,109
+you really need to have an extremely
+
+1230
+00:43:21,119 --> 00:43:22,870
+good reason
+
+1231
+00:43:22,880 --> 00:43:25,750
+to write this yourself because they're
+
+1232
+00:43:25,760 --> 00:43:27,990
+at you know at this point there are many
+
+1233
+00:43:28,000 --> 00:43:30,870
+libraries available and you
+
+1234
+00:43:30,880 --> 00:43:32,710
+probably should just use one that exists
+
+1235
+00:43:32,720 --> 00:43:35,270
+off the shelf
+
+1236
+00:43:35,280 --> 00:43:37,349
+yeah i think it's the the old
+
+1237
+00:43:37,359 --> 00:43:39,910
+profile and benchmark if or look at
+
+1238
+00:43:39,920 --> 00:43:42,309
+stuff as and when if um there's an issue
+
+1239
+00:43:42,319 --> 00:43:44,150
+with something
+
+1240
+00:43:44,160 --> 00:43:45,109
+yeah
+
+1241
+00:43:45,119 --> 00:43:47,270
+just to trust that that person or that
+
+1242
+00:43:47,280 --> 00:43:49,430
+company or team
+
+1243
+00:43:49,440 --> 00:43:50,870
+knows what they're doing
+
+1244
+00:43:50,880 --> 00:43:52,790
+right you know what you know ten years
+
+1245
+00:43:52,800 --> 00:43:55,030
+ago when i started writing lmdb you know
+
+1246
+00:43:55,040 --> 00:43:57,670
+the the things that we wanted it to have
+
+1247
+00:43:57,680 --> 00:44:00,950
+obviously did not exist off the shelf
+
+1248
+00:44:00,960 --> 00:44:02,309
+so
+
+1249
+00:44:02,319 --> 00:44:04,470
+that prompted me to write it but
+
+1250
+00:44:04,480 --> 00:44:07,109
+i'd say it's it's hard today to find a
+
+1251
+00:44:07,119 --> 00:44:09,030
+use case that's not well covered by an
+
+1252
+00:44:09,040 --> 00:44:11,990
+existing library
+
+1253
+00:44:13,349 --> 00:44:13,359
+yeah i think
+
+1254
+00:44:13,359 --> 00:44:15,190
+people are doing new things
+
+1255
+00:44:15,200 --> 00:44:17,030
+tend to reinvent things and forgot that
+
+1256
+00:44:17,040 --> 00:44:18,870
+there's probably something already there
+
+1257
+00:44:18,880 --> 00:44:20,550
+that was designed
+
+1258
+00:44:20,560 --> 00:44:22,069
+20 years ago they just haven't done
+
+1259
+00:44:22,079 --> 00:44:23,589
+enough research
+
+1260
+00:44:23,599 --> 00:44:25,589
+there as well and there's there's so
+
+1261
+00:44:25,599 --> 00:44:27,349
+much tendency to
+
+1262
+00:44:27,359 --> 00:44:28,150
+just
+
+1263
+00:44:28,160 --> 00:44:29,670
+reinvent
+
+1264
+00:44:29,680 --> 00:44:31,589
+and are you quite strict with yourself
+
+1265
+00:44:31,599 --> 00:44:33,109
+for
+
+1266
+00:44:33,119 --> 00:44:34,630
+trusting someone else has done it better
+
+1267
+00:44:34,640 --> 00:44:38,150
+than you you know you you've got a very
+
+1268
+00:44:38,160 --> 00:44:40,150
+strong reputation of you know speed and
+
+1269
+00:44:40,160 --> 00:44:41,910
+performance and getting the best out of
+
+1270
+00:44:41,920 --> 00:44:42,950
+things
+
+1271
+00:44:42,960 --> 00:44:44,550
+have you had to have words with yourself
+
+1272
+00:44:44,560 --> 00:44:50,069
+to not go down that route
+
+1273
+00:44:52,309 --> 00:44:52,319
+it's it's always the last resort you
+
+1274
+00:44:52,319 --> 00:44:54,710
+know always always i search for
+
+1275
+00:44:54,720 --> 00:44:55,829
+something
+
+1276
+00:44:55,839 --> 00:44:58,150
+that exists that you know that would fit
+
+1277
+00:44:58,160 --> 00:45:00,550
+my needs before sitting down to write my
+
+1278
+00:45:00,560 --> 00:45:02,390
+own tool
+
+1279
+00:45:02,400 --> 00:45:05,030
+yeah also i think that's good advice for
+
+1280
+00:45:05,040 --> 00:45:07,190
+any of the listeners so
+
+1281
+00:45:07,200 --> 00:45:09,190
+i think we've talked on a couple of my
+
+1282
+00:45:09,200 --> 00:45:11,510
+questions already i was gonna ask why b
+
+1283
+00:45:11,520 --> 00:45:13,349
+plus trees are used for indexing and
+
+1284
+00:45:13,359 --> 00:45:15,910
+table indexes and that's because
+
+1285
+00:45:15,920 --> 00:45:17,589
+i'll try and recap
+
+1286
+00:45:17,599 --> 00:45:19,270
+they've got predictable
+
+1287
+00:45:19,280 --> 00:45:22,470
+times for searches and finding things
+
+1288
+00:45:22,480 --> 00:45:23,589
+and they're
+
+1289
+00:45:23,599 --> 00:45:26,390
+very efficient at key value operations
+
+1290
+00:45:26,400 --> 00:45:28,069
+so
+
+1291
+00:45:28,079 --> 00:45:30,069
+yeah they're they're actually optimal
+
+1292
+00:45:30,079 --> 00:45:30,829
+for
+
+1293
+00:45:30,839 --> 00:45:32,950
+searches there's
+
+1294
+00:45:32,960 --> 00:45:35,270
+you'll always get the lower lower bound
+
+1295
+00:45:35,280 --> 00:45:36,230
+of
+
+1296
+00:45:36,240 --> 00:45:38,069
+search times yeah
+
+1297
+00:45:38,079 --> 00:45:39,190
+and um
+
+1298
+00:45:39,200 --> 00:45:40,470
+okay so
+
+1299
+00:45:40,480 --> 00:45:42,470
+with the b plus tree
+
+1300
+00:45:42,480 --> 00:45:45,829
+is it complicated to get the data into
+
+1301
+00:45:45,839 --> 00:45:47,990
+it in the first place you know how how
+
+1302
+00:45:48,000 --> 00:45:49,670
+would you put a ton of data into a b
+
+1303
+00:45:49,680 --> 00:45:50,710
+plus tree
+
+1304
+00:45:50,720 --> 00:45:52,230
+truck track
+
+1305
+00:45:52,240 --> 00:45:55,030
+oh is it complicated well
+
+1306
+00:45:55,040 --> 00:45:56,470
+no we're doing a whole show on it so
+
+1307
+00:45:56,480 --> 00:46:00,069
+yeah it's complicated
+
+1308
+00:46:02,230 --> 00:46:02,240
+there you go
+
+1309
+00:46:02,240 --> 00:46:03,910
+it's certainly you know it's not as easy
+
+1310
+00:46:03,920 --> 00:46:06,470
+as the plain binary tree
+
+1311
+00:46:06,480 --> 00:46:08,230
+it's not as easy as some of the other
+
+1312
+00:46:08,240 --> 00:46:09,829
+self-balancing
+
+1313
+00:46:09,839 --> 00:46:12,390
+trees but one of the advantages again
+
+1314
+00:46:12,400 --> 00:46:15,670
+that it has since it uses these
+
+1315
+00:46:15,680 --> 00:46:18,950
+relatively large pages is
+
+1316
+00:46:18,960 --> 00:46:21,510
+you know as you insert records into it
+
+1317
+00:46:21,520 --> 00:46:23,589
+it has a fairly s
+
+1318
+00:46:23,599 --> 00:46:25,589
+fairly low
+
+1319
+00:46:25,599 --> 00:46:28,790
+rate of new allocations right every time
+
+1320
+00:46:28,800 --> 00:46:31,589
+you allocate a new page it's good for
+
+1321
+00:46:31,599 --> 00:46:34,390
+you know 20 30 50 elements before that
+
+1322
+00:46:34,400 --> 00:46:36,470
+fills up and you're forced to allocate
+
+1323
+00:46:36,480 --> 00:46:38,230
+another page
+
+1324
+00:46:38,240 --> 00:46:41,109
+so it's got pretty good efficiency in
+
+1325
+00:46:41,119 --> 00:46:43,030
+that respect as far as
+
+1326
+00:46:43,040 --> 00:46:45,750
+resource constraints
+
+1327
+00:46:45,760 --> 00:46:46,950
+okay
+
+1328
+00:46:46,960 --> 00:46:48,550
+that makes sense
+
+1329
+00:46:48,560 --> 00:46:49,750
+i've got a question from one of the
+
+1330
+00:46:49,760 --> 00:46:52,069
+other hosts here um how do we handle
+
+1331
+00:46:52,079 --> 00:46:54,710
+concurrency control in data bit bases
+
+1332
+00:46:54,720 --> 00:46:57,109
+that use b plus tree
+
+1333
+00:46:57,119 --> 00:46:59,589
+there's a lot of different ways to
+
+1334
+00:46:59,599 --> 00:47:00,950
+handle that
+
+1335
+00:47:00,960 --> 00:47:02,470
+so that would be
+
+1336
+00:47:02,480 --> 00:47:04,309
+somebody
+
+1337
+00:47:04,319 --> 00:47:07,030
+two processes trying to insert data with
+
+1338
+00:47:07,040 --> 00:47:08,870
+using the b plus three library and it
+
+1339
+00:47:08,880 --> 00:47:10,390
+hasn't quite finished
+
+1340
+00:47:10,400 --> 00:47:12,630
+putting that data in the right place so
+
+1341
+00:47:12,640 --> 00:47:13,430
+yeah
+
+1342
+00:47:13,440 --> 00:47:16,790
+that's the easy way to understand it
+
+1343
+00:47:16,800 --> 00:47:18,150
+so there's
+
+1344
+00:47:18,160 --> 00:47:19,829
+this is one of those
+
+1345
+00:47:19,839 --> 00:47:21,349
+topics that
+
+1346
+00:47:21,359 --> 00:47:23,430
+you know like it has multiple different
+
+1347
+00:47:23,440 --> 00:47:25,349
+approaches okay
+
+1348
+00:47:25,359 --> 00:47:27,030
+there's the very simple approach which
+
+1349
+00:47:27,040 --> 00:47:30,230
+actually lmdb uses which says we lock
+
+1350
+00:47:30,240 --> 00:47:32,069
+the entire tree
+
+1351
+00:47:32,079 --> 00:47:34,309
+for one writer
+
+1352
+00:47:34,319 --> 00:47:36,150
+and we don't let go of it until that
+
+1353
+00:47:36,160 --> 00:47:39,270
+right is completely finished so
+
+1354
+00:47:39,280 --> 00:47:42,470
+in that sense we actually have
+
+1355
+00:47:42,480 --> 00:47:44,950
+no concurrency for rights
+
+1356
+00:47:44,960 --> 00:47:48,069
+there's always only one writer at a time
+
+1357
+00:47:48,079 --> 00:47:49,670
+and as i said you know this is very
+
+1358
+00:47:49,680 --> 00:47:50,829
+simple
+
+1359
+00:47:50,839 --> 00:47:53,670
+and it's
+
+1360
+00:47:53,680 --> 00:47:54,950
+a decision
+
+1361
+00:47:54,960 --> 00:47:56,870
+that you thought about changing at any
+
+1362
+00:47:56,880 --> 00:47:57,990
+point
+
+1363
+00:47:58,000 --> 00:48:00,470
+no no no that's that that's a decision
+
+1364
+00:48:00,480 --> 00:48:02,390
+that was reached after
+
+1365
+00:48:02,400 --> 00:48:04,150
+quite a bit of experience with other
+
+1366
+00:48:04,160 --> 00:48:06,630
+concurrency schemes and did you have to
+
+1367
+00:48:06,640 --> 00:48:08,630
+make a trade-off for that or
+
+1368
+00:48:08,640 --> 00:48:10,309
+is there a statement
+
+1369
+00:48:10,319 --> 00:48:13,270
+off in some ways you know as as you get
+
+1370
+00:48:13,280 --> 00:48:14,069
+to
+
+1371
+00:48:14,079 --> 00:48:16,630
+much larger databases
+
+1372
+00:48:16,640 --> 00:48:19,589
+you might see that your overall right
+
+1373
+00:48:19,599 --> 00:48:23,030
+throughput could be slower than
+
+1374
+00:48:23,040 --> 00:48:24,309
+optimal
+
+1375
+00:48:24,319 --> 00:48:26,870
+it really tends to depend on the right
+
+1376
+00:48:26,880 --> 00:48:28,309
+patterns
+
+1377
+00:48:28,319 --> 00:48:30,150
+another approach
+
+1378
+00:48:30,160 --> 00:48:33,670
+that for example berkeley db uses
+
+1379
+00:48:33,680 --> 00:48:35,750
+is to use
+
+1380
+00:48:35,760 --> 00:48:37,510
+lock coupling
+
+1381
+00:48:37,520 --> 00:48:38,549
+that is
+
+1382
+00:48:38,559 --> 00:48:40,150
+as you
+
+1383
+00:48:40,160 --> 00:48:43,109
+navigate down the tree from the root to
+
+1384
+00:48:43,119 --> 00:48:46,390
+the leaf where you need to insert data
+
+1385
+00:48:46,400 --> 00:48:48,870
+you take locks on every page that you
+
+1386
+00:48:48,880 --> 00:48:51,349
+touch on the way down
+
+1387
+00:48:51,359 --> 00:48:53,190
+so then when the next right comes
+
+1388
+00:48:53,200 --> 00:48:55,270
+through it might be trying to
+
+1389
+00:48:55,280 --> 00:48:56,309
+put it somewhere else so it doesn't
+
+1390
+00:48:56,319 --> 00:48:57,990
+matter if the next right coming through
+
+1391
+00:48:58,000 --> 00:49:00,630
+is going to a different part of the tree
+
+1392
+00:49:00,640 --> 00:49:03,270
+then it's possible for the two of them
+
+1393
+00:49:03,280 --> 00:49:05,589
+to proceed without interfering with each
+
+1394
+00:49:05,599 --> 00:49:06,870
+other
+
+1395
+00:49:06,880 --> 00:49:09,510
+and when you traverse the tree to find
+
+1396
+00:49:09,520 --> 00:49:11,030
+or the algorithm
+
+1397
+00:49:11,040 --> 00:49:12,710
+is trying to figure out where to put the
+
+1398
+00:49:12,720 --> 00:49:15,829
+data in the tree does it always need to
+
+1399
+00:49:15,839 --> 00:49:17,589
+can it go straight to that point or does
+
+1400
+00:49:17,599 --> 00:49:18,950
+it have to
+
+1401
+00:49:18,960 --> 00:49:21,829
+do a similar search each time
+
+1402
+00:49:21,839 --> 00:49:23,670
+generally you always search from the
+
+1403
+00:49:23,680 --> 00:49:27,109
+root for every new operation
+
+1404
+00:49:27,119 --> 00:49:29,589
+okay so there's no quick way to say
+
+1405
+00:49:29,599 --> 00:49:31,670
+this is the last place i put something
+
+1406
+00:49:31,680 --> 00:49:33,829
+this new one is
+
+1407
+00:49:33,839 --> 00:49:35,910
+best placed here
+
+1408
+00:49:35,920 --> 00:49:38,630
+uh well actually in lmdb we do have an
+
+1409
+00:49:38,640 --> 00:49:40,630
+optimization that does that you know if
+
+1410
+00:49:40,640 --> 00:49:42,790
+yeah actually putting in a couple of
+
+1411
+00:49:42,800 --> 00:49:45,670
+elements that are you know that sort
+
+1412
+00:49:45,680 --> 00:49:47,670
+close to each other
+
+1413
+00:49:47,680 --> 00:49:50,230
+or sort next to each other
+
+1414
+00:49:50,240 --> 00:49:52,549
+lmdb will check that
+
+1415
+00:49:52,559 --> 00:49:54,710
+before it goes back to the root you know
+
+1416
+00:49:54,720 --> 00:49:56,950
+so you have a cursor that points to
+
+1417
+00:49:56,960 --> 00:49:58,950
+where you're inserting data
+
+1418
+00:49:58,960 --> 00:50:01,270
+when you insert a new record it'll look
+
+1419
+00:50:01,280 --> 00:50:02,150
+at
+
+1420
+00:50:02,160 --> 00:50:04,630
+what the cursor is currently pointing at
+
+1421
+00:50:04,640 --> 00:50:07,349
+and see if it's
+
+1422
+00:50:07,359 --> 00:50:08,950
+see if it spans
+
+1423
+00:50:08,960 --> 00:50:10,950
+the space that the new record belongs to
+
+1424
+00:50:10,960 --> 00:50:13,349
+and if it does then it'll just stay on
+
+1425
+00:50:13,359 --> 00:50:14,950
+the current page
+
+1426
+00:50:14,960 --> 00:50:17,190
+and if it doesn't then it'll fall back
+
+1427
+00:50:17,200 --> 00:50:19,430
+to what it has to do it'll go back to
+
+1428
+00:50:19,440 --> 00:50:22,150
+the root and search its way down
+
+1429
+00:50:22,160 --> 00:50:23,109
+and
+
+1430
+00:50:23,119 --> 00:50:25,349
+do you fall back to
+
+1431
+00:50:25,359 --> 00:50:27,589
+searching the whole route to
+
+1432
+00:50:27,599 --> 00:50:30,230
+the last leaf if that cursor
+
+1433
+00:50:30,240 --> 00:50:32,230
+breaks or something happens to it
+
+1434
+00:50:32,240 --> 00:50:33,750
+or do you just trust the fact that it
+
+1435
+00:50:33,760 --> 00:50:35,270
+points to the last
+
+1436
+00:50:35,280 --> 00:50:37,190
+place something was put
+
+1437
+00:50:37,200 --> 00:50:39,670
+well in lmdb it
+
+1438
+00:50:39,680 --> 00:50:41,349
+since there's no other writers
+
+1439
+00:50:41,359 --> 00:50:43,109
+interfering with it then yeah the cursor
+
+1440
+00:50:43,119 --> 00:50:45,190
+always points to so that's another good
+
+1441
+00:50:45,200 --> 00:50:47,990
+reason to have one writer exactly yeah
+
+1442
+00:50:48,000 --> 00:50:50,549
+as i said it simplifies so many things
+
+1443
+00:50:50,559 --> 00:50:52,790
+that you know in my opinion it wasn't
+
+1444
+00:50:52,800 --> 00:50:55,109
+worth the headaches of
+
+1445
+00:50:55,119 --> 00:50:56,870
+maintaining
+
+1446
+00:50:56,880 --> 00:50:59,190
+all the other state needed to do
+
+1447
+00:50:59,200 --> 00:51:02,309
+the multi-page locking
+
+1448
+00:51:02,319 --> 00:51:04,150
+yeah it's like having an
+
+1449
+00:51:04,160 --> 00:51:05,910
+m plus one back out for the backup for
+
+1450
+00:51:05,920 --> 00:51:09,109
+the backup the backup you know
+
+1451
+00:51:09,119 --> 00:51:10,470
+how deep you go
+
+1452
+00:51:10,480 --> 00:51:12,130
+how deep will you go
+
+1453
+00:51:12,140 --> 00:51:13,270
+[Music]
+
+1454
+00:51:13,280 --> 00:51:15,109
+that's one of the problems with the the
+
+1455
+00:51:15,119 --> 00:51:17,430
+approaching berkeley db is that you can
+
+1456
+00:51:17,440 --> 00:51:20,950
+get into lock conflicts very easily um
+
+1457
+00:51:20,960 --> 00:51:24,069
+you know lock conflicts are not
+
+1458
+00:51:24,079 --> 00:51:27,349
+an exceptional unusual condition they're
+
+1459
+00:51:27,359 --> 00:51:29,829
+a routine occurrence
+
+1460
+00:51:29,839 --> 00:51:31,990
+in berkeley db when you have multiple
+
+1461
+00:51:32,000 --> 00:51:32,950
+writers
+
+1462
+00:51:32,960 --> 00:51:33,910
+so
+
+1463
+00:51:33,920 --> 00:51:36,470
+every time you hit a lock conflict
+
+1464
+00:51:36,480 --> 00:51:38,069
+one of the writers
+
+1465
+00:51:38,079 --> 00:51:40,150
+has to give up
+
+1466
+00:51:40,160 --> 00:51:44,230
+release all its locks and retry later
+
+1467
+00:51:44,240 --> 00:51:45,670
+so
+
+1468
+00:51:45,680 --> 00:51:47,910
+if i recall sometimes if there was a
+
+1469
+00:51:47,920 --> 00:51:51,030
+crash there'd be locks left
+
+1470
+00:51:51,040 --> 00:51:52,790
+yeah that's that's another
+
+1471
+00:51:52,800 --> 00:51:55,430
+that's another aspect of things so
+
+1472
+00:51:55,440 --> 00:51:58,150
+that's that's to do with um
+
+1473
+00:51:58,160 --> 00:52:00,230
+you know writing in place versus lmdb's
+
+1474
+00:52:00,240 --> 00:52:02,549
+copy on right but that's not quite
+
+1475
+00:52:02,559 --> 00:52:05,030
+related to the locking issues
+
+1476
+00:52:05,040 --> 00:52:07,109
+so for concurrency management you know
+
+1477
+00:52:07,119 --> 00:52:09,349
+that's that's one approach that and
+
+1478
+00:52:09,359 --> 00:52:11,109
+that's the most common approach that uh
+
+1479
+00:52:11,119 --> 00:52:13,430
+b trees use is the
+
+1480
+00:52:13,440 --> 00:52:15,109
+multi-page locks
+
+1481
+00:52:15,119 --> 00:52:16,870
+that berkeley uses
+
+1482
+00:52:16,880 --> 00:52:19,750
+there's another method which
+
+1483
+00:52:19,760 --> 00:52:21,030
+you know was
+
+1484
+00:52:21,040 --> 00:52:23,109
+relatively recent you know i was reading
+
+1485
+00:52:23,119 --> 00:52:26,870
+about it back in 2009
+
+1486
+00:52:26,880 --> 00:52:29,750
+called a b-link tree
+
+1487
+00:52:29,760 --> 00:52:30,950
+where
+
+1488
+00:52:30,960 --> 00:52:32,790
+leaf nodes contain
+
+1489
+00:52:32,800 --> 00:52:35,270
+link pointers to their siblings
+
+1490
+00:52:35,280 --> 00:52:36,309
+and
+
+1491
+00:52:36,319 --> 00:52:39,670
+by maintaining these link pointers
+
+1492
+00:52:39,680 --> 00:52:41,990
+it actually allows you to do ads and
+
+1493
+00:52:42,000 --> 00:52:43,510
+deletes
+
+1494
+00:52:43,520 --> 00:52:46,309
+with high concurrency without as much
+
+1495
+00:52:46,319 --> 00:52:48,230
+lock overhead
+
+1496
+00:52:48,240 --> 00:52:49,829
+so you know this this was a really
+
+1497
+00:52:49,839 --> 00:52:51,510
+interesting
+
+1498
+00:52:51,520 --> 00:52:53,990
+mechanism when i was reading about it
+
+1499
+00:52:54,000 --> 00:52:56,230
+unfortunately at the time it was very
+
+1500
+00:52:56,240 --> 00:52:57,670
+new research
+
+1501
+00:52:57,680 --> 00:52:59,910
+and there were no working
+
+1502
+00:52:59,920 --> 00:53:01,589
+implementations that i could find
+
+1503
+00:53:01,599 --> 00:53:03,109
+anywhere on the web
+
+1504
+00:53:03,119 --> 00:53:03,990
+and
+
+1505
+00:53:04,000 --> 00:53:05,670
+you know the the research paper that i
+
+1506
+00:53:05,680 --> 00:53:07,349
+read didn't provide me enough
+
+1507
+00:53:07,359 --> 00:53:08,870
+information that i could implement it
+
+1508
+00:53:08,880 --> 00:53:12,230
+myself so so i kind of set it aside
+
+1509
+00:53:12,240 --> 00:53:13,510
+but it was
+
+1510
+00:53:13,520 --> 00:53:15,750
+it was a very promising
+
+1511
+00:53:15,760 --> 00:53:18,390
+paper at the time i think in the years
+
+1512
+00:53:18,400 --> 00:53:20,069
+between then and now there have been at
+
+1513
+00:53:20,079 --> 00:53:21,910
+least two implementations of it
+
+1514
+00:53:21,920 --> 00:53:25,589
+developed of course while it solves some
+
+1515
+00:53:25,599 --> 00:53:27,190
+of the locking problems that we were
+
+1516
+00:53:27,200 --> 00:53:28,390
+just talking about
+
+1517
+00:53:28,400 --> 00:53:30,630
+it doesn't solve the crash problem that
+
+1518
+00:53:30,640 --> 00:53:33,270
+you just mentioned where if something
+
+1519
+00:53:33,280 --> 00:53:35,349
+crashes in the middle then
+
+1520
+00:53:35,359 --> 00:53:37,430
+pages will be lost
+
+1521
+00:53:37,440 --> 00:53:39,670
+yeah and what was the last place right
+
+1522
+00:53:39,680 --> 00:53:43,349
+into and who was doing what yeah yeah
+
+1523
+00:53:43,359 --> 00:53:45,030
+do you think there's
+
+1524
+00:53:45,040 --> 00:53:46,470
+you know you just touched upon
+
+1525
+00:53:46,480 --> 00:53:48,549
+improvements that could be made for
+
+1526
+00:53:48,559 --> 00:53:50,710
+these types of data structures
+
+1527
+00:53:50,720 --> 00:53:54,150
+do you think in 2021 we've reached
+
+1528
+00:53:54,160 --> 00:53:56,549
+the predictable times for
+
+1529
+00:53:56,559 --> 00:53:58,230
+certain things and
+
+1530
+00:53:58,240 --> 00:54:00,150
+the software algorithms these data
+
+1531
+00:54:00,160 --> 00:54:01,270
+structures
+
+1532
+00:54:01,280 --> 00:54:02,870
+and we're now relying on hardware or
+
+1533
+00:54:02,880 --> 00:54:04,950
+just or do you think there'll still be
+
+1534
+00:54:04,960 --> 00:54:07,349
+some major breakthrough breakthroughs
+
+1535
+00:54:07,359 --> 00:54:08,630
+because i know you stay on top of all
+
+1536
+00:54:08,640 --> 00:54:12,150
+this stuff you know i i see a lot of
+
+1537
+00:54:12,160 --> 00:54:14,069
+research into
+
+1538
+00:54:14,079 --> 00:54:15,990
+new algorithms that are
+
+1539
+00:54:16,000 --> 00:54:17,589
+supposed to be
+
+1540
+00:54:17,599 --> 00:54:19,829
+tuned specifically for
+
+1541
+00:54:19,839 --> 00:54:22,710
+you know persistent ram or ssds and thus
+
+1542
+00:54:22,720 --> 00:54:25,670
+and such i find
+
+1543
+00:54:25,680 --> 00:54:26,470
+that
+
+1544
+00:54:26,480 --> 00:54:28,790
+you know the research i've read so far
+
+1545
+00:54:28,800 --> 00:54:30,950
+is not making any
+
+1546
+00:54:30,960 --> 00:54:33,670
+massive breakthroughs and i don't you
+
+1547
+00:54:33,680 --> 00:54:34,470
+know
+
+1548
+00:54:34,480 --> 00:54:36,950
+from that trend i'm not expecting
+
+1549
+00:54:36,960 --> 00:54:38,789
+anything huge
+
+1550
+00:54:38,799 --> 00:54:40,150
+in the future
+
+1551
+00:54:40,160 --> 00:54:41,670
+there's a lot of
+
+1552
+00:54:41,680 --> 00:54:43,990
+small scale refinements is really what
+
+1553
+00:54:44,000 --> 00:54:46,020
+it looks like it's what it amounts to
+
+1554
+00:54:46,030 --> 00:54:47,349
+[Music]
+
+1555
+00:54:47,359 --> 00:54:48,390
+and
+
+1556
+00:54:48,400 --> 00:54:50,470
+what do you think the future is for this
+
+1557
+00:54:50,480 --> 00:54:53,510
+type of data access
+
+1558
+00:54:53,520 --> 00:54:54,390
+uh
+
+1559
+00:54:54,400 --> 00:54:55,670
+well it's
+
+1560
+00:54:55,680 --> 00:54:57,910
+it's gonna be more of the same
+
+1561
+00:54:57,920 --> 00:54:59,589
+you know today we have
+
+1562
+00:54:59,599 --> 00:55:01,829
+a multi-tiered memory hierarchy right
+
+1563
+00:55:01,839 --> 00:55:05,190
+where we talk about cpu caches and then
+
+1564
+00:55:05,200 --> 00:55:07,430
+ram and then
+
+1565
+00:55:07,440 --> 00:55:11,030
+quote storage which is disks or ssds or
+
+1566
+00:55:11,040 --> 00:55:12,069
+whatever
+
+1567
+00:55:12,079 --> 00:55:14,870
+in the future we're going to have
+
+1568
+00:55:14,880 --> 00:55:17,109
+a couple different tiers of ram we'll
+
+1569
+00:55:17,119 --> 00:55:18,069
+have
+
+1570
+00:55:18,079 --> 00:55:20,710
+static ram dynamic ram
+
+1571
+00:55:20,720 --> 00:55:22,309
+persistent ram
+
+1572
+00:55:22,319 --> 00:55:24,549
+i would like to see
+
+1573
+00:55:24,559 --> 00:55:26,230
+further in the future
+
+1574
+00:55:26,240 --> 00:55:28,309
+you know a hundred percent persistent
+
+1575
+00:55:28,319 --> 00:55:31,270
+ram and no more plane dynamic ground but
+
+1576
+00:55:31,280 --> 00:55:32,390
+you know we're not going to get there
+
+1577
+00:55:32,400 --> 00:55:33,589
+yet
+
+1578
+00:55:33,599 --> 00:55:34,950
+we're going to have this intermediate
+
+1579
+00:55:34,960 --> 00:55:37,349
+step first where we have dynamic ram
+
+1580
+00:55:37,359 --> 00:55:39,750
+coexisting with persistent ram and so
+
+1581
+00:55:39,760 --> 00:55:41,829
+that will be another layer of the memory
+
+1582
+00:55:41,839 --> 00:55:43,190
+hierarchy
+
+1583
+00:55:43,200 --> 00:55:44,470
+and
+
+1584
+00:55:44,480 --> 00:55:47,589
+it'll just it's just one more level of a
+
+1585
+00:55:47,599 --> 00:55:48,710
+pyramid
+
+1586
+00:55:48,720 --> 00:55:50,870
+but that won't change the page sizes
+
+1587
+00:55:50,880 --> 00:55:54,069
+that we're dealing with and
+
+1588
+00:55:55,430 --> 00:55:55,440
+it doesn't have to
+
+1589
+00:55:56,960 --> 00:55:58,870
+so the same algorithms could still work
+
+1590
+00:55:58,880 --> 00:56:02,390
+but because the access speeds are faster
+
+1591
+00:56:02,400 --> 00:56:04,950
+it should still be predictably the same
+
+1592
+00:56:04,960 --> 00:56:07,430
+speed or
+
+1593
+00:56:07,440 --> 00:56:10,549
+yeah a generic b plus tree algorithm
+
+1594
+00:56:10,559 --> 00:56:13,750
+will still provide you know optimal
+
+1595
+00:56:13,760 --> 00:56:15,829
+search
+
+1596
+00:56:15,839 --> 00:56:17,430
+as you layer these different memory
+
+1597
+00:56:17,440 --> 00:56:19,190
+technologies above
+
+1598
+00:56:19,200 --> 00:56:21,190
+above each other so that that really
+
+1599
+00:56:21,200 --> 00:56:23,510
+doesn't need to change
+
+1600
+00:56:23,520 --> 00:56:25,109
+page sizes will increase as you
+
+1601
+00:56:25,119 --> 00:56:27,349
+mentioned you know four kilobyte pages
+
+1602
+00:56:27,359 --> 00:56:29,030
+are already
+
+1603
+00:56:29,040 --> 00:56:32,870
+a bit small for today's cpus and
+
+1604
+00:56:32,880 --> 00:56:34,630
+disk subsystems
+
+1605
+00:56:34,640 --> 00:56:37,270
+16 kilobytes is more reasonable
+
+1606
+00:56:37,280 --> 00:56:38,789
+32k
+
+1607
+00:56:38,799 --> 00:56:41,190
+64k would probably be
+
+1608
+00:56:41,200 --> 00:56:42,390
+pushing it
+
+1609
+00:56:42,400 --> 00:56:45,270
+yeah 4k is a bit too small
+
+1610
+00:56:45,280 --> 00:56:46,390
+and is that
+
+1611
+00:56:46,400 --> 00:56:49,589
+some size you have to pick in the b plus
+
+1612
+00:56:49,599 --> 00:56:50,630
+3
+
+1613
+00:56:50,640 --> 00:56:53,190
+structure or from the software side you
+
+1614
+00:56:53,200 --> 00:56:55,910
+have to use what the hardware supports
+
+1615
+00:56:55,920 --> 00:56:56,870
+so
+
+1616
+00:56:56,880 --> 00:56:59,510
+some cpus today for example
+
+1617
+00:56:59,520 --> 00:57:03,190
+apple's m1 processor are now using 16
+
+1618
+00:57:03,200 --> 00:57:04,789
+kilobyte pages
+
+1619
+00:57:04,799 --> 00:57:05,589
+so
+
+1620
+00:57:05,599 --> 00:57:07,190
+that's the page size that your database
+
+1621
+00:57:07,200 --> 00:57:09,270
+should use as well
+
+1622
+00:57:09,280 --> 00:57:11,589
+so that that means you can
+
+1623
+00:57:11,599 --> 00:57:14,150
+have a shallower tree
+
+1624
+00:57:14,160 --> 00:57:16,470
+yes because you're storing more value
+
+1625
+00:57:16,480 --> 00:57:18,309
+or bigger values
+
+1626
+00:57:18,319 --> 00:57:19,990
+or pointers to the values
+
+1627
+00:57:20,000 --> 00:57:22,549
+more values per page yeah yeah
+
+1628
+00:57:22,559 --> 00:57:23,829
+and which again
+
+1629
+00:57:23,839 --> 00:57:25,910
+speeds up getting things because it's
+
+1630
+00:57:25,920 --> 00:57:27,510
+not so deep
+
+1631
+00:57:27,520 --> 00:57:29,270
+okay
+
+1632
+00:57:29,280 --> 00:57:30,710
+have you ever really been happy with
+
+1633
+00:57:30,720 --> 00:57:32,390
+your project management tool most are
+
+1634
+00:57:32,400 --> 00:57:33,990
+too simple for a growing engineering
+
+1635
+00:57:34,000 --> 00:57:35,670
+team to manage everything or too complex
+
+1636
+00:57:35,680 --> 00:57:37,030
+for anyone to want to use them without
+
+1637
+00:57:37,040 --> 00:57:39,109
+constant product shortcut formerly known
+
+1638
+00:57:39,119 --> 00:57:40,710
+as clubhouse is different though because
+
+1639
+00:57:40,720 --> 00:57:42,789
+it's worse wait no we mean it's better
+
+1640
+00:57:42,799 --> 00:57:44,309
+shortcut is project management built
+
+1641
+00:57:44,319 --> 00:57:46,230
+specifically for software teams it's
+
+1642
+00:57:46,240 --> 00:57:48,069
+fast intuitive flexible powerful and
+
+1643
+00:57:48,079 --> 00:57:50,069
+many other nice positive adjectives
+
+1644
+00:57:50,079 --> 00:57:51,910
+let's look at some highlights team-based
+
+1645
+00:57:51,920 --> 00:57:53,829
+workflows individual teams can use
+
+1646
+00:57:53,839 --> 00:57:55,829
+shortcuts default workflows or customize
+
+1647
+00:57:55,839 --> 00:57:57,750
+them to match the way they work org-wide
+
+1648
+00:57:57,760 --> 00:57:59,589
+goals and roadmaps the work in these
+
+1649
+00:57:59,599 --> 00:58:01,349
+workflows is automatically tied into
+
+1650
+00:58:01,359 --> 00:58:03,190
+larger company goals it takes one click
+
+1651
+00:58:03,200 --> 00:58:04,870
+to move from a roadmap to a team's work
+
+1652
+00:58:04,880 --> 00:58:07,670
+to individual updates and vice versa vcs
+
+1653
+00:58:07,680 --> 00:58:09,670
+integrations whether you use github
+
+1654
+00:58:09,680 --> 00:58:11,829
+gitlab or bitbucket shortcut ties
+
+1655
+00:58:11,839 --> 00:58:13,670
+directly to them so you can update
+
+1656
+00:58:13,680 --> 00:58:15,349
+progress from the command line the rest
+
+1657
+00:58:15,359 --> 00:58:17,030
+of shortcut is just as keyboard friendly
+
+1658
+00:58:17,040 --> 00:58:18,470
+with their power bar allowing you to do
+
+1659
+00:58:18,480 --> 00:58:20,069
+virtually anything without touching your
+
+1660
+00:58:20,079 --> 00:58:22,150
+mouse throw that thing in the trash
+
+1661
+00:58:22,160 --> 00:58:23,910
+iterations planning set weekly
+
+1662
+00:58:23,920 --> 00:58:25,910
+priorities and then let shortcut run the
+
+1663
+00:58:25,920 --> 00:58:27,270
+schedule for you with accompanying
+
+1664
+00:58:27,280 --> 00:58:29,349
+burndown charts and other reporting give
+
+1665
+00:58:29,359 --> 00:58:32,390
+it a try at shortcut.com sc radio again
+
+1666
+00:58:32,400 --> 00:58:35,670
+that's shortcut.com se radio shortcut
+
+1667
+00:58:35,680 --> 00:58:37,349
+again formerly known as clubhouse
+
+1668
+00:58:37,359 --> 00:58:38,710
+because you shouldn't have to project
+
+1669
+00:58:38,720 --> 00:58:41,410
+manage your project management
+
+1670
+00:58:41,420 --> 00:58:42,789
+[Music]
+
+1671
+00:58:42,799 --> 00:58:44,390
+i'd like to start wrapping up i think
+
+1672
+00:58:44,400 --> 00:58:45,430
+we've
+
+1673
+00:58:45,440 --> 00:58:47,829
+done a pretty good job on that let's
+
+1674
+00:58:47,839 --> 00:58:50,069
+just round off with the description of
+
+1675
+00:58:50,079 --> 00:58:51,990
+my b-plus tree again because we've
+
+1676
+00:58:52,000 --> 00:58:54,069
+progressed a little bit so correct me on
+
+1677
+00:58:54,079 --> 00:58:56,710
+this this is a knobbed off internet
+
+1678
+00:58:56,720 --> 00:58:59,349
+just confirm for me in the b plus tree
+
+1679
+00:58:59,359 --> 00:59:01,510
+copies of the keys are stored in the
+
+1680
+00:59:01,520 --> 00:59:02,789
+internal nodes
+
+1681
+00:59:02,799 --> 00:59:04,390
+the keys and records are stored in
+
+1682
+00:59:04,400 --> 00:59:06,710
+leaves in addition a leaf node may
+
+1683
+00:59:06,720 --> 00:59:09,270
+include a pointer to the next leaf node
+
+1684
+00:59:09,280 --> 00:59:11,670
+to speed sequential access
+
+1685
+00:59:11,680 --> 00:59:12,390
+so
+
+1686
+00:59:12,400 --> 00:59:15,109
+are we calling the nodes pages there or
+
+1687
+00:59:15,119 --> 00:59:17,270
+in that place yes the nodes are pages
+
+1688
+00:59:17,280 --> 00:59:19,990
+yes yeah why did it make sense to use
+
+1689
+00:59:20,000 --> 00:59:22,150
+the word page when everything else
+
+1690
+00:59:22,160 --> 00:59:24,150
+uses nodes for the previous data
+
+1691
+00:59:24,160 --> 00:59:25,829
+structures
+
+1692
+00:59:25,839 --> 00:59:29,430
+the the word page is associated with
+
+1693
+00:59:29,440 --> 00:59:31,430
+virtual memory management and disk
+
+1694
+00:59:31,440 --> 00:59:32,549
+management
+
+1695
+00:59:32,559 --> 00:59:33,910
+and that's what we're trying to improve
+
+1696
+00:59:33,920 --> 00:59:35,990
+here that's relying the data on top of
+
+1697
+00:59:36,000 --> 00:59:37,109
+the disks
+
+1698
+00:59:37,119 --> 00:59:39,510
+yeah ssds
+
+1699
+00:59:39,520 --> 00:59:40,549
+excellent
+
+1700
+00:59:40,559 --> 00:59:43,030
+okay so obviously selection of the
+
+1701
+00:59:43,040 --> 00:59:45,030
+correct data structures
+
+1702
+00:59:45,040 --> 00:59:47,430
+to use is extremely important to us
+
+1703
+00:59:47,440 --> 00:59:49,030
+software engineers and companies but if
+
+1704
+00:59:49,040 --> 00:59:51,109
+there was one thing from
+
+1705
+00:59:51,119 --> 00:59:53,270
+this journey of an episode you would
+
+1706
+00:59:53,280 --> 00:59:55,430
+want our listeners to remember what
+
+1707
+00:59:55,440 --> 00:59:59,030
+would you like that to be
+
+1708
+01:00:00,630 --> 01:00:00,640
+i would say
+
+1709
+01:00:00,640 --> 01:00:02,150
+most of the time
+
+1710
+01:00:02,160 --> 01:00:04,549
+for your data management needs
+
+1711
+01:00:04,559 --> 01:00:07,270
+you're just gonna need a b plus tree and
+
+1712
+01:00:07,280 --> 01:00:10,710
+you can ignore anything else
+
+1713
+01:00:10,720 --> 01:00:11,750
+perfect
+
+1714
+01:00:11,760 --> 01:00:13,190
+and don't try and do it yourself there
+
+1715
+01:00:13,200 --> 01:00:14,950
+should be a library for it
+
+1716
+01:00:14,960 --> 01:00:16,390
+yeah
+
+1717
+01:00:16,400 --> 01:00:18,630
+um was there anything we missed that
+
+1718
+01:00:18,640 --> 01:00:19,990
+you'd like to mention
+
+1719
+01:00:20,000 --> 01:00:21,910
+we did cover quite a lot
+
+1720
+01:00:21,920 --> 01:00:24,069
+we covered a lot around here so i think
+
+1721
+01:00:24,079 --> 01:00:25,510
+we're good
+
+1722
+01:00:25,520 --> 01:00:27,349
+excellent so
+
+1723
+01:00:27,359 --> 01:00:29,430
+where can people find out more about
+
+1724
+01:00:29,440 --> 01:00:32,630
+your b3 plus yeah i get it right b plus
+
+1725
+01:00:32,640 --> 01:00:34,549
+3 work or what you're working on
+
+1726
+01:00:34,559 --> 01:00:36,230
+obviously we've got your twitter account
+
+1727
+01:00:36,240 --> 01:00:37,829
+i will link to
+
+1728
+01:00:37,839 --> 01:00:40,069
+um but i'm sure if people are interested
+
+1729
+01:00:40,079 --> 01:00:41,270
+they can
+
+1730
+01:00:41,280 --> 01:00:43,589
+look into the source code of lmdb and
+
+1731
+01:00:43,599 --> 01:00:45,270
+get their head around how you've done v
+
+1732
+01:00:45,280 --> 01:00:46,470
+plus tree
+
+1733
+01:00:46,480 --> 01:00:48,630
+sure yeah and also um
+
+1734
+01:00:48,640 --> 01:00:50,549
+the lmdb.tech
+
+1735
+01:00:50,559 --> 01:00:52,549
+website has the
+
+1736
+01:00:52,559 --> 01:00:56,630
+uh formatted documentation online so
+
+1737
+01:00:56,640 --> 01:00:58,710
+you can read through that there
+
+1738
+01:00:58,720 --> 01:01:00,630
+while you're browsing through the source
+
+1739
+01:01:00,640 --> 01:01:01,990
+code
+
+1740
+01:01:02,000 --> 01:01:03,510
+thank you i'll put that in the show
+
+1741
+01:01:03,520 --> 01:01:04,870
+notes
+
+1742
+01:01:04,880 --> 01:01:05,670
+so
+
+1743
+01:01:05,680 --> 01:01:07,109
+this show personally has really helped
+
+1744
+01:01:07,119 --> 01:01:08,630
+me understand b trees hopefully the
+
+1745
+01:01:08,640 --> 01:01:09,670
+listeners
+
+1746
+01:01:09,680 --> 01:01:11,349
+will come off a little bit better than
+
+1747
+01:01:11,359 --> 01:01:13,109
+when they started listening
+
+1748
+01:01:13,119 --> 01:01:15,270
+they're less confused yeah so howard
+
+1749
+01:01:15,280 --> 01:01:16,630
+thank you for coming on the show it's
+
+1750
+01:01:16,640 --> 01:01:18,630
+been a real pleasure this is gavin henry
+
+1751
+01:01:18,640 --> 01:01:20,470
+for software engineering radio thank you
+
+1752
+01:01:20,480 --> 01:01:22,630
+for listening
+
+1753
+01:01:22,640 --> 01:01:24,150
+thanks for listening to sc radio an
+
+1754
+01:01:24,160 --> 01:01:25,750
+educational program brought to you by
+
+1755
+01:01:25,760 --> 01:01:28,150
+ieee software magazine for more about
+
+1756
+01:01:28,160 --> 01:01:29,910
+the podcast including other episodes
+
+1757
+01:01:29,920 --> 01:01:33,589
+visit our website at se-radio.net
+
+1758
+01:01:33,599 --> 01:01:35,270
+to provide feedback you can comment on
+
+1759
+01:01:35,280 --> 01:01:37,270
+each episode on the website or reach us
+
+1760
+01:01:37,280 --> 01:01:40,069
+on linkedin facebook twitter or through
+
+1761
+01:01:40,079 --> 01:01:44,309
+our slack channel at scradio.slack.com
+
+1762
+01:01:46,309 --> 01:01:46,319
+you can also email us at team
+
+1763
+01:01:46,319 --> 01:01:48,870
+sc-radio.net
+
+1764
+01:01:48,880 --> 01:01:50,870
+this and all other episodes of sc radio
+
+1765
+01:01:50,880 --> 01:01:52,390
+is licensed under creative commons
+
+1766
+01:01:52,400 --> 01:01:54,390
+license 2.5
+
+1767
+01:01:54,400 --> 01:02:06,470
+thanks for listening

@@ -1,0 +1,4351 @@
+1
+00:00:08,590 --> 00:00:08,600
+this is software engineering radio the
+
+2
+00:00:08,600 --> 00:00:10,510
+podcast for professional developers on
+
+3
+00:00:10,520 --> 00:00:16,060
+the web at se - radio dotnet
+
+4
+00:00:18,669 --> 00:00:18,679
+I see radio brings you relevant and
+
+5
+00:00:18,679 --> 00:00:20,529
+detailed discussions and interviews on
+
+6
+00:00:20,539 --> 00:00:22,450
+software engineering topics every two
+
+7
+00:00:22,460 --> 00:00:24,519
+weeks thanks to our audience and the
+
+8
+00:00:24,529 --> 00:00:26,139
+partners listed on our website for
+
+9
+00:00:26,149 --> 00:00:31,590
+supporting the party
+
+10
+00:00:34,300 --> 00:00:34,310
+okay so welcome listeners to another
+
+11
+00:00:34,310 --> 00:00:37,090
+episode on soft engineering radio this
+
+12
+00:00:37,100 --> 00:00:40,090
+time we have invited duck Simon from Sun
+
+13
+00:00:40,100 --> 00:00:43,390
+labs to talk about some java virtual
+
+14
+00:00:43,400 --> 00:00:46,210
+machine implementation project called
+
+15
+00:00:46,220 --> 00:00:50,460
+maxine welcome doc thank you very much
+
+16
+00:00:50,470 --> 00:00:52,960
+doc would you introduce yourself to our
+
+17
+00:00:52,970 --> 00:00:56,650
+listeners so I'm Doug Simon as mentioned
+
+18
+00:00:56,660 --> 00:01:00,310
+and I work here at Sun Microsystems labs
+
+19
+00:01:00,320 --> 00:01:04,450
+in California at the Menlo Park campus
+
+20
+00:01:04,460 --> 00:01:07,600
+and I've been a staff member here since
+
+21
+00:01:07,610 --> 00:01:11,440
+2001 but I actually was here early in 98
+
+22
+00:01:11,450 --> 00:01:15,010
+as an intern and worked on a project
+
+23
+00:01:15,020 --> 00:01:17,860
+called spotless VM which morphed into
+
+24
+00:01:17,870 --> 00:01:20,649
+something called the KVM and became the
+
+25
+00:01:20,659 --> 00:01:23,580
+reference implementation for the CL DC
+
+26
+00:01:23,590 --> 00:01:26,290
+implement eight specification when it
+
+27
+00:01:26,300 --> 00:01:30,430
+went out I think in 2000 and prior to
+
+28
+00:01:30,440 --> 00:01:34,090
+that I completed a CS degree at the
+
+29
+00:01:34,100 --> 00:01:36,520
+University of Queensland in Brisbane
+
+30
+00:01:36,530 --> 00:01:40,230
+Australia under Christina cifuentes
+
+31
+00:01:40,240 --> 00:01:43,630
+where I worked or my final thesis on his
+
+32
+00:01:43,640 --> 00:01:45,779
+thesis was in the era of D compilation
+
+33
+00:01:45,789 --> 00:01:49,569
+where I was looking at mechanisms for
+
+34
+00:01:49,579 --> 00:01:52,749
+recovering C like control constructs
+
+35
+00:01:52,759 --> 00:01:57,609
+from assembly code but since being back
+
+36
+00:01:57,619 --> 00:02:00,279
+in 2001 my focus has been almost and
+
+37
+00:02:00,289 --> 00:02:03,849
+solely on JVM and you're now working on
+
+38
+00:02:03,859 --> 00:02:06,639
+on another JVM called Maxine can you
+
+39
+00:02:06,649 --> 00:02:08,560
+tell a little bit more what what is
+
+40
+00:02:08,570 --> 00:02:11,470
+Maxine what is it about okay so the
+
+41
+00:02:11,480 --> 00:02:14,590
+origins of this project can probably be
+
+42
+00:02:14,600 --> 00:02:17,440
+traced back to the mid 90s Oh a couple
+
+43
+00:02:17,450 --> 00:02:19,900
+of researchers at sun labs by the name
+
+44
+00:02:19,910 --> 00:02:23,560
+of david Unger and Mario Bosco were
+
+45
+00:02:23,570 --> 00:02:26,620
+interested in researching hardware
+
+46
+00:02:26,630 --> 00:02:29,860
+support for objects in the context of a
+
+47
+00:02:29,870 --> 00:02:33,220
+managed runtime in particular in context
+
+48
+00:02:33,230 --> 00:02:35,620
+of a VM so what they were interested is
+
+49
+00:02:35,630 --> 00:02:38,470
+looking at object references which
+
+50
+00:02:38,480 --> 00:02:41,680
+aren't necessarily addresses to
+
+51
+00:02:41,690 --> 00:02:43,720
+flat piece of memory but indexes into
+
+52
+00:02:43,730 --> 00:02:47,200
+some hardware based object table and
+
+53
+00:02:47,210 --> 00:02:49,270
+they felt well to conduct an experiment
+
+54
+00:02:49,280 --> 00:02:52,810
+let's use an existing VM and modify what
+
+55
+00:02:52,820 --> 00:02:54,610
+exactly means to reference and
+
+56
+00:02:54,620 --> 00:02:59,470
+dereference objects and in surveying the
+
+57
+00:02:59,480 --> 00:03:02,520
+landscape they found such an experiment
+
+58
+00:03:02,530 --> 00:03:05,920
+may not be so easy to conduct given that
+
+59
+00:03:05,930 --> 00:03:09,250
+there's you know that this concept of
+
+60
+00:03:09,260 --> 00:03:11,170
+what an object is and how you
+
+61
+00:03:11,180 --> 00:03:14,050
+dereference it these traditionally
+
+62
+00:03:14,060 --> 00:03:16,480
+spread across most parts of a VM
+
+63
+00:03:16,490 --> 00:03:18,550
+implementation or significant parts and
+
+64
+00:03:18,560 --> 00:03:21,160
+to conduct the experiment they need to
+
+65
+00:03:21,170 --> 00:03:25,810
+understand vast quantities of any VM so
+
+66
+00:03:25,820 --> 00:03:28,450
+they got to thinking about how one could
+
+67
+00:03:28,460 --> 00:03:33,900
+design a VM where this subsystem of
+
+68
+00:03:33,910 --> 00:03:36,430
+looking at objects or handling objects
+
+69
+00:03:36,440 --> 00:03:38,470
+is sort of as contained as possible and
+
+70
+00:03:38,480 --> 00:03:42,130
+disentangle it from as much of the rest
+
+71
+00:03:42,140 --> 00:03:43,330
+of the VM as possible
+
+72
+00:03:43,340 --> 00:03:47,140
+so the sort of realization they had is
+
+73
+00:03:47,150 --> 00:03:50,590
+one of the core architectural concepts
+
+74
+00:03:50,600 --> 00:03:54,940
+of maxeen and they sort of decided that
+
+75
+00:03:54,950 --> 00:03:57,670
+if you can build it build a VM around an
+
+76
+00:03:57,680 --> 00:04:00,729
+opt-in optimizing compiler where the
+
+77
+00:04:00,739 --> 00:04:06,210
+knowledge of any subsystem is
+
+78
+00:04:06,220 --> 00:04:09,220
+bootstrapped into the compiler then you
+
+79
+00:04:09,230 --> 00:04:12,520
+get this disentanglement for free and
+
+80
+00:04:12,530 --> 00:04:15,580
+hopefully is inlaid parts of interview
+
+81
+00:04:15,590 --> 00:04:18,099
+it'll become clear what I mean by this
+
+82
+00:04:18,109 --> 00:04:21,420
+this bootstrapped optimizing compiler
+
+83
+00:04:21,430 --> 00:04:25,240
+and so that's that's where the idea set
+
+84
+00:04:25,250 --> 00:04:26,400
+for awhile
+
+85
+00:04:26,410 --> 00:04:29,650
+around I'm not sure what data was I
+
+86
+00:04:29,660 --> 00:04:32,409
+think two thousand three or four BAM
+
+87
+00:04:32,419 --> 00:04:35,860
+Attica came back to the labs after being
+
+88
+00:04:35,870 --> 00:04:38,980
+in product land at Sun where he was the
+
+89
+00:04:38,990 --> 00:04:42,250
+tech lead on what's called the CLD c-h-i
+
+90
+00:04:42,260 --> 00:04:45,880
+the COTC hotspot implementation vm so
+
+91
+00:04:45,890 --> 00:04:48,909
+that's in the same space as the k vm but
+
+92
+00:04:48,919 --> 00:04:52,330
+a more optimized implementation of these
+
+93
+00:04:52,340 --> 00:04:54,399
+small VMS
+
+94
+00:04:54,409 --> 00:04:57,179
+and he was interested in subscapular
+
+95
+00:04:57,189 --> 00:05:01,059
+nerve and previous projects and scaling
+
+96
+00:05:01,069 --> 00:05:06,429
+them up into a new type of full j2se vm
+
+97
+00:05:06,439 --> 00:05:09,699
+and he shared a lot of the ideas Mario
+
+98
+00:05:09,709 --> 00:05:13,540
+and Dave had and thus began the Maxine
+
+99
+00:05:13,550 --> 00:05:17,259
+project and that was around 2005 I
+
+100
+00:05:17,269 --> 00:05:21,399
+joined in 2006 and we've had subsequent
+
+101
+00:05:21,409 --> 00:05:23,169
+team members joined since then Lauren
+
+102
+00:05:23,179 --> 00:05:25,239
+Dan des Michael Van Deventer and pent
+
+103
+00:05:25,249 --> 00:05:29,229
+Itza we also had someone else working as
+
+104
+00:05:29,239 --> 00:05:34,659
+an early contributor Greg right so the
+
+105
+00:05:34,669 --> 00:05:41,169
+VM itself is written in Java we've we
+
+106
+00:05:41,179 --> 00:05:44,829
+used the latest Java language syntax as
+
+107
+00:05:44,839 --> 00:05:48,009
+of Java 1.5 in particular we've made
+
+108
+00:05:48,019 --> 00:05:51,929
+heavy use of annotations to sort of
+
+109
+00:05:51,939 --> 00:05:54,669
+basically to write a VM which other VM
+
+110
+00:05:54,679 --> 00:05:58,149
+in Java you have to depending on your
+
+111
+00:05:58,159 --> 00:05:59,529
+point of view extend or break the
+
+112
+00:05:59,539 --> 00:06:01,749
+language but you know to write a garbage
+
+113
+00:06:01,759 --> 00:06:03,129
+collector we need to be able to talk
+
+114
+00:06:03,139 --> 00:06:05,769
+about such things as pointers which
+
+115
+00:06:05,779 --> 00:06:07,929
+obviously you can't natively do in Java
+
+116
+00:06:07,939 --> 00:06:12,359
+so through sort of a combination of
+
+117
+00:06:12,369 --> 00:06:15,639
+annotations and other mechanisms we've
+
+118
+00:06:15,649 --> 00:06:18,459
+added basically we have a new type
+
+119
+00:06:18,469 --> 00:06:21,429
+hierarchy a separate type Ariake in the
+
+120
+00:06:21,439 --> 00:06:24,579
+language which allows us to do these
+
+121
+00:06:24,589 --> 00:06:29,589
+low-level operations and then the trick
+
+122
+00:06:29,599 --> 00:06:34,509
+is to build on top of this this what
+
+123
+00:06:34,519 --> 00:06:36,239
+we're after is a highly modular
+
+124
+00:06:36,249 --> 00:06:39,309
+component eyes design so that we can do
+
+125
+00:06:39,319 --> 00:06:43,359
+these experiments on VM subsystems
+
+126
+00:06:43,369 --> 00:06:46,149
+without having to necessarily him to
+
+127
+00:06:46,159 --> 00:06:48,509
+understand every other part of the VM
+
+128
+00:06:48,519 --> 00:06:51,009
+and not only ask but would like to know
+
+129
+00:06:51,019 --> 00:06:53,199
+prototype have other researchers in the
+
+130
+00:06:53,209 --> 00:06:55,469
+vm community be able to use this
+
+131
+00:06:55,479 --> 00:06:58,709
+artifact to conduct their research I
+
+132
+00:06:58,719 --> 00:07:01,719
+guess yeah that the core ideas build
+
+133
+00:07:01,729 --> 00:07:03,159
+everything around an opt-in rise in
+
+134
+00:07:03,169 --> 00:07:04,959
+compartment if you'd like I'll go into
+
+135
+00:07:04,969 --> 00:07:07,390
+more detail on what that means
+
+136
+00:07:07,400 --> 00:07:10,040
+implementing a java virtual machine in
+
+137
+00:07:10,050 --> 00:07:12,290
+java sounds a bit crazy from the first
+
+138
+00:07:12,300 --> 00:07:14,270
+point of view that the end that is a
+
+139
+00:07:14,280 --> 00:07:16,970
+very justified correct initial reaction
+
+140
+00:07:16,980 --> 00:07:21,500
+which you know i I had as well and the
+
+141
+00:07:21,510 --> 00:07:23,450
+the this actually has a history in sun
+
+142
+00:07:23,460 --> 00:07:26,000
+labs we had a project here in 98 called
+
+143
+00:07:26,010 --> 00:07:28,160
+Java in Java which was exactly that a
+
+144
+00:07:28,170 --> 00:07:30,740
+Java VM written in Java running on top
+
+145
+00:07:30,750 --> 00:07:32,750
+of another job of VM and not
+
+146
+00:07:32,760 --> 00:07:34,340
+surprisingly I think we found that
+
+147
+00:07:34,350 --> 00:07:36,200
+performed on the order of a thousand
+
+148
+00:07:36,210 --> 00:07:38,600
+times slower than a standard Java VM so
+
+149
+00:07:38,610 --> 00:07:41,290
+you're right in that the naive approach
+
+150
+00:07:41,300 --> 00:07:44,210
+definitely doesn't buy you anything
+
+151
+00:07:44,220 --> 00:07:47,180
+actually cost you a lot but if you think
+
+152
+00:07:47,190 --> 00:07:50,000
+about what a VM for any language does or
+
+153
+00:07:50,010 --> 00:07:51,590
+on a VM at least that has a platform
+
+154
+00:07:51,600 --> 00:07:53,630
+independent by code format to machine
+
+155
+00:07:53,640 --> 00:07:57,860
+code compiler in it does at runtime it
+
+156
+00:07:57,870 --> 00:08:00,350
+runs this compiler over a set of class
+
+157
+00:08:00,360 --> 00:08:03,470
+files producing machine code which is
+
+158
+00:08:03,480 --> 00:08:06,080
+directly executing the hardware so if
+
+159
+00:08:06,090 --> 00:08:08,210
+you can sort of push that understanding
+
+160
+00:08:08,220 --> 00:08:09,680
+one step further and say well what if we
+
+161
+00:08:09,690 --> 00:08:12,920
+actually not just put that machine code
+
+162
+00:08:12,930 --> 00:08:15,740
+into the runtime memory and executed
+
+163
+00:08:15,750 --> 00:08:18,620
+that but saved it to a file and so in
+
+164
+00:08:18,630 --> 00:08:21,770
+some sense you can deploy or execute
+
+165
+00:08:21,780 --> 00:08:24,530
+your compiler in this manner and what we
+
+166
+00:08:24,540 --> 00:08:28,370
+call ahead of time compilation running
+
+167
+00:08:28,380 --> 00:08:31,640
+your compiler written in Java as a java
+
+168
+00:08:31,650 --> 00:08:34,159
+application on top of an existing vm but
+
+169
+00:08:34,169 --> 00:08:37,130
+saving the the compiled machine code and
+
+170
+00:08:37,140 --> 00:08:39,920
+the associated objects to a file what
+
+171
+00:08:39,930 --> 00:08:41,570
+you effectively have is an executable
+
+172
+00:08:41,580 --> 00:08:44,390
+produced by your compiler that contains
+
+173
+00:08:44,400 --> 00:08:46,910
+your compiler and the rest of the run
+
+174
+00:08:46,920 --> 00:08:48,980
+time system necessary to have a
+
+175
+00:08:48,990 --> 00:08:52,790
+standalone bootstrapped vm doesn't mean
+
+176
+00:08:52,800 --> 00:08:57,650
+that you first run your your own vm that
+
+177
+00:08:57,660 --> 00:09:00,380
+is written in java on top of another
+
+178
+00:09:00,390 --> 00:09:03,950
+java vm let the JIT compiler compile
+
+179
+00:09:03,960 --> 00:09:08,480
+your your your java vm itself somehow
+
+180
+00:09:08,490 --> 00:09:12,820
+and then save that's the the produced
+
+181
+00:09:12,830 --> 00:09:16,580
+the produced machine code to a file and
+
+182
+00:09:16,590 --> 00:09:19,940
+start from there again without a host vm
+
+183
+00:09:19,950 --> 00:09:21,140
+exactly
+
+184
+00:09:21,150 --> 00:09:22,850
+exactly so we have I mean if you think
+
+185
+00:09:22,860 --> 00:09:27,350
+about C compilers C compilers now what
+
+186
+00:09:27,360 --> 00:09:28,790
+are they written in they're written in C
+
+187
+00:09:28,800 --> 00:09:31,280
+so you do need a pre-existing C compiler
+
+188
+00:09:31,290 --> 00:09:34,580
+to to actually bootstrap a C compiler in
+
+189
+00:09:34,590 --> 00:09:36,950
+some sense this is no different at some
+
+190
+00:09:36,960 --> 00:09:40,160
+point as with you know most C compilers
+
+191
+00:09:40,170 --> 00:09:42,860
+would like to bootstrap LVM with Alvia
+
+192
+00:09:42,870 --> 00:09:45,950
+but for now until we get the performance
+
+193
+00:09:45,960 --> 00:09:48,350
+we need it's it's expedient to use an
+
+194
+00:09:48,360 --> 00:09:51,110
+existing VM you know hotspot being the
+
+195
+00:09:51,120 --> 00:09:55,790
+obvious and natural candidate so it's in
+
+196
+00:09:55,800 --> 00:09:57,440
+some sense not too different from you
+
+197
+00:09:57,450 --> 00:10:00,290
+know the way you bootstrap any other
+
+198
+00:10:00,300 --> 00:10:01,850
+compiler based system
+
+199
+00:10:01,860 --> 00:10:05,630
+it's just that typically this is not how
+
+200
+00:10:05,640 --> 00:10:08,870
+Java VMs have been built why did you
+
+201
+00:10:08,880 --> 00:10:13,370
+choose Java as a language uh so we
+
+202
+00:10:13,380 --> 00:10:18,860
+wanted to build a Java VM now why did we
+
+203
+00:10:18,870 --> 00:10:21,230
+choose you know Java is the
+
+204
+00:10:21,240 --> 00:10:23,060
+implementation language as well as the
+
+205
+00:10:23,070 --> 00:10:25,940
+target language well this is not the
+
+206
+00:10:25,950 --> 00:10:28,220
+first VM to to take this approach and
+
+207
+00:10:28,230 --> 00:10:29,960
+and realize some of the benefits of
+
+208
+00:10:29,970 --> 00:10:32,510
+doing this in the Java space we have the
+
+209
+00:10:32,520 --> 00:10:32,990
+jikes
+
+210
+00:10:33,000 --> 00:10:35,570
+our VM employs a similar technique as
+
+211
+00:10:35,580 --> 00:10:39,260
+does the squeak VM this more top VM
+
+212
+00:10:39,270 --> 00:10:42,130
+written in a subset of Smalltalk
+
+213
+00:10:42,140 --> 00:10:44,630
+in addition we have another project here
+
+214
+00:10:44,640 --> 00:10:47,150
+which I was part of called squawk which
+
+215
+00:10:47,160 --> 00:10:51,020
+is a cotc class VM itself also written
+
+216
+00:10:51,030 --> 00:10:54,110
+in Java but by implementing in Java
+
+217
+00:10:54,120 --> 00:10:56,420
+itself you get a lot of the nice
+
+218
+00:10:56,430 --> 00:10:59,030
+features of the Java language which one
+
+219
+00:10:59,040 --> 00:11:02,510
+could argue you know make it a more
+
+220
+00:11:02,520 --> 00:11:04,640
+productive implementation choice than
+
+221
+00:11:04,650 --> 00:11:07,640
+something like C or C++ for example in
+
+222
+00:11:07,650 --> 00:11:11,240
+our class loader the vm class letter we
+
+223
+00:11:11,250 --> 00:11:14,660
+can write this in Java using exceptions
+
+224
+00:11:14,670 --> 00:11:17,080
+when things go wrong we don't have to
+
+225
+00:11:17,090 --> 00:11:20,380
+pass all sorts of macros around to to
+
+226
+00:11:20,390 --> 00:11:25,130
+recover in a safe manner actually and
+
+227
+00:11:25,140 --> 00:11:28,010
+even more importantly we get garbage
+
+228
+00:11:28,020 --> 00:11:30,680
+collection for free there's large parts
+
+229
+00:11:30,690 --> 00:11:34,760
+of a VM that use dynamic memory that
+
+230
+00:11:34,770 --> 00:11:37,430
+you know part of the GC implementation
+
+231
+00:11:37,440 --> 00:11:42,560
+itself and if you ever look at the hot
+
+232
+00:11:42,570 --> 00:11:44,780
+spot source code every time a Java
+
+233
+00:11:44,790 --> 00:11:48,769
+object finds itself down in the C++
+
+234
+00:11:48,779 --> 00:11:51,800
+source code they have to have a separate
+
+235
+00:11:51,810 --> 00:11:54,680
+mechanism to let the garbage collector
+
+236
+00:11:54,690 --> 00:11:57,740
+know about the C code holding on to or
+
+237
+00:11:57,750 --> 00:12:00,410
+having a reference to these objects it's
+
+238
+00:12:00,420 --> 00:12:04,699
+something they call handles which adds a
+
+239
+00:12:04,709 --> 00:12:07,610
+level of inefficiency in handling these
+
+240
+00:12:07,620 --> 00:12:11,210
+objects and also it can be a nasty
+
+241
+00:12:11,220 --> 00:12:13,340
+source of a source of nasty bugs if you
+
+242
+00:12:13,350 --> 00:12:15,820
+forget to use handles in the right place
+
+243
+00:12:15,830 --> 00:12:17,840
+we don't have to worry about forgetting
+
+244
+00:12:17,850 --> 00:12:20,630
+because the language we are compiling
+
+245
+00:12:20,640 --> 00:12:22,940
+and writing the VM itself is garbage
+
+246
+00:12:22,950 --> 00:12:27,370
+collected there's other benefits such as
+
+247
+00:12:27,380 --> 00:12:31,060
+diminishing does the the barrier between
+
+248
+00:12:31,070 --> 00:12:34,730
+the application code and the VM every
+
+249
+00:12:34,740 --> 00:12:37,340
+time the application makes a call into
+
+250
+00:12:37,350 --> 00:12:41,569
+some VM subsystem if you cross this
+
+251
+00:12:41,579 --> 00:12:45,050
+language barrier from Java to see you
+
+252
+00:12:45,060 --> 00:12:48,560
+need to perform extra work your layout
+
+253
+00:12:48,570 --> 00:12:51,230
+of frames may be different depending how
+
+254
+00:12:51,240 --> 00:12:54,230
+you write your Java compiler that may
+
+255
+00:12:54,240 --> 00:12:56,720
+well differ to the frame layout used by
+
+256
+00:12:56,730 --> 00:12:59,180
+the C compiler and so you need to
+
+257
+00:12:59,190 --> 00:13:01,000
+shuffle things around you need to
+
+258
+00:13:01,010 --> 00:13:03,730
+effectively marshal things into
+
+259
+00:13:03,740 --> 00:13:05,750
+potential into different locations
+
+260
+00:13:05,760 --> 00:13:07,910
+every time you cross that barrier not to
+
+261
+00:13:07,920 --> 00:13:09,740
+mention having to wrap objects in
+
+262
+00:13:09,750 --> 00:13:13,340
+handles so there's that sort of overhead
+
+263
+00:13:13,350 --> 00:13:15,050
+of going through the barrier execution
+
+264
+00:13:15,060 --> 00:13:17,380
+over it but there's also a barrier to
+
+265
+00:13:17,390 --> 00:13:20,210
+optimization we can actually inline
+
+266
+00:13:20,220 --> 00:13:22,660
+parts of the VM into application code
+
+267
+00:13:22,670 --> 00:13:26,240
+and you know obtain all the well-known
+
+268
+00:13:26,250 --> 00:13:30,530
+benefits of inlining and this this has
+
+269
+00:13:30,540 --> 00:13:33,079
+actually been taken one step further by
+
+270
+00:13:33,089 --> 00:13:36,079
+another project here which is built on
+
+271
+00:13:36,089 --> 00:13:39,940
+and using the maxine vm chord guest VM
+
+272
+00:13:39,950 --> 00:13:43,220
+run by Mick Jordan where he is putting
+
+273
+00:13:43,230 --> 00:13:45,720
+Maxine directly on top of Zen
+
+274
+00:13:45,730 --> 00:13:49,169
+where yes he's now at the point of
+
+275
+00:13:49,179 --> 00:13:52,319
+rewriting the thread scheduler so he can
+
+276
+00:13:52,329 --> 00:13:55,109
+effectively optimize make optimization
+
+277
+00:13:55,119 --> 00:13:59,099
+decisions that are in a boil down
+
+278
+00:13:59,109 --> 00:14:03,109
+unaware of the thread scheduling logic
+
+279
+00:14:03,119 --> 00:14:05,939
+straight from the application code you
+
+280
+00:14:05,949 --> 00:14:07,280
+can also optimize all the way down
+
+281
+00:14:07,290 --> 00:14:10,349
+through the network stack so you get
+
+282
+00:14:10,359 --> 00:14:14,069
+this sort of this diminishing barrier to
+
+283
+00:14:14,079 --> 00:14:16,259
+both execution overhead and optimize
+
+284
+00:14:16,269 --> 00:14:19,499
+ability so these are just some of the
+
+285
+00:14:19,509 --> 00:14:21,869
+benefits of doing it in Java and then
+
+286
+00:14:21,879 --> 00:14:25,409
+there's this great tool support for Java
+
+287
+00:14:25,419 --> 00:14:28,349
+that works pretty much the same on all
+
+288
+00:14:28,359 --> 00:14:31,590
+platforms even though our primary target
+
+289
+00:14:31,600 --> 00:14:34,889
+or initial target for this VM is a AMD
+
+290
+00:14:34,899 --> 00:14:40,289
+64 system the members of the team can
+
+291
+00:14:40,299 --> 00:14:45,960
+quite happily develop compile and debug
+
+292
+00:14:45,970 --> 00:14:49,799
+most of the VM using a standard Java IDE
+
+293
+00:14:49,809 --> 00:14:52,919
+on you know our platforms of choice
+
+294
+00:14:52,929 --> 00:14:55,710
+currently we all develop at various
+
+295
+00:14:55,720 --> 00:14:58,229
+times on a Macbook on the Solaris system
+
+296
+00:14:58,239 --> 00:15:04,259
+on a Linux system etc and then we also
+
+297
+00:15:04,269 --> 00:15:06,659
+get ya the portability aspect is it's
+
+298
+00:15:06,669 --> 00:15:09,569
+just in general the portability java
+
+299
+00:15:09,579 --> 00:15:11,759
+brings to applications we get a large
+
+300
+00:15:11,769 --> 00:15:17,159
+part of for the VM other parts such as
+
+301
+00:15:17,169 --> 00:15:19,739
+adaptive optimization can be applied to
+
+302
+00:15:19,749 --> 00:15:22,439
+the VM itself around times at the VM can
+
+303
+00:15:22,449 --> 00:15:27,629
+sort of trace trace its own execution
+
+304
+00:15:27,639 --> 00:15:31,049
+and start rearranging or inline in its
+
+305
+00:15:31,059 --> 00:15:34,650
+code differently so all those
+
+306
+00:15:34,660 --> 00:15:37,529
+optimizations so that we know that yes
+
+307
+00:15:37,539 --> 00:15:39,960
+yes I mean this did the ultimate goal is
+
+308
+00:15:39,970 --> 00:15:42,299
+to apply all well-known vm optimizations
+
+309
+00:15:42,309 --> 00:15:45,720
+to not just the application code hotspot
+
+310
+00:15:45,730 --> 00:15:49,049
+cannot dynamically optimize itself once
+
+311
+00:15:49,059 --> 00:15:51,629
+the VM is being deployed they didn't
+
+312
+00:15:51,639 --> 00:15:53,809
+write and they don't control the C+ C++
+
+313
+00:15:53,819 --> 00:15:57,929
+compiler and and it's it's sort of fixed
+
+314
+00:15:57,939 --> 00:15:59,369
+in stone once once the
+
+315
+00:15:59,379 --> 00:16:02,639
+thing is out there and running that been
+
+316
+00:16:02,649 --> 00:16:06,809
+said you know to realize this this an
+
+317
+00:16:06,819 --> 00:16:09,329
+ultimate goal of optimizing all over the
+
+318
+00:16:09,339 --> 00:16:09,869
+place
+
+319
+00:16:09,879 --> 00:16:11,729
+we actually need to implement those
+
+320
+00:16:11,739 --> 00:16:14,129
+optimizations and given that the
+
+321
+00:16:14,139 --> 00:16:16,259
+optimizations determine the quality of
+
+322
+00:16:16,269 --> 00:16:19,469
+the VM you know we have the sort of dog
+
+323
+00:16:19,479 --> 00:16:22,499
+food principle here once once your dog
+
+324
+00:16:22,509 --> 00:16:24,239
+foods of a reasonable quality can only
+
+325
+00:16:24,249 --> 00:16:26,819
+get better and exponentially so until
+
+326
+00:16:26,829 --> 00:16:29,489
+you're at that point you you actually
+
+327
+00:16:29,499 --> 00:16:32,189
+have something that can be quite
+
+328
+00:16:32,199 --> 00:16:35,419
+substandard compared to an existing vm
+
+329
+00:16:35,429 --> 00:16:38,789
+built around a compiler that's you know
+
+330
+00:16:38,799 --> 00:16:40,710
+thirty or forty years old and quite
+
+331
+00:16:40,720 --> 00:16:43,619
+mature so that's that sort of the
+
+332
+00:16:43,629 --> 00:16:46,109
+trade-off one one buys into with this
+
+333
+00:16:46,119 --> 00:16:50,519
+approach so maxine is called a matter
+
+334
+00:16:50,529 --> 00:16:53,909
+circular vm what does this medicine
+
+335
+00:16:53,919 --> 00:16:56,429
+plate effect so it's it's I think it's
+
+336
+00:16:56,439 --> 00:16:58,319
+it's hard to nail down this definition
+
+337
+00:16:58,329 --> 00:17:02,129
+and and so we've chosen a you know put a
+
+338
+00:17:02,139 --> 00:17:05,460
+stake in the in the ground and said in
+
+339
+00:17:05,470 --> 00:17:07,139
+the context of this project we basically
+
+340
+00:17:07,149 --> 00:17:11,220
+mean a vm that's implemented in the
+
+341
+00:17:11,230 --> 00:17:14,939
+language it it hosts and and tries to
+
+342
+00:17:14,949 --> 00:17:17,730
+express as much of the vm semantics in
+
+343
+00:17:17,740 --> 00:17:18,449
+that language
+
+344
+00:17:18,459 --> 00:17:22,590
+without having to hand code assembly or
+
+345
+00:17:22,600 --> 00:17:27,600
+weave compiler ir and i think to a large
+
+346
+00:17:27,610 --> 00:17:31,639
+extent we we've we've realized that goal
+
+347
+00:17:31,649 --> 00:17:33,600
+so maybe it's a good point for me
+
+348
+00:17:33,610 --> 00:17:37,049
+describe one of the core aspects of the
+
+349
+00:17:37,059 --> 00:17:39,360
+vamp magazine architecture something we
+
+350
+00:17:39,370 --> 00:17:44,669
+call snippets at the most course level
+
+351
+00:17:44,679 --> 00:17:48,990
+snippets pure java methods that just
+
+352
+00:17:49,000 --> 00:17:52,680
+look like in Copiah or like and come up
+
+353
+00:17:52,690 --> 00:17:57,389
+like any other job method in an idea and
+
+354
+00:17:57,399 --> 00:17:59,690
+what they are but what they actually
+
+355
+00:17:59,700 --> 00:18:04,950
+implement parts of JVM bytecode
+
+356
+00:18:04,960 --> 00:18:07,529
+semantics so we have a snippet for
+
+357
+00:18:07,539 --> 00:18:10,080
+example called get field and this is a
+
+358
+00:18:10,090 --> 00:18:11,720
+bit of Java code that has a parameter
+
+359
+00:18:11,730 --> 00:18:12,950
+which
+
+360
+00:18:12,960 --> 00:18:18,649
+is an object untyped object and let's
+
+361
+00:18:18,659 --> 00:18:20,450
+see what else and a constant poll index
+
+362
+00:18:20,460 --> 00:18:24,710
+which is pretty much what you get from
+
+363
+00:18:24,720 --> 00:18:27,220
+the JVM if you look at JVM spats
+
+364
+00:18:27,230 --> 00:18:29,600
+specification the semantics of a get
+
+365
+00:18:29,610 --> 00:18:31,820
+field is you take a receiver off the
+
+366
+00:18:31,830 --> 00:18:35,330
+stack which is our object and encoded in
+
+367
+00:18:35,340 --> 00:18:37,970
+the instruction is a reference to the
+
+368
+00:18:37,980 --> 00:18:39,320
+constant pool which allows you to
+
+369
+00:18:39,330 --> 00:18:41,810
+resolve exactly which field of the
+
+370
+00:18:41,820 --> 00:18:44,810
+object to retrieve so we have this Java
+
+371
+00:18:44,820 --> 00:18:48,230
+code that simply operates on this object
+
+372
+00:18:48,240 --> 00:18:51,320
+and is filled and asked the field in
+
+373
+00:18:51,330 --> 00:18:53,000
+cause method on the field which gets an
+
+374
+00:18:53,010 --> 00:18:56,269
+offset converts the object to a pointer
+
+375
+00:18:56,279 --> 00:18:59,060
+which I'll go into more detail involves
+
+376
+00:18:59,070 --> 00:19:01,850
+many layers of abstraction and at some
+
+377
+00:19:01,860 --> 00:19:03,830
+point this will boil down to machine
+
+378
+00:19:03,840 --> 00:19:07,519
+code which dereferences machine address
+
+379
+00:19:07,529 --> 00:19:11,090
+and returns the value of the field now
+
+380
+00:19:11,100 --> 00:19:17,149
+this this snippet itself is now a part
+
+381
+00:19:17,159 --> 00:19:19,190
+of the compiler and that this is where
+
+382
+00:19:19,200 --> 00:19:21,019
+it gets a bit tricky to understand and
+
+383
+00:19:21,029 --> 00:19:24,740
+also to explain if you I mean an
+
+384
+00:19:24,750 --> 00:19:26,120
+immediate observation is well what if
+
+385
+00:19:26,130 --> 00:19:28,279
+this this bit of Java code itself
+
+386
+00:19:28,289 --> 00:19:30,169
+references another field don't you have
+
+387
+00:19:30,179 --> 00:19:32,630
+a sort of infinite recursion problem
+
+388
+00:19:32,640 --> 00:19:35,600
+here and it's for this reason we have a
+
+389
+00:19:35,610 --> 00:19:39,110
+two-phase mechanism for bootstrapping
+
+390
+00:19:39,120 --> 00:19:42,080
+our compiler where all of these snippets
+
+391
+00:19:42,090 --> 00:19:46,159
+are sort of translated to this this
+
+392
+00:19:46,169 --> 00:19:51,260
+unoptimized form of an ir which it calls
+
+393
+00:19:51,270 --> 00:19:55,360
+out or references other pieces of ir and
+
+394
+00:19:55,370 --> 00:19:58,220
+we need to build this these unoptimized
+
+395
+00:19:58,230 --> 00:20:01,370
+forms of compiler representation for all
+
+396
+00:20:01,380 --> 00:20:05,360
+of the snippets and sort of put them on
+
+397
+00:20:05,370 --> 00:20:07,250
+a table on the side and then recompile
+
+398
+00:20:07,260 --> 00:20:10,220
+them pulling bits of that table pulling
+
+399
+00:20:10,230 --> 00:20:13,220
+the the cross-reference semantics out of
+
+400
+00:20:13,230 --> 00:20:15,649
+this table and running our optimizations
+
+401
+00:20:15,659 --> 00:20:18,680
+over them and to cut along a confusing
+
+402
+00:20:18,690 --> 00:20:20,680
+story short what you end up with is
+
+403
+00:20:20,690 --> 00:20:24,470
+these little bits of bytecode semantics
+
+404
+00:20:24,480 --> 00:20:26,990
+in a table or
+
+405
+00:20:27,000 --> 00:20:29,720
+that the compiled and optimized IR for
+
+406
+00:20:29,730 --> 00:20:33,170
+these bits of semantics indexed in a
+
+407
+00:20:33,180 --> 00:20:36,950
+table which you then use to compile any
+
+408
+00:20:36,960 --> 00:20:38,960
+other Java code so every time you see a
+
+409
+00:20:38,970 --> 00:20:40,670
+gap field you say okay I need I need
+
+410
+00:20:40,680 --> 00:20:43,040
+this snippet so I go to this table pull
+
+411
+00:20:43,050 --> 00:20:46,310
+out this IR and weave it into the IR I'm
+
+412
+00:20:46,320 --> 00:20:48,590
+building for the the method being
+
+413
+00:20:48,600 --> 00:20:53,000
+compiled so all the compiler really
+
+414
+00:20:53,010 --> 00:20:58,750
+knows how to do is how to apply standard
+
+415
+00:20:58,760 --> 00:21:03,980
+optimizations to reduce these snippets
+
+416
+00:21:03,990 --> 00:21:05,870
+but the actual semantics of what any
+
+417
+00:21:05,880 --> 00:21:10,010
+bytecode does is expressed in this java
+
+418
+00:21:10,020 --> 00:21:13,970
+code and this is sort of the core of
+
+419
+00:21:13,980 --> 00:21:17,710
+what we believe could potentially give
+
+420
+00:21:17,720 --> 00:21:20,690
+any sort of vm researchers a great deal
+
+421
+00:21:20,700 --> 00:21:24,370
+of flexibility when you want to modify
+
+422
+00:21:24,380 --> 00:21:29,330
+the semantics of or experiment with
+
+423
+00:21:29,340 --> 00:21:33,740
+different ways of implementing certain
+
+424
+00:21:33,750 --> 00:21:36,640
+by code semantics by byte code
+
+425
+00:21:36,650 --> 00:21:38,840
+implementations let's see what's a good
+
+426
+00:21:38,850 --> 00:21:42,920
+example so if we think back to the one
+
+427
+00:21:42,930 --> 00:21:45,020
+of the motivating examples for this this
+
+428
+00:21:45,030 --> 00:21:46,940
+whole project how do I support objects
+
+429
+00:21:46,950 --> 00:21:49,940
+we want to abstract away with the notion
+
+430
+00:21:49,950 --> 00:21:54,380
+of an object references and so we have
+
+431
+00:21:54,390 --> 00:21:56,090
+we've encapsulated D sort of
+
+432
+00:21:56,100 --> 00:21:57,350
+abstractions in something we call
+
+433
+00:21:57,360 --> 00:21:59,330
+schemes and we have this scheme called
+
+434
+00:21:59,340 --> 00:22:01,910
+reference scheme and a reference game
+
+435
+00:22:01,920 --> 00:22:04,270
+has operations like given this reference
+
+436
+00:22:04,280 --> 00:22:10,310
+give me a bite at this abstract offset
+
+437
+00:22:10,320 --> 00:22:14,180
+or this this you want you want to read
+
+438
+00:22:14,190 --> 00:22:15,590
+something out of this reference you want
+
+439
+00:22:15,600 --> 00:22:17,390
+to dereference this reference to pull
+
+440
+00:22:17,400 --> 00:22:22,790
+some data out and so what exactly that
+
+441
+00:22:22,800 --> 00:22:28,610
+entails can be tailored for different
+
+442
+00:22:28,620 --> 00:22:32,860
+reference scheme implementations and a
+
+443
+00:22:32,870 --> 00:22:34,930
+clarifying example maybe well maybe
+
+444
+00:22:34,940 --> 00:22:37,900
+references are just database indexes
+
+445
+00:22:37,910 --> 00:22:40,100
+every object is really just in a
+
+446
+00:22:40,110 --> 00:22:40,850
+database
+
+447
+00:22:40,860 --> 00:22:43,190
+and all an object references is a
+
+448
+00:22:43,200 --> 00:22:45,680
+database key as opposed to a memory
+
+449
+00:22:45,690 --> 00:22:51,490
+address and so you could quite easily
+
+450
+00:22:51,500 --> 00:22:56,570
+implement this this different choice of
+
+451
+00:22:56,580 --> 00:23:00,740
+how you store objects by only providing
+
+452
+00:23:00,750 --> 00:23:03,680
+a different concrete implementation of
+
+453
+00:23:03,690 --> 00:23:08,269
+this reference scheme interface and when
+
+454
+00:23:08,279 --> 00:23:09,620
+I say in effects you really do mean a
+
+455
+00:23:09,630 --> 00:23:13,870
+Java interface and so the immediate
+
+456
+00:23:13,880 --> 00:23:16,639
+observation here is well all of these
+
+457
+00:23:16,649 --> 00:23:19,299
+layers of abstraction before you know
+
+458
+00:23:19,309 --> 00:23:22,730
+they provide not only a performance
+
+459
+00:23:22,740 --> 00:23:24,980
+overhead but surely you're going to get
+
+460
+00:23:24,990 --> 00:23:26,450
+into the same bootstrapping problems
+
+461
+00:23:26,460 --> 00:23:30,799
+again trying to use references in
+
+462
+00:23:30,809 --> 00:23:33,799
+methods which yeah the implementation of
+
+463
+00:23:33,809 --> 00:23:35,450
+the reference scheme itself will
+
+464
+00:23:35,460 --> 00:23:37,460
+invariably use references so how do you
+
+465
+00:23:37,470 --> 00:23:40,190
+how do you reduce this down to two flat
+
+466
+00:23:40,200 --> 00:23:45,649
+code and the mechanism we have is we
+
+467
+00:23:45,659 --> 00:23:48,440
+employ a couple of very crucial
+
+468
+00:23:48,450 --> 00:23:54,460
+annotations when writing these these
+
+469
+00:23:54,470 --> 00:23:57,620
+scheme implementations and we call them
+
+470
+00:23:57,630 --> 00:24:00,440
+at fold and inline and by out I just
+
+471
+00:24:00,450 --> 00:24:04,070
+mean the @ symbol used to write
+
+472
+00:24:04,080 --> 00:24:10,580
+annotations in Java so we can configure
+
+473
+00:24:10,590 --> 00:24:14,690
+the VM as we build the VM we provide a
+
+474
+00:24:14,700 --> 00:24:19,480
+concrete implementation of what we we
+
+475
+00:24:19,490 --> 00:24:22,730
+yes we bind all of the schemes in the VM
+
+476
+00:24:22,740 --> 00:24:25,399
+to a concrete choice for each of those
+
+477
+00:24:25,409 --> 00:24:28,210
+schemes which is hanging off this
+
+478
+00:24:28,220 --> 00:24:30,860
+globally accessible VM configuration
+
+479
+00:24:30,870 --> 00:24:34,850
+object and so when you want to do
+
+480
+00:24:34,860 --> 00:24:35,990
+something through a scheme you
+
+481
+00:24:36,000 --> 00:24:37,850
+effectively sort of ask the
+
+482
+00:24:37,860 --> 00:24:39,799
+configuration object give me the
+
+483
+00:24:39,809 --> 00:24:43,850
+reference scheme object and this is just
+
+484
+00:24:43,860 --> 00:24:47,060
+a method call but by putting at fold on
+
+485
+00:24:47,070 --> 00:24:49,970
+that method core the the request for the
+
+486
+00:24:49,980 --> 00:24:52,220
+VM object we say instead of compiling
+
+487
+00:24:52,230 --> 00:24:55,310
+this call go and execute it right now
+
+488
+00:24:55,320 --> 00:24:58,759
+sort of meta evaluation is the common
+
+489
+00:24:58,769 --> 00:25:02,960
+term for compile time evaluation and so
+
+490
+00:25:02,970 --> 00:25:05,389
+the compiler now has a concrete object
+
+491
+00:25:05,399 --> 00:25:09,649
+in its IR through which it can which is
+
+492
+00:25:09,659 --> 00:25:12,200
+the concrete scheme implementation and
+
+493
+00:25:12,210 --> 00:25:14,810
+then the methods on that scheme
+
+494
+00:25:14,820 --> 00:25:16,849
+implementation are either meta evaluated
+
+495
+00:25:16,859 --> 00:25:18,950
+further or inlined and so we don't have
+
+496
+00:25:18,960 --> 00:25:21,379
+a you don't actually have calls to calls
+
+497
+00:25:21,389 --> 00:25:23,330
+to cause to cause they're all in line
+
+498
+00:25:23,340 --> 00:25:26,570
+through it's almost akin to macro style
+
+499
+00:25:26,580 --> 00:25:28,369
+in lining this is not heuristic in
+
+500
+00:25:28,379 --> 00:25:33,499
+lining and at the end of the day for
+
+501
+00:25:33,509 --> 00:25:36,289
+something like a referee reference of a
+
+502
+00:25:36,299 --> 00:25:40,399
+reference object reference this all met
+
+503
+00:25:40,409 --> 00:25:43,580
+evaluates away and compiles down to you
+
+504
+00:25:43,590 --> 00:25:45,229
+know your standard three or four machine
+
+505
+00:25:45,239 --> 00:25:49,580
+code instruction sequence for pulling an
+
+506
+00:25:49,590 --> 00:25:53,330
+object out of memory at an offset from a
+
+507
+00:25:53,340 --> 00:25:55,219
+given memory address assuming you've you
+
+508
+00:25:55,229 --> 00:25:57,619
+have your choosing to represent your
+
+509
+00:25:57,629 --> 00:26:01,639
+objects in a standard memory flat memory
+
+510
+00:26:01,649 --> 00:26:08,419
+system sounds like the mixing VM is also
+
+511
+00:26:08,429 --> 00:26:12,259
+nicely extendable by others so by by the
+
+512
+00:26:12,269 --> 00:26:14,299
+Research Projects or so so if someone
+
+513
+00:26:14,309 --> 00:26:17,570
+would like to whatever would like to
+
+514
+00:26:17,580 --> 00:26:20,210
+insert aspect-oriented programming on
+
+515
+00:26:20,220 --> 00:26:23,299
+the vm level would it be possible to use
+
+516
+00:26:23,309 --> 00:26:25,399
+the the mixing our hope is that would be
+
+517
+00:26:25,409 --> 00:26:28,039
+extremely easy and experienced who have
+
+518
+00:26:28,049 --> 00:26:30,499
+had with collaborators so far seems to
+
+519
+00:26:30,509 --> 00:26:34,029
+point in that direction recently we had
+
+520
+00:26:34,039 --> 00:26:37,820
+Alan Gregerson here from the University
+
+521
+00:26:37,830 --> 00:26:42,039
+of Southern Denmark who has written a
+
+522
+00:26:42,049 --> 00:26:47,719
+system for doing dynamic updates to Java
+
+523
+00:26:47,729 --> 00:26:51,019
+applications based on modules and module
+
+524
+00:26:51,029 --> 00:26:53,869
+system in particular the work he's done
+
+525
+00:26:53,879 --> 00:26:59,389
+has enabled dynamic updates of NetBeans
+
+526
+00:26:59,399 --> 00:27:02,180
+modules where you don't have to take the
+
+527
+00:27:02,190 --> 00:27:04,039
+system down and the type of updates you
+
+528
+00:27:04,049 --> 00:27:06,259
+can do the ultimate goal is to support
+
+529
+00:27:06,269 --> 00:27:08,120
+updates
+
+530
+00:27:08,130 --> 00:27:12,200
+that are as powerful reflect exactly the
+
+531
+00:27:12,210 --> 00:27:15,230
+type of refactorings you can do to Java
+
+532
+00:27:15,240 --> 00:27:18,409
+code so at the moment you know the
+
+533
+00:27:18,419 --> 00:27:20,899
+hotspot VM and other Java VMs can
+
+534
+00:27:20,909 --> 00:27:23,539
+support dynamic updates without stopping
+
+535
+00:27:23,549 --> 00:27:26,440
+the VM but it's as far as I believe
+
+536
+00:27:26,450 --> 00:27:31,269
+constrained to bike method
+
+537
+00:27:31,279 --> 00:27:33,680
+implementation changes you can't add
+
+538
+00:27:33,690 --> 00:27:35,330
+methods you can't delete methods can't
+
+539
+00:27:35,340 --> 00:27:36,860
+add fields you can't change the type
+
+540
+00:27:36,870 --> 00:27:39,110
+hierarchy also all the sorts of things
+
+541
+00:27:39,120 --> 00:27:41,799
+you can do with refractory and so he's
+
+542
+00:27:41,809 --> 00:27:48,649
+working he's used the technique of
+
+543
+00:27:48,659 --> 00:27:51,710
+bytecode rewriting or instrumentation to
+
+544
+00:27:51,720 --> 00:27:54,980
+catch transitions across API boundaries
+
+545
+00:27:54,990 --> 00:27:58,009
+and sort of inserted proxies at those
+
+546
+00:27:58,019 --> 00:28:00,860
+boundaries such that if you put a new
+
+547
+00:28:00,870 --> 00:28:04,039
+module into the system all existing
+
+548
+00:28:04,049 --> 00:28:06,169
+modules in the runtime that binds their
+
+549
+00:28:06,179 --> 00:28:08,870
+module now go through this proxy object
+
+550
+00:28:08,880 --> 00:28:11,330
+which will determine where to route
+
+551
+00:28:11,340 --> 00:28:14,509
+certain method calls or field accesses
+
+552
+00:28:14,519 --> 00:28:18,350
+and so he's they've gotten a long way
+
+553
+00:28:18,360 --> 00:28:19,879
+with his work but they were quite
+
+554
+00:28:19,889 --> 00:28:23,870
+interested in using maxeen to solve some
+
+555
+00:28:23,880 --> 00:28:27,080
+of the problems they ran into with yeah
+
+556
+00:28:27,090 --> 00:28:30,769
+a VM agnostic implementation in
+
+557
+00:28:30,779 --> 00:28:33,860
+particular they cannot instrument a lot
+
+558
+00:28:33,870 --> 00:28:39,430
+of the core JDK classes without
+
+559
+00:28:39,440 --> 00:28:42,409
+potentially breaking the VM or I mean I
+
+560
+00:28:42,419 --> 00:28:44,360
+don't think you can even instrument
+
+561
+00:28:44,370 --> 00:28:46,580
+these classes at runtime that the
+
+562
+00:28:46,590 --> 00:28:49,879
+classes in our teach are sort of come
+
+563
+00:28:49,889 --> 00:28:54,370
+into being before any class loaders
+
+564
+00:28:57,409 --> 00:28:57,419
+written yeah by extent yeah I developed
+
+565
+00:28:57,419 --> 00:29:00,080
+or deployed by external developers I get
+
+566
+00:29:00,090 --> 00:29:03,529
+a chance to instrument them not only
+
+567
+00:29:03,539 --> 00:29:08,240
+that but there are certain transitions
+
+568
+00:29:08,250 --> 00:29:11,419
+he can't catch at all and one example
+
+569
+00:29:11,429 --> 00:29:14,899
+was field accesses from native code
+
+570
+00:29:14,909 --> 00:29:18,799
+called through j'ni which have handle
+
+571
+00:29:18,809 --> 00:29:20,870
+onto an object and caught back
+
+572
+00:29:20,880 --> 00:29:23,440
+through j'ni to dereference that object
+
+573
+00:29:23,450 --> 00:29:27,320
+to effectively do this you have to go
+
+574
+00:29:27,330 --> 00:29:29,060
+and change the vm implementation of
+
+575
+00:29:29,070 --> 00:29:31,730
+what's called the the ji function
+
+576
+00:29:31,740 --> 00:29:35,290
+interface the way you do up calls from
+
+577
+00:29:35,300 --> 00:29:39,860
+native code back into the vm that in our
+
+578
+00:29:39,870 --> 00:29:44,390
+vm is just one class with about well I
+
+579
+00:29:44,400 --> 00:29:48,200
+think it's 250 methods which is the JVM
+
+580
+00:29:48,210 --> 00:29:51,290
+ji function interface and it's all
+
+581
+00:29:51,300 --> 00:29:53,630
+standard Java code so it's it's
+
+582
+00:29:53,640 --> 00:29:55,780
+absolutely trivial to go and do the
+
+583
+00:29:55,790 --> 00:29:59,840
+intercept in this implementation we've
+
+584
+00:29:59,850 --> 00:30:03,500
+also had discussions with mikhail helped
+
+585
+00:30:03,510 --> 00:30:08,170
+from has a platinum institute in germany
+
+586
+00:30:08,180 --> 00:30:12,970
+who's interested in doing something like
+
+587
+00:30:12,980 --> 00:30:15,190
+adding something close to prototype
+
+588
+00:30:15,200 --> 00:30:19,760
+based support to java so he wants to put
+
+589
+00:30:19,770 --> 00:30:21,440
+proxy you know and what's made every
+
+590
+00:30:21,450 --> 00:30:23,720
+object actually two objects so the
+
+591
+00:30:23,730 --> 00:30:25,970
+delegating object and then one or more
+
+592
+00:30:25,980 --> 00:30:28,610
+delegate is to which method invocation
+
+593
+00:30:28,620 --> 00:30:32,360
+Zoar field accesses or other state
+
+594
+00:30:32,370 --> 00:30:34,820
+accesses go through and this gives you
+
+595
+00:30:34,830 --> 00:30:38,230
+the ability to do you know rewire the
+
+596
+00:30:38,240 --> 00:30:41,480
+virtual dispatch of of any method at
+
+597
+00:30:41,490 --> 00:30:43,490
+runtime much like you get with prototype
+
+598
+00:30:43,500 --> 00:30:46,540
+based languages and you know our initial
+
+599
+00:30:46,550 --> 00:30:48,500
+considerations of what you'd need to do
+
+600
+00:30:48,510 --> 00:30:51,920
+that show that you only have to touch a
+
+601
+00:30:51,930 --> 00:30:54,230
+few parts of maxine VMT
+
+602
+00:30:54,240 --> 00:30:57,140
+to get a long way of course until the
+
+603
+00:30:57,150 --> 00:30:59,630
+experiment is complete we can't be too
+
+604
+00:30:59,640 --> 00:31:01,190
+sure that we've gotten all the
+
+605
+00:31:01,200 --> 00:31:03,680
+abstractions correct and and we have a
+
+606
+00:31:03,690 --> 00:31:05,630
+number of other collaborations with
+
+607
+00:31:05,640 --> 00:31:08,690
+people sort of building on top of maxine
+
+608
+00:31:08,700 --> 00:31:10,400
+to do things like software transactional
+
+609
+00:31:10,410 --> 00:31:15,230
+memory that's a group in some labs in
+
+610
+00:31:15,240 --> 00:31:17,510
+particular for Ranger and Murata he's
+
+611
+00:31:17,520 --> 00:31:19,340
+working on that we have a collaboration
+
+612
+00:31:19,350 --> 00:31:22,130
+with the University of California Irvine
+
+613
+00:31:22,140 --> 00:31:25,880
+it's Michael Francis group particular
+
+614
+00:31:25,890 --> 00:31:28,250
+andreas gal Michael Bernina and Karthik
+
+615
+00:31:28,260 --> 00:31:31,730
+Mahna Mahna van implementing a trace
+
+616
+00:31:31,740 --> 00:31:34,350
+based compiler in Maxine
+
+617
+00:31:34,360 --> 00:31:37,760
+this is the same compilation techniques
+
+618
+00:31:37,770 --> 00:31:41,399
+used in I think it's called trace monkey
+
+619
+00:31:41,409 --> 00:31:43,519
+one of the optimized JavaScript
+
+620
+00:31:43,529 --> 00:31:46,799
+optimizing compilers in Firefox or about
+
+621
+00:31:46,809 --> 00:31:50,250
+to come in Firefox so yeah
+
+622
+00:31:50,260 --> 00:31:53,340
+current experience shows you know the VM
+
+623
+00:31:53,350 --> 00:31:57,419
+is penetrable and allows for certain
+
+624
+00:31:57,429 --> 00:31:59,789
+sorts of experiments to be conducted
+
+625
+00:31:59,799 --> 00:32:03,539
+fairly easily youyou said that the
+
+626
+00:32:03,549 --> 00:32:07,350
+maxeen vm it's written in java so it's
+
+627
+00:32:07,360 --> 00:32:09,180
+it's different than hotspot and can
+
+628
+00:32:09,190 --> 00:32:12,299
+optimize itself so how does it relate to
+
+629
+00:32:12,309 --> 00:32:14,460
+the idea that what you already mention
+
+630
+00:32:14,470 --> 00:32:17,220
+the Jake's research VM so I'd say the
+
+631
+00:32:17,230 --> 00:32:20,190
+core defining difference is this
+
+632
+00:32:20,200 --> 00:32:22,019
+architecture we have of building
+
+633
+00:32:22,029 --> 00:32:24,000
+everything on top of the compiler the
+
+634
+00:32:24,010 --> 00:32:26,430
+optimizing compiler and expressing sort
+
+635
+00:32:26,440 --> 00:32:28,440
+of the VM semantics in Java code which
+
+636
+00:32:28,450 --> 00:32:32,310
+are bootstrapped to become the the
+
+637
+00:32:32,320 --> 00:32:35,970
+translation units of the compiler if you
+
+638
+00:32:35,980 --> 00:32:40,590
+look at hotspot the the both compilers
+
+639
+00:32:40,600 --> 00:32:42,450
+of which I think there are at least two
+
+640
+00:32:42,460 --> 00:32:44,460
+a sort of hand coded monolithic
+
+641
+00:32:44,470 --> 00:32:48,149
+implementations where as a maxine
+
+642
+00:32:48,159 --> 00:32:51,960
+currently we have this this optimizing
+
+643
+00:32:51,970 --> 00:32:56,070
+compiler around which we build or derive
+
+644
+00:32:56,080 --> 00:32:59,490
+a JIT compiler so the optimizing pile is
+
+645
+00:32:59,500 --> 00:33:03,750
+actually relatively slow to execute even
+
+646
+00:33:03,760 --> 00:33:07,860
+though producers yeah at this point ok
+
+647
+00:33:07,870 --> 00:33:11,669
+machine code but it's it's unbearably
+
+648
+00:33:11,679 --> 00:33:13,620
+slow if this was the only execution
+
+649
+00:33:13,630 --> 00:33:15,419
+engine you had in the VM so what we
+
+650
+00:33:15,429 --> 00:33:19,769
+built is a very fast template base
+
+651
+00:33:19,779 --> 00:33:23,159
+JIT compiler and the way to explain this
+
+652
+00:33:23,169 --> 00:33:26,190
+is if you think about what we do is we
+
+653
+00:33:26,200 --> 00:33:31,019
+write Java methods that almost look like
+
+654
+00:33:31,029 --> 00:33:33,360
+you're writing an interpreter in Java
+
+655
+00:33:33,370 --> 00:33:38,399
+and we compiled these methods and each
+
+656
+00:33:38,409 --> 00:33:40,440
+method is a one-to-one correspondence
+
+657
+00:33:40,450 --> 00:33:44,970
+with a JVM bytecode and all it does is
+
+658
+00:33:44,980 --> 00:33:47,700
+Express the semantics of that bytecode
+
+659
+00:33:47,710 --> 00:33:50,460
+in Java code we compiled that method
+
+660
+00:33:50,470 --> 00:33:53,340
+with the optimizing compiler cut out the
+
+661
+00:33:53,350 --> 00:33:55,860
+resultant machine code and put it in a
+
+662
+00:33:55,870 --> 00:33:58,410
+table index by that byte codes opcode
+
+663
+00:33:58,420 --> 00:34:01,230
+and so to run this compiler it's
+
+664
+00:34:01,240 --> 00:34:05,430
+basically a amend copy operation is the
+
+665
+00:34:05,440 --> 00:34:07,350
+closest analogy to where we'd like it to
+
+666
+00:34:07,360 --> 00:34:11,070
+be you passes sequence of byte codes you
+
+667
+00:34:11,080 --> 00:34:13,610
+pick out the opcode decode the operands
+
+668
+00:34:13,620 --> 00:34:16,200
+pull this bit of machine code out of the
+
+669
+00:34:16,210 --> 00:34:19,020
+table if necessary you know patch a few
+
+670
+00:34:19,030 --> 00:34:21,330
+values in the machine code to represent
+
+671
+00:34:21,340 --> 00:34:24,899
+the runt the decoded operands and copy
+
+672
+00:34:24,909 --> 00:34:30,300
+it to a code buffer and the hope is you
+
+673
+00:34:30,310 --> 00:34:32,430
+know this execution engine is fast
+
+674
+00:34:32,440 --> 00:34:34,500
+enough that we can do without an
+
+675
+00:34:34,510 --> 00:34:38,220
+interpreter and in in that sense we're
+
+676
+00:34:38,230 --> 00:34:40,560
+not too different from jikes which by my
+
+677
+00:34:40,570 --> 00:34:42,210
+understanding does not have an
+
+678
+00:34:42,220 --> 00:34:45,750
+interpreter but I think you know the
+
+679
+00:34:45,760 --> 00:34:47,730
+core difference is this architectural
+
+680
+00:34:47,740 --> 00:34:50,010
+decision to really build everything
+
+681
+00:34:50,020 --> 00:34:52,169
+around this optimizing compiler allowing
+
+682
+00:34:52,179 --> 00:34:55,619
+for the semantics of any part of the VM
+
+683
+00:34:55,629 --> 00:34:58,590
+to be expressed in one place and there's
+
+684
+00:34:58,600 --> 00:35:01,610
+other sort of minor artifact differences
+
+685
+00:35:01,620 --> 00:35:05,610
+you know we came to the game later so we
+
+686
+00:35:05,620 --> 00:35:08,490
+can we one thing we've tried to stay
+
+687
+00:35:08,500 --> 00:35:10,080
+away from we've managed so far as any
+
+688
+00:35:10,090 --> 00:35:12,050
+sort of source code pre-processing
+
+689
+00:35:12,060 --> 00:35:14,670
+you can download the maxine source code
+
+690
+00:35:14,680 --> 00:35:17,790
+and it'll come straight up in an ID
+
+691
+00:35:17,800 --> 00:35:19,530
+without having any sort of quick
+
+692
+00:35:19,540 --> 00:35:22,500
+configuration applied other differences
+
+693
+00:35:22,510 --> 00:35:26,610
+at least with jokes from the get-go
+
+694
+00:35:26,620 --> 00:35:30,180
+we've implemented native threads I here
+
+695
+00:35:30,190 --> 00:35:32,070
+recently jikes has also implemented
+
+696
+00:35:32,080 --> 00:35:34,800
+native feds but until until that time
+
+697
+00:35:34,810 --> 00:35:36,840
+they were empty and sort of green
+
+698
+00:35:36,850 --> 00:35:38,190
+threaded model where they did their own
+
+699
+00:35:38,200 --> 00:35:40,350
+scheduling on top of native threads and
+
+700
+00:35:40,360 --> 00:35:44,400
+if ya there's pros and cons of each but
+
+701
+00:35:44,410 --> 00:35:46,590
+it seems as though industrial VMS are
+
+702
+00:35:46,600 --> 00:35:48,900
+going does your strength but
+
+703
+00:35:48,910 --> 00:35:52,020
+high-performance PM's have always chosen
+
+704
+00:35:52,030 --> 00:35:54,360
+native threads and that's you know we
+
+705
+00:35:54,370 --> 00:35:56,070
+learnt from that decision and chose them
+
+706
+00:35:56,080 --> 00:35:58,920
+from the beginning another interesting
+
+707
+00:35:58,930 --> 00:36:00,910
+aspect is we have
+
+708
+00:36:00,920 --> 00:36:03,250
+a single instruction safe point
+
+709
+00:36:03,260 --> 00:36:08,320
+mechanism safe points in vm's the way in
+
+710
+00:36:08,330 --> 00:36:12,400
+which you can stop a thread for the
+
+711
+00:36:12,410 --> 00:36:15,340
+purpose of for example you want to run a
+
+712
+00:36:15,350 --> 00:36:18,010
+garbage collection you need to be able
+
+713
+00:36:18,020 --> 00:36:21,160
+to know the execution state and
+
+714
+00:36:21,170 --> 00:36:22,570
+particularly need to know where all the
+
+715
+00:36:22,580 --> 00:36:25,660
+references are at the execution state in
+
+716
+00:36:25,670 --> 00:36:27,430
+the execution set of every thread in the
+
+717
+00:36:27,440 --> 00:36:29,350
+system safe points are one way to
+
+718
+00:36:29,360 --> 00:36:32,830
+achieve this way you can make sure each
+
+719
+00:36:32,840 --> 00:36:35,140
+thread is stopped at a point where you
+
+720
+00:36:35,150 --> 00:36:38,530
+have some metadata saved describing
+
+721
+00:36:38,540 --> 00:36:42,040
+where the references are so the safe
+
+722
+00:36:42,050 --> 00:36:44,590
+point mechanism we have well we needed
+
+723
+00:36:44,600 --> 00:36:47,890
+one that would allow us to stop not all
+
+724
+00:36:47,900 --> 00:36:49,870
+threads yeah we don't want a mechanism
+
+725
+00:36:49,880 --> 00:36:51,790
+where as soon as you trigger as safe
+
+726
+00:36:51,800 --> 00:36:54,400
+points or thread stop and the main
+
+727
+00:36:54,410 --> 00:36:55,870
+reason is we have a garbage collector
+
+728
+00:36:55,880 --> 00:36:58,360
+running on you no written in Java
+
+729
+00:36:58,370 --> 00:37:01,090
+running on one of our threads so
+
+730
+00:37:01,100 --> 00:37:03,370
+obviously we can't stop that thread so
+
+731
+00:37:03,380 --> 00:37:05,430
+we came up with a mechanism where it's
+
+732
+00:37:05,440 --> 00:37:11,890
+per thread enabled and it actually only
+
+733
+00:37:11,900 --> 00:37:16,180
+takes one x86 or AMD for 64 instruction
+
+734
+00:37:16,190 --> 00:37:20,440
+to to to instrument the code to put in
+
+735
+00:37:20,450 --> 00:37:24,490
+the the polling or is equal point at the
+
+736
+00:37:24,500 --> 00:37:28,660
+trigger for the safe point we've you
+
+737
+00:37:28,670 --> 00:37:31,120
+know given that we want to make as many
+
+738
+00:37:31,130 --> 00:37:32,800
+parts of the VM as can figure as
+
+739
+00:37:32,810 --> 00:37:34,600
+possible configurable as possible we've
+
+740
+00:37:34,610 --> 00:37:37,930
+put a lot of work into coming up with
+
+741
+00:37:37,940 --> 00:37:42,400
+schemes for various parts of the system
+
+742
+00:37:42,410 --> 00:37:44,410
+we have schemes for how objects are laid
+
+743
+00:37:44,420 --> 00:37:47,740
+out what references look like a scheme
+
+744
+00:37:47,750 --> 00:37:50,550
+for what your garbage collector
+
+745
+00:37:50,560 --> 00:37:54,940
+implementation choice is and numerous
+
+746
+00:37:54,950 --> 00:38:01,450
+other aspects of a typical VM another we
+
+747
+00:38:01,460 --> 00:38:03,040
+feel it may be important we're not sure
+
+748
+00:38:03,050 --> 00:38:07,540
+a difference is that we aim to be and
+
+749
+00:38:07,550 --> 00:38:09,340
+have so far achieved this goal of being
+
+750
+00:38:09,350 --> 00:38:12,010
+a drop-in replacement fart spot so you
+
+751
+00:38:12,020 --> 00:38:14,279
+can download standard JDK
+
+752
+00:38:14,289 --> 00:38:16,789
+and execute LVM on top of that we don't
+
+753
+00:38:16,799 --> 00:38:20,009
+were not dependent on canary classpath
+
+754
+00:38:20,019 --> 00:38:23,459
+or other alternatives to the standard
+
+755
+00:38:23,469 --> 00:38:25,919
+java class libraries which means we can
+
+756
+00:38:25,929 --> 00:38:29,400
+always use the latest and greatest and
+
+757
+00:38:29,410 --> 00:38:33,209
+most complete implementation of the Java
+
+758
+00:38:33,219 --> 00:38:36,809
+language spec and it obviously means
+
+759
+00:38:36,819 --> 00:38:39,569
+once our VMs stable and robust we can
+
+760
+00:38:39,579 --> 00:38:42,630
+run any program hotspot can how was the
+
+761
+00:38:42,640 --> 00:38:44,939
+performance compare it to hotspot at the
+
+762
+00:38:44,949 --> 00:38:48,359
+moment at best we're about 2 X slower
+
+763
+00:38:48,369 --> 00:38:51,359
+than hotspot which you know gets us
+
+764
+00:38:51,369 --> 00:38:54,150
+close to the threshold for acceptability
+
+765
+00:38:54,160 --> 00:38:56,579
+in terms of conducting meaningful
+
+766
+00:38:56,589 --> 00:38:58,769
+performance related experiments although
+
+767
+00:38:58,779 --> 00:39:01,259
+one could argue you really need to be
+
+768
+00:39:01,269 --> 00:39:07,849
+even better we have a a good plan for
+
+769
+00:39:07,859 --> 00:39:12,089
+improving performance which is to
+
+770
+00:39:12,099 --> 00:39:14,819
+actually leverage a lot of the but one
+
+771
+00:39:14,829 --> 00:39:17,159
+of the compilers in hotspot effectively
+
+772
+00:39:17,169 --> 00:39:20,939
+we're porting the client compiler from
+
+773
+00:39:20,949 --> 00:39:24,059
+hotspot into Maxine with the hope to one
+
+774
+00:39:24,069 --> 00:39:27,630
+day also using it as our ahead of time
+
+775
+00:39:27,640 --> 00:39:30,539
+optimizing compiler but there's been a
+
+776
+00:39:30,549 --> 00:39:32,429
+you know a lot of work a lot of
+
+777
+00:39:32,439 --> 00:39:33,899
+engineering years thrown at that
+
+778
+00:39:33,909 --> 00:39:38,149
+compiler and we've decided it's time to
+
+779
+00:39:38,159 --> 00:39:41,999
+leverage that and also use a compiler
+
+780
+00:39:42,009 --> 00:39:44,579
+that other people may have more
+
+781
+00:39:44,589 --> 00:39:48,779
+familiarity with our current optimizing
+
+782
+00:39:48,789 --> 00:39:52,739
+pal is based on CPS compare continuation
+
+783
+00:39:52,749 --> 00:39:56,459
+passing style which is what has been
+
+784
+00:39:56,469 --> 00:39:58,709
+used in sort of implementations of
+
+785
+00:39:58,719 --> 00:40:04,109
+scheme VMs and scheme compilers but we
+
+786
+00:40:04,119 --> 00:40:06,719
+found through experience with interns
+
+787
+00:40:06,729 --> 00:40:08,699
+and other collaborators it's not as well
+
+788
+00:40:08,709 --> 00:40:11,299
+understood as as a more traditional
+
+789
+00:40:11,309 --> 00:40:15,630
+compiler which client the client
+
+790
+00:40:15,640 --> 00:40:19,589
+component hotspot definitely is and it
+
+791
+00:40:19,599 --> 00:40:24,390
+also allows us to more easily look at
+
+792
+00:40:24,400 --> 00:40:25,949
+the possibility of transferring some of
+
+793
+00:40:25,959 --> 00:40:28,410
+this technology back into the product
+
+794
+00:40:28,420 --> 00:40:34,440
+we've identified some of the areas for
+
+795
+00:40:34,450 --> 00:40:36,690
+improvement in the client compiler and
+
+796
+00:40:36,700 --> 00:40:38,580
+we hope to put them in implement them as
+
+797
+00:40:38,590 --> 00:40:40,890
+we port the compiler ahead hope as we
+
+798
+00:40:40,900 --> 00:40:43,010
+can back port or Lisa jest these
+
+799
+00:40:43,020 --> 00:40:45,810
+improvements to the hotspot team
+
+800
+00:40:45,820 --> 00:40:48,510
+so yeah performance is not quite where
+
+801
+00:40:48,520 --> 00:40:51,180
+we want it to be but it's definitely
+
+802
+00:40:51,190 --> 00:40:54,260
+enough to run a vast majority of
+
+803
+00:40:54,270 --> 00:40:57,780
+programs and conduct interesting
+
+804
+00:40:57,790 --> 00:41:00,090
+experiments and the hope is those
+
+805
+00:41:00,100 --> 00:41:02,130
+experiments results will only get more
+
+806
+00:41:02,140 --> 00:41:03,570
+interesting without having to redo the
+
+807
+00:41:03,580 --> 00:41:05,600
+experiments as the core compiler
+
+808
+00:41:05,610 --> 00:41:08,880
+improves so there's no sort of barrier
+
+809
+00:41:08,890 --> 00:41:12,060
+to conduct an experience on the VM as it
+
+810
+00:41:12,070 --> 00:41:16,320
+stands right now unless you really need
+
+811
+00:41:16,330 --> 00:41:19,830
+high performance results immediately we
+
+812
+00:41:19,840 --> 00:41:21,540
+hope to have this port done within the
+
+813
+00:41:21,550 --> 00:41:27,150
+next six months and we've also have
+
+814
+00:41:27,160 --> 00:41:32,640
+ideas the other sub optimal part of the
+
+815
+00:41:32,650 --> 00:41:34,860
+VM right now is the garbage collector we
+
+816
+00:41:34,870 --> 00:41:38,910
+have a simple Cheney to space copying
+
+817
+00:41:38,920 --> 00:41:43,410
+collector non generational so while it's
+
+818
+00:41:43,420 --> 00:41:45,960
+extremely easy to understand and it's
+
+819
+00:41:45,970 --> 00:41:48,180
+allowed us to get up and running with a
+
+820
+00:41:48,190 --> 00:41:50,280
+relatively bug-free collector it's it's
+
+821
+00:41:50,290 --> 00:41:54,180
+far from optimal and we have a plan one
+
+822
+00:41:54,190 --> 00:41:56,670
+of the team members Laurent and Eze is
+
+823
+00:41:56,680 --> 00:41:59,420
+currently working with a hotspot team to
+
+824
+00:41:59,430 --> 00:42:05,250
+put in a variation of the g1 collector
+
+825
+00:42:05,260 --> 00:42:07,020
+which is currently in the open JDK
+
+826
+00:42:07,030 --> 00:42:11,190
+version of hotspot and this is a region
+
+827
+00:42:11,200 --> 00:42:16,080
+base compiler so you sort of you
+
+828
+00:42:16,090 --> 00:42:18,980
+petition your memory space up to
+
+829
+00:42:18,990 --> 00:42:21,780
+different regions and you can sort of
+
+830
+00:42:21,790 --> 00:42:25,200
+get instead of just generations you can
+
+831
+00:42:25,210 --> 00:42:28,830
+think of many many generations and you
+
+832
+00:42:28,840 --> 00:42:30,690
+can get performance benefits by not
+
+833
+00:42:30,700 --> 00:42:33,810
+having to do as much work if you have
+
+834
+00:42:33,820 --> 00:42:38,070
+only create garbage in a few regions
+
+835
+00:42:38,080 --> 00:42:40,890
+so this implementation is currently
+
+836
+00:42:40,900 --> 00:42:42,450
+being performed by one of our team
+
+837
+00:42:42,460 --> 00:42:45,900
+members on hotspot code base and the
+
+838
+00:42:45,910 --> 00:42:47,430
+hope is in the next few months he can
+
+839
+00:42:47,440 --> 00:42:51,120
+port that also into Maxine and after
+
+840
+00:42:51,130 --> 00:42:52,950
+that we really went home to many more
+
+841
+00:42:52,960 --> 00:42:56,910
+excuses for sub hotspot performance
+
+842
+00:42:56,920 --> 00:42:59,190
+numbers I mean the hope is with both of
+
+843
+00:42:59,200 --> 00:43:00,900
+those will be at least on par with
+
+844
+00:43:00,910 --> 00:43:04,260
+hotspot client compiler so yeah that's
+
+845
+00:43:04,270 --> 00:43:06,120
+that's the performance story today and
+
+846
+00:43:06,130 --> 00:43:08,880
+hopefully in the short-term future and
+
+847
+00:43:08,890 --> 00:43:11,930
+what about the hotpot server compiler so
+
+848
+00:43:11,940 --> 00:43:14,940
+we are not compiler experts I'll say
+
+849
+00:43:14,950 --> 00:43:20,390
+upfront and that is a compiler not
+
+850
+00:43:20,400 --> 00:43:22,770
+understood by a lot of people I mean
+
+851
+00:43:22,780 --> 00:43:27,050
+it's very well designed and highly
+
+852
+00:43:27,060 --> 00:43:30,330
+optimizing in polar but it's sort of
+
+853
+00:43:30,340 --> 00:43:32,970
+beyond the scope of our resources to
+
+854
+00:43:32,980 --> 00:43:36,600
+also try and put that one into Maxine it
+
+855
+00:43:36,610 --> 00:43:38,130
+would be interesting to have it in there
+
+856
+00:43:38,140 --> 00:43:42,270
+but we feel doing client is a more
+
+857
+00:43:42,280 --> 00:43:45,720
+realistic goal and and buys us you know
+
+858
+00:43:45,730 --> 00:43:47,490
+sufficient performance I mean if you're
+
+859
+00:43:47,500 --> 00:43:49,350
+in case you know the way up until
+
+860
+00:43:49,360 --> 00:43:51,090
+recently and I think it may still be the
+
+861
+00:43:51,100 --> 00:43:53,640
+case at least for the non openjdk
+
+862
+00:43:53,650 --> 00:43:56,490
+versions of hotspot every time you run
+
+863
+00:43:56,500 --> 00:43:58,500
+you are either running client or so a
+
+864
+00:43:58,510 --> 00:44:02,040
+compiler and for a large class of
+
+865
+00:44:02,050 --> 00:44:05,370
+applications the client compiler is the
+
+866
+00:44:05,380 --> 00:44:07,650
+default choice or a large set of
+
+867
+00:44:07,660 --> 00:44:09,120
+platforms the client compiler is the
+
+868
+00:44:09,130 --> 00:44:12,360
+default choice and so people have been
+
+869
+00:44:12,370 --> 00:44:14,250
+using only the compiler
+
+870
+00:44:14,260 --> 00:44:16,140
+client compiler for a long time and
+
+871
+00:44:16,150 --> 00:44:20,120
+being satisfied with its performance so
+
+872
+00:44:20,130 --> 00:44:23,910
+it should be good enough for us in the
+
+873
+00:44:23,920 --> 00:44:27,750
+initially anyway okay I do think that um
+
+874
+00:44:27,760 --> 00:44:31,890
+the maxeen architecture will will remain
+
+875
+00:44:31,900 --> 00:44:34,170
+a research project or will be the
+
+876
+00:44:34,180 --> 00:44:37,800
+production vm of the next generation so
+
+877
+00:44:37,810 --> 00:44:39,480
+this is where we can get into
+
+878
+00:44:39,490 --> 00:44:42,450
+controversial statements but I mean my
+
+879
+00:44:42,460 --> 00:44:44,750
+hope is that it's a bit of both
+
+880
+00:44:44,760 --> 00:44:47,700
+primarily we hope that it becomes the
+
+881
+00:44:47,710 --> 00:44:50,790
+primary research platform of choice in
+
+882
+00:44:50,800 --> 00:44:51,720
+terms of
+
+883
+00:44:51,730 --> 00:44:55,740
+transfer into product land you know we
+
+884
+00:44:55,750 --> 00:44:58,200
+have to be honest and safe we're a small
+
+885
+00:44:58,210 --> 00:45:00,720
+team we don't have the resources to
+
+886
+00:45:00,730 --> 00:45:04,020
+bring it up to speed or close you know
+
+887
+00:45:04,030 --> 00:45:06,030
+close enough to the product performance
+
+888
+00:45:06,040 --> 00:45:10,800
+that quickly and our initial goal is to
+
+889
+00:45:10,810 --> 00:45:12,240
+just try and chance for some of the
+
+890
+00:45:12,250 --> 00:45:15,590
+technologies we've developed in the VM
+
+891
+00:45:15,600 --> 00:45:18,240
+some of the ideas at least into hotspot
+
+892
+00:45:18,250 --> 00:45:20,720
+so like I mentioned earlier if our
+
+893
+00:45:20,730 --> 00:45:23,220
+client compiler port actually makes
+
+894
+00:45:23,230 --> 00:45:25,380
+improvements client compiler we'd like
+
+895
+00:45:25,390 --> 00:45:27,630
+to at least have the discussion with the
+
+896
+00:45:27,640 --> 00:45:29,970
+product guys of how to put those
+
+897
+00:45:29,980 --> 00:45:35,000
+improvements into hotspot a wholesale
+
+898
+00:45:35,010 --> 00:45:38,160
+replacement of hotspot is a very
+
+899
+00:45:38,170 --> 00:45:41,220
+futuristic concept at this point okay
+
+900
+00:45:41,230 --> 00:45:43,620
+yeah I looked at the website and there
+
+901
+00:45:43,630 --> 00:45:46,470
+are different ports of the machine or
+
+902
+00:45:46,480 --> 00:45:48,720
+different platforms available that
+
+903
+00:45:48,730 --> 00:45:51,000
+mixing can run on it's it's all areas
+
+904
+00:45:51,010 --> 00:45:54,750
+and I think Mac where's yeah so can you
+
+905
+00:45:54,760 --> 00:45:56,640
+tell us a little bit more which
+
+906
+00:45:56,650 --> 00:45:59,070
+platforms are available okay so this
+
+907
+00:45:59,080 --> 00:46:01,349
+point in time there's a sort of
+
+908
+00:46:01,359 --> 00:46:03,060
+development platform of choice that we
+
+909
+00:46:03,070 --> 00:46:06,690
+focus on is Solaris amd64
+
+910
+00:46:06,700 --> 00:46:08,760
+just because that's sort of close to
+
+911
+00:46:08,770 --> 00:46:13,530
+Sun's core business and it's it's the
+
+912
+00:46:13,540 --> 00:46:14,880
+hard way we could get our hands on
+
+913
+00:46:14,890 --> 00:46:18,330
+initially we also have a Solaris spark
+
+914
+00:46:18,340 --> 00:46:22,290
+port which is lagging a little bit
+
+915
+00:46:22,300 --> 00:46:25,980
+behind the Solaris MD 64 port just just
+
+916
+00:46:25,990 --> 00:46:28,320
+because of obviously differences in the
+
+917
+00:46:28,330 --> 00:46:31,320
+spark back end and we actually have a
+
+918
+00:46:31,330 --> 00:46:34,080
+new team member Paul Capriati who will
+
+919
+00:46:34,090 --> 00:46:36,480
+be hopefully addressing that over the
+
+920
+00:46:36,490 --> 00:46:38,910
+next few months and that's sort of a
+
+921
+00:46:38,920 --> 00:46:40,770
+particular interest to some of the other
+
+922
+00:46:40,780 --> 00:46:42,599
+groups looking at using Maxine and Sun
+
+923
+00:46:42,609 --> 00:46:44,849
+who want to work on especially the
+
+924
+00:46:44,859 --> 00:46:46,700
+software transactional memory support
+
+925
+00:46:46,710 --> 00:46:51,330
+which would play nicely on sons of
+
+926
+00:46:51,340 --> 00:46:55,050
+incoming rock processor or some of sons
+
+927
+00:46:55,060 --> 00:46:58,620
+highly scalable SPARC processors the
+
+928
+00:46:58,630 --> 00:47:00,540
+hard part of any port is the back end so
+
+929
+00:47:00,550 --> 00:47:04,470
+given that we've got amd64 it wasn't too
+
+930
+00:47:04,480 --> 00:47:04,920
+much
+
+931
+00:47:04,930 --> 00:47:07,890
+effort to get the VM running on Linux we
+
+932
+00:47:07,900 --> 00:47:11,010
+so we have a Linux Andy 64 port which
+
+933
+00:47:11,020 --> 00:47:15,180
+runs as stabilized as far as MD 64 port
+
+934
+00:47:15,190 --> 00:47:21,559
+we also have the Mac OS port completed
+
+935
+00:47:21,569 --> 00:47:24,540
+obviously you need to be running yeah a
+
+936
+00:47:24,550 --> 00:47:28,079
+MacBook or a Mac machine that I think
+
+937
+00:47:28,089 --> 00:47:30,680
+has the Core 2 Duo processor which is
+
+938
+00:47:30,690 --> 00:47:35,490
+instruction set compatibles MD 64 and we
+
+939
+00:47:35,500 --> 00:47:36,870
+found out she'd the hardest part of
+
+940
+00:47:36,880 --> 00:47:39,720
+these ports apart from the SPARC one was
+
+941
+00:47:39,730 --> 00:47:42,660
+not so much the VM itself or the
+
+942
+00:47:42,670 --> 00:47:45,420
+compiled and VM but the debugging
+
+943
+00:47:45,430 --> 00:47:50,280
+support so we have our own debugger for
+
+944
+00:47:50,290 --> 00:47:53,220
+this VM and one of the main reasons for
+
+945
+00:47:53,230 --> 00:47:56,309
+that is it allows us to not be
+
+946
+00:47:56,319 --> 00:48:01,109
+constrained by the sort of compiled
+
+947
+00:48:01,119 --> 00:48:04,109
+frame layouts that other debuggers
+
+948
+00:48:04,119 --> 00:48:07,260
+expect it also allows us to leverage the
+
+949
+00:48:07,270 --> 00:48:09,270
+fact that we know what objects look like
+
+950
+00:48:09,280 --> 00:48:11,880
+in the VM so our debugger is both sort
+
+951
+00:48:11,890 --> 00:48:14,099
+of runtime execution - buggers as well
+
+952
+00:48:14,109 --> 00:48:17,460
+as a object browser much like you may be
+
+953
+00:48:17,470 --> 00:48:19,069
+familiar with from a small talk
+
+954
+00:48:19,079 --> 00:48:23,190
+environment and that the platform
+
+955
+00:48:23,200 --> 00:48:26,270
+specific part of this this tool has been
+
+956
+00:48:26,280 --> 00:48:28,770
+remote controlling processes I mean any
+
+957
+00:48:28,780 --> 00:48:31,200
+debugger has to be at a starter process
+
+958
+00:48:31,210 --> 00:48:33,270
+or attached to process and control its
+
+959
+00:48:33,280 --> 00:48:36,589
+execution and inspect its memory the
+
+960
+00:48:36,599 --> 00:48:39,900
+Solaris OS has wonderful support for
+
+961
+00:48:39,910 --> 00:48:44,630
+this it's it's we use sort of a C
+
+962
+00:48:44,640 --> 00:48:49,410
+interface which is really just a C ABI
+
+963
+00:48:49,420 --> 00:48:53,010
+API alternative to the /proc file system
+
+964
+00:48:53,020 --> 00:48:56,970
+on Solaris which gives you very liable
+
+965
+00:48:56,980 --> 00:49:00,900
+ways to stop start single step read
+
+966
+00:49:00,910 --> 00:49:03,539
+memory from a Solaris process in
+
+967
+00:49:03,549 --> 00:49:06,500
+particular in what it does very well as
+
+968
+00:49:06,510 --> 00:49:09,359
+handling Solaris process with multiple
+
+969
+00:49:09,369 --> 00:49:11,609
+threads that they're very clearly
+
+970
+00:49:11,619 --> 00:49:15,359
+separated the notion of what Solaris has
+
+971
+00:49:15,369 --> 00:49:18,300
+a separate notion of process and threads
+
+972
+00:49:18,310 --> 00:49:22,950
+Darwin was also not too hard there the
+
+973
+00:49:22,960 --> 00:49:26,190
+problem is your debugging interface is a
+
+974
+00:49:26,200 --> 00:49:30,330
+mixture of peat race and muck
+
+975
+00:49:30,340 --> 00:49:33,360
+ABI so there was just a little more
+
+976
+00:49:33,370 --> 00:49:36,270
+learning to do there but we have the
+
+977
+00:49:36,280 --> 00:49:40,320
+darwin debugger working almost as well
+
+978
+00:49:40,330 --> 00:49:42,390
+as any other de bucket there is one one
+
+979
+00:49:42,400 --> 00:49:45,510
+sort of non understood performance
+
+980
+00:49:45,520 --> 00:49:50,070
+behavior anomaly that we can't or we
+
+981
+00:49:50,080 --> 00:49:52,830
+haven't fixed yet and I think the
+
+982
+00:49:52,840 --> 00:49:55,580
+hardest challenge we had was the Linux
+
+983
+00:49:55,590 --> 00:49:59,250
+debugger hook up so Linux only presents
+
+984
+00:49:59,260 --> 00:50:02,250
+you with P trace and P trace closer
+
+985
+00:50:02,260 --> 00:50:05,250
+reflects the the implementation choice
+
+986
+00:50:05,260 --> 00:50:07,320
+for threads on Linux which is a thread
+
+987
+00:50:07,330 --> 00:50:10,560
+is effectively a process and using P
+
+988
+00:50:10,570 --> 00:50:13,890
+trace you have an interface to a single
+
+989
+00:50:13,900 --> 00:50:17,010
+process so if that process you know
+
+990
+00:50:17,020 --> 00:50:19,530
+itself comprises of many threads you
+
+991
+00:50:19,540 --> 00:50:20,790
+have to do a whole lot of extra
+
+992
+00:50:20,800 --> 00:50:23,220
+bookkeeping to learn about when those
+
+993
+00:50:23,230 --> 00:50:26,070
+threads come online when they die and
+
+994
+00:50:26,080 --> 00:50:29,160
+attach a new P trace interim instance to
+
+995
+00:50:29,170 --> 00:50:33,210
+each of those threads so that was
+
+996
+00:50:33,220 --> 00:50:34,770
+basically a couple of weeks of just
+
+997
+00:50:34,780 --> 00:50:36,210
+staring at and trying to understand the
+
+998
+00:50:36,220 --> 00:50:40,740
+gdb source code but we've managed to get
+
+999
+00:50:40,750 --> 00:50:43,830
+the the port completed to the point
+
+1000
+00:50:43,840 --> 00:50:45,680
+where it's actually as easy to debug
+
+1001
+00:50:45,690 --> 00:50:48,480
+maxeen on linux as it is on the solaris
+
+1002
+00:50:48,490 --> 00:50:51,930
+platforms so they are l currently
+
+1003
+00:50:51,940 --> 00:50:54,570
+branded platforms and I'm going to
+
+1004
+00:50:54,580 --> 00:50:57,210
+preempt a question on where is the
+
+1005
+00:50:57,220 --> 00:51:04,620
+Windows port and yes it's just a matter
+
+1006
+00:51:04,630 --> 00:51:07,320
+of lack of resources all of these other
+
+1007
+00:51:07,330 --> 00:51:09,600
+platforms we've ported to a very unique
+
+1008
+00:51:09,610 --> 00:51:12,440
+Slyke and so our thin layer of C code
+
+1009
+00:51:12,450 --> 00:51:17,510
+basically had only minor differences
+
+1010
+00:51:17,520 --> 00:51:20,010
+that needed to be taken care of to make
+
+1011
+00:51:20,020 --> 00:51:23,010
+those ports warwick and you know now
+
+1012
+00:51:23,020 --> 00:51:25,080
+that this is out there as an open source
+
+1013
+00:51:25,090 --> 00:51:29,070
+project we'd love to work with anyone
+
+1014
+00:51:29,080 --> 00:51:30,390
+who'd
+
+1015
+00:51:30,400 --> 00:51:32,510
+like to see this work on windows
+
+1016
+00:51:32,520 --> 00:51:36,210
+obviously in every window is a 64-bit
+
+1017
+00:51:36,220 --> 00:51:40,380
+platform running on AMD 64 but I can't
+
+1018
+00:51:40,390 --> 00:51:43,770
+imagine the the the overhead is too
+
+1019
+00:51:43,780 --> 00:51:48,390
+large so yeah that's a our platform
+
+1020
+00:51:48,400 --> 00:51:51,420
+story at the moment actually let me at
+
+1021
+00:51:51,430 --> 00:51:54,720
+least mention the fact that we say this
+
+1022
+00:51:54,730 --> 00:51:57,990
+VM is written purely in or almost all in
+
+1023
+00:51:58,000 --> 00:52:02,430
+Java implies there is a some native or C
+
+1024
+00:52:02,440 --> 00:52:06,180
+code in there and we've kept that to an
+
+1025
+00:52:06,190 --> 00:52:09,150
+absolute minimum all our C code does for
+
+1026
+00:52:09,160 --> 00:52:12,960
+the most part is implement you know the
+
+1027
+00:52:12,970 --> 00:52:15,570
+main entry point required of C programs
+
+1028
+00:52:15,580 --> 00:52:20,340
+which knows where our boot images and
+
+1029
+00:52:20,350 --> 00:52:25,310
+maps it into memory relocates the the
+
+1030
+00:52:25,320 --> 00:52:27,810
+pointers inside that boot image and then
+
+1031
+00:52:27,820 --> 00:52:31,130
+transfers control into a well-known
+
+1032
+00:52:31,140 --> 00:52:35,040
+method entry point inside the image and
+
+1033
+00:52:35,050 --> 00:52:36,990
+that that's about it in terms of our
+
+1034
+00:52:37,000 --> 00:52:39,150
+seeker the only other thing we do the C
+
+1035
+00:52:39,160 --> 00:52:44,490
+code is we shield some of the sub
+
+1036
+00:52:44,500 --> 00:52:47,070
+platform dependent ways of doing VAR
+
+1037
+00:52:47,080 --> 00:52:50,490
+args from our J&amp;I function
+
+1038
+00:52:50,500 --> 00:52:52,950
+implementations but that there really
+
+1039
+00:52:52,960 --> 00:52:55,890
+isn't much else in the C code in
+
+1040
+00:52:55,900 --> 00:52:58,770
+particular we don't expose any heap
+
+1041
+00:52:58,780 --> 00:53:01,590
+objects to the C code we don't have any
+
+1042
+00:53:01,600 --> 00:53:05,190
+requirement for handles in our C code
+
+1043
+00:53:05,200 --> 00:53:10,530
+and and it's it's it's so far managed to
+
+1044
+00:53:10,540 --> 00:53:12,480
+compile trivially on every C compiler
+
+1045
+00:53:12,490 --> 00:53:13,800
+we've found it out so we don't use any
+
+1046
+00:53:13,810 --> 00:53:18,240
+sort of obscure constructs yeah all I
+
+1047
+00:53:18,250 --> 00:53:21,120
+can say is I encourage people to go to
+
+1048
+00:53:21,130 --> 00:53:25,590
+the maxine website which is at research
+
+1049
+00:53:25,600 --> 00:53:29,480
+sun calm slash project slash maxine and
+
+1050
+00:53:29,490 --> 00:53:33,450
+at least read more documentation what
+
+1051
+00:53:33,460 --> 00:53:35,190
+it's about and if you're interested
+
+1052
+00:53:35,200 --> 00:53:38,730
+download it and build it and play with
+
+1053
+00:53:38,740 --> 00:53:43,560
+it great so doc thank you very much for
+
+1054
+00:53:43,570 --> 00:53:44,180
+being on this
+
+1055
+00:53:44,190 --> 00:53:46,610
+and give us all these interesting
+
+1056
+00:53:46,620 --> 00:53:49,490
+details about the Maxine project so
+
+1057
+00:53:49,500 --> 00:53:51,800
+thank you very much all right thank you
+
+1058
+00:53:51,810 --> 00:53:54,650
+very much Martin and good luck to anyone
+
+1059
+00:53:54,660 --> 00:53:57,860
+who cares to experiment with this
+
+1060
+00:53:57,870 --> 00:53:59,060
+platform would you love to hear back
+
+1061
+00:53:59,070 --> 00:53:59,480
+from you
+
+1062
+00:53:59,490 --> 00:54:08,180
+great thank you thanks Martin thanks for
+
+1063
+00:54:08,190 --> 00:54:10,010
+listening to software engineering radio
+
+1064
+00:54:10,020 --> 00:54:11,870
+software engineering radio is an
+
+1065
+00:54:11,880 --> 00:54:13,640
+educational program brought to you by
+
+1066
+00:54:13,650 --> 00:54:15,260
+hillside Europe if you want more
+
+1067
+00:54:15,270 --> 00:54:16,940
+information about the podcast and all
+
+1068
+00:54:16,950 --> 00:54:18,770
+the other episodes visit our website at
+
+1069
+00:54:18,780 --> 00:54:21,470
+se - radio dotnet if you want to support
+
+1070
+00:54:21,480 --> 00:54:23,750
+us you can donate to the SU radio team
+
+1071
+00:54:23,760 --> 00:54:26,330
+via the website or you can advertise for
+
+1072
+00:54:26,340 --> 00:54:28,580
+se radio for example by clicking on the
+
+1073
+00:54:28,590 --> 00:54:30,920
+Digg reddit delicious links and the
+
+1074
+00:54:30,930 --> 00:54:33,080
+slash dot button to contact the team
+
+1075
+00:54:33,090 --> 00:54:36,110
+please send email to team at SC - radio
+
+1076
+00:54:36,120 --> 00:54:38,510
+net or if you're specific to an episode
+
+1077
+00:54:38,520 --> 00:54:40,790
+please use the comments facility on the
+
+1078
+00:54:40,800 --> 00:54:42,590
+website so other people can react to
+
+1079
+00:54:42,600 --> 00:54:45,260
+your comments this episode of se radio
+
+1080
+00:54:45,270 --> 00:54:47,300
+as well as all other episodes are
+
+1081
+00:54:47,310 --> 00:54:49,430
+licensed under the Creative Commons
+
+1082
+00:54:49,440 --> 00:54:51,470
+two-point-five license please see the
+
+1083
+00:54:51,480 --> 00:54:53,600
+website for details thanks to Charlie
+
+1084
+00:54:53,610 --> 00:54:55,730
+Crow and the pot site Music Network for
+
+1085
+00:54:55,740 --> 00:54:57,920
+the music used in this show the song is
+
+1086
+00:54:57,930 --> 00:55:09,090
+called Vegas Achtung
+
+1087
+00:55:17,020 --> 00:55:17,030
+you
+
+1088
+00:55:17,030 --> 00:55:20,139
+[Music]

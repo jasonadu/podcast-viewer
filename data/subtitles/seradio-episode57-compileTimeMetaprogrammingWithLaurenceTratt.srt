@@ -1,0 +1,4855 @@
+1
+00:00:02,540 --> 00:00:02,550
+software engineering radio episode 57
+
+2
+00:00:02,550 --> 00:00:04,640
+compile-time metaprogramming with
+
+3
+00:00:04,650 --> 00:00:07,330
+converge
+
+4
+00:00:24,320 --> 00:00:24,330
+[Music]
+
+5
+00:00:24,330 --> 00:00:26,820
+welcome listeners thanks for once again
+
+6
+00:00:26,830 --> 00:00:28,980
+tuning in to software engineering radio
+
+7
+00:00:28,990 --> 00:00:31,650
+this episode is on compile-time
+
+8
+00:00:31,660 --> 00:00:34,170
+metaprogramming or creating
+
+9
+00:00:34,180 --> 00:00:36,810
+domain-specific languages through syntax
+
+10
+00:00:36,820 --> 00:00:40,350
+extension in order to talk about this
+
+11
+00:00:40,360 --> 00:00:43,470
+rather non-mainstream topic we have a
+
+12
+00:00:43,480 --> 00:00:46,369
+guest our guest today is Lawrence Trat
+
+13
+00:00:46,379 --> 00:00:49,860
+he's a research fellow at the department
+
+14
+00:00:49,870 --> 00:00:51,750
+of computer science at King's College in
+
+15
+00:00:51,760 --> 00:00:54,530
+London and he's co-lead of their
+
+16
+00:00:54,540 --> 00:00:57,600
+software and systems modeling team he is
+
+17
+00:00:57,610 --> 00:01:00,420
+also the creator and inventor basically
+
+18
+00:01:00,430 --> 00:01:02,190
+of the converged programming language
+
+19
+00:01:02,200 --> 00:01:04,380
+this language implements the concepts
+
+20
+00:01:04,390 --> 00:01:06,120
+we're going to talk about in this
+
+21
+00:01:06,130 --> 00:01:09,600
+session this is once again a session
+
+22
+00:01:09,610 --> 00:01:11,520
+about language design with a specific
+
+23
+00:01:11,530 --> 00:01:13,380
+focus on two main specific languages
+
+24
+00:01:13,390 --> 00:01:15,359
+it's going to be very interesting have
+
+25
+00:01:15,369 --> 00:01:19,260
+fun and again we recorded this episode
+
+26
+00:01:19,270 --> 00:01:21,900
+at the Cho conference 2006 in Denmark
+
+27
+00:01:21,910 --> 00:01:27,059
+and Aarhus and yeah have fun welcome our
+
+28
+00:01:27,069 --> 00:01:29,639
+guest Lawrence tret welcome thank you
+
+29
+00:01:29,649 --> 00:01:31,889
+very much so we were talking today about
+
+30
+00:01:31,899 --> 00:01:35,370
+a fancy title dsl implementation a
+
+31
+00:01:35,380 --> 00:01:38,550
+compile-time by a syntax extension and
+
+32
+00:01:38,560 --> 00:01:40,410
+also maybe another title could be
+
+33
+00:01:40,420 --> 00:01:43,230
+compiler metaprogramming yes you could
+
+34
+00:01:43,240 --> 00:01:45,150
+say that you could also simplify it
+
+35
+00:01:45,160 --> 00:01:46,770
+somewhat if you wanted to just saying
+
+36
+00:01:46,780 --> 00:01:50,400
+macros as an academic we like to choose
+
+37
+00:01:50,410 --> 00:01:53,160
+ridiculously long titles and also there
+
+38
+00:01:53,170 --> 00:01:55,589
+are probably differences with regards to
+
+39
+00:01:55,599 --> 00:01:58,800
+macros as we know them as in C++ or C
+
+40
+00:01:58,810 --> 00:02:00,809
+and we'll talk about that in a moment
+
+41
+00:02:00,819 --> 00:02:03,419
+so I mean we've talked in previous
+
+42
+00:02:03,429 --> 00:02:06,600
+episodes about ESL's so we probably
+
+43
+00:02:06,610 --> 00:02:08,160
+don't have to fill people in about what
+
+44
+00:02:08,170 --> 00:02:11,089
+a DSL is but if you could give us your
+
+45
+00:02:11,099 --> 00:02:13,410
+interpretation of what you think these
+
+46
+00:02:13,420 --> 00:02:16,040
+are important for and why you chose to
+
+47
+00:02:16,050 --> 00:02:18,660
+implement these else the way you do it
+
+48
+00:02:18,670 --> 00:02:21,420
+and and maybe also explaining in as an
+
+49
+00:02:21,430 --> 00:02:23,100
+overview what the way actually is you
+
+50
+00:02:23,110 --> 00:02:26,460
+choose to implement yourself okay well I
+
+51
+00:02:26,470 --> 00:02:28,920
+think the term domain-specific languages
+
+52
+00:02:28,930 --> 00:02:30,570
+is being around for a very very long
+
+53
+00:02:30,580 --> 00:02:34,260
+time and I think that it
+
+54
+00:02:34,270 --> 00:02:35,700
+kind of being forgotten at various
+
+55
+00:02:35,710 --> 00:02:38,250
+stages what's interesting is that we're
+
+56
+00:02:38,260 --> 00:02:39,990
+going through a resurgence and use of
+
+57
+00:02:40,000 --> 00:02:42,240
+the term and if you go out to the
+
+58
+00:02:42,250 --> 00:02:45,210
+developer on the street and say DSL one
+
+59
+00:02:45,220 --> 00:02:46,260
+of the things you're going to get back a
+
+60
+00:02:46,270 --> 00:02:49,670
+lot now is talking about the use of Ruby
+
+61
+00:02:49,680 --> 00:02:51,630
+the way that they're doing these little
+
+62
+00:02:51,640 --> 00:02:54,330
+in sort of inline dsls some function
+
+63
+00:02:54,340 --> 00:02:55,620
+calls using some of the little block
+
+64
+00:02:55,630 --> 00:02:58,890
+structures they have to get things going
+
+65
+00:02:58,900 --> 00:03:01,290
+I think that's a perfectly valid use of
+
+66
+00:03:01,300 --> 00:03:04,010
+DSL however I don't think that it's
+
+67
+00:03:04,020 --> 00:03:07,110
+necessarily using the concept to its
+
+68
+00:03:07,120 --> 00:03:09,630
+fullest potential so what I would like
+
+69
+00:03:09,640 --> 00:03:12,660
+to see with DSL is people using some
+
+70
+00:03:12,670 --> 00:03:15,030
+fairly rich languages new languages new
+
+71
+00:03:15,040 --> 00:03:18,240
+syntax to express things that they were
+
+72
+00:03:18,250 --> 00:03:20,340
+very difficult to express before so it's
+
+73
+00:03:20,350 --> 00:03:22,200
+more than just hacking around a little
+
+74
+00:03:22,210 --> 00:03:24,000
+bit with some programming language stuff
+
+75
+00:03:24,010 --> 00:03:25,890
+that you already have it's very much
+
+76
+00:03:25,900 --> 00:03:28,860
+about creating something new allowing
+
+77
+00:03:28,870 --> 00:03:30,960
+you something that you couldn't do
+
+78
+00:03:30,970 --> 00:03:34,220
+easily before and that's primarily
+
+79
+00:03:34,230 --> 00:03:36,870
+syntactically something different or I
+
+80
+00:03:36,880 --> 00:03:39,449
+think that if you want people to have a
+
+81
+00:03:39,459 --> 00:03:41,880
+good chance of expressing something very
+
+82
+00:03:41,890 --> 00:03:43,290
+useful that they couldn't do before it
+
+83
+00:03:43,300 --> 00:03:46,320
+does involve new syntax yeah I mean the
+
+84
+00:03:46,330 --> 00:03:48,150
+Ruby folks and we'll talk to Obi
+
+85
+00:03:48,160 --> 00:03:49,770
+Fernandes about this stuff in a
+
+86
+00:03:49,780 --> 00:03:52,320
+subsequent episode that if you'd have
+
+87
+00:03:52,330 --> 00:03:54,690
+embedded syntax in our embedded DSL in
+
+88
+00:03:54,700 --> 00:03:57,120
+Ruby the freedom you have for adapting a
+
+89
+00:03:57,130 --> 00:03:59,040
+syntax is limited and I guess that's one
+
+90
+00:03:59,050 --> 00:04:01,500
+of the focus points where you think you
+
+91
+00:04:01,510 --> 00:04:04,440
+try to do better that yes absolutely and
+
+92
+00:04:04,450 --> 00:04:06,150
+I think what they're doing is they're
+
+93
+00:04:06,160 --> 00:04:07,740
+making very good use of things they
+
+94
+00:04:07,750 --> 00:04:10,949
+already had but of course that only gets
+
+95
+00:04:10,959 --> 00:04:13,320
+you so far and that may be all you need
+
+96
+00:04:13,330 --> 00:04:15,150
+but if you restrict yourself to that
+
+97
+00:04:15,160 --> 00:04:17,099
+you're very much constraining the
+
+98
+00:04:17,109 --> 00:04:18,810
+possible universe of things that you can
+
+99
+00:04:18,820 --> 00:04:25,320
+express okay so if we try to go back to
+
+100
+00:04:25,330 --> 00:04:27,000
+what a DSL actually is I think you have
+
+101
+00:04:27,010 --> 00:04:29,340
+this nice paraphrase stuff from this guy
+
+102
+00:04:29,350 --> 00:04:31,320
+called who doc I don't didn't know him
+
+103
+00:04:31,330 --> 00:04:32,850
+personally or actually didn't know his
+
+104
+00:04:32,860 --> 00:04:35,010
+name so does it make sense to briefly go
+
+105
+00:04:35,020 --> 00:04:37,350
+over this characteristics of DSL and
+
+106
+00:04:37,360 --> 00:04:39,450
+then shall we or disagree yeah I think
+
+107
+00:04:39,460 --> 00:04:41,430
+it's a very good thing so my thinking
+
+108
+00:04:41,440 --> 00:04:43,790
+behind this is although the term DSL or
+
+109
+00:04:43,800 --> 00:04:46,080
+maybe not the always the term but the
+
+110
+00:04:46,090 --> 00:04:47,460
+concepts have been around for a long
+
+111
+00:04:47,470 --> 00:04:48,450
+time
+
+112
+00:04:48,460 --> 00:04:50,969
+there's some very nice pair of papers
+
+113
+00:04:50,979 --> 00:04:53,249
+from 1996 from a chap called Paul hew
+
+114
+00:04:53,259 --> 00:04:55,079
+dak and I apologize if I pronounced his
+
+115
+00:04:55,089 --> 00:04:57,260
+surname wrong I've never met an Ivan
+
+116
+00:04:57,270 --> 00:05:00,809
+from the University of Yale and what he
+
+117
+00:05:00,819 --> 00:05:04,290
+did at that point was nailed down what
+
+118
+00:05:04,300 --> 00:05:06,570
+it is that's interesting about dsls some
+
+119
+00:05:06,580 --> 00:05:10,320
+of the relevant issues and some very
+
+120
+00:05:10,330 --> 00:05:12,869
+high-level points so maybe I can go over
+
+121
+00:05:12,879 --> 00:05:15,719
+those I think they're playful one of the
+
+122
+00:05:15,729 --> 00:05:18,269
+things he's saying is that a outlining
+
+123
+00:05:18,279 --> 00:05:21,959
+what a DSL should be and here's several
+
+124
+00:05:21,969 --> 00:05:23,100
+points I think the ones are the most
+
+125
+00:05:23,110 --> 00:05:25,529
+relevant is he's saying the DSL is an
+
+126
+00:05:25,539 --> 00:05:26,820
+abstraction relevant to a specific
+
+127
+00:05:26,830 --> 00:05:28,649
+domain in other words you take a
+
+128
+00:05:28,659 --> 00:05:30,600
+particular problem and you say well
+
+129
+00:05:30,610 --> 00:05:32,129
+here's how I can express it in a normal
+
+130
+00:05:32,139 --> 00:05:33,600
+programming language you know I have to
+
+131
+00:05:33,610 --> 00:05:34,950
+do this function calling this function
+
+132
+00:05:34,960 --> 00:05:37,019
+call that's very low level how can I
+
+133
+00:05:37,029 --> 00:05:39,570
+move it up a level then you have a DSL
+
+134
+00:05:39,580 --> 00:05:41,969
+he also said dear cells need to lead to
+
+135
+00:05:41,979 --> 00:05:44,010
+demonstrable increase in productivity in
+
+136
+00:05:44,020 --> 00:05:46,589
+a sense that if you'd still takes you as
+
+137
+00:05:46,599 --> 00:05:49,769
+long to do what you wanted to do as you
+
+138
+00:05:49,779 --> 00:05:51,449
+could do before you haven't really
+
+139
+00:05:51,459 --> 00:05:52,679
+gained anything you have to get
+
+140
+00:05:52,689 --> 00:05:54,540
+something useful in productivity from
+
+141
+00:05:54,550 --> 00:05:57,719
+using a DSL for it to be useful it's
+
+142
+00:05:57,729 --> 00:05:59,760
+also basically saying that you want to
+
+143
+00:05:59,770 --> 00:06:01,290
+try and make it no more difficult than
+
+144
+00:06:01,300 --> 00:06:03,119
+using a normal programming language in
+
+145
+00:06:03,129 --> 00:06:04,829
+fact if you're lucky you might be able
+
+146
+00:06:04,839 --> 00:06:07,230
+to make things more accessible than a
+
+147
+00:06:07,240 --> 00:06:08,909
+normal programming language is the idea
+
+148
+00:06:08,919 --> 00:06:11,159
+of having non-programmers program and
+
+149
+00:06:11,169 --> 00:06:13,019
+program using a DSL at least that's kind
+
+150
+00:06:13,029 --> 00:06:14,670
+of that you know the Holy Grail yes
+
+151
+00:06:14,680 --> 00:06:17,399
+that's the probably unachievable yeah
+
+152
+00:06:17,409 --> 00:06:19,439
+well in the end I think you have to be
+
+153
+00:06:19,449 --> 00:06:20,999
+realistic about these things but that
+
+154
+00:06:21,009 --> 00:06:23,309
+the more that you can lower the barrier
+
+155
+00:06:23,319 --> 00:06:26,730
+to entry is a good thing and I think the
+
+156
+00:06:26,740 --> 00:06:29,329
+final aim that Hudak outlines is that
+
+157
+00:06:29,339 --> 00:06:31,679
+people who are using DSL they need to be
+
+158
+00:06:31,689 --> 00:06:33,929
+able to write their solutions in the DSL
+
+159
+00:06:33,939 --> 00:06:35,670
+fairly easily and they need to be able
+
+160
+00:06:35,680 --> 00:06:37,649
+to maintain them well that's something
+
+161
+00:06:37,659 --> 00:06:39,779
+rather critical you don't want to write
+
+162
+00:06:39,789 --> 00:06:41,969
+a DSL on Friday afternoon in the office
+
+163
+00:06:41,979 --> 00:06:44,279
+come back in on Monday and think what
+
+164
+00:06:44,289 --> 00:06:45,420
+the hell does this do you know I don't
+
+165
+00:06:45,430 --> 00:06:47,969
+can't understand what I've written so
+
+166
+00:06:47,979 --> 00:06:50,909
+and you're kind of advertising the idea
+
+167
+00:06:50,919 --> 00:06:53,579
+of integrating DSL into a host language
+
+168
+00:06:53,589 --> 00:06:55,709
+which is just for our listeners a
+
+169
+00:06:55,719 --> 00:06:58,199
+different approach compared to what we
+
+170
+00:06:58,209 --> 00:06:59,369
+talked about in our model term
+
+171
+00:06:59,379 --> 00:07:01,350
+development episodes and it's comparable
+
+172
+00:07:01,360 --> 00:07:01,590
+to
+
+173
+00:07:01,600 --> 00:07:03,600
+what the Ruby folks do so why do you
+
+174
+00:07:03,610 --> 00:07:05,460
+think it's it's useful and important to
+
+175
+00:07:05,470 --> 00:07:07,170
+embed it in a host language and and what
+
+176
+00:07:07,180 --> 00:07:09,690
+are suitable host languages okay this is
+
+177
+00:07:09,700 --> 00:07:12,510
+a very good question I think the reason
+
+178
+00:07:12,520 --> 00:07:14,070
+that you want to embed things in a host
+
+179
+00:07:14,080 --> 00:07:17,310
+language is the alternative is making a
+
+180
+00:07:17,320 --> 00:07:19,350
+standalone DSL and to me the best
+
+181
+00:07:19,360 --> 00:07:21,900
+example of that is make most people are
+
+182
+00:07:21,910 --> 00:07:23,040
+going to be familiar with make I guess
+
+183
+00:07:23,050 --> 00:07:26,400
+they listen to this yeah makers are
+
+184
+00:07:26,410 --> 00:07:28,080
+great is a great tool I still leaves it
+
+185
+00:07:28,090 --> 00:07:30,690
+and I'm old-fashioned but it's also very
+
+186
+00:07:30,700 --> 00:07:32,700
+complicated it has its own grammar so
+
+187
+00:07:32,710 --> 00:07:34,800
+someone somewhere some poor person has
+
+188
+00:07:34,810 --> 00:07:36,750
+implemented very complex tool they've
+
+189
+00:07:36,760 --> 00:07:38,910
+gone away and created a grammar using
+
+190
+00:07:38,920 --> 00:07:40,560
+Lex and yak they have you can always
+
+191
+00:07:40,570 --> 00:07:42,420
+view makers a sort of little virtual
+
+192
+00:07:42,430 --> 00:07:44,670
+machine in a sense for make files it's a
+
+193
+00:07:44,680 --> 00:07:46,800
+complex standalone application and you
+
+194
+00:07:46,810 --> 00:07:48,990
+can't reuse any of it and it has to have
+
+195
+00:07:49,000 --> 00:07:50,520
+all the support you know error handling
+
+196
+00:07:50,530 --> 00:07:52,170
+reading in files all this thing at a low
+
+197
+00:07:52,180 --> 00:07:55,950
+level so I think the reason you one
+
+198
+00:07:55,960 --> 00:07:57,390
+would like to embed to yourselves in a
+
+199
+00:07:57,400 --> 00:07:59,160
+programming language is maybe we can get
+
+200
+00:07:59,170 --> 00:08:00,780
+some of this low-level stuff that's not
+
+201
+00:08:00,790 --> 00:08:02,100
+really relevant to the problem we're
+
+202
+00:08:02,110 --> 00:08:04,650
+trying to do maybe we can get the host
+
+203
+00:08:04,660 --> 00:08:09,810
+language to do it for us expressions
+
+204
+00:08:09,820 --> 00:08:12,090
+could be kind of an obvious candidate
+
+205
+00:08:12,100 --> 00:08:15,180
+for that yes and also you hopefully will
+
+206
+00:08:15,190 --> 00:08:16,560
+get simple things like simpler
+
+207
+00:08:16,570 --> 00:08:18,540
+input/output you be able to maybe use
+
+208
+00:08:18,550 --> 00:08:20,160
+things like the error messages there's a
+
+209
+00:08:20,170 --> 00:08:22,260
+whole host of things that you hopefully
+
+210
+00:08:22,270 --> 00:08:24,930
+pick up for free now exactly what you
+
+211
+00:08:24,940 --> 00:08:27,450
+consider to be a good host language is
+
+212
+00:08:27,460 --> 00:08:29,550
+dependent on opinion so Hudak for
+
+213
+00:08:29,560 --> 00:08:30,950
+example thought that everything should
+
+214
+00:08:30,960 --> 00:08:35,070
+forcibly be in Haskell and although I
+
+215
+00:08:35,080 --> 00:08:36,659
+have nothing personally again Pascal I'd
+
+216
+00:08:36,669 --> 00:08:38,670
+not sure this is an entirely realistic
+
+217
+00:08:38,680 --> 00:08:42,180
+thing to expect of people so I think
+
+218
+00:08:42,190 --> 00:08:43,950
+that the sort of host languages that you
+
+219
+00:08:43,960 --> 00:08:45,570
+need as a bare minimum they have to be
+
+220
+00:08:45,580 --> 00:08:48,900
+very flexible host languages now I also
+
+221
+00:08:48,910 --> 00:08:50,670
+furthermore believe that really that
+
+222
+00:08:50,680 --> 00:08:51,810
+means you need to be able to extend
+
+223
+00:08:51,820 --> 00:08:55,800
+their syntax so the fact that the
+
+224
+00:08:55,810 --> 00:08:57,630
+language like a ruby thing is a very
+
+225
+00:08:57,640 --> 00:09:00,690
+flexible language like a Python it's not
+
+226
+00:09:00,700 --> 00:09:02,580
+quite the same thing as a sort of a lisp
+
+227
+00:09:02,590 --> 00:09:04,410
+like language perhaps which suddenly you
+
+228
+00:09:04,420 --> 00:09:06,030
+can start extending it in ways the
+
+229
+00:09:06,040 --> 00:09:07,700
+original designers never thought of
+
+230
+00:09:07,710 --> 00:09:10,800
+that's maybe because the Lisp language
+
+231
+00:09:10,810 --> 00:09:13,170
+basically has no syntax so it's easy to
+
+232
+00:09:13,180 --> 00:09:14,940
+extend it by you know not at
+
+233
+00:09:14,950 --> 00:09:17,360
+you know I mean just it's trees
+
+234
+00:09:17,370 --> 00:09:19,370
+absolutely yep
+
+235
+00:09:19,380 --> 00:09:21,870
+so Lisp is not a good candidate because
+
+236
+00:09:21,880 --> 00:09:25,890
+no one's going to use it and it's so
+
+237
+00:09:25,900 --> 00:09:27,330
+minimalistic that you can do anything
+
+238
+00:09:27,340 --> 00:09:28,860
+you want with it but it doesn't give you
+
+239
+00:09:28,870 --> 00:09:30,690
+enough at the beginning to start with
+
+240
+00:09:30,700 --> 00:09:32,760
+yeah so that's a non-starter so what
+
+241
+00:09:32,770 --> 00:09:34,350
+you're really looking for is is sort of
+
+242
+00:09:34,360 --> 00:09:37,290
+a mix I think of what I would call a
+
+243
+00:09:37,300 --> 00:09:38,670
+modern programming language you know
+
+244
+00:09:38,680 --> 00:09:40,440
+something that looks like a a Python a
+
+245
+00:09:40,450 --> 00:09:42,660
+ruby a Java or even a C++ whatever you
+
+246
+00:09:42,670 --> 00:09:44,340
+consider that a normal developer will be
+
+247
+00:09:44,350 --> 00:09:46,140
+comfortable with with some of this
+
+248
+00:09:46,150 --> 00:09:47,760
+flexibility that goes back to the Lisp
+
+249
+00:09:47,770 --> 00:09:50,340
+sort of days so what you did then is
+
+250
+00:09:50,350 --> 00:09:52,160
+kind of to invent your own language
+
+251
+00:09:52,170 --> 00:09:56,250
+called converge or converge I guess
+
+252
+00:09:56,260 --> 00:09:58,170
+you'll talk about it in a minute and I'm
+
+253
+00:09:58,180 --> 00:10:01,890
+specifically this language supports as I
+
+254
+00:10:01,900 --> 00:10:03,840
+understood a macro system that supports
+
+255
+00:10:03,850 --> 00:10:05,100
+their self so I think it's worth talking
+
+256
+00:10:05,110 --> 00:10:08,160
+about this one okay so converge is a
+
+257
+00:10:08,170 --> 00:10:10,310
+language a new language
+
+258
+00:10:10,320 --> 00:10:13,080
+it looks initially a lot like Python to
+
+259
+00:10:13,090 --> 00:10:14,730
+people I think that's what people will
+
+260
+00:10:14,740 --> 00:10:16,830
+first notice about it looks like Python
+
+261
+00:10:16,840 --> 00:10:19,980
+has been a bit disguised by somebody and
+
+262
+00:10:19,990 --> 00:10:22,590
+then on top of that it has this compile
+
+263
+00:10:22,600 --> 00:10:24,510
+time meta programming stuff now compile
+
+264
+00:10:24,520 --> 00:10:26,100
+time meta programming is a very unwieldy
+
+265
+00:10:26,110 --> 00:10:28,350
+term that basically means it as a macro
+
+266
+00:10:28,360 --> 00:10:31,380
+system and the macro system thing that
+
+267
+00:10:31,390 --> 00:10:34,050
+it has is very heavily influenced by
+
+268
+00:10:34,060 --> 00:10:35,820
+that in template Haskell so for anyone
+
+269
+00:10:35,830 --> 00:10:37,530
+who thinks that I'm maybe bashing
+
+270
+00:10:37,540 --> 00:10:39,690
+Haskell earlier there is some genuinely
+
+271
+00:10:39,700 --> 00:10:41,340
+good ideas that one can pluck from these
+
+272
+00:10:41,350 --> 00:10:44,010
+languages and so what converge has is
+
+273
+00:10:44,020 --> 00:10:46,080
+three language features it needs to
+
+274
+00:10:46,090 --> 00:10:47,940
+integrate a compile-time meta
+
+275
+00:10:47,950 --> 00:10:50,760
+programming facility into it you have to
+
+276
+00:10:50,770 --> 00:10:52,560
+have a macro call now that's a very
+
+277
+00:10:52,570 --> 00:10:54,060
+standard and easy thing goes all the way
+
+278
+00:10:54,070 --> 00:10:56,130
+back to Lisp and then the next thing
+
+279
+00:10:56,140 --> 00:10:58,440
+that it has is something that has
+
+280
+00:10:58,450 --> 00:11:00,540
+stopped any language since Lisp having a
+
+281
+00:11:00,550 --> 00:11:02,880
+decent macro system effectively and that
+
+282
+00:11:02,890 --> 00:11:04,740
+is you need to be able to build up
+
+283
+00:11:04,750 --> 00:11:07,710
+abstract syntax trees so let me just
+
+284
+00:11:07,720 --> 00:11:09,540
+pedal back one step to make sure we
+
+285
+00:11:09,550 --> 00:11:11,700
+don't lose our listeners the idea of of
+
+286
+00:11:11,710 --> 00:11:13,260
+compartiment our programming is
+
+287
+00:11:13,270 --> 00:11:16,430
+basically that you have a way of adding
+
+288
+00:11:16,440 --> 00:11:18,810
+source code to the program that is not
+
+289
+00:11:18,820 --> 00:11:21,240
+evaluated at runtime but rather during
+
+290
+00:11:21,250 --> 00:11:24,150
+the compilation process and the result
+
+291
+00:11:24,160 --> 00:11:27,330
+of evaluating this piece of source code
+
+292
+00:11:27,340 --> 00:11:28,380
+is a
+
+293
+00:11:28,390 --> 00:11:31,500
+extry that is then integrated into what
+
+294
+00:11:31,510 --> 00:11:33,480
+into the byte or machine code that the
+
+295
+00:11:33,490 --> 00:11:36,120
+compiler creates right yes absolutely so
+
+296
+00:11:36,130 --> 00:11:39,269
+the trick is with this compiler
+
+297
+00:11:39,279 --> 00:11:40,620
+metaprogramming is you're interacting
+
+298
+00:11:40,630 --> 00:11:42,660
+with the compiler the compiled compiler
+
+299
+00:11:42,670 --> 00:11:44,340
+goes around compiling a file much as a
+
+300
+00:11:44,350 --> 00:11:45,630
+normal compiler does and it hits
+
+301
+00:11:45,640 --> 00:11:47,430
+something it's called a splice in
+
+302
+00:11:47,440 --> 00:11:48,690
+converge but you can just call it a
+
+303
+00:11:48,700 --> 00:11:51,360
+macro calls that's fine and when it hits
+
+304
+00:11:51,370 --> 00:11:54,590
+one of those is all and it effectively
+
+305
+00:11:54,600 --> 00:11:57,300
+evaluates that expression at compile
+
+306
+00:11:57,310 --> 00:11:58,800
+time and that expression has to return
+
+307
+00:11:58,810 --> 00:12:00,090
+an abstract syntax tree which is
+
+308
+00:12:00,100 --> 00:12:02,730
+basically an object object graph yeah
+
+309
+00:12:02,740 --> 00:12:06,030
+representing some code and that's
+
+310
+00:12:06,040 --> 00:12:08,970
+relatively well known how to do the
+
+311
+00:12:08,980 --> 00:12:10,710
+there's this macro call this splice
+
+312
+00:12:10,720 --> 00:12:14,460
+thing and converge does some has some
+
+313
+00:12:14,470 --> 00:12:15,930
+neat little tricks that actually make it
+
+314
+00:12:15,940 --> 00:12:17,699
+rather easier to use than even say
+
+315
+00:12:17,709 --> 00:12:19,440
+something like template Haskell but it's
+
+316
+00:12:19,450 --> 00:12:21,150
+fundamentally a relatively well solved
+
+317
+00:12:21,160 --> 00:12:22,620
+problem the trick is how you make these
+
+318
+00:12:22,630 --> 00:12:26,069
+abstract syntax trees yep and then just
+
+319
+00:12:26,079 --> 00:12:28,350
+to again to relate this tool for example
+
+320
+00:12:28,360 --> 00:12:31,350
+see macros it's been different because a
+
+321
+00:12:31,360 --> 00:12:34,050
+see macro is evaluated on source level
+
+322
+00:12:34,060 --> 00:12:36,540
+so it returns kind of a piece of text
+
+323
+00:12:36,550 --> 00:12:38,689
+that is replaced with a macro call right
+
+324
+00:12:38,699 --> 00:12:42,090
+so yes I mean a see macro system and I
+
+325
+00:12:42,100 --> 00:12:44,340
+happen to enjoy see macros because
+
+326
+00:12:44,350 --> 00:12:45,689
+they're kind of fun in their own weird
+
+327
+00:12:45,699 --> 00:12:49,560
+twisted little way but they're very much
+
+328
+00:12:49,570 --> 00:12:51,750
+a double-barrelled shotgun and you can't
+
+329
+00:12:51,760 --> 00:12:53,280
+really control and when you pull the
+
+330
+00:12:53,290 --> 00:12:54,509
+trigger the bullet can go anywhere
+
+331
+00:12:54,519 --> 00:12:56,790
+yeah that's not typing normal checking
+
+332
+00:12:56,800 --> 00:13:00,540
+it's basically just text expansion and
+
+333
+00:13:00,550 --> 00:13:03,060
+really as the see macro system you can
+
+334
+00:13:03,070 --> 00:13:04,259
+use it with any language the C
+
+335
+00:13:04,269 --> 00:13:06,480
+preprocessor doesn't really know
+
+336
+00:13:06,490 --> 00:13:09,900
+anything much about C at all the point
+
+337
+00:13:09,910 --> 00:13:11,670
+of these more advanced macro systems is
+
+338
+00:13:11,680 --> 00:13:13,019
+they're very well integrated into the
+
+339
+00:13:13,029 --> 00:13:14,610
+language they can make certain safety
+
+340
+00:13:14,620 --> 00:13:18,300
+guarantees that for example in a C like
+
+341
+00:13:18,310 --> 00:13:20,340
+macro system or any templating type
+
+342
+00:13:20,350 --> 00:13:23,120
+thing like that you've got the chance of
+
+343
+00:13:23,130 --> 00:13:25,019
+variables from two different things
+
+344
+00:13:25,029 --> 00:13:26,579
+conflicting with each other and the
+
+345
+00:13:26,589 --> 00:13:28,110
+preprocessor in C can make no guarantees
+
+346
+00:13:28,120 --> 00:13:30,389
+about that it people go through all
+
+347
+00:13:30,399 --> 00:13:32,340
+sorts of Hoops adding extra brackets and
+
+348
+00:13:32,350 --> 00:13:34,410
+yeah crossing their fingers nothing goes
+
+349
+00:13:34,420 --> 00:13:38,040
+wrong whereas in converge you love this
+
+350
+00:13:38,050 --> 00:13:39,389
+stuff is handled for you don't have to
+
+351
+00:13:39,399 --> 00:13:41,550
+worry about well you don't have to worry
+
+352
+00:13:41,560 --> 00:13:42,300
+as much about
+
+353
+00:13:42,310 --> 00:13:44,280
+shooting yourself in the foot now one of
+
+354
+00:13:44,290 --> 00:13:46,620
+the tricks of Convergys then I guess
+
+355
+00:13:46,630 --> 00:13:49,140
+that you can program the code that
+
+356
+00:13:49,150 --> 00:13:51,360
+creates the ast in the same language as
+
+357
+00:13:51,370 --> 00:13:54,600
+you know also in converge right yes so
+
+358
+00:13:54,610 --> 00:13:55,769
+it's a completely homogeneous
+
+359
+00:13:55,779 --> 00:13:58,470
+environment right yeah so you during the
+
+360
+00:13:58,480 --> 00:14:00,060
+compilation you probably actually run
+
+361
+00:14:00,070 --> 00:14:01,470
+some kind of virtual machine that
+
+362
+00:14:01,480 --> 00:14:03,810
+interprets the stuff and the so the
+
+363
+00:14:03,820 --> 00:14:05,490
+converged compiler is written in
+
+364
+00:14:05,500 --> 00:14:07,440
+converge so the compiler is running in
+
+365
+00:14:07,450 --> 00:14:09,120
+the virtual machine so when it comes
+
+366
+00:14:09,130 --> 00:14:10,710
+across one of these little splice things
+
+367
+00:14:10,720 --> 00:14:13,170
+it's just temporarily compiles a
+
+368
+00:14:13,180 --> 00:14:15,210
+temporary module and injects that in the
+
+369
+00:14:15,220 --> 00:14:16,560
+virtual machine it's running in anyway
+
+370
+00:14:16,570 --> 00:14:18,000
+so there's a complete interaction
+
+371
+00:14:18,010 --> 00:14:20,250
+between the compiler and the splice code
+
+372
+00:14:20,260 --> 00:14:21,690
+and that's rather important because it
+
+373
+00:14:21,700 --> 00:14:23,820
+allows the user code to interact with
+
+374
+00:14:23,830 --> 00:14:25,680
+the compiler get it to do things in its
+
+375
+00:14:25,690 --> 00:14:27,840
+behalf ask your questions and that sort
+
+376
+00:14:27,850 --> 00:14:29,940
+of thing mm-hm okay so in addition to
+
+377
+00:14:29,950 --> 00:14:31,710
+the splice construct I think there are
+
+378
+00:14:31,720 --> 00:14:33,870
+two others one is the quasi quote and
+
+379
+00:14:33,880 --> 00:14:35,490
+the other is the insertion can you
+
+380
+00:14:35,500 --> 00:14:37,470
+explain them briefly and then we'll go
+
+381
+00:14:37,480 --> 00:14:38,910
+on and show how they fit together
+
+382
+00:14:38,920 --> 00:14:41,340
+well quasi quote sees and that this name
+
+383
+00:14:41,350 --> 00:14:43,110
+I'm not quite sure how they came up with
+
+384
+00:14:43,120 --> 00:14:44,490
+it is from the template a scale people
+
+385
+00:14:44,500 --> 00:14:46,680
+is the mechanism that allows you to
+
+386
+00:14:46,690 --> 00:14:48,420
+build abstract syntax trees and and the
+
+387
+00:14:48,430 --> 00:14:50,130
+way it does it is incredibly intuitive
+
+388
+00:14:50,140 --> 00:14:52,380
+they solved a problem that no one had
+
+389
+00:14:52,390 --> 00:14:54,390
+solved since Lisp and what what you do
+
+390
+00:14:54,400 --> 00:14:57,060
+is you surround a normal expression that
+
+391
+00:14:57,070 --> 00:14:58,320
+you write in the program language with
+
+392
+00:14:58,330 --> 00:14:59,790
+some funny brackets it's a square
+
+393
+00:14:59,800 --> 00:15:01,440
+bracket in a vertical bracket at either
+
+394
+00:15:01,450 --> 00:15:03,960
+side and so you have an expression like
+
+395
+00:15:03,970 --> 00:15:05,520
+two plus three surrounded by these funny
+
+396
+00:15:05,530 --> 00:15:07,320
+brackets and that evaluates to some
+
+397
+00:15:07,330 --> 00:15:08,970
+objects which are the abstract syntax
+
+398
+00:15:08,980 --> 00:15:12,000
+tree so in that case the outermost
+
+399
+00:15:12,010 --> 00:15:14,340
+object is going to be a plus object on
+
+400
+00:15:14,350 --> 00:15:15,930
+the left-hand side will say integer and
+
+401
+00:15:15,940 --> 00:15:16,950
+then it will say two and on the
+
+402
+00:15:16,960 --> 00:15:18,150
+right-hand side it was a integer at
+
+403
+00:15:18,160 --> 00:15:20,130
+three and so suddenly you can create
+
+404
+00:15:20,140 --> 00:15:23,250
+these very abstract things they're
+
+405
+00:15:23,260 --> 00:15:24,480
+called abstract syntax trees
+
+406
+00:15:24,490 --> 00:15:26,370
+unsurprisingly using the normal concrete
+
+407
+00:15:26,380 --> 00:15:27,870
+syntax that you're familiar with
+
+408
+00:15:27,880 --> 00:15:30,390
+instead of writing code that has a new
+
+409
+00:15:30,400 --> 00:15:33,720
+ast node blah-blah-blah-blah plus add
+
+410
+00:15:33,730 --> 00:15:36,600
+child new ast node integer blahblah
+
+411
+00:15:36,610 --> 00:15:38,160
+you've hit the nail on the head as to
+
+412
+00:15:38,170 --> 00:15:39,390
+why these systems have always failed
+
+413
+00:15:39,400 --> 00:15:40,920
+horribly before because that is a
+
+414
+00:15:40,930 --> 00:15:42,180
+completely unscalable approach
+
+415
+00:15:42,190 --> 00:15:44,280
+absolutely yeah that's also just to
+
+416
+00:15:44,290 --> 00:15:46,860
+divert briefly this is the reason why in
+
+417
+00:15:46,870 --> 00:15:49,769
+model-driven development you don't use a
+
+418
+00:15:49,779 --> 00:15:51,840
+model to model transformation to create
+
+419
+00:15:51,850 --> 00:15:53,460
+source code because that would go back
+
+420
+00:15:53,470 --> 00:15:55,170
+to creating instances of the source
+
+421
+00:15:55,180 --> 00:15:56,130
+nodes or
+
+422
+00:15:56,140 --> 00:15:58,260
+laughter code notes kind of of the ast
+
+423
+00:15:58,270 --> 00:15:59,490
+of the target language that's just
+
+424
+00:15:59,500 --> 00:16:01,590
+horrible yes absolutely
+
+425
+00:16:01,600 --> 00:16:04,740
+and so finally there's this the third
+
+426
+00:16:04,750 --> 00:16:06,780
+feature is by far the least complicated
+
+427
+00:16:06,790 --> 00:16:08,490
+it's called insertion in converge it's
+
+428
+00:16:08,500 --> 00:16:09,540
+called something rather different in
+
+429
+00:16:09,550 --> 00:16:11,520
+template a scale and basically it allows
+
+430
+00:16:11,530 --> 00:16:13,830
+you to merge a steves together so you
+
+431
+00:16:13,840 --> 00:16:16,200
+can build a STS up in chunks and then
+
+432
+00:16:16,210 --> 00:16:19,380
+nicely and using the normal syntax merge
+
+433
+00:16:19,390 --> 00:16:23,070
+these things together okay so that
+
+434
+00:16:23,080 --> 00:16:27,030
+allows us basically to to to heck the
+
+435
+00:16:27,040 --> 00:16:30,180
+stuff the compiler does by modifying the
+
+436
+00:16:30,190 --> 00:16:34,530
+output the ast it creates based on code
+
+437
+00:16:34,540 --> 00:16:36,810
+that looks just like the other code in
+
+438
+00:16:36,820 --> 00:16:39,240
+our source code but that's not yet DSL
+
+439
+00:16:39,250 --> 00:16:41,070
+right so so where does how does this
+
+440
+00:16:41,080 --> 00:16:42,840
+relate to what else is there in converge
+
+441
+00:16:42,850 --> 00:16:45,150
+to to make it a DSL friendly language
+
+442
+00:16:45,160 --> 00:16:46,680
+and how does it look like yeah yeah
+
+443
+00:16:46,690 --> 00:16:48,180
+you're very much right in saying that
+
+444
+00:16:48,190 --> 00:16:50,550
+that's not all that you need for da
+
+445
+00:16:50,560 --> 00:16:53,070
+cells and in fact I think what's worth
+
+446
+00:16:53,080 --> 00:16:55,530
+thinking about here is why would other
+
+447
+00:16:55,540 --> 00:16:57,060
+languages have have one of these macro
+
+448
+00:16:57,070 --> 00:16:58,620
+facilities well let's pass one because
+
+449
+00:16:58,630 --> 00:17:00,330
+it doesn't have anything enough built in
+
+450
+00:17:00,340 --> 00:17:02,160
+nice to have a macro language to try and
+
+451
+00:17:02,170 --> 00:17:04,710
+build you extra complex things on top si
+
+452
+00:17:04,720 --> 00:17:06,360
+has one because C is a very annoying
+
+453
+00:17:06,370 --> 00:17:08,250
+language to program in you have to have
+
+454
+00:17:08,260 --> 00:17:09,720
+this preprocessor to make it at least
+
+455
+00:17:09,730 --> 00:17:11,579
+some more palatable the compile time
+
+456
+00:17:11,589 --> 00:17:13,770
+metaprogramming converge on its own it's
+
+457
+00:17:13,780 --> 00:17:15,480
+a fairly rich language it has all the
+
+458
+00:17:15,490 --> 00:17:17,430
+things that you expect so
+
+459
+00:17:17,440 --> 00:17:20,460
+really it's all put there to enable dsls
+
+460
+00:17:20,470 --> 00:17:24,150
+and it turns out that to have DSL
+
+461
+00:17:24,160 --> 00:17:25,439
+support that is where you can have a
+
+462
+00:17:25,449 --> 00:17:27,240
+little bit of your source code that's a
+
+463
+00:17:27,250 --> 00:17:28,980
+completely arbitrary syntax of your
+
+464
+00:17:28,990 --> 00:17:30,510
+choosing you need one extra language
+
+465
+00:17:30,520 --> 00:17:33,780
+feature and that's called the DSL block
+
+466
+00:17:33,790 --> 00:17:36,210
+and it looks rather like a splice a
+
+467
+00:17:36,220 --> 00:17:38,280
+normal splice in the compile time at
+
+468
+00:17:38,290 --> 00:17:41,280
+programming sense and that single
+
+469
+00:17:41,290 --> 00:17:44,010
+feature allows you which is really only
+
+470
+00:17:44,020 --> 00:17:45,660
+about ten lines of code in the compiler
+
+471
+00:17:45,670 --> 00:17:47,940
+it's a very simple layer on top suddenly
+
+472
+00:17:47,950 --> 00:17:49,800
+allows you to embed these completely
+
+473
+00:17:49,810 --> 00:17:51,750
+alien-looking things and make the whole
+
+474
+00:17:51,760 --> 00:17:53,790
+facility underneath worthwhile so you
+
+475
+00:17:53,800 --> 00:17:56,520
+say that there is this piece of convert
+
+476
+00:17:56,530 --> 00:17:59,130
+code and then there is some kind of
+
+477
+00:17:59,140 --> 00:18:01,470
+marker that defines what kind of T is
+
+478
+00:18:01,480 --> 00:18:03,240
+just like maybe an HTML where you have
+
+479
+00:18:03,250 --> 00:18:05,070
+the script and then type equals
+
+480
+00:18:05,080 --> 00:18:06,840
+JavaScript or something and then there
+
+481
+00:18:06,850 --> 00:18:09,540
+is this other code and and the trick
+
+482
+00:18:09,550 --> 00:18:09,930
+then is
+
+483
+00:18:09,940 --> 00:18:13,260
+that this code is processed your own
+
+484
+00:18:13,270 --> 00:18:15,270
+compilation it's pretty much the same
+
+485
+00:18:15,280 --> 00:18:15,780
+thing
+
+486
+00:18:15,790 --> 00:18:18,390
+obviously there's a lot more to this
+
+487
+00:18:18,400 --> 00:18:20,610
+than there is in the example you outline
+
+488
+00:18:20,620 --> 00:18:22,320
+I will talk about in a minute but the
+
+489
+00:18:22,330 --> 00:18:23,400
+principle is the same
+
+490
+00:18:23,410 --> 00:18:26,130
+okay let's let's talk about an example
+
+491
+00:18:26,140 --> 00:18:29,040
+and the example you talked about in the
+
+492
+00:18:29,050 --> 00:18:31,020
+talk this morning and again we're
+
+493
+00:18:31,030 --> 00:18:32,700
+recording this at the Joe conference in
+
+494
+00:18:32,710 --> 00:18:33,990
+Denmark in October
+
+495
+00:18:34,000 --> 00:18:38,910
+what is it 2006 the example you showed
+
+496
+00:18:38,920 --> 00:18:40,740
+there is a time table something to
+
+497
+00:18:40,750 --> 00:18:44,540
+describe train time train timetables
+
+498
+00:18:44,550 --> 00:18:47,880
+there so what do you have to do as a dsl
+
+499
+00:18:47,890 --> 00:18:50,640
+developer notice it here's our user as a
+
+500
+00:18:50,650 --> 00:18:52,260
+guy who extends the compiler what we
+
+501
+00:18:52,270 --> 00:18:54,780
+have to do to make this work okay
+
+502
+00:18:54,790 --> 00:18:57,090
+well the first thing that you have to be
+
+503
+00:18:57,100 --> 00:19:00,210
+aware is that DSL blocks this DSL input
+
+504
+00:19:00,220 --> 00:19:01,830
+that the use of writes is just really a
+
+505
+00:19:01,840 --> 00:19:03,690
+random string the compiler doesn't know
+
+506
+00:19:03,700 --> 00:19:06,080
+anything about it so if the DSL
+
+507
+00:19:06,090 --> 00:19:07,770
+implementation author the person
+
+508
+00:19:07,780 --> 00:19:09,990
+defining the DSL you have to do several
+
+509
+00:19:10,000 --> 00:19:11,670
+things the first obviously is you have
+
+510
+00:19:11,680 --> 00:19:13,470
+to design a language of some sort
+
+511
+00:19:13,480 --> 00:19:15,390
+because the input must be coming in to a
+
+512
+00:19:15,400 --> 00:19:17,190
+format that you have told the user to
+
+513
+00:19:17,200 --> 00:19:20,120
+conform to so grammar definition or what
+
+514
+00:19:20,130 --> 00:19:23,220
+probably it's a free country you can do
+
+515
+00:19:23,230 --> 00:19:24,330
+it however you want I want very much
+
+516
+00:19:24,340 --> 00:19:26,310
+suggest that you do it in a traditional
+
+517
+00:19:26,320 --> 00:19:27,960
+way where you define a grammar and pass
+
+518
+00:19:27,970 --> 00:19:31,530
+it and then you get a parse tree and you
+
+519
+00:19:31,540 --> 00:19:33,720
+write a little translator thing that
+
+520
+00:19:33,730 --> 00:19:35,520
+takes in a pass tree and returns a
+
+521
+00:19:35,530 --> 00:19:37,470
+converge abstract syntax tree so can you
+
+522
+00:19:37,480 --> 00:19:39,630
+maybe just what are not so language
+
+523
+00:19:39,640 --> 00:19:43,620
+savvy listener subset explain the
+
+524
+00:19:43,630 --> 00:19:44,970
+difference between a parse tree and a
+
+525
+00:19:44,980 --> 00:19:48,660
+language and ast I can indeed so passing
+
+526
+00:19:48,670 --> 00:19:50,850
+is a very fun activity but one that's
+
+527
+00:19:50,860 --> 00:19:53,340
+shrouded in mystery and it actually
+
+528
+00:19:53,350 --> 00:19:55,560
+could be much simpler than it often
+
+529
+00:19:55,570 --> 00:19:57,480
+appears basically it's a two-stage
+
+530
+00:19:57,490 --> 00:19:59,820
+process the first thing that happens is
+
+531
+00:19:59,830 --> 00:20:01,710
+you take your input and you tokenize
+
+532
+00:20:01,720 --> 00:20:03,480
+it'll exit depending on how you like to
+
+533
+00:20:03,490 --> 00:20:04,950
+call it and all that's doing is
+
+534
+00:20:04,960 --> 00:20:06,450
+splitting it up into words so it's like
+
+535
+00:20:06,460 --> 00:20:08,340
+taking a random European language and
+
+536
+00:20:08,350 --> 00:20:10,290
+saying well whenever I see a space that
+
+537
+00:20:10,300 --> 00:20:12,150
+delimits two words and a full-stop
+
+538
+00:20:12,160 --> 00:20:14,910
+similarly then you take all these words
+
+539
+00:20:14,920 --> 00:20:16,410
+that you've tokenized
+
+540
+00:20:16,420 --> 00:20:18,750
+and then you try and actually make sense
+
+541
+00:20:18,760 --> 00:20:20,340
+of them in terms of the grammar so if
+
+542
+00:20:20,350 --> 00:20:22,740
+you make a natural language example you
+
+543
+00:20:22,750 --> 00:20:23,820
+try to say okay what's the
+
+544
+00:20:23,830 --> 00:20:26,250
+in my sentence what's a the nouns and so
+
+545
+00:20:26,260 --> 00:20:27,570
+on and then you're trying to make a tree
+
+546
+00:20:27,580 --> 00:20:29,130
+structure out of that that allows you to
+
+547
+00:20:29,140 --> 00:20:32,790
+determine how the sentence that's come
+
+548
+00:20:32,800 --> 00:20:34,380
+in is structured but at this point all
+
+549
+00:20:34,390 --> 00:20:36,150
+you've done is determined what the users
+
+550
+00:20:36,160 --> 00:20:37,890
+told you so that's the parse tree that's
+
+551
+00:20:37,900 --> 00:20:40,710
+the pass tree and then you're converting
+
+552
+00:20:40,720 --> 00:20:43,410
+that however you want and into the
+
+553
+00:20:43,420 --> 00:20:44,730
+abstract syntax tree and there may be a
+
+554
+00:20:44,740 --> 00:20:48,110
+very close relation between the two but
+
+555
+00:20:48,120 --> 00:20:50,730
+you your translation you're effectively
+
+556
+00:20:50,740 --> 00:20:53,100
+writing a mini compiler right and and
+
+557
+00:20:53,110 --> 00:20:55,260
+and that the abstract syntax tree is
+
+558
+00:20:55,270 --> 00:20:58,410
+basically an instance of the has to be
+
+559
+00:20:58,420 --> 00:21:00,810
+in terms of the host language right so
+
+560
+00:21:00,820 --> 00:21:03,060
+you're converting your domain-specific
+
+561
+00:21:03,070 --> 00:21:07,140
+language syntax parse tree into a set of
+
+562
+00:21:07,150 --> 00:21:10,410
+constructs objects instances of AST
+
+563
+00:21:10,420 --> 00:21:13,020
+types of the host language of converge
+
+564
+00:21:13,030 --> 00:21:16,230
+yes if it's easier to think of you can
+
+565
+00:21:16,240 --> 00:21:18,390
+think of it I think without objects you
+
+566
+00:21:18,400 --> 00:21:20,190
+can imagine it just as a textual
+
+567
+00:21:20,200 --> 00:21:21,990
+templating approach if you think of a
+
+568
+00:21:22,000 --> 00:21:25,650
+yeah a sort of model to text translation
+
+569
+00:21:25,660 --> 00:21:27,690
+here actively the abstract syntax tree
+
+570
+00:21:27,700 --> 00:21:29,550
+is like the template text but you don't
+
+571
+00:21:29,560 --> 00:21:31,200
+you don't you don't do it with templates
+
+572
+00:21:31,210 --> 00:21:33,270
+you actually in fact technically you do
+
+573
+00:21:33,280 --> 00:21:35,340
+it by instantiate the ast object yes
+
+574
+00:21:35,350 --> 00:21:36,810
+because you get an awful lot of benefits
+
+575
+00:21:36,820 --> 00:21:38,820
+that way but that's it's somewhat
+
+576
+00:21:38,830 --> 00:21:40,530
+sometimes a slightly hard concept to get
+
+577
+00:21:40,540 --> 00:21:42,720
+hold of yeah so if you move in your mind
+
+578
+00:21:42,730 --> 00:21:44,460
+from template to text and nice objects
+
+579
+00:21:44,470 --> 00:21:45,720
+that do lots of other things for you
+
+580
+00:21:45,730 --> 00:21:48,120
+then you're on the right path okay
+
+581
+00:21:48,130 --> 00:21:49,530
+one thing I'd like to talk about before
+
+582
+00:21:49,540 --> 00:21:52,220
+we move on in how to implement a dsl
+
+583
+00:21:52,230 --> 00:21:54,660
+obviously that should have become clear
+
+584
+00:21:54,670 --> 00:21:56,220
+by now we're talking about textual
+
+585
+00:21:56,230 --> 00:21:57,840
+yourselves there is no way of
+
+586
+00:21:57,850 --> 00:21:59,520
+integrating some graphical notation
+
+587
+00:21:59,530 --> 00:22:01,590
+because the editor won't make that you
+
+588
+00:22:01,600 --> 00:22:06,300
+could maybe do some s key art and why
+
+589
+00:22:06,310 --> 00:22:09,720
+not maybe for tables so what about
+
+590
+00:22:09,730 --> 00:22:11,850
+parsing do I have to ride my own parcel
+
+591
+00:22:11,860 --> 00:22:12,690
+to build the parse tree
+
+592
+00:22:12,700 --> 00:22:15,300
+okay so parsing is one of these things I
+
+593
+00:22:15,310 --> 00:22:16,710
+think I said earlier it was absolutely
+
+594
+00:22:16,720 --> 00:22:19,710
+shrouded in mystery it goes back to the
+
+595
+00:22:19,720 --> 00:22:22,140
+the fact that it's in the mid-1960s that
+
+596
+00:22:22,150 --> 00:22:24,330
+the theoretical computer science people
+
+597
+00:22:24,340 --> 00:22:26,340
+already started looking and thinking
+
+598
+00:22:26,350 --> 00:22:27,810
+well we know we're doing a lot of this
+
+599
+00:22:27,820 --> 00:22:29,400
+programming stuff now we have different
+
+600
+00:22:29,410 --> 00:22:30,750
+programming languages how are we going
+
+601
+00:22:30,760 --> 00:22:32,040
+to make sense of this how are we going
+
+602
+00:22:32,050 --> 00:22:33,180
+to come up with nice ways of
+
+603
+00:22:33,190 --> 00:22:34,500
+understanding what the user has told us
+
+604
+00:22:34,510 --> 00:22:36,780
+and of course computers at the time we
+
+605
+00:22:36,790 --> 00:22:37,210
+run credit
+
+606
+00:22:37,220 --> 00:22:39,310
+slow so they invented some very limited
+
+607
+00:22:39,320 --> 00:22:41,710
+algorithms that can't pass a lot of
+
+608
+00:22:41,720 --> 00:22:43,210
+languages it would be a bit like saying
+
+609
+00:22:43,220 --> 00:22:45,310
+I have a way of passing natural language
+
+610
+00:22:45,320 --> 00:22:49,140
+it works very well for luxembourgish
+
+611
+00:22:49,150 --> 00:22:51,480
+analytic add predicate object
+
+612
+00:22:51,490 --> 00:22:53,530
+complexities and it's not gonna work for
+
+613
+00:22:53,540 --> 00:22:55,330
+English or French or German and you
+
+614
+00:22:55,340 --> 00:22:57,310
+think well that's not entirely useful is
+
+615
+00:22:57,320 --> 00:22:59,650
+it it's very limited and we're actually
+
+616
+00:22:59,660 --> 00:23:01,240
+still stuck with this today so people
+
+617
+00:23:01,250 --> 00:23:03,220
+have a very negative opinion of passing
+
+618
+00:23:03,230 --> 00:23:04,630
+because we're stuck with weird terms
+
+619
+00:23:04,640 --> 00:23:08,950
+like L R LLL ALR none of these terms we
+
+620
+00:23:08,960 --> 00:23:11,320
+should be forced to know they really
+
+621
+00:23:11,330 --> 00:23:13,120
+just tell us about the limitations of
+
+622
+00:23:13,130 --> 00:23:15,010
+the underlying algorithm the good news
+
+623
+00:23:15,020 --> 00:23:18,550
+that some not that well known so I hope
+
+624
+00:23:18,560 --> 00:23:19,720
+that I'm spreading the you know the good
+
+625
+00:23:19,730 --> 00:23:22,240
+news gospel here is that there are much
+
+626
+00:23:22,250 --> 00:23:23,770
+better are algorithms out there that
+
+627
+00:23:23,780 --> 00:23:25,870
+allow you to pass any context-free
+
+628
+00:23:25,880 --> 00:23:27,970
+grammar and any sane programming
+
+629
+00:23:27,980 --> 00:23:30,520
+language and C++ is excluded from this
+
+630
+00:23:30,530 --> 00:23:32,680
+is context-free which means you can pass
+
+631
+00:23:32,690 --> 00:23:35,080
+nearly anything that you can imagine so
+
+632
+00:23:35,090 --> 00:23:37,870
+if you're a dsl author what you have to
+
+633
+00:23:37,880 --> 00:23:40,000
+do is say ok there's a passing algorithm
+
+634
+00:23:40,010 --> 00:23:41,800
+built-in to convert it's called an early
+
+635
+00:23:41,810 --> 00:23:43,540
+past it can do anything that I want
+
+636
+00:23:43,550 --> 00:23:45,370
+really I just have to write a little
+
+637
+00:23:45,380 --> 00:23:47,680
+simple grammar definition and unlike
+
+638
+00:23:47,690 --> 00:23:51,250
+using Lex and yak or Java CC or those
+
+639
+00:23:51,260 --> 00:23:53,230
+are the things I can write it in a way
+
+640
+00:23:53,240 --> 00:23:55,000
+that makes sense to me as a human and
+
+641
+00:23:55,010 --> 00:23:56,680
+I'm not subject to the whims of the
+
+642
+00:23:56,690 --> 00:23:59,350
+passing algorithm so you said before
+
+643
+00:23:59,360 --> 00:24:02,890
+that the user has to come up with some
+
+644
+00:24:02,900 --> 00:24:05,230
+way of transforming the string into a
+
+645
+00:24:05,240 --> 00:24:08,050
+parse tree and then in an AST but you
+
+646
+00:24:08,060 --> 00:24:09,640
+basically what you say is that there
+
+647
+00:24:09,650 --> 00:24:12,520
+isn't built-in library that helps you do
+
+648
+00:24:12,530 --> 00:24:15,730
+this if you provide an early grammar and
+
+649
+00:24:15,740 --> 00:24:17,920
+then you get all the magic so that the
+
+650
+00:24:17,930 --> 00:24:19,630
+function to implement that the peers are
+
+651
+00:24:19,640 --> 00:24:21,190
+parsing is a couple of lines calling the
+
+652
+00:24:21,200 --> 00:24:24,010
+library I guess absolutely it's one of
+
+653
+00:24:24,020 --> 00:24:26,140
+the fundamental philosophies that I've
+
+654
+00:24:26,150 --> 00:24:29,620
+had when creating converge is that da
+
+655
+00:24:29,630 --> 00:24:31,960
+cells follow a fairly standard set
+
+656
+00:24:31,970 --> 00:24:33,520
+sequence of steps and one of those is
+
+657
+00:24:33,530 --> 00:24:36,820
+every DSL every sensible DSL is going to
+
+658
+00:24:36,830 --> 00:24:38,650
+pass some text get a pass tree and then
+
+659
+00:24:38,660 --> 00:24:41,020
+translate that so why not have a single
+
+660
+00:24:41,030 --> 00:24:43,090
+function that takes this in a return to
+
+661
+00:24:43,100 --> 00:24:44,560
+parse tree and that's exactly what there
+
+662
+00:24:44,570 --> 00:24:47,740
+is there you when you write one of these
+
+663
+00:24:47,750 --> 00:24:49,810
+little DSL implementation functions that
+
+664
+00:24:49,820 --> 00:24:50,499
+the
+
+665
+00:24:50,509 --> 00:24:52,149
+takes in a DSL block basically the
+
+666
+00:24:52,159 --> 00:24:53,799
+handle of function for a particular kind
+
+667
+00:24:53,809 --> 00:24:57,999
+of syntax yes exactly it you say okay
+
+668
+00:24:58,009 --> 00:24:59,259
+well here's I'm gonna hand off to
+
+669
+00:24:59,269 --> 00:25:01,209
+another function here's the input I got
+
+670
+00:25:01,219 --> 00:25:02,919
+from the user here's a grammar and
+
+671
+00:25:02,929 --> 00:25:04,689
+here's some extra keywords and maybe I
+
+672
+00:25:04,699 --> 00:25:06,009
+need to know about and that's it please
+
+673
+00:25:06,019 --> 00:25:09,099
+give me back a parse tree and it does so
+
+674
+00:25:09,109 --> 00:25:13,239
+that the menu will work tedious parsing
+
+675
+00:25:13,249 --> 00:25:15,669
+stuff it's gone away and then the
+
+676
+00:25:15,679 --> 00:25:17,169
+grammars you need to write are basically
+
+677
+00:25:17,179 --> 00:25:19,689
+some kind of a B and F like thing where
+
+678
+00:25:19,699 --> 00:25:21,879
+you define keywords and and tokens yeah
+
+679
+00:25:21,889 --> 00:25:24,009
+it's a fairly standard ebn F type thing
+
+680
+00:25:24,019 --> 00:25:26,889
+of course is going back to what I said
+
+681
+00:25:26,899 --> 00:25:29,739
+earlier it's it's a pure rebn F in the
+
+682
+00:25:29,749 --> 00:25:31,599
+sense that it's not like a yak sort of
+
+683
+00:25:31,609 --> 00:25:33,489
+thing where if anyone has ever had the
+
+684
+00:25:33,499 --> 00:25:35,019
+misfortune to use yak you write what
+
+685
+00:25:35,029 --> 00:25:37,329
+looks like a perfectly BNF notation you
+
+686
+00:25:37,339 --> 00:25:38,529
+run it through yak misses shift reduce
+
+687
+00:25:38,539 --> 00:25:41,109
+error the hell is a shift would you say
+
+688
+00:25:41,119 --> 00:25:43,329
+why do I care about that none of that
+
+689
+00:25:43,339 --> 00:25:45,189
+sort of stuff you just put in your
+
+690
+00:25:45,199 --> 00:25:47,109
+normal evening F notation and it does it
+
+691
+00:25:47,119 --> 00:25:50,799
+yeah but you don't add any side effect
+
+692
+00:25:50,809 --> 00:25:52,930
+declarations or you know this stuff you
+
+693
+00:25:52,940 --> 00:25:54,430
+do this in a separate function that's
+
+694
+00:25:54,440 --> 00:25:55,749
+actually the transformation from the
+
+695
+00:25:55,759 --> 00:25:59,199
+parse tree to the ast more so in a lot
+
+696
+00:25:59,209 --> 00:26:02,229
+of passing tools as the passing
+
+697
+00:26:02,239 --> 00:26:04,239
+algorithm is is passing a text you are
+
+698
+00:26:04,249 --> 00:26:06,699
+also doing side actions right a lot of
+
+699
+00:26:06,709 --> 00:26:07,749
+those are because of the sort of
+
+700
+00:26:07,759 --> 00:26:09,849
+limitations of a gain of machines forty
+
+701
+00:26:09,859 --> 00:26:10,959
+years ago where they couldn't hold
+
+702
+00:26:10,969 --> 00:26:13,479
+things in memory nowadays it's much
+
+703
+00:26:13,489 --> 00:26:15,489
+easier to pass the whole text and get it
+
+704
+00:26:15,499 --> 00:26:16,119
+all up the whole thing
+
+705
+00:26:16,129 --> 00:26:17,889
+exactly build a whole tree and in
+
+706
+00:26:17,899 --> 00:26:19,299
+converge those represented is nice
+
+707
+00:26:19,309 --> 00:26:22,269
+simple lists and then to go over that
+
+708
+00:26:22,279 --> 00:26:24,609
+fully created tree and do things then
+
+709
+00:26:24,619 --> 00:26:26,589
+and that makes a lot of things an awful
+
+710
+00:26:26,599 --> 00:26:28,449
+lot easier it's kind of like sex whereas
+
+711
+00:26:28,459 --> 00:26:31,629
+Dom Indian XML processing kind of this
+
+712
+00:26:31,639 --> 00:26:33,189
+is very much a Dom view of the world
+
+713
+00:26:33,199 --> 00:26:35,379
+right a sax for you the world yes so and
+
+714
+00:26:35,389 --> 00:26:38,169
+then you you write probably functions
+
+715
+00:26:38,179 --> 00:26:40,299
+that transform the the parse tree
+
+716
+00:26:40,309 --> 00:26:44,499
+elements into objects in the in the in
+
+717
+00:26:44,509 --> 00:26:46,930
+the ast and I know obviously you write
+
+718
+00:26:46,940 --> 00:26:48,759
+these functions in in conversions yes
+
+719
+00:26:48,769 --> 00:26:50,109
+and probably the nice thing is that
+
+720
+00:26:50,119 --> 00:26:52,419
+there you probably then use the splicing
+
+721
+00:26:52,429 --> 00:26:54,909
+stuff to actually create the objects for
+
+722
+00:26:54,919 --> 00:26:57,430
+the ast exactly quite nice yes so again
+
+723
+00:26:57,440 --> 00:26:59,859
+this is very much this idea of an a
+
+724
+00:26:59,869 --> 00:27:03,999
+modulus environment that a translator is
+
+725
+00:27:04,009 --> 00:27:04,450
+I
+
+726
+00:27:04,460 --> 00:27:06,010
+use the word translator cuz I don't
+
+727
+00:27:06,020 --> 00:27:07,510
+necessarily like to use the term mini
+
+728
+00:27:07,520 --> 00:27:09,310
+compiler it frightens people but really
+
+729
+00:27:09,320 --> 00:27:11,680
+really all that it is but a lot of the
+
+730
+00:27:11,690 --> 00:27:13,090
+hard work is taken out of it it's not
+
+731
+00:27:13,100 --> 00:27:15,870
+frightening like compilers up and
+
+732
+00:27:15,880 --> 00:27:18,190
+converge gives you in very very simple
+
+733
+00:27:18,200 --> 00:27:20,260
+framework and basically you write one
+
+734
+00:27:20,270 --> 00:27:22,840
+function per rule in your grammar and
+
+735
+00:27:22,850 --> 00:27:24,580
+that takes in a little bit of a pass
+
+736
+00:27:24,590 --> 00:27:26,200
+tree and as you said creates the objects
+
+737
+00:27:26,210 --> 00:27:27,970
+for an abstract syntax tree and you're
+
+738
+00:27:27,980 --> 00:27:31,000
+just using those three compiled so
+
+739
+00:27:31,010 --> 00:27:32,410
+metaprogramming features we talked about
+
+740
+00:27:32,420 --> 00:27:34,420
+earlier the splice the quasi quote in
+
+741
+00:27:34,430 --> 00:27:36,220
+the insertion that's it everything is
+
+742
+00:27:36,230 --> 00:27:37,110
+built out of those
+
+743
+00:27:37,120 --> 00:27:39,790
+ok so let's shift gears a little bit and
+
+744
+00:27:39,800 --> 00:27:41,950
+talk about error reporting this is an
+
+745
+00:27:41,960 --> 00:27:43,540
+interesting topic because some of you
+
+746
+00:27:43,550 --> 00:27:46,320
+listeners might have heard about using
+
+747
+00:27:46,330 --> 00:27:48,910
+C++ templates for compiler meta
+
+748
+00:27:48,920 --> 00:27:51,040
+programming which first of all it looks
+
+749
+00:27:51,050 --> 00:27:53,650
+awful and second one thing that is
+
+750
+00:27:53,660 --> 00:27:54,940
+really cool about it if you do something
+
+751
+00:27:54,950 --> 00:27:57,160
+wrong you get those error messages with
+
+752
+00:27:57,170 --> 00:27:59,590
+you know where an error message is like
+
+753
+00:27:59,600 --> 00:28:01,990
+25,000 characters long because some
+
+754
+00:28:02,000 --> 00:28:03,640
+identifier has been built up through
+
+755
+00:28:03,650 --> 00:28:05,770
+concatenating the recursive template
+
+756
+00:28:05,780 --> 00:28:07,630
+evaluations so that's a big problem
+
+757
+00:28:07,640 --> 00:28:11,800
+so one thing you have talked about in
+
+758
+00:28:11,810 --> 00:28:14,500
+your presentation is that error
+
+759
+00:28:14,510 --> 00:28:15,760
+reporting is something you've
+
+760
+00:28:15,770 --> 00:28:17,890
+specifically taken care of in converge
+
+761
+00:28:17,900 --> 00:28:19,180
+and I think that's worth talking about
+
+762
+00:28:19,190 --> 00:28:21,310
+yeah well it was one of those things I
+
+763
+00:28:21,320 --> 00:28:23,020
+mean it's obvious in a sense that error
+
+764
+00:28:23,030 --> 00:28:25,570
+reporting is important no one is in the
+
+765
+00:28:25,580 --> 00:28:27,430
+right mind is gonna say it's not there
+
+766
+00:28:27,440 --> 00:28:29,890
+but I mean when I delivered the first
+
+767
+00:28:29,900 --> 00:28:32,500
+version of converge it had some new
+
+768
+00:28:32,510 --> 00:28:35,080
+nice-ish error reporting things but it
+
+769
+00:28:35,090 --> 00:28:37,060
+just didn't seem enough and what became
+
+770
+00:28:37,070 --> 00:28:39,640
+clear to me is that both the person who
+
+771
+00:28:39,650 --> 00:28:41,890
+writes the DSL the implementation author
+
+772
+00:28:41,900 --> 00:28:44,530
+and to people who use it require good
+
+773
+00:28:44,540 --> 00:28:47,710
+error reporting and generally neither
+
+774
+00:28:47,720 --> 00:28:49,660
+side got good error reporting at best
+
+775
+00:28:49,670 --> 00:28:51,670
+maybe one or the other did I don't throw
+
+776
+00:28:51,680 --> 00:28:52,870
+those systems were few and far between
+
+777
+00:28:52,880 --> 00:28:54,880
+so it became very clear to me that if
+
+778
+00:28:54,890 --> 00:28:58,270
+you want to write a good DSL well even
+
+779
+00:28:58,280 --> 00:28:59,350
+if it's good it's still gonna have
+
+780
+00:28:59,360 --> 00:29:00,550
+problems and I've never written an
+
+781
+00:29:00,560 --> 00:29:02,170
+error-free line of code yet in my life
+
+782
+00:29:02,180 --> 00:29:03,040
+and I don't suspect there are many
+
+783
+00:29:03,050 --> 00:29:05,080
+people out there you have so you've got
+
+784
+00:29:05,090 --> 00:29:06,250
+to come up with a way that you can
+
+785
+00:29:06,260 --> 00:29:08,830
+report errors to both the implementation
+
+786
+00:29:08,840 --> 00:29:12,700
+author and the user and that is
+
+787
+00:29:12,710 --> 00:29:14,380
+particularly tricky because if you
+
+788
+00:29:14,390 --> 00:29:17,110
+consider for example against C macros if
+
+789
+00:29:17,120 --> 00:29:17,740
+the compile
+
+790
+00:29:17,750 --> 00:29:20,080
+reports on error then of course the
+
+791
+00:29:20,090 --> 00:29:22,990
+error is reported based on the code that
+
+792
+00:29:23,000 --> 00:29:25,090
+is there after the macro has been
+
+793
+00:29:25,100 --> 00:29:26,800
+expanded but if the developer looks into
+
+794
+00:29:26,810 --> 00:29:28,570
+the source code of course the macro is
+
+795
+00:29:28,580 --> 00:29:30,520
+there so it's very hard to actually find
+
+796
+00:29:30,530 --> 00:29:31,960
+out what's happening and I guess it's
+
+797
+00:29:31,970 --> 00:29:33,370
+kind of the same problem here because
+
+798
+00:29:33,380 --> 00:29:35,260
+the error is reported based on the
+
+799
+00:29:35,270 --> 00:29:36,670
+abstract syntax tree that has been
+
+800
+00:29:36,680 --> 00:29:38,530
+created from the transformation instead
+
+801
+00:29:38,540 --> 00:29:41,140
+of what the DSL input was like well
+
+802
+00:29:41,150 --> 00:29:42,730
+that's one of the things that I set out
+
+803
+00:29:42,740 --> 00:29:44,200
+to tackle and I think that I've come up
+
+804
+00:29:44,210 --> 00:29:46,330
+with a solution that seems to be very
+
+805
+00:29:46,340 --> 00:29:48,220
+neat and seems to tackle the whole
+
+806
+00:29:48,230 --> 00:29:50,590
+problem as it were so the basic
+
+807
+00:29:50,600 --> 00:29:53,560
+philosophy is this there's a concept in
+
+808
+00:29:53,570 --> 00:29:54,940
+converge and it doesn't really matter
+
+809
+00:29:54,950 --> 00:29:57,100
+what it's called called a source info
+
+810
+00:29:57,110 --> 00:30:01,990
+and basically it tracks the location of
+
+811
+00:30:02,000 --> 00:30:05,290
+some source code from the point that
+
+812
+00:30:05,300 --> 00:30:06,730
+it's passed until the point that it's
+
+813
+00:30:06,740 --> 00:30:08,290
+converted into a bytecode instruction
+
+814
+00:30:08,300 --> 00:30:10,000
+run in the virtual machine someone like
+
+815
+00:30:10,010 --> 00:30:12,010
+the traceability stuff the MDA folks
+
+816
+00:30:12,020 --> 00:30:13,960
+talked about yes it is very similar to
+
+817
+00:30:13,970 --> 00:30:16,330
+that but it's very different than the
+
+818
+00:30:16,340 --> 00:30:17,560
+way that these things are normally done
+
+819
+00:30:17,570 --> 00:30:19,150
+in program languages normal program
+
+820
+00:30:19,160 --> 00:30:21,190
+languages if an error happens at runtime
+
+821
+00:30:21,200 --> 00:30:22,960
+you get a little report saying at line
+
+822
+00:30:22,970 --> 00:30:25,300
+such-and-such this error occurred but
+
+823
+00:30:25,310 --> 00:30:26,860
+there's very much the idea that each
+
+824
+00:30:26,870 --> 00:30:29,350
+error is just associated with one line
+
+825
+00:30:29,360 --> 00:30:33,070
+yep in converge the because when an
+
+826
+00:30:33,080 --> 00:30:35,110
+error happens it might be related either
+
+827
+00:30:35,120 --> 00:30:38,140
+to the user's DSL input or the
+
+828
+00:30:38,150 --> 00:30:40,060
+translation that the DSL implementation
+
+829
+00:30:40,070 --> 00:30:43,540
+author created error reports can be
+
+830
+00:30:43,550 --> 00:30:46,480
+associated with more than one source
+
+831
+00:30:46,490 --> 00:30:48,250
+location so you can get an error and it
+
+832
+00:30:48,260 --> 00:30:50,680
+says well I got to this point in the
+
+833
+00:30:50,690 --> 00:30:52,420
+stack frame and this is associated with
+
+834
+00:30:52,430 --> 00:30:54,220
+two source code points or three or four
+
+835
+00:30:54,230 --> 00:30:56,500
+because you can layer dia cells and then
+
+836
+00:30:56,510 --> 00:31:00,070
+if you're a DSL user you can alert DSL
+
+837
+00:31:00,080 --> 00:31:01,720
+that means you can embed dear Zeldin
+
+838
+00:31:01,730 --> 00:31:04,330
+above the adults you can indeed nice so
+
+839
+00:31:04,340 --> 00:31:05,670
+that means again you have to take a
+
+840
+00:31:05,680 --> 00:31:07,750
+dramatically different approach because
+
+841
+00:31:07,760 --> 00:31:10,170
+if error reporting was just based on
+
+842
+00:31:10,180 --> 00:31:12,700
+reporting some weird part of a C++
+
+843
+00:31:12,710 --> 00:31:14,830
+compiler string concatenation well you
+
+844
+00:31:14,840 --> 00:31:16,030
+won't even be able to work out which
+
+845
+00:31:16,040 --> 00:31:18,100
+layer of your embedded DSL the thing
+
+846
+00:31:18,110 --> 00:31:20,080
+occurred in let alone any more details
+
+847
+00:31:20,090 --> 00:31:22,120
+so here the error report comes back and
+
+848
+00:31:22,130 --> 00:31:24,250
+says well the error is related to the
+
+849
+00:31:24,260 --> 00:31:26,320
+third line in your DSL input as a user
+
+850
+00:31:26,330 --> 00:31:29,080
+and in this line in converged source
+
+851
+00:31:29,090 --> 00:31:30,520
+code which was the translation class
+
+852
+00:31:30,530 --> 00:31:31,510
+that both the you
+
+853
+00:31:31,520 --> 00:31:33,400
+at the DSL and the implementation all
+
+854
+00:31:33,410 --> 00:31:35,980
+the contract down the error and work out
+
+855
+00:31:35,990 --> 00:31:37,270
+which one of them is responsible
+
+856
+00:31:37,280 --> 00:31:39,910
+another thing that's maybe interesting
+
+857
+00:31:39,920 --> 00:31:41,730
+is that you talked about before that
+
+858
+00:31:41,740 --> 00:31:44,590
+having ESL's integrated into a host
+
+859
+00:31:44,600 --> 00:31:45,970
+language is particularly useful because
+
+860
+00:31:45,980 --> 00:31:47,950
+you can reuse parts of the host language
+
+861
+00:31:47,960 --> 00:31:50,350
+and one specific aspects probably the
+
+862
+00:31:50,360 --> 00:31:52,360
+expression language so am i right there
+
+863
+00:31:52,370 --> 00:31:54,370
+you are very right because one of the
+
+864
+00:31:54,380 --> 00:31:56,980
+things that again going back to this
+
+865
+00:31:56,990 --> 00:32:00,490
+nice chat mr. Hudak noticed is that dsl
+
+866
+00:32:00,500 --> 00:32:02,890
+x' always tend to evolve their
+
+867
+00:32:02,900 --> 00:32:04,660
+requirements and one of the things that
+
+868
+00:32:04,670 --> 00:32:07,090
+he put his finger right on the money
+
+869
+00:32:07,100 --> 00:32:09,190
+here is that as they evolved they always
+
+870
+00:32:09,200 --> 00:32:11,620
+tend to evolve features that people who
+
+871
+00:32:11,630 --> 00:32:12,850
+wanted to get in from programming
+
+872
+00:32:12,860 --> 00:32:14,530
+languages in other words you stopped the
+
+873
+00:32:14,540 --> 00:32:16,780
+small dsl and you think i really need a
+
+874
+00:32:16,790 --> 00:32:18,940
+for loop in here oh then I really need
+
+875
+00:32:18,950 --> 00:32:20,650
+the if statement and then then something
+
+876
+00:32:20,660 --> 00:32:22,630
+that looks like a function call they
+
+877
+00:32:22,640 --> 00:32:24,580
+always start to creat features of that
+
+878
+00:32:24,590 --> 00:32:27,550
+ilk so if you're going to add in an
+
+879
+00:32:27,560 --> 00:32:29,200
+expression language you don't want to do
+
+880
+00:32:29,210 --> 00:32:31,210
+what most ear cells do which is put in a
+
+881
+00:32:31,220 --> 00:32:33,100
+badly designed one that's been created
+
+882
+00:32:33,110 --> 00:32:35,110
+from scratch being badly implemented
+
+883
+00:32:35,120 --> 00:32:37,930
+badly debugged and tends to fall over in
+
+884
+00:32:37,940 --> 00:32:40,420
+horrible ways yeah so converging allows
+
+885
+00:32:40,430 --> 00:32:42,520
+you to embed its own expression language
+
+886
+00:32:42,530 --> 00:32:44,740
+within DSL x' that way you're taking
+
+887
+00:32:44,750 --> 00:32:46,480
+advantage of the fact that somebody in
+
+888
+00:32:46,490 --> 00:32:48,670
+this case me it's designed hopefully
+
+889
+00:32:48,680 --> 00:32:51,120
+design well but that's another issue
+
+890
+00:32:51,130 --> 00:32:54,400
+designed and implemented and tested and
+
+891
+00:32:54,410 --> 00:32:56,230
+debugged that thing and in fact you can
+
+892
+00:32:56,240 --> 00:32:58,120
+add this expression language introduced
+
+893
+00:32:58,130 --> 00:33:00,130
+hell it's two lines of code for a DSL
+
+894
+00:33:00,140 --> 00:33:02,650
+invitational --this is suddenly rather
+
+895
+00:33:02,660 --> 00:33:04,000
+than having to write hundreds and
+
+896
+00:33:04,010 --> 00:33:05,650
+hundreds of lines of code to make their
+
+897
+00:33:05,660 --> 00:33:07,960
+own one that's basically a bit crappy
+
+898
+00:33:07,970 --> 00:33:09,910
+they use someone else's 14 lines of code
+
+899
+00:33:09,920 --> 00:33:12,420
+so these two lines of code in your DSL
+
+900
+00:33:12,430 --> 00:33:14,980
+probably grammar or listed in the
+
+901
+00:33:14,990 --> 00:33:17,020
+Krammer or you say it or does it say you
+
+902
+00:33:17,030 --> 00:33:19,120
+know you can use any kind of converge
+
+903
+00:33:19,130 --> 00:33:20,920
+code here or is it only you know you
+
+904
+00:33:20,930 --> 00:33:22,570
+couldn't use expressions or you can only
+
+905
+00:33:22,580 --> 00:33:24,250
+use function calls or can you restrict
+
+906
+00:33:24,260 --> 00:33:26,200
+what you can use from those language you
+
+907
+00:33:26,210 --> 00:33:28,300
+could in theory embed any part of
+
+908
+00:33:28,310 --> 00:33:30,520
+convert you wanted yeah in practice I
+
+909
+00:33:30,530 --> 00:33:32,140
+would very much suggest that you stick
+
+910
+00:33:32,150 --> 00:33:33,550
+to just embedding the expression
+
+911
+00:33:33,560 --> 00:33:33,850
+language
+
+912
+00:33:33,860 --> 00:33:35,800
+fortunately the expression language in
+
+913
+00:33:35,810 --> 00:33:37,420
+converge includes things like function
+
+914
+00:33:37,430 --> 00:33:39,430
+definitions because it's an entirely
+
+915
+00:33:39,440 --> 00:33:41,230
+expression based language so functions
+
+916
+00:33:41,240 --> 00:33:42,670
+evaluate the function objects that you
+
+917
+00:33:42,680 --> 00:33:45,040
+can then call and so you could with
+
+918
+00:33:45,050 --> 00:33:46,600
+you can probably do nearly everything
+
+919
+00:33:46,610 --> 00:33:49,060
+you're likely to want to do and if
+
+920
+00:33:49,070 --> 00:33:50,560
+you're particularly masochistic maybe
+
+921
+00:33:50,570 --> 00:33:52,320
+you can do some other things as well
+
+922
+00:33:52,330 --> 00:33:55,690
+okay so maybe to to to maybe not yet
+
+923
+00:33:55,700 --> 00:33:58,000
+directly wrap up but to summarize what
+
+924
+00:33:58,010 --> 00:34:00,330
+we talked about one thing youyou kind of
+
+925
+00:34:00,340 --> 00:34:02,740
+emphasize is that you don't just have a
+
+926
+00:34:02,750 --> 00:34:04,720
+language but rather a kind of little
+
+927
+00:34:04,730 --> 00:34:06,430
+mini process that kind of suggests
+
+928
+00:34:06,440 --> 00:34:08,380
+people who free country if you're going
+
+929
+00:34:08,390 --> 00:34:10,060
+to do what they want but suggest to
+
+930
+00:34:10,070 --> 00:34:12,490
+people a process of how to build a DSL
+
+931
+00:34:12,500 --> 00:34:14,470
+and as part of convert yeah I think this
+
+932
+00:34:14,480 --> 00:34:16,000
+is something that's very important one
+
+933
+00:34:16,010 --> 00:34:18,010
+of the problems if you do a standalone
+
+934
+00:34:18,020 --> 00:34:19,419
+DSL you know you go out and make
+
+935
+00:34:19,429 --> 00:34:20,740
+something that looks a little bit like
+
+936
+00:34:20,750 --> 00:34:22,990
+the maker program you have to start from
+
+937
+00:34:23,000 --> 00:34:24,790
+scratch there's no obvious order in
+
+938
+00:34:24,800 --> 00:34:27,550
+which you need to do things and so the
+
+939
+00:34:27,560 --> 00:34:29,110
+problem is you have a slightly random
+
+940
+00:34:29,120 --> 00:34:31,240
+sequence of steps every time you do it
+
+941
+00:34:31,250 --> 00:34:32,740
+and as we all know when you do a
+
+942
+00:34:32,750 --> 00:34:34,510
+slightly random sequence of steps the
+
+943
+00:34:34,520 --> 00:34:36,669
+result might be rather random as well so
+
+944
+00:34:36,679 --> 00:34:39,700
+converge has a sort of implicit process
+
+945
+00:34:39,710 --> 00:34:43,450
+as I think of it and the way that it
+
+946
+00:34:43,460 --> 00:34:45,190
+does it is really there are several
+
+947
+00:34:45,200 --> 00:34:46,570
+features built-in language to say well
+
+948
+00:34:46,580 --> 00:34:47,919
+if you do this step then you might as
+
+949
+00:34:47,929 --> 00:34:50,260
+well do this step next and it really
+
+950
+00:34:50,270 --> 00:34:52,450
+starts off with the fact as I said
+
+951
+00:34:52,460 --> 00:34:53,950
+earlier you can use the normal converge
+
+952
+00:34:53,960 --> 00:34:56,290
+tokenizer to tokenize things now you can
+
+953
+00:34:56,300 --> 00:34:58,300
+do it write your own tokenizer if you
+
+954
+00:34:58,310 --> 00:35:02,110
+want but don't try at the point exactly
+
+955
+00:35:02,120 --> 00:35:04,000
+so if you start with that and then you
+
+956
+00:35:04,010 --> 00:35:05,890
+write a grammar those that steps one and
+
+957
+00:35:05,900 --> 00:35:07,540
+two then you write a translation class
+
+958
+00:35:07,550 --> 00:35:10,570
+and then you test and debug it then you
+
+959
+00:35:10,580 --> 00:35:12,640
+deploy it and each one follows very
+
+960
+00:35:12,650 --> 00:35:14,410
+naturally from the other and you don't
+
+961
+00:35:14,420 --> 00:35:15,550
+have to put a great deal of brainpower
+
+962
+00:35:15,560 --> 00:35:16,870
+and thinking how am I going to create
+
+963
+00:35:16,880 --> 00:35:19,210
+this thing that's pretty much mapped out
+
+964
+00:35:19,220 --> 00:35:23,350
+for you so and deploying means you can
+
+965
+00:35:23,360 --> 00:35:25,570
+wrap this as a couple library and then
+
+966
+00:35:25,580 --> 00:35:27,790
+make available to your users or oh well
+
+967
+00:35:27,800 --> 00:35:29,200
+deployment means whatever you want it to
+
+968
+00:35:29,210 --> 00:35:30,940
+mean that's the one thing that an S it
+
+969
+00:35:30,950 --> 00:35:32,650
+doesn't really give you any great handle
+
+970
+00:35:32,660 --> 00:35:34,690
+with because deployment means you know
+
+971
+00:35:34,700 --> 00:35:36,490
+shoving things off to different peoples
+
+972
+00:35:36,500 --> 00:35:38,980
+different is there a way of packaging up
+
+973
+00:35:38,990 --> 00:35:40,960
+such a DSL definition that there is
+
+974
+00:35:40,970 --> 00:35:43,120
+because one of the things I haven't
+
+975
+00:35:43,130 --> 00:35:44,830
+mentioned is converge is a little
+
+976
+00:35:44,840 --> 00:35:47,410
+unusual if you think it's just a Python
+
+977
+00:35:47,420 --> 00:35:48,850
+star language it's a bit unusual in that
+
+978
+00:35:48,860 --> 00:35:50,980
+every single file is compiled to
+
+979
+00:35:50,990 --> 00:35:52,810
+bytecode file and all those are linked
+
+980
+00:35:52,820 --> 00:35:54,640
+together into a binary file mm-hm
+
+981
+00:35:54,650 --> 00:35:56,260
+and obviously it's on a machine code
+
+982
+00:35:56,270 --> 00:35:58,600
+executable but it could as well be so
+
+983
+00:35:58,610 --> 00:35:58,750
+you
+
+984
+00:35:58,760 --> 00:36:00,520
+can just ship that single linked
+
+985
+00:36:00,530 --> 00:36:02,650
+executable off to somebody and if
+
+986
+00:36:02,660 --> 00:36:03,820
+they've got the converged virtual
+
+987
+00:36:03,830 --> 00:36:05,110
+machine the other end they can just run
+
+988
+00:36:05,120 --> 00:36:09,340
+it okay so you're from a University I
+
+989
+00:36:09,350 --> 00:36:10,720
+think we didn't talk about that before
+
+990
+00:36:10,730 --> 00:36:12,370
+and you're from King's College in London
+
+991
+00:36:12,380 --> 00:36:14,980
+I got that right all right in Houston
+
+992
+00:36:14,990 --> 00:36:17,350
+with University College and this morning
+
+993
+00:36:17,360 --> 00:36:19,180
+and University College just seems like
+
+994
+00:36:19,190 --> 00:36:23,590
+the biggest competitor so has actually
+
+995
+00:36:23,600 --> 00:36:25,270
+been used or is it a purely research
+
+996
+00:36:25,280 --> 00:36:28,660
+prototype thing oh it's a it's a very
+
+997
+00:36:28,670 --> 00:36:30,640
+good question and yes I am from Kings
+
+998
+00:36:30,650 --> 00:36:34,420
+and the way this started was I was
+
+999
+00:36:34,430 --> 00:36:36,280
+involved in a research project and we
+
+1000
+00:36:36,290 --> 00:36:37,930
+were working with industry and we were
+
+1001
+00:36:37,940 --> 00:36:40,390
+working in fact all to do with models
+
+1002
+00:36:40,400 --> 00:36:43,030
+UML and so on and we were creating dsls
+
+1003
+00:36:43,040 --> 00:36:44,980
+and we were really in trouble trying to
+
+1004
+00:36:44,990 --> 00:36:46,750
+create these things wrapped rapidly so I
+
+1005
+00:36:46,760 --> 00:36:49,810
+developed all this stuff trying to find
+
+1006
+00:36:49,820 --> 00:36:52,240
+a way around my problem and I kind of
+
+1007
+00:36:52,250 --> 00:36:53,590
+did it in isolation which is the
+
+1008
+00:36:53,600 --> 00:36:55,090
+standard academic way of doing things
+
+1009
+00:36:55,100 --> 00:36:57,520
+and then after I had a semi useful
+
+1010
+00:36:57,530 --> 00:36:58,870
+product I shipped it off to some my
+
+1011
+00:36:58,880 --> 00:37:00,550
+industrial collaborators and they they
+
+1012
+00:37:00,560 --> 00:37:02,860
+looked at it looks like it could be
+
+1013
+00:37:02,870 --> 00:37:04,840
+vague useful they put a couple of people
+
+1014
+00:37:04,850 --> 00:37:07,060
+on and gradually there's been a handful
+
+1015
+00:37:07,070 --> 00:37:08,980
+of people who've been creating real DSL
+
+1016
+00:37:08,990 --> 00:37:11,170
+so I've created a couple of fairly
+
+1017
+00:37:11,180 --> 00:37:12,700
+decent sized ones mostly to do with
+
+1018
+00:37:12,710 --> 00:37:14,710
+model transformations I did a system it
+
+1019
+00:37:14,720 --> 00:37:17,080
+has three interlocking DSL one to do
+
+1020
+00:37:17,090 --> 00:37:18,640
+with making little graphical languages
+
+1021
+00:37:18,650 --> 00:37:21,100
+on model transformations and related one
+
+1022
+00:37:21,110 --> 00:37:22,450
+those were some thousand lines of code
+
+1023
+00:37:22,460 --> 00:37:25,150
+or so not a big system but if you tried
+
+1024
+00:37:25,160 --> 00:37:26,680
+to do that in the traditional DSL
+
+1025
+00:37:26,690 --> 00:37:27,550
+creation method it would be very
+
+1026
+00:37:27,560 --> 00:37:30,130
+difficult and the industrial
+
+1027
+00:37:30,140 --> 00:37:31,300
+collaborators who had Tata Consultancy
+
+1028
+00:37:31,310 --> 00:37:33,070
+Services who funded a lot of this
+
+1029
+00:37:33,080 --> 00:37:34,870
+research have gone off and done some
+
+1030
+00:37:34,880 --> 00:37:36,790
+really interesting DSL work of their own
+
+1031
+00:37:36,800 --> 00:37:38,740
+and of course they're not academics
+
+1032
+00:37:38,750 --> 00:37:40,330
+they've chosen the whole load of very
+
+1033
+00:37:40,340 --> 00:37:41,530
+different things and I however have
+
+1034
+00:37:41,540 --> 00:37:44,280
+thought were practical of doing okay so
+
+1035
+00:37:44,290 --> 00:37:47,050
+before we wrap up do you want to kind of
+
+1036
+00:37:47,060 --> 00:37:49,660
+give us a couple of points of wisdom
+
+1037
+00:37:49,670 --> 00:37:51,520
+that you learned from your ideas are
+
+1038
+00:37:51,530 --> 00:37:54,250
+creating creation experience that people
+
+1039
+00:37:54,260 --> 00:37:55,540
+should consider when building their own
+
+1040
+00:37:55,550 --> 00:37:57,700
+DSL infrastructure it may be except from
+
+1041
+00:37:57,710 --> 00:38:01,240
+just using converge obviously it would
+
+1042
+00:38:01,250 --> 00:38:02,920
+be very nice if people use converging
+
+1043
+00:38:02,930 --> 00:38:04,690
+answer almost guaranteed brewed to
+
+1044
+00:38:04,700 --> 00:38:07,750
+success I think this there's some things
+
+1045
+00:38:07,760 --> 00:38:11,290
+that I've noticed the first thing is
+
+1046
+00:38:11,300 --> 00:38:12,700
+that if you use an approach
+
+1047
+00:38:12,710 --> 00:38:15,250
+convert uses you get some fairly easy to
+
+1048
+00:38:15,260 --> 00:38:16,839
+use tear cells in other words if someone
+
+1049
+00:38:16,849 --> 00:38:18,339
+can program they don't have to know
+
+1050
+00:38:18,349 --> 00:38:19,720
+anything extra to use the DSL the
+
+1051
+00:38:19,730 --> 00:38:21,430
+barrier to entry is very low if you mean
+
+1052
+00:38:21,440 --> 00:38:23,079
+that's from a promote gives other user a
+
+1053
+00:38:23,089 --> 00:38:24,970
+spinal fluid ESO uses this meta cause
+
+1054
+00:38:24,980 --> 00:38:26,680
+it's actin nicely into a generic
+
+1055
+00:38:26,690 --> 00:38:28,990
+programming environment exactly so the
+
+1056
+00:38:29,000 --> 00:38:30,700
+the barrier to using these things is
+
+1057
+00:38:30,710 --> 00:38:31,930
+very low and that's very important
+
+1058
+00:38:31,940 --> 00:38:34,630
+however someone still has to go away and
+
+1059
+00:38:34,640 --> 00:38:36,760
+design these languages and design is a
+
+1060
+00:38:36,770 --> 00:38:38,470
+matter of taste and some people have
+
+1061
+00:38:38,480 --> 00:38:40,329
+good taste some people have bad taste
+
+1062
+00:38:40,339 --> 00:38:44,079
+some people have no taste at all and you
+
+1063
+00:38:44,089 --> 00:38:45,460
+are therefore alone and whoever
+
+1064
+00:38:45,470 --> 00:38:47,140
+implements DSL designing a good language
+
+1065
+00:38:47,150 --> 00:38:49,089
+there's nothing convert or anything else
+
+1066
+00:38:49,099 --> 00:38:52,530
+can do to force good design right yeah
+
+1067
+00:38:52,540 --> 00:38:55,540
+one of the things that we that I think
+
+1068
+00:38:55,550 --> 00:38:57,579
+I've been come particularly aware of is
+
+1069
+00:38:57,589 --> 00:39:00,700
+where the advantage comes in in a DSL
+
+1070
+00:39:00,710 --> 00:39:02,560
+and what's become clear to me is
+
+1071
+00:39:02,570 --> 00:39:03,880
+something that in a sense is very
+
+1072
+00:39:03,890 --> 00:39:06,190
+obvious if you think of textual regular
+
+1073
+00:39:06,200 --> 00:39:08,859
+expressions they're a way of expressing
+
+1074
+00:39:08,869 --> 00:39:11,440
+really complex constraints over text you
+
+1075
+00:39:11,450 --> 00:39:12,670
+know we use them on the command line on
+
+1076
+00:39:12,680 --> 00:39:14,829
+Gretel and Perl or whatever and in a
+
+1077
+00:39:14,839 --> 00:39:16,570
+handful of characters you can express
+
+1078
+00:39:16,580 --> 00:39:17,770
+something that if you had to write a
+
+1079
+00:39:17,780 --> 00:39:19,599
+program would take sometimes pages to
+
+1080
+00:39:19,609 --> 00:39:21,010
+write up and involve horrible things
+
+1081
+00:39:21,020 --> 00:39:23,530
+like backtracking yeah so you get a lot
+
+1082
+00:39:23,540 --> 00:39:25,839
+of the benefit from dsls when a bit of
+
+1083
+00:39:25,849 --> 00:39:28,060
+terse syntax allows you to express
+
+1084
+00:39:28,070 --> 00:39:30,609
+something very complicated yeah that
+
+1085
+00:39:30,619 --> 00:39:34,210
+said if you just add new syntax to your
+
+1086
+00:39:34,220 --> 00:39:35,950
+DSL willy-nilly you end up in all sorts
+
+1087
+00:39:35,960 --> 00:39:38,560
+of problems because it makes the things
+
+1088
+00:39:38,570 --> 00:39:42,130
+rather complicated to use and also once
+
+1089
+00:39:42,140 --> 00:39:43,599
+you've added syntax to language you can
+
+1090
+00:39:43,609 --> 00:39:45,940
+never take syntax away users become very
+
+1091
+00:39:45,950 --> 00:39:47,950
+attached to syntax so it's better to
+
+1092
+00:39:47,960 --> 00:39:49,780
+start off in a cautious fashion I've
+
+1093
+00:39:49,790 --> 00:39:53,020
+realized make the language of small as
+
+1094
+00:39:53,030 --> 00:39:55,089
+possible start small always start small
+
+1095
+00:39:55,099 --> 00:39:57,040
+you can't predict which way these things
+
+1096
+00:39:57,050 --> 00:39:59,829
+were going and also another little
+
+1097
+00:39:59,839 --> 00:40:02,740
+psychological oddity of DSL users if you
+
+1098
+00:40:02,750 --> 00:40:04,390
+give someone a library they may be sayst
+
+1099
+00:40:04,400 --> 00:40:05,650
+like I don't like the name of that
+
+1100
+00:40:05,660 --> 00:40:07,690
+function or some very minor coins but
+
+1101
+00:40:07,700 --> 00:40:09,190
+you don't tend to get that much pushback
+
+1102
+00:40:09,200 --> 00:40:11,320
+when you give someone language they
+
+1103
+00:40:11,330 --> 00:40:12,579
+suddenly feel as if they have the right
+
+1104
+00:40:12,589 --> 00:40:15,130
+to all sorts of opinions and you get
+
+1105
+00:40:15,140 --> 00:40:16,750
+back all sorts of feedback that you have
+
+1106
+00:40:16,760 --> 00:40:18,940
+to take account of so the less you give
+
+1107
+00:40:18,950 --> 00:40:19,660
+them to begin with
+
+1108
+00:40:19,670 --> 00:40:22,089
+the less you end up having to unpick and
+
+1109
+00:40:22,099 --> 00:40:24,099
+you can't predict what they will say
+
+1110
+00:40:24,109 --> 00:40:26,440
+let's think one thing I'm sure
+
+1111
+00:40:26,450 --> 00:40:29,020
+one one point I'd like to touch on
+
+1112
+00:40:29,030 --> 00:40:32,020
+briefly at the end is that the issue of
+
+1113
+00:40:32,030 --> 00:40:34,900
+editor support I mean one reason why
+
+1114
+00:40:34,910 --> 00:40:39,130
+Ruby can be used for embedded dsls is
+
+1115
+00:40:39,140 --> 00:40:40,180
+first of all it is a quite flexible
+
+1116
+00:40:40,190 --> 00:40:43,300
+syntax and second is its it's not very
+
+1117
+00:40:43,310 --> 00:40:45,370
+strongly typed actually it's not at all
+
+1118
+00:40:45,380 --> 00:40:48,130
+statically typed so you don't have the
+
+1119
+00:40:48,140 --> 00:40:49,750
+typical editors with code completion
+
+1120
+00:40:49,760 --> 00:40:51,480
+syntax highlighting and all that stuff
+
+1121
+00:40:51,490 --> 00:40:55,330
+so I guess you you somehow have the same
+
+1122
+00:40:55,340 --> 00:40:57,580
+issue here so if you have a piece of
+
+1123
+00:40:57,590 --> 00:41:00,760
+converge code regular converge code you
+
+1124
+00:41:00,770 --> 00:41:02,710
+might have an MX whatever it's called
+
+1125
+00:41:02,720 --> 00:41:04,510
+configuration to do syntax highlighting
+
+1126
+00:41:04,520 --> 00:41:07,150
+but you can't easily I mean it's
+
+1127
+00:41:07,160 --> 00:41:09,640
+conceivable but it's additional work to
+
+1128
+00:41:09,650 --> 00:41:12,640
+do to actually make their a DSL specific
+
+1129
+00:41:12,650 --> 00:41:13,870
+code completion syntax highlighting
+
+1130
+00:41:13,880 --> 00:41:16,030
+stuff that's not the scope of the
+
+1131
+00:41:16,040 --> 00:41:18,040
+project at this time it's it's certainly
+
+1132
+00:41:18,050 --> 00:41:19,990
+not something that that I I would
+
+1133
+00:41:20,000 --> 00:41:21,820
+personally be able to get involved in
+
+1134
+00:41:21,830 --> 00:41:24,190
+mostly because I'm a very old fashioned
+
+1135
+00:41:24,200 --> 00:41:26,590
+and primitive person and on some days
+
+1136
+00:41:26,600 --> 00:41:27,940
+I'll program in five or six different
+
+1137
+00:41:27,950 --> 00:41:29,170
+programming languages so I use a
+
+1138
+00:41:29,180 --> 00:41:31,240
+bog-standard text editor but I do
+
+1139
+00:41:31,250 --> 00:41:33,070
+understand that people do want this rich
+
+1140
+00:41:33,080 --> 00:41:35,290
+text editing support and I very much
+
+1141
+00:41:35,300 --> 00:41:37,090
+support that code completion is very
+
+1142
+00:41:37,100 --> 00:41:39,550
+nice but in the end this takes us to the
+
+1143
+00:41:39,560 --> 00:41:41,980
+intentional programming folks right with
+
+1144
+00:41:41,990 --> 00:41:43,330
+whom we might talk at some later stage
+
+1145
+00:41:43,340 --> 00:41:46,030
+maybe but I don't know but so they have
+
+1146
+00:41:46,040 --> 00:41:47,950
+this full support including editor
+
+1147
+00:41:47,960 --> 00:41:49,630
+debugger and stuff so what about
+
+1148
+00:41:49,640 --> 00:41:53,020
+debugging in your case and there is no
+
+1149
+00:41:53,030 --> 00:41:55,150
+built-in debugger in converge again I'm
+
+1150
+00:41:55,160 --> 00:41:56,860
+a little bit old-school printer here
+
+1151
+00:41:56,870 --> 00:41:58,810
+printf was given to me and it's done me
+
+1152
+00:41:58,820 --> 00:42:01,810
+ever since I found out about it but I
+
+1153
+00:42:01,820 --> 00:42:04,150
+think going back to the editing issue I
+
+1154
+00:42:04,160 --> 00:42:06,700
+think one of the good things about this
+
+1155
+00:42:06,710 --> 00:42:08,320
+is the barrier to entry is very low if
+
+1156
+00:42:08,330 --> 00:42:10,570
+if say I said to you when you create
+
+1157
+00:42:10,580 --> 00:42:12,220
+your DSL you're also going to have to
+
+1158
+00:42:12,230 --> 00:42:14,830
+tell me how to do completion here then
+
+1159
+00:42:14,840 --> 00:42:16,800
+there are approaches which force that
+
+1160
+00:42:16,810 --> 00:42:19,000
+then you suddenly raise the barrier a
+
+1161
+00:42:19,010 --> 00:42:21,220
+lot could be optional right yeah but one
+
+1162
+00:42:21,230 --> 00:42:22,870
+of the things that converge has going
+
+1163
+00:42:22,880 --> 00:42:25,060
+it's fabled though it is like Ruby a
+
+1164
+00:42:25,070 --> 00:42:27,670
+dynamically typed language it's slightly
+
+1165
+00:42:27,680 --> 00:42:29,950
+more static things like variable
+
+1166
+00:42:29,960 --> 00:42:31,300
+references and module references are
+
+1167
+00:42:31,310 --> 00:42:33,400
+entirely determined at compile type so
+
+1168
+00:42:33,410 --> 00:42:37,180
+actually you can probably make a much
+
+1169
+00:42:37,190 --> 00:42:40,110
+better stab at completion than you can
+
+1170
+00:42:40,120 --> 00:42:43,440
+similar languages and I think if you
+
+1171
+00:42:43,450 --> 00:42:45,030
+design your dsls in the correct fashion
+
+1172
+00:42:45,040 --> 00:42:47,460
+you can make a similar good stab at
+
+1173
+00:42:47,470 --> 00:42:50,070
+those yeah but as you said that's not my
+
+1174
+00:42:50,080 --> 00:42:52,800
+main focus okay okay so there anything
+
+1175
+00:42:52,810 --> 00:42:55,380
+else you want to say at this time well
+
+1176
+00:42:55,390 --> 00:42:58,050
+it's obviously thank you very much the
+
+1177
+00:42:58,060 --> 00:43:00,480
+interview and yeah thank you well
+
+1178
+00:43:00,490 --> 00:43:02,700
+convert is still in its early days yeah
+
+1179
+00:43:02,710 --> 00:43:04,260
+I wouldn't want anyone to bet their
+
+1180
+00:43:04,270 --> 00:43:06,450
+business or their life on it but it is
+
+1181
+00:43:06,460 --> 00:43:07,920
+something I would very much encourage
+
+1182
+00:43:07,930 --> 00:43:10,110
+people to go and have a look at to give
+
+1183
+00:43:10,120 --> 00:43:12,270
+comments I think it's a really nice way
+
+1184
+00:43:12,280 --> 00:43:15,030
+of developing dsls it gives us something
+
+1185
+00:43:15,040 --> 00:43:16,980
+that we didn't really have before very
+
+1186
+00:43:16,990 --> 00:43:19,470
+nice mechanism so please you know feel
+
+1187
+00:43:19,480 --> 00:43:20,970
+free to go to the website and download
+
+1188
+00:43:20,980 --> 00:43:23,370
+the versions it's converge PL dot org
+
+1189
+00:43:23,380 --> 00:43:24,840
+and we'll put this in the show notes
+
+1190
+00:43:24,850 --> 00:43:26,610
+excellent thank you very much thank you
+
+1191
+00:43:26,620 --> 00:43:30,600
+and I think we're going to some party at
+
+1192
+00:43:30,610 --> 00:43:32,670
+the conference now so we wrap this up we
+
+1193
+00:43:32,680 --> 00:43:34,350
+have ten minutes left I'm sure it'll be
+
+1194
+00:43:34,360 --> 00:43:36,050
+a well time thank you
+
+1195
+00:43:36,060 --> 00:43:59,210
+[Music]
+
+1196
+00:43:59,220 --> 00:44:01,260
+thanks for listening to software
+
+1197
+00:44:01,270 --> 00:44:03,360
+engineering radio if you want to get
+
+1198
+00:44:03,370 --> 00:44:04,710
+more information about software
+
+1199
+00:44:04,720 --> 00:44:06,540
+engineering radio or if you want to give
+
+1200
+00:44:06,550 --> 00:44:09,180
+us feedback please go to our website at
+
+1201
+00:44:09,190 --> 00:44:13,440
+se - radio dot net you can also contact
+
+1202
+00:44:13,450 --> 00:44:18,300
+the team at team at SAE - radio dotnet
+
+1203
+00:44:18,310 --> 00:44:20,310
+although we prefer entries in our
+
+1204
+00:44:20,320 --> 00:44:22,470
+comment system on the website so other
+
+1205
+00:44:22,480 --> 00:44:24,180
+people can see what you think
+
+1206
+00:44:24,190 --> 00:44:26,010
+software engineering radio wants to
+
+1207
+00:44:26,020 --> 00:44:28,080
+thank Henning poly for the intro and
+
+1208
+00:44:28,090 --> 00:44:30,750
+outro music as well as Lipson for
+
+1209
+00:44:30,760 --> 00:44:33,870
+providing the bandwidth this episode of
+
+1210
+00:44:33,880 --> 00:44:36,540
+se radio as well as all other episodes
+
+1211
+00:44:36,550 --> 00:44:38,820
+is licensed under Creative Commons
+
+1212
+00:44:38,830 --> 00:44:39,900
+license
+
+1213
+00:44:39,910 --> 00:44:41,880
+see the software engineering radio
+
+1214
+00:44:41,890 --> 00:44:50,740
+website for details

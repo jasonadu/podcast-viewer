@@ -1,0 +1,6619 @@
+1
+00:00:02,270 --> 00:00:02,280
+this is software engineering radio the
+
+2
+00:00:02,280 --> 00:00:04,309
+podcast for professional developers on
+
+3
+00:00:04,319 --> 00:00:08,059
+the web at se radio net se radio is
+
+4
+00:00:08,069 --> 00:00:09,169
+brought to you by the I Triple E
+
+5
+00:00:09,179 --> 00:00:11,360
+Computer Society I Triple E software
+
+6
+00:00:11,370 --> 00:00:14,270
+magazine online at computer org slash
+
+7
+00:00:14,280 --> 00:00:21,380
+software for software engineering radio
+
+8
+00:00:21,390 --> 00:00:23,840
+this is Robert bloomin I have with me
+
+9
+00:00:23,850 --> 00:00:26,750
+today J crêpes J is the co-founder and
+
+10
+00:00:26,760 --> 00:00:29,480
+CEO of confluent prior to founding
+
+11
+00:00:29,490 --> 00:00:31,939
+confluent he was the lead architect for
+
+12
+00:00:31,949 --> 00:00:34,910
+data infrastructure at LinkedIn J is the
+
+13
+00:00:34,920 --> 00:00:37,190
+author of a book on event data and
+
+14
+00:00:37,200 --> 00:00:39,500
+stream processing and it appeared as a
+
+15
+00:00:39,510 --> 00:00:42,979
+guest on se radio episode 162 project
+
+16
+00:00:42,989 --> 00:00:46,069
+voldemort J is the author of a LinkedIn
+
+17
+00:00:46,079 --> 00:00:47,869
+engineering blog post called
+
+18
+00:00:47,879 --> 00:00:50,389
+the log what every software engineer
+
+19
+00:00:50,399 --> 00:00:52,130
+should know about real time data is
+
+20
+00:00:52,140 --> 00:00:54,529
+unifying abstraction and we will be
+
+21
+00:00:54,539 --> 00:00:57,110
+talking about that blog post today J
+
+22
+00:00:57,120 --> 00:00:59,389
+welcome back to software engineering
+
+23
+00:00:59,399 --> 00:01:01,549
+radio thanks so much for having me
+
+24
+00:01:01,559 --> 00:01:02,930
+anything else you'd like to tell the
+
+25
+00:01:02,940 --> 00:01:05,509
+listeners before we start the actual
+
+26
+00:01:05,519 --> 00:01:07,370
+topic no I think that's a great
+
+27
+00:01:07,380 --> 00:01:09,740
+introduction we're gonna work up to the
+
+28
+00:01:09,750 --> 00:01:12,080
+idea in your blog post about an
+
+29
+00:01:12,090 --> 00:01:14,480
+enterprise data integration architecture
+
+30
+00:01:14,490 --> 00:01:17,749
+organized around log I want to establish
+
+31
+00:01:17,759 --> 00:01:20,300
+some building blocks first let's talk
+
+32
+00:01:20,310 --> 00:01:22,609
+about when we have a large enterprise
+
+33
+00:01:22,619 --> 00:01:25,039
+with many systems if you looked at that
+
+34
+00:01:25,049 --> 00:01:27,950
+enterprise from 30,000 foot view what
+
+35
+00:01:27,960 --> 00:01:30,859
+does it look like it usually looks like
+
+36
+00:01:30,869 --> 00:01:33,469
+a big mess I mean at least you know in
+
+37
+00:01:33,479 --> 00:01:35,090
+that blog post in a lot of the work
+
+38
+00:01:35,100 --> 00:01:37,160
+we've done a confluent we usually kind
+
+39
+00:01:37,170 --> 00:01:38,840
+of draw this spaghetti mess of
+
+40
+00:01:38,850 --> 00:01:41,300
+interconnection between applications and
+
+41
+00:01:41,310 --> 00:01:44,510
+data systems with you know ETL processes
+
+42
+00:01:44,520 --> 00:01:46,370
+that kind of shunt data around in
+
+43
+00:01:46,380 --> 00:01:48,800
+real-time messaging and point-to-point
+
+44
+00:01:48,810 --> 00:01:51,200
+kind of RPC communication and and
+
+45
+00:01:51,210 --> 00:01:53,359
+usually most people look at that big
+
+46
+00:01:53,369 --> 00:01:55,580
+kind of spaghetti mess and they say yeah
+
+47
+00:01:55,590 --> 00:01:57,530
+that's right but it's about a thousand
+
+48
+00:01:57,540 --> 00:01:58,850
+times more complicated than that
+
+49
+00:01:58,860 --> 00:02:01,399
+in reality you get some idea of sizing
+
+50
+00:02:01,409 --> 00:02:04,280
+so how many strands of spaghetti and how
+
+51
+00:02:04,290 --> 00:02:06,679
+many meatballs in a big organization you
+
+52
+00:02:06,689 --> 00:02:10,499
+talking tens hundreds thousands yeah
+
+53
+00:02:10,509 --> 00:02:13,259
+you know each each company is different
+
+54
+00:02:13,269 --> 00:02:15,149
+right but but I think one of the key
+
+55
+00:02:15,159 --> 00:02:17,339
+points is in some sense if you're
+
+56
+00:02:17,349 --> 00:02:19,470
+connecting everything to every other
+
+57
+00:02:19,480 --> 00:02:22,050
+thing then you know if you if you're
+
+58
+00:02:22,060 --> 00:02:23,699
+gonna have n things you're gonna have
+
+59
+00:02:23,709 --> 00:02:26,009
+like N squared connections between the
+
+60
+00:02:26,019 --> 00:02:27,390
+things and that in that kind of fully
+
+61
+00:02:27,400 --> 00:02:30,240
+connected world and of course no no
+
+62
+00:02:30,250 --> 00:02:31,890
+organization is fully connected that
+
+63
+00:02:31,900 --> 00:02:33,330
+they're always striving to towards that
+
+64
+00:02:33,340 --> 00:02:34,800
+you would always hear oh you know this
+
+65
+00:02:34,810 --> 00:02:36,180
+needs to be integrated with that and so
+
+66
+00:02:36,190 --> 00:02:38,280
+on and and you know I think that kind of
+
+67
+00:02:38,290 --> 00:02:40,770
+scalability problem is maybe at the root
+
+68
+00:02:40,780 --> 00:02:42,569
+of a lot of the challenges that that
+
+69
+00:02:42,579 --> 00:02:44,930
+haven't really been solved in the prior
+
+70
+00:02:44,940 --> 00:02:47,039
+generations of technology in this space
+
+71
+00:02:47,049 --> 00:02:48,660
+where they were you know they're kind of
+
+72
+00:02:48,670 --> 00:02:50,399
+helping you integrate thing a with thing
+
+73
+00:02:50,409 --> 00:02:52,649
+B but you know as you do that and as you
+
+74
+00:02:52,659 --> 00:02:54,149
+go down this path it's not really
+
+75
+00:02:54,159 --> 00:02:55,860
+scalable you know across the whole
+
+76
+00:02:55,870 --> 00:02:58,259
+company when you're talking about I
+
+77
+00:02:58,269 --> 00:03:00,270
+think a needs to integrate within me
+
+78
+00:03:00,280 --> 00:03:02,280
+what do you mean by that you know it
+
+79
+00:03:02,290 --> 00:03:04,740
+could be all kinds of things like you
+
+80
+00:03:04,750 --> 00:03:07,619
+see all kinds of these kind of data copy
+
+81
+00:03:07,629 --> 00:03:09,360
+processes where data is getting pulled
+
+82
+00:03:09,370 --> 00:03:11,039
+out of a relational database and put
+
+83
+00:03:11,049 --> 00:03:13,289
+into some other relational database or
+
+84
+00:03:13,299 --> 00:03:15,500
+data store you see integration between
+
+85
+00:03:15,510 --> 00:03:17,580
+applications you know that could be as
+
+86
+00:03:17,590 --> 00:03:19,409
+simple as this service calls that
+
+87
+00:03:19,419 --> 00:03:21,180
+service or you know it could be
+
+88
+00:03:21,190 --> 00:03:23,189
+something you know more complex than
+
+89
+00:03:23,199 --> 00:03:25,890
+that you see you know a whole set of
+
+90
+00:03:25,900 --> 00:03:29,129
+kind of messaging systems that message
+
+91
+00:03:29,139 --> 00:03:31,710
+queues that send off messages and are
+
+92
+00:03:31,720 --> 00:03:33,629
+trying to support more complicated
+
+93
+00:03:33,639 --> 00:03:35,879
+patterns of you know routing and
+
+94
+00:03:35,889 --> 00:03:38,580
+interconnection you see essentially all
+
+95
+00:03:38,590 --> 00:03:41,400
+these kind of you know somewhat ad-hoc
+
+96
+00:03:41,410 --> 00:03:43,890
+data integrations or pipelines and
+
+97
+00:03:43,900 --> 00:03:46,470
+technology to support it but if you step
+
+98
+00:03:46,480 --> 00:03:47,550
+back and you look at a company and you
+
+99
+00:03:47,560 --> 00:03:49,979
+say hey - do we have access to what's
+
+100
+00:03:49,989 --> 00:03:52,650
+happening in the company in some kind of
+
+101
+00:03:52,660 --> 00:03:54,449
+standard way that that anything can plug
+
+102
+00:03:54,459 --> 00:03:56,759
+into usually the answer is you know no
+
+103
+00:03:56,769 --> 00:03:58,830
+or not really or only partially or it's
+
+104
+00:03:58,840 --> 00:04:00,569
+it's relatively complicated to get it
+
+105
+00:04:00,579 --> 00:04:02,970
+what you want you use a term data
+
+106
+00:04:02,980 --> 00:04:05,939
+integration in your blog post do you
+
+107
+00:04:05,949 --> 00:04:08,009
+mean something in particular by data
+
+108
+00:04:08,019 --> 00:04:10,520
+integration that's more specific than
+
+109
+00:04:10,530 --> 00:04:13,830
+integration in general no I I really
+
+110
+00:04:13,840 --> 00:04:15,390
+just meant plugging things together you
+
+111
+00:04:15,400 --> 00:04:17,610
+know how do applications interconnect
+
+112
+00:04:17,620 --> 00:04:20,159
+how do data systems interconnect you
+
+113
+00:04:20,169 --> 00:04:22,469
+know I think maybe if I step back the
+
+114
+00:04:22,479 --> 00:04:24,300
+you know if you think about the his
+
+115
+00:04:24,310 --> 00:04:26,640
+three of software engineering and
+
+116
+00:04:26,650 --> 00:04:28,170
+software development and a lot of these
+
+117
+00:04:28,180 --> 00:04:30,990
+software platforms yeah the problem that
+
+118
+00:04:31,000 --> 00:04:32,879
+was focused on for for a lot of history
+
+119
+00:04:32,889 --> 00:04:34,890
+was how to build one application you
+
+120
+00:04:34,900 --> 00:04:36,570
+know what's the database to support one
+
+121
+00:04:36,580 --> 00:04:37,980
+application what are the programming
+
+122
+00:04:37,990 --> 00:04:39,480
+frameworks you know what do we need to
+
+123
+00:04:39,490 --> 00:04:42,270
+run one app and I think a lot of the
+
+124
+00:04:42,280 --> 00:04:43,590
+interesting things happening in the
+
+125
+00:04:43,600 --> 00:04:45,150
+world now or when you kind of zoom out
+
+126
+00:04:45,160 --> 00:04:46,860
+now people are like hey we we don't have
+
+127
+00:04:46,870 --> 00:04:48,150
+one application and that application
+
+128
+00:04:48,160 --> 00:04:51,000
+doesn't exist in a vacuum and it has to
+
+129
+00:04:51,010 --> 00:04:53,250
+exist as part of a whole kind of
+
+130
+00:04:53,260 --> 00:04:54,900
+interconnected company like in some
+
+131
+00:04:54,910 --> 00:04:56,760
+sense we're not building one app in
+
+132
+00:04:56,770 --> 00:04:57,960
+software we're building like a whole
+
+133
+00:04:57,970 --> 00:04:59,430
+company in software that needs to
+
+134
+00:04:59,440 --> 00:05:01,409
+somehow make sense and when something
+
+135
+00:05:01,419 --> 00:05:03,240
+happens there's many many things that
+
+136
+00:05:03,250 --> 00:05:05,909
+need to to react like one example I
+
+137
+00:05:05,919 --> 00:05:07,530
+often give to make this concrete is if
+
+138
+00:05:07,540 --> 00:05:09,750
+you think about you know a big retailer
+
+139
+00:05:09,760 --> 00:05:11,100
+you know a lot of people can kind of
+
+140
+00:05:11,110 --> 00:05:13,110
+understand retail because you understand
+
+141
+00:05:13,120 --> 00:05:15,180
+stores and buying things and so it's a
+
+142
+00:05:15,190 --> 00:05:17,159
+it's kind of an intuitive Jemaine and
+
+143
+00:05:17,169 --> 00:05:18,810
+you think about well you know how many
+
+144
+00:05:18,820 --> 00:05:20,820
+different systems need to update or
+
+145
+00:05:20,830 --> 00:05:22,920
+integrate the information if something
+
+146
+00:05:22,930 --> 00:05:24,930
+sells if they sell a product to a
+
+147
+00:05:24,940 --> 00:05:27,510
+customer and you know it's clear there's
+
+148
+00:05:27,520 --> 00:05:29,700
+analytics systems and there's all kinds
+
+149
+00:05:29,710 --> 00:05:32,070
+of you know coupon and discounted logic
+
+150
+00:05:32,080 --> 00:05:33,990
+and there's pricing logic and there's a
+
+151
+00:05:34,000 --> 00:05:35,969
+whole back-end logistics for managing
+
+152
+00:05:35,979 --> 00:05:37,860
+warehouses and there's you know
+
+153
+00:05:37,870 --> 00:05:39,870
+reporting systems and there's things
+
+154
+00:05:39,880 --> 00:05:41,820
+that look for you know fraud and bad
+
+155
+00:05:41,830 --> 00:05:43,560
+transactions there's all these different
+
+156
+00:05:43,570 --> 00:05:45,540
+systems that all have to somehow take
+
+157
+00:05:45,550 --> 00:05:47,040
+into account that something's sold and
+
+158
+00:05:47,050 --> 00:05:48,990
+update in different ways and so that
+
+159
+00:05:49,000 --> 00:05:51,420
+that process of kind of taking you know
+
+160
+00:05:51,430 --> 00:05:53,370
+individual chunks of software and you
+
+161
+00:05:53,380 --> 00:05:54,420
+know plugging it all together that
+
+162
+00:05:54,430 --> 00:05:56,100
+that's kind of what I mean by data
+
+163
+00:05:56,110 --> 00:05:57,300
+integration I don't know if it's a
+
+164
+00:05:57,310 --> 00:06:00,330
+perfect term I I don't just mean you
+
+165
+00:06:00,340 --> 00:06:01,920
+know kind of copying data from one place
+
+166
+00:06:01,930 --> 00:06:02,460
+to the other
+
+167
+00:06:02,470 --> 00:06:05,760
+is there any way to quantify in terms of
+
+168
+00:06:05,770 --> 00:06:08,310
+either number of updates or volumes of
+
+169
+00:06:08,320 --> 00:06:11,219
+data how much data are we talking about
+
+170
+00:06:11,229 --> 00:06:13,230
+then needs to move around between
+
+171
+00:06:13,240 --> 00:06:15,870
+applications yeah you know again I think
+
+172
+00:06:15,880 --> 00:06:18,180
+this this kind of depends on the scale
+
+173
+00:06:18,190 --> 00:06:20,100
+of the company and then how much of that
+
+174
+00:06:20,110 --> 00:06:22,620
+company is really kind of modeled in
+
+175
+00:06:22,630 --> 00:06:24,480
+software and so when you look at a lot
+
+176
+00:06:24,490 --> 00:06:26,730
+of these big tech companies and you look
+
+177
+00:06:26,740 --> 00:06:29,820
+at their usage of kafka they actually
+
+178
+00:06:29,830 --> 00:06:32,790
+have you know billions or hundreds of
+
+179
+00:06:32,800 --> 00:06:34,680
+billions or even trillions of these
+
+180
+00:06:34,690 --> 00:06:36,719
+events that are flowing through the
+
+181
+00:06:36,729 --> 00:06:37,919
+system each
+
+182
+00:06:37,929 --> 00:06:40,289
+and so that's obvious obviously massive
+
+183
+00:06:40,299 --> 00:06:41,850
+scale and I think it took years and then
+
+184
+00:06:41,860 --> 00:06:43,529
+those those companies are more or less
+
+185
+00:06:43,539 --> 00:06:45,899
+fully modeled in software and if you
+
+186
+00:06:45,909 --> 00:06:47,100
+look at other companies they're often
+
+187
+00:06:47,110 --> 00:06:49,379
+not all in software you they have many
+
+188
+00:06:49,389 --> 00:06:50,819
+things happening in the real world that
+
+189
+00:06:50,829 --> 00:06:52,499
+have only kind of disconnected
+
+190
+00:06:52,509 --> 00:06:54,719
+non-integrated you know support in
+
+191
+00:06:54,729 --> 00:06:56,100
+software and so they might have much
+
+192
+00:06:56,110 --> 00:06:57,719
+less but if you think about how those
+
+193
+00:06:57,729 --> 00:07:00,359
+companies would probably exist ten years
+
+194
+00:07:00,369 --> 00:07:00,689
+from now
+
+195
+00:07:00,699 --> 00:07:02,129
+I do think companies are getting more
+
+196
+00:07:02,139 --> 00:07:03,719
+and more to where there's a you know
+
+197
+00:07:03,729 --> 00:07:05,429
+there's a complete supporting software
+
+198
+00:07:05,439 --> 00:07:06,779
+infrastructure even for the things
+
+199
+00:07:06,789 --> 00:07:08,519
+happening in the real world you know
+
+200
+00:07:08,529 --> 00:07:10,169
+there's there's instrumentation there's
+
+201
+00:07:10,179 --> 00:07:12,329
+knowledge of that there's support for
+
+202
+00:07:12,339 --> 00:07:13,769
+that even the things people are doing
+
+203
+00:07:13,779 --> 00:07:15,689
+there's associated apps and and so on
+
+204
+00:07:15,699 --> 00:07:17,459
+that helped kind of track it monitor and
+
+205
+00:07:17,469 --> 00:07:19,619
+that all needs to come together into one
+
+206
+00:07:19,629 --> 00:07:21,959
+company that that actually works you
+
+207
+00:07:21,969 --> 00:07:24,569
+know as as an integrated whole before
+
+208
+00:07:24,579 --> 00:07:26,399
+you went to the solution we'll be
+
+209
+00:07:26,409 --> 00:07:28,619
+talking about based on invent log you
+
+210
+00:07:28,629 --> 00:07:31,109
+tried other approaches to integration
+
+211
+00:07:31,119 --> 00:07:33,899
+and LinkedIn what else was tried and why
+
+212
+00:07:33,909 --> 00:07:36,839
+did it not work yeah I mean the the
+
+213
+00:07:36,849 --> 00:07:39,239
+context was and and this post is
+
+214
+00:07:39,249 --> 00:07:41,879
+actually you know relatively old right
+
+215
+00:07:41,889 --> 00:07:44,219
+so I think I wrote this you know maybe
+
+216
+00:07:44,229 --> 00:07:47,159
+at the end of 2013 or beginning of 2014
+
+217
+00:07:47,169 --> 00:07:49,829
+right around that timeframe and you know
+
+218
+00:07:49,839 --> 00:07:51,239
+at that time LinkedIn had been through
+
+219
+00:07:51,249 --> 00:07:53,100
+this journey of kind of rebuilding all
+
+220
+00:07:53,110 --> 00:07:54,959
+the internal infrastructure for scale
+
+221
+00:07:54,969 --> 00:07:56,609
+and there wasn't much that was available
+
+222
+00:07:56,619 --> 00:07:58,259
+off-the-shelf and so when we talked
+
+223
+00:07:58,269 --> 00:08:00,600
+before it was about a key value store
+
+224
+00:08:00,610 --> 00:08:03,419
+that we built internally and so we had
+
+225
+00:08:03,429 --> 00:08:05,129
+all these different data systems and we
+
+226
+00:08:05,139 --> 00:08:07,049
+were trying to be really smart about the
+
+227
+00:08:07,059 --> 00:08:09,029
+the use of data and how that would you
+
+228
+00:08:09,039 --> 00:08:11,549
+know feed back into the applications and
+
+229
+00:08:11,559 --> 00:08:13,439
+customer experience and you know I felt
+
+230
+00:08:13,449 --> 00:08:15,449
+like what what we were doing was was
+
+231
+00:08:15,459 --> 00:08:17,759
+trying to solve that kind of N squared
+
+232
+00:08:17,769 --> 00:08:19,529
+integration problem of how does this
+
+233
+00:08:19,539 --> 00:08:21,149
+application trigger off this thing and
+
+234
+00:08:21,159 --> 00:08:22,469
+how does this data flow into this
+
+235
+00:08:22,479 --> 00:08:24,479
+analytic system and how do we monitor
+
+236
+00:08:24,489 --> 00:08:26,040
+this and I feel like we were trying to
+
+237
+00:08:26,050 --> 00:08:29,219
+solve it you know one one integration at
+
+238
+00:08:29,229 --> 00:08:31,169
+a time and so we were kind of building a
+
+239
+00:08:31,179 --> 00:08:32,730
+big team to do that but it was we were
+
+240
+00:08:32,740 --> 00:08:34,139
+never gonna finish you know we weren't
+
+241
+00:08:34,149 --> 00:08:36,209
+we weren't even scratching the surface I
+
+242
+00:08:36,219 --> 00:08:38,579
+think at one point we were like hey what
+
+243
+00:08:38,589 --> 00:08:39,990
+do we really if we think about what
+
+244
+00:08:40,000 --> 00:08:41,999
+happens in the business and we try to
+
+245
+00:08:42,009 --> 00:08:43,860
+say what do we really have coverage for
+
+246
+00:08:43,870 --> 00:08:46,290
+that you could tap into I think we said
+
+247
+00:08:46,300 --> 00:08:48,240
+maybe we have about 10 percent of of
+
+248
+00:08:48,250 --> 00:08:50,490
+everything and we were working very hard
+
+249
+00:08:50,500 --> 00:08:51,540
+at that point so we're late
+
+250
+00:08:51,550 --> 00:08:53,430
+okay that so that was the that was the
+
+251
+00:08:53,440 --> 00:08:56,160
+context and then we thought well you
+
+252
+00:08:56,170 --> 00:08:57,930
+know what would a solution look like and
+
+253
+00:08:57,940 --> 00:08:59,310
+it's it's actually not hard to imagine
+
+254
+00:08:59,320 --> 00:09:01,560
+you say well whatever happens you know
+
+255
+00:09:01,570 --> 00:09:03,840
+somehow that data that like you know
+
+256
+00:09:03,850 --> 00:09:05,130
+stream of things that are happening it
+
+257
+00:09:05,140 --> 00:09:07,230
+should be available and any other system
+
+258
+00:09:07,240 --> 00:09:09,360
+should be able to tap into it and they
+
+259
+00:09:09,370 --> 00:09:11,100
+should be able to react or respond or
+
+260
+00:09:11,110 --> 00:09:13,230
+calculate something or or do something
+
+261
+00:09:13,240 --> 00:09:15,600
+with it and then and then the you know
+
+262
+00:09:15,610 --> 00:09:17,340
+the devil is of course in the details so
+
+263
+00:09:17,350 --> 00:09:19,319
+when you say everything that could be
+
+264
+00:09:19,329 --> 00:09:21,600
+actually a lot of data and when you say
+
+265
+00:09:21,610 --> 00:09:24,090
+any system of course the needs of
+
+266
+00:09:24,100 --> 00:09:25,440
+different systems could be very
+
+267
+00:09:25,450 --> 00:09:27,750
+different if you have some offline data
+
+268
+00:09:27,760 --> 00:09:30,240
+warehouse it may read things only once a
+
+269
+00:09:30,250 --> 00:09:32,670
+day so it may take updates very slowly
+
+270
+00:09:32,680 --> 00:09:34,620
+if you have you know some kind of very
+
+271
+00:09:34,630 --> 00:09:36,750
+real-time application that feeds back
+
+272
+00:09:36,760 --> 00:09:38,160
+into the customer experience it may have
+
+273
+00:09:38,170 --> 00:09:40,620
+pretty low latency requirements and so
+
+274
+00:09:40,630 --> 00:09:42,660
+then we were like well you know is this
+
+275
+00:09:42,670 --> 00:09:45,120
+really possible can you you know can you
+
+276
+00:09:45,130 --> 00:09:46,740
+you know create something that actually
+
+277
+00:09:46,750 --> 00:09:49,170
+fulfills all those demands and and do we
+
+278
+00:09:49,180 --> 00:09:50,550
+need to like our assumption was there
+
+279
+00:09:50,560 --> 00:09:52,079
+must be something out there in the world
+
+280
+00:09:52,089 --> 00:09:53,400
+that solved this problem and we were
+
+281
+00:09:53,410 --> 00:09:55,230
+just you know too dumb like we didn't
+
+282
+00:09:55,240 --> 00:09:57,000
+know about it and so we we kind of went
+
+283
+00:09:57,010 --> 00:09:58,410
+through this journey of trying these
+
+284
+00:09:58,420 --> 00:09:59,940
+different off-the-shelf messaging
+
+285
+00:09:59,950 --> 00:10:01,590
+systems or our theory was maybe we could
+
+286
+00:10:01,600 --> 00:10:03,569
+kind of stitch them together in some way
+
+287
+00:10:03,579 --> 00:10:05,639
+you know and you see this in the
+
+288
+00:10:05,649 --> 00:10:07,500
+database world well people will take you
+
+289
+00:10:07,510 --> 00:10:09,389
+know lots of my sequel databases and try
+
+290
+00:10:09,399 --> 00:10:10,740
+and stitch it together and to some you
+
+291
+00:10:10,750 --> 00:10:12,030
+know some kind of sharted something
+
+292
+00:10:12,040 --> 00:10:13,860
+rather and you know we we thought oh
+
+293
+00:10:13,870 --> 00:10:14,970
+maybe we could do the same thing like
+
+294
+00:10:14,980 --> 00:10:16,819
+we'll we'll get some of these
+
+295
+00:10:16,829 --> 00:10:18,900
+off-the-shelf messaging layers and we'll
+
+296
+00:10:18,910 --> 00:10:20,910
+try and you know stitch it together into
+
+297
+00:10:20,920 --> 00:10:23,430
+some platform for this and you know it
+
+298
+00:10:23,440 --> 00:10:25,040
+was it was kind of remarkably
+
+299
+00:10:25,050 --> 00:10:27,569
+unsuccessful and so then we came back
+
+300
+00:10:27,579 --> 00:10:28,710
+out and we thought well look you know we
+
+301
+00:10:28,720 --> 00:10:31,290
+have internal capability to build stuff
+
+302
+00:10:31,300 --> 00:10:33,569
+from scratch and and we had some ideas
+
+303
+00:10:33,579 --> 00:10:35,970
+that came out at the database world for
+
+304
+00:10:35,980 --> 00:10:38,280
+what you really needed to do and that
+
+305
+00:10:38,290 --> 00:10:40,170
+was kind of what led us to you know
+
+306
+00:10:40,180 --> 00:10:42,510
+start working on Kafka we'll go more in
+
+307
+00:10:42,520 --> 00:10:44,460
+depth into that I want to break this
+
+308
+00:10:44,470 --> 00:10:49,410
+down into stepping stones these bits of
+
+309
+00:10:49,420 --> 00:10:50,819
+information that are getting shared
+
+310
+00:10:50,829 --> 00:10:54,199
+let's call them events what is an event
+
+311
+00:10:54,209 --> 00:10:57,540
+give some examples yeah you know it's
+
+312
+00:10:57,550 --> 00:10:58,889
+it's one of those things that's so
+
+313
+00:10:58,899 --> 00:11:00,990
+simple it's almost hard to explain right
+
+314
+00:11:01,000 --> 00:11:02,490
+so an event is just something that
+
+315
+00:11:02,500 --> 00:11:05,210
+happens and you know in that reach
+
+316
+00:11:05,220 --> 00:11:07,280
+example it could be a sale so okay we
+
+317
+00:11:07,290 --> 00:11:09,259
+sold something to somebody that's an
+
+318
+00:11:09,269 --> 00:11:12,259
+event the you know the representation of
+
+319
+00:11:12,269 --> 00:11:14,240
+that and a computer well it could be
+
+320
+00:11:14,250 --> 00:11:17,329
+some snippet of JSON that says you know
+
+321
+00:11:17,339 --> 00:11:19,280
+what was sold and where was it sold and
+
+322
+00:11:19,290 --> 00:11:21,110
+who was it sold to and how much did it
+
+323
+00:11:21,120 --> 00:11:23,420
+cost and you know the data about what
+
+324
+00:11:23,430 --> 00:11:25,400
+happened but it's you know obviously the
+
+325
+00:11:25,410 --> 00:11:27,170
+event isn't really tied to that JSON you
+
+326
+00:11:27,180 --> 00:11:28,699
+could represent it in some other format
+
+327
+00:11:28,709 --> 00:11:31,429
+and so so if you think about it it's a
+
+328
+00:11:31,439 --> 00:11:33,710
+type of data an event is just data and
+
+329
+00:11:33,720 --> 00:11:36,740
+it's immutable right you know something
+
+330
+00:11:36,750 --> 00:11:39,019
+that happened it doesn't unhappen and it
+
+331
+00:11:39,029 --> 00:11:40,790
+happens at a particular point in time
+
+332
+00:11:40,800 --> 00:11:43,160
+and and so it's just a it's just a fact
+
+333
+00:11:43,170 --> 00:11:44,360
+actually it's just something that
+
+334
+00:11:44,370 --> 00:11:46,300
+occurred and you could imagine
+
+335
+00:11:46,310 --> 00:11:48,710
+representing all kinds of different
+
+336
+00:11:48,720 --> 00:11:50,269
+things to happen in a business that way
+
+337
+00:11:50,279 --> 00:11:52,069
+you know I talked about sales but you
+
+338
+00:11:52,079 --> 00:11:53,269
+know just as easily you could represent
+
+339
+00:11:53,279 --> 00:11:56,300
+you know some change to some state about
+
+340
+00:11:56,310 --> 00:11:58,069
+a user so you know LinkedIn maybe
+
+341
+00:11:58,079 --> 00:11:59,749
+somebody comes in updates their their
+
+342
+00:11:59,759 --> 00:12:02,030
+user profile you could say okay you know
+
+343
+00:12:02,040 --> 00:12:05,030
+my profile is now this you know where
+
+344
+00:12:05,040 --> 00:12:06,829
+this is the the contents of all the
+
+345
+00:12:06,839 --> 00:12:08,210
+fields that that would be an event like
+
+346
+00:12:08,220 --> 00:12:11,150
+a profile update event and you you know
+
+347
+00:12:11,160 --> 00:12:13,280
+in if you if you were making a
+
+348
+00:12:13,290 --> 00:12:15,619
+ride-sharing app you could say okay you
+
+349
+00:12:15,629 --> 00:12:17,749
+know my car is currently here right
+
+350
+00:12:17,759 --> 00:12:19,519
+that's an event it's just this you know
+
+351
+00:12:19,529 --> 00:12:20,869
+it is true that at this point in time
+
+352
+00:12:20,879 --> 00:12:23,329
+this car was at this point this position
+
+353
+00:12:23,339 --> 00:12:25,460
+and it was this driver and you know this
+
+354
+00:12:25,470 --> 00:12:27,710
+is the ride it was part of and and so on
+
+355
+00:12:27,720 --> 00:12:30,319
+so so that's all it is it's a very
+
+356
+00:12:30,329 --> 00:12:32,509
+different way of thinking about data you
+
+357
+00:12:32,519 --> 00:12:33,470
+know typically we've thought about
+
+358
+00:12:33,480 --> 00:12:36,889
+databases which are full of you know the
+
+359
+00:12:36,899 --> 00:12:38,780
+current state of the world right and so
+
+360
+00:12:38,790 --> 00:12:40,369
+we think about state we think about okay
+
+361
+00:12:40,379 --> 00:12:42,650
+you know you your database tables it
+
+362
+00:12:42,660 --> 00:12:44,509
+might have the set of products or the
+
+363
+00:12:44,519 --> 00:12:46,850
+you know set of customers or whatever
+
+364
+00:12:46,860 --> 00:12:48,470
+and they you know could get updated but
+
+365
+00:12:48,480 --> 00:12:50,420
+it's really modeling the current state
+
+366
+00:12:50,430 --> 00:12:52,189
+of the world and events are about you
+
+367
+00:12:52,199 --> 00:12:53,480
+know what's happening in the world what
+
+368
+00:12:53,490 --> 00:12:55,309
+occurred and so that could be something
+
+369
+00:12:55,319 --> 00:12:56,449
+that's very high-level about the
+
+370
+00:12:56,459 --> 00:12:57,439
+business that occurred it could be
+
+371
+00:12:57,449 --> 00:12:59,030
+something very low-level at LinkedIn at
+
+372
+00:12:59,040 --> 00:13:00,949
+some point they were monitoring even
+
+373
+00:13:00,959 --> 00:13:02,929
+very low level things like traffic
+
+374
+00:13:02,939 --> 00:13:05,420
+through network switches and you know so
+
+375
+00:13:05,430 --> 00:13:06,889
+on as events and you'll see this
+
+376
+00:13:06,899 --> 00:13:09,319
+actually if you kind of search around in
+
+377
+00:13:09,329 --> 00:13:11,809
+you know software engineering channels
+
+378
+00:13:11,819 --> 00:13:12,799
+for events you'll find it's actually
+
+379
+00:13:12,809 --> 00:13:15,620
+springs up all over the place so in the
+
+380
+00:13:15,630 --> 00:13:17,569
+world of application monitoring and
+
+381
+00:13:17,579 --> 00:13:19,340
+observability there's a whole
+
+382
+00:13:19,350 --> 00:13:20,750
+towards events it's very much about
+
+383
+00:13:20,760 --> 00:13:23,060
+low-level mechanics of watching you know
+
+384
+00:13:23,070 --> 00:13:24,860
+software do its job you know if you look
+
+385
+00:13:24,870 --> 00:13:26,450
+at front-end development there's a whole
+
+386
+00:13:26,460 --> 00:13:27,830
+movement towards events which is about
+
+387
+00:13:27,840 --> 00:13:29,300
+capturing what happening and you're
+
+388
+00:13:29,310 --> 00:13:31,190
+having you eyes that react and respond
+
+389
+00:13:31,200 --> 00:13:33,260
+and then of course you know in the in
+
+390
+00:13:33,270 --> 00:13:35,540
+the world of micro services and
+
+391
+00:13:35,550 --> 00:13:36,680
+applicant you know interaction between
+
+392
+00:13:36,690 --> 00:13:38,180
+applications there's there's a movement
+
+393
+00:13:38,190 --> 00:13:40,040
+towards events and so you know it's
+
+394
+00:13:40,050 --> 00:13:42,230
+actually kind of you know coming out of
+
+395
+00:13:42,240 --> 00:13:43,490
+the woodwork in all these different
+
+396
+00:13:43,500 --> 00:13:45,680
+areas and they're all talking about the
+
+397
+00:13:45,690 --> 00:13:47,180
+same thing events are just things that
+
+398
+00:13:47,190 --> 00:13:49,400
+happen in the world and you know it's a
+
+399
+00:13:49,410 --> 00:13:51,110
+very different you know way of thinking
+
+400
+00:13:51,120 --> 00:13:52,790
+about data but ultimately kind of a very
+
+401
+00:13:52,800 --> 00:13:54,320
+simple concept once you understand that
+
+402
+00:13:54,330 --> 00:13:55,970
+you're like oh you know what's the big
+
+403
+00:13:55,980 --> 00:13:58,970
+deal we may all be conceptually the same
+
+404
+00:13:58,980 --> 00:14:01,910
+but if you have events which involve
+
+405
+00:14:01,920 --> 00:14:04,660
+something like a customer bought
+
+406
+00:14:04,670 --> 00:14:07,280
+something in the old days you'd store
+
+407
+00:14:07,290 --> 00:14:10,340
+that in your relational database then
+
+408
+00:14:10,350 --> 00:14:13,370
+other data like monitoring your security
+
+409
+00:14:13,380 --> 00:14:16,280
+system detected an anomaly maybe these
+
+410
+00:14:16,290 --> 00:14:19,340
+things are transient low value you don't
+
+411
+00:14:19,350 --> 00:14:21,590
+want to go to so much expense to capture
+
+412
+00:14:21,600 --> 00:14:23,120
+them maybe you don't care if you lose
+
+413
+00:14:23,130 --> 00:14:25,520
+them so are all these events all treated
+
+414
+00:14:25,530 --> 00:14:27,710
+the same way as if they were all equally
+
+415
+00:14:27,720 --> 00:14:29,630
+valuable or is there some ability to
+
+416
+00:14:29,640 --> 00:14:32,990
+tear them based on how much cost you're
+
+417
+00:14:33,000 --> 00:14:35,480
+willing to incur in relation to the
+
+418
+00:14:35,490 --> 00:14:37,600
+business value of that class of things
+
+419
+00:14:37,610 --> 00:14:40,010
+yeah I mean I think I think the first
+
+420
+00:14:40,020 --> 00:14:42,380
+mental jump is just understanding that
+
+421
+00:14:42,390 --> 00:14:44,480
+there's such a thing as events and then
+
+422
+00:14:44,490 --> 00:14:45,740
+we can think about hey how should we
+
+423
+00:14:45,750 --> 00:14:47,780
+build the right infrastructure for it
+
+424
+00:14:47,790 --> 00:14:49,550
+you know I think you're a hundred
+
+425
+00:14:49,560 --> 00:14:51,050
+percent right that it's not like this
+
+426
+00:14:51,060 --> 00:14:53,360
+concept didn't exist before I think it
+
+427
+00:14:53,370 --> 00:14:55,010
+just wasn't well supported and so you
+
+428
+00:14:55,020 --> 00:14:57,020
+would see all these cases where yeah
+
+429
+00:14:57,030 --> 00:14:58,250
+people are trying to use a relational
+
+430
+00:14:58,260 --> 00:15:01,610
+database for streams of events and you
+
+431
+00:15:01,620 --> 00:15:03,320
+know maybe the the most prominent
+
+432
+00:15:03,330 --> 00:15:05,480
+example of that is for people who know
+
+433
+00:15:05,490 --> 00:15:08,150
+the world of data warehousing they have
+
+434
+00:15:08,160 --> 00:15:10,310
+you know such a thing as fact tables and
+
+435
+00:15:10,320 --> 00:15:12,920
+they have dimension tables and dimension
+
+436
+00:15:12,930 --> 00:15:14,120
+tables are kind of what you'd expect
+
+437
+00:15:14,130 --> 00:15:15,920
+it's your you know your set of products
+
+438
+00:15:15,930 --> 00:15:17,690
+and the set of geographies and so on
+
+439
+00:15:17,700 --> 00:15:19,160
+that you operate in but the the fact
+
+440
+00:15:19,170 --> 00:15:22,160
+tables are actually you know the the set
+
+441
+00:15:22,170 --> 00:15:23,990
+of things that happened you know and
+
+442
+00:15:24,000 --> 00:15:26,060
+it's always ordered by time and it's
+
+443
+00:15:26,070 --> 00:15:28,670
+immutable and it's very much like an
+
+444
+00:15:28,680 --> 00:15:30,050
+event you can't subscribe to it you
+
+445
+00:15:30,060 --> 00:15:31,580
+can't get it in real time it just gets
+
+446
+00:15:31,590 --> 00:15:32,380
+done
+
+447
+00:15:32,390 --> 00:15:34,870
+at the end of the day but but it's kind
+
+448
+00:15:34,880 --> 00:15:36,310
+of an interesting thing that in order to
+
+449
+00:15:36,320 --> 00:15:38,920
+analyze a business and try and say okay
+
+450
+00:15:38,930 --> 00:15:40,300
+what what happened in the business
+
+451
+00:15:40,310 --> 00:15:42,130
+yesterday you basically have to reinvent
+
+452
+00:15:42,140 --> 00:15:45,130
+this you know event concept in a
+
+453
+00:15:45,140 --> 00:15:47,080
+relational database and so so yeah it's
+
+454
+00:15:47,090 --> 00:15:48,910
+it's nothing new I you know I think the
+
+455
+00:15:48,920 --> 00:15:51,280
+the new thing we added was you know
+
+456
+00:15:51,290 --> 00:15:53,950
+concretely what would the data structure
+
+457
+00:15:53,960 --> 00:15:55,570
+for events be if you if you said hey
+
+458
+00:15:55,580 --> 00:15:57,370
+this is an important thing you know how
+
+459
+00:15:57,380 --> 00:15:59,260
+should we represent it in infrastructure
+
+460
+00:15:59,270 --> 00:16:02,920
+and is it possible to do that in a way
+
+461
+00:16:02,930 --> 00:16:04,420
+that actually makes it easy to build
+
+462
+00:16:04,430 --> 00:16:06,880
+around because anybody who's tried to
+
+463
+00:16:06,890 --> 00:16:09,040
+build you know real time event streams
+
+464
+00:16:09,050 --> 00:16:10,750
+where you you know you trigger off of it
+
+465
+00:16:10,760 --> 00:16:12,400
+and process it in real time on top of a
+
+466
+00:16:12,410 --> 00:16:14,170
+relational databases you know kind of
+
+467
+00:16:14,180 --> 00:16:15,580
+come to the same conclusion that this is
+
+468
+00:16:15,590 --> 00:16:17,380
+you're really quite hard you're kind of
+
+469
+00:16:17,390 --> 00:16:19,120
+you're abusing a piece of infrastructure
+
+470
+00:16:19,130 --> 00:16:20,680
+that was built for one use case for
+
+471
+00:16:20,690 --> 00:16:22,480
+something else you know that's that's a
+
+472
+00:16:22,490 --> 00:16:24,130
+common thing to do but but it just gets
+
+473
+00:16:24,140 --> 00:16:25,840
+harder and harder and harder to do well
+
+474
+00:16:25,850 --> 00:16:28,870
+and so so that was kind of our idea was
+
+475
+00:16:28,880 --> 00:16:31,660
+yeah you know you can't solve all
+
+476
+00:16:31,670 --> 00:16:32,980
+problems with one piece of
+
+477
+00:16:32,990 --> 00:16:34,660
+infrastructure but if you take this idea
+
+478
+00:16:34,670 --> 00:16:37,960
+of events seriously how far can it go
+
+479
+00:16:37,970 --> 00:16:40,030
+you know what how can you make something
+
+480
+00:16:40,040 --> 00:16:41,920
+that's really built you know to do that
+
+481
+00:16:41,930 --> 00:16:44,590
+from from the ground up and if so
+
+482
+00:16:44,600 --> 00:16:46,900
+hopefully it can go from you know very
+
+483
+00:16:46,910 --> 00:16:49,060
+low latency to you know kind of long
+
+484
+00:16:49,070 --> 00:16:51,730
+longer term you know slower storage and
+
+485
+00:16:51,740 --> 00:16:54,250
+processing and be a basis for you know
+
+486
+00:16:54,260 --> 00:16:56,380
+all these applications and so on we are
+
+487
+00:16:56,390 --> 00:16:58,240
+going to get to how that infrastructure
+
+488
+00:16:58,250 --> 00:17:00,520
+works but one more concept I want to
+
+489
+00:17:00,530 --> 00:17:03,010
+cover if we're going to integrate many
+
+490
+00:17:03,020 --> 00:17:05,260
+different events through data and
+
+491
+00:17:05,270 --> 00:17:07,420
+enterprise do you need a all of the apps
+
+492
+00:17:07,430 --> 00:17:09,699
+to agree on a common schema for the
+
+493
+00:17:09,709 --> 00:17:13,900
+events yeah you do you know in a simple
+
+494
+00:17:13,910 --> 00:17:15,910
+way so you know let's say that I am I'm
+
+495
+00:17:15,920 --> 00:17:18,100
+trying to you know keep track of all the
+
+496
+00:17:18,110 --> 00:17:19,990
+sales occurring and there could be many
+
+497
+00:17:20,000 --> 00:17:21,819
+ways that we sell things like maybe we
+
+498
+00:17:21,829 --> 00:17:23,410
+sell them online and maybe we sell them
+
+499
+00:17:23,420 --> 00:17:25,060
+you know in brick-and-mortar stores
+
+500
+00:17:25,070 --> 00:17:27,760
+right so all of those people it will be
+
+501
+00:17:27,770 --> 00:17:28,990
+much more convenient if they can all
+
+502
+00:17:29,000 --> 00:17:30,820
+agree you know this is how we represent
+
+503
+00:17:30,830 --> 00:17:32,920
+a sale and then we can send it all to
+
+504
+00:17:32,930 --> 00:17:35,080
+the same event stream and then likewise
+
+505
+00:17:35,090 --> 00:17:36,850
+for the people who are trying to react
+
+506
+00:17:36,860 --> 00:17:38,800
+to that or respond or tap into that or
+
+507
+00:17:38,810 --> 00:17:40,540
+take it and store it somewhere you know
+
+508
+00:17:40,550 --> 00:17:42,070
+if if they haven't agreed with the
+
+509
+00:17:42,080 --> 00:17:43,750
+people upstream about what the bytes
+
+510
+00:17:43,760 --> 00:17:45,520
+mean that they're not going to be able
+
+511
+00:17:45,530 --> 00:17:46,240
+to make any sense
+
+512
+00:17:46,250 --> 00:17:47,950
+so they have to agree on what you know
+
+513
+00:17:47,960 --> 00:17:50,080
+what the representation of a sale is and
+
+514
+00:17:50,090 --> 00:17:52,270
+then we have to agree like how can it
+
+515
+00:17:52,280 --> 00:17:53,230
+change over time
+
+516
+00:17:53,240 --> 00:17:55,060
+you know maybe we'd all love it to be
+
+517
+00:17:55,070 --> 00:17:56,260
+the case that we just say oh this is
+
+518
+00:17:56,270 --> 00:17:57,430
+what a sale is it can never change
+
+519
+00:17:57,440 --> 00:17:59,470
+that's the definition but you know the
+
+520
+00:17:59,480 --> 00:18:01,690
+reality is we work in businesses that
+
+521
+00:18:01,700 --> 00:18:03,610
+are evolving all the time and so the
+
+522
+00:18:03,620 --> 00:18:05,200
+attributes of a sale what can we capture
+
+523
+00:18:05,210 --> 00:18:07,000
+about a product how can we sell it the
+
+524
+00:18:07,010 --> 00:18:08,470
+different things that we would record
+
+525
+00:18:08,480 --> 00:18:10,270
+are going to change as as the users
+
+526
+00:18:10,280 --> 00:18:12,430
+change and so we have to agree on that
+
+527
+00:18:12,440 --> 00:18:14,890
+how that can evolve so that things can
+
+528
+00:18:14,900 --> 00:18:16,420
+you know software upstream can be
+
+529
+00:18:16,430 --> 00:18:18,220
+updated and software downstream can be
+
+530
+00:18:18,230 --> 00:18:20,200
+updated but also we don't require the
+
+531
+00:18:20,210 --> 00:18:23,830
+whole organization to stop and get on to
+
+532
+00:18:23,840 --> 00:18:25,240
+the new thing with you know some
+
+533
+00:18:25,250 --> 00:18:26,710
+downtime so there has to be some
+
+534
+00:18:26,720 --> 00:18:28,870
+agreement around that and so in a sense
+
+535
+00:18:28,880 --> 00:18:31,240
+it's actually I think more important
+
+536
+00:18:31,250 --> 00:18:33,520
+than even the schemas in relational
+
+537
+00:18:33,530 --> 00:18:35,320
+databases because typically a relational
+
+538
+00:18:35,330 --> 00:18:38,260
+database is a implementation detail of
+
+539
+00:18:38,270 --> 00:18:40,930
+one application so the application just
+
+540
+00:18:40,940 --> 00:18:42,850
+kind of needs to agree on the the schema
+
+541
+00:18:42,860 --> 00:18:45,220
+with itself and even there the schema
+
+542
+00:18:45,230 --> 00:18:46,510
+can be helpful to make sure that you're
+
+543
+00:18:46,520 --> 00:18:48,100
+checking constraints on your data and so
+
+544
+00:18:48,110 --> 00:18:49,450
+on but once you get to multiple
+
+545
+00:18:49,460 --> 00:18:51,880
+applications all sharing then it becomes
+
+546
+00:18:51,890 --> 00:18:53,410
+that much more important that we agree
+
+547
+00:18:53,420 --> 00:18:55,870
+on the structure of data otherwise you
+
+548
+00:18:55,880 --> 00:18:56,980
+know you could have somebody
+
+549
+00:18:56,990 --> 00:18:59,590
+broadcasting you know malformed things
+
+550
+00:18:59,600 --> 00:19:01,330
+out to the the rest of the world that
+
+551
+00:19:01,340 --> 00:19:02,920
+they can't react to or handle and then
+
+552
+00:19:02,930 --> 00:19:05,950
+you know casts chaos ensues what are
+
+553
+00:19:05,960 --> 00:19:08,530
+some of the schema definition formats
+
+554
+00:19:08,540 --> 00:19:11,170
+are languages that can be used yeah at
+
+555
+00:19:11,180 --> 00:19:12,900
+least for Kafka we've tried not to
+
+556
+00:19:12,910 --> 00:19:15,250
+reinvent the wheel there you know there
+
+557
+00:19:15,260 --> 00:19:16,780
+there's a bunch of these serialization
+
+558
+00:19:16,790 --> 00:19:19,000
+layers that are common also out in the
+
+559
+00:19:19,010 --> 00:19:22,180
+world of you know building RPC services
+
+560
+00:19:22,190 --> 00:19:24,340
+or restful services so you know there's
+
+561
+00:19:24,350 --> 00:19:26,170
+things like protocol buffers and Avro
+
+562
+00:19:26,180 --> 00:19:28,390
+and JSON and they all have different
+
+563
+00:19:28,400 --> 00:19:30,910
+proponents of different kinds you know
+
+564
+00:19:30,920 --> 00:19:32,980
+for for Kafka and for complement we've
+
+565
+00:19:32,990 --> 00:19:34,810
+tried to make you know our stuff work
+
+566
+00:19:34,820 --> 00:19:36,670
+with as many of these as we can we
+
+567
+00:19:36,680 --> 00:19:38,650
+provide out-of-the-box support for
+
+568
+00:19:38,660 --> 00:19:40,660
+something called Avro which is kind of a
+
+569
+00:19:40,670 --> 00:19:42,960
+binary format with a you know JSON
+
+570
+00:19:42,970 --> 00:19:47,050
+schema that has good support for you
+
+571
+00:19:47,060 --> 00:19:49,090
+know the evolution of data but but we're
+
+572
+00:19:49,100 --> 00:19:51,100
+not religious about it people tend to be
+
+573
+00:19:51,110 --> 00:19:53,110
+the most religious about these you know
+
+574
+00:19:53,120 --> 00:19:55,660
+kind of formats and standards and our
+
+575
+00:19:55,670 --> 00:19:57,280
+job is just to build tools that people
+
+576
+00:19:57,290 --> 00:19:59,800
+work with all of these formats have
+
+577
+00:19:59,810 --> 00:20:01,780
+common that they are supported by many
+
+578
+00:20:01,790 --> 00:20:04,420
+different languages and that is probably
+
+579
+00:20:04,430 --> 00:20:07,240
+essential because every app in and
+
+580
+00:20:07,250 --> 00:20:08,530
+becoming he's not going to be written in
+
+581
+00:20:08,540 --> 00:20:11,170
+the same language yeah that that's
+
+582
+00:20:11,180 --> 00:20:13,090
+that's a really important part of this
+
+583
+00:20:13,100 --> 00:20:14,770
+as you want to have you know some
+
+584
+00:20:14,780 --> 00:20:16,750
+definition that's agreed on that that
+
+585
+00:20:16,760 --> 00:20:19,330
+any you know anybody can plug into and
+
+586
+00:20:19,340 --> 00:20:21,490
+so you know the kind of things that are
+
+587
+00:20:21,500 --> 00:20:24,220
+baked into the programming languages
+
+588
+00:20:24,230 --> 00:20:27,340
+like Java serialization or you know
+
+589
+00:20:27,350 --> 00:20:29,200
+whatever the the old-school pickling and
+
+590
+00:20:29,210 --> 00:20:30,550
+Python I mean it's really inappropriate
+
+591
+00:20:30,560 --> 00:20:32,830
+you know it would work if you were just
+
+592
+00:20:32,840 --> 00:20:34,570
+sending data to yourself with the same
+
+593
+00:20:34,580 --> 00:20:36,670
+version of the software doing the
+
+594
+00:20:36,680 --> 00:20:38,050
+reading and writing but this is
+
+595
+00:20:38,060 --> 00:20:39,670
+something where you know you're gonna
+
+596
+00:20:39,680 --> 00:20:41,110
+have many different applications
+
+597
+00:20:41,120 --> 00:20:43,120
+potentially in the future even in the
+
+598
+00:20:43,130 --> 00:20:45,310
+present in different languages and those
+
+599
+00:20:45,320 --> 00:20:46,510
+applications will all change
+
+600
+00:20:46,520 --> 00:20:48,850
+independently so you can't assume a
+
+601
+00:20:48,860 --> 00:20:50,350
+single version of everything you can't
+
+602
+00:20:50,360 --> 00:20:51,610
+assume a single program and they would
+
+603
+00:20:51,620 --> 00:20:53,080
+you want to have as much independence in
+
+604
+00:20:53,090 --> 00:20:55,360
+that data as you can we're moving in
+
+605
+00:20:55,370 --> 00:20:57,310
+these stepping stones toward this
+
+606
+00:20:57,320 --> 00:21:00,280
+concept of the Kafka event log in your
+
+607
+00:21:00,290 --> 00:21:02,950
+blog post you introduce the idea of an
+
+608
+00:21:02,960 --> 00:21:05,230
+event log which is borrowed from the
+
+609
+00:21:05,240 --> 00:21:07,600
+database world and you're extending it
+
+610
+00:21:07,610 --> 00:21:09,640
+to the enterprise let's start with how
+
+611
+00:21:09,650 --> 00:21:13,870
+logs work in single node databases yeah
+
+612
+00:21:13,880 --> 00:21:16,420
+that's that's a good question so you
+
+613
+00:21:16,430 --> 00:21:18,220
+know I thought process was we're trying
+
+614
+00:21:18,230 --> 00:21:19,990
+to solve this problem of when you know
+
+615
+00:21:20,000 --> 00:21:21,880
+when something happens out in the world
+
+616
+00:21:21,890 --> 00:21:23,950
+how does it get integrated into all
+
+617
+00:21:23,960 --> 00:21:25,810
+these different you know systems and
+
+618
+00:21:25,820 --> 00:21:27,730
+applications so if you know in my retail
+
+619
+00:21:27,740 --> 00:21:29,470
+example is something is sold and all
+
+620
+00:21:29,480 --> 00:21:31,090
+these downstream systems need to kind of
+
+621
+00:21:31,100 --> 00:21:33,600
+react on their their time for him and
+
+622
+00:21:33,610 --> 00:21:35,560
+you know we were looking for where are
+
+623
+00:21:35,570 --> 00:21:38,470
+examples where this happens and you know
+
+624
+00:21:38,480 --> 00:21:39,640
+the the people who are thinking about
+
+625
+00:21:39,650 --> 00:21:42,190
+this were a set of database engineers
+
+626
+00:21:42,200 --> 00:21:44,530
+and so one of the ideas that is kind of
+
+627
+00:21:44,540 --> 00:21:45,940
+under the covers you know it's basically
+
+628
+00:21:45,950 --> 00:21:48,190
+an implementation detail of databases
+
+629
+00:21:48,200 --> 00:21:50,380
+but it often leaks out is this concept
+
+630
+00:21:50,390 --> 00:21:53,590
+of a commit log and that's used to keep
+
+631
+00:21:53,600 --> 00:21:55,150
+all the different parts of the database
+
+632
+00:21:55,160 --> 00:21:57,190
+in sync and in a distributed database
+
+633
+00:21:57,200 --> 00:21:59,380
+it's often used to keep these different
+
+634
+00:21:59,390 --> 00:22:01,360
+independent nodes in sync and so the
+
+635
+00:22:01,370 --> 00:22:04,000
+idea is you just take every update that
+
+636
+00:22:04,010 --> 00:22:06,730
+you want to make and that update yeah
+
+637
+00:22:06,740 --> 00:22:07,810
+maybe you're saying hey I want to update
+
+638
+00:22:07,820 --> 00:22:09,910
+my LinkedIn profile to this new value
+
+639
+00:22:09,920 --> 00:22:11,950
+that that might require changing
+
+640
+00:22:11,960 --> 00:22:13,800
+multiple things right so that row has
+
+641
+00:22:13,810 --> 00:22:15,810
+change but different database indexes
+
+642
+00:22:15,820 --> 00:22:17,850
+may need to update there may be things
+
+643
+00:22:17,860 --> 00:22:20,040
+that need to you know trigger off of
+
+644
+00:22:20,050 --> 00:22:21,630
+that if the database supports triggers
+
+645
+00:22:21,640 --> 00:22:23,490
+all kinds of things may happen in
+
+646
+00:22:23,500 --> 00:22:25,470
+reaction to that and so the idea is is
+
+647
+00:22:25,480 --> 00:22:27,660
+very simple these you know commit logs
+
+648
+00:22:27,670 --> 00:22:29,970
+are really just a file where you just
+
+649
+00:22:29,980 --> 00:22:32,910
+append you know the change and then the
+
+650
+00:22:32,920 --> 00:22:34,710
+the you know taking that change in
+
+651
+00:22:34,720 --> 00:22:36,180
+integrating it into all your data
+
+652
+00:22:36,190 --> 00:22:38,610
+structures happens only once it's been
+
+653
+00:22:38,620 --> 00:22:41,130
+committed and so the idea in database is
+
+654
+00:22:41,140 --> 00:22:42,510
+if you if you want to have some notion
+
+655
+00:22:42,520 --> 00:22:45,120
+of correctness and consistency and fault
+
+656
+00:22:45,130 --> 00:22:47,370
+tolerances you know in some sense that
+
+657
+00:22:47,380 --> 00:22:50,580
+log of committed data that is the
+
+658
+00:22:50,590 --> 00:22:52,590
+database that's the real truth of what
+
+659
+00:22:52,600 --> 00:22:54,960
+happened and all the tables and indexes
+
+660
+00:22:54,970 --> 00:22:56,940
+are just representations that you could
+
+661
+00:22:56,950 --> 00:22:59,430
+actually recreate off of that log if you
+
+662
+00:22:59,440 --> 00:23:01,140
+had to write there they're kind of like
+
+663
+00:23:01,150 --> 00:23:03,680
+a cache of the information that's been
+
+664
+00:23:03,690 --> 00:23:05,790
+structured for a particular type of
+
+665
+00:23:05,800 --> 00:23:09,270
+query and so so that's the kind of basic
+
+666
+00:23:09,280 --> 00:23:11,790
+idea of you know how a commit log is
+
+667
+00:23:11,800 --> 00:23:15,240
+used it often becomes very important as
+
+668
+00:23:15,250 --> 00:23:17,760
+an external factor because people often
+
+669
+00:23:17,770 --> 00:23:20,370
+tap into that commit log so in my sequel
+
+670
+00:23:20,380 --> 00:23:22,320
+people use the kind of bin log to get
+
+671
+00:23:22,330 --> 00:23:24,420
+the the sequence of changes out of the
+
+672
+00:23:24,430 --> 00:23:25,620
+database as well and so it becomes
+
+673
+00:23:25,630 --> 00:23:28,710
+almost a you know a public API but it's
+
+674
+00:23:28,720 --> 00:23:30,810
+kind of a an accidental public API I
+
+675
+00:23:30,820 --> 00:23:32,520
+think in most databases where it's a an
+
+676
+00:23:32,530 --> 00:23:34,230
+internal detail that ends up getting
+
+677
+00:23:34,240 --> 00:23:38,010
+exposed and the things that we knew from
+
+678
+00:23:38,020 --> 00:23:40,290
+database engineering were these commit
+
+679
+00:23:40,300 --> 00:23:41,820
+logs are the fastest part of the
+
+680
+00:23:41,830 --> 00:23:43,680
+database so you can write you know a
+
+681
+00:23:43,690 --> 00:23:45,810
+series of things to disk in a in a
+
+682
+00:23:45,820 --> 00:23:50,250
+linear order extremely fast and we also
+
+683
+00:23:50,260 --> 00:23:51,840
+knew from distributed systems that there
+
+684
+00:23:51,850 --> 00:23:54,330
+was a way to do this at scale across
+
+685
+00:23:54,340 --> 00:23:55,980
+many nodes that there was you know
+
+686
+00:23:55,990 --> 00:23:57,750
+consensus protocols and ways of
+
+687
+00:23:57,760 --> 00:23:59,970
+committing data that would extend beyond
+
+688
+00:23:59,980 --> 00:24:03,150
+a single machine and and so we thought
+
+689
+00:24:03,160 --> 00:24:05,520
+that could actually be applied to you
+
+690
+00:24:05,530 --> 00:24:06,960
+know the enterprise at large you could
+
+691
+00:24:06,970 --> 00:24:08,760
+actually think about your kind of whole
+
+692
+00:24:08,770 --> 00:24:10,440
+company instead of data systems and
+
+693
+00:24:10,450 --> 00:24:12,720
+applications as kind of like one big
+
+694
+00:24:12,730 --> 00:24:14,580
+data store and you would you know that
+
+695
+00:24:14,590 --> 00:24:16,260
+you would commit to some log and then it
+
+696
+00:24:16,270 --> 00:24:19,920
+would be applied elsewhere I formulated
+
+697
+00:24:19,930 --> 00:24:22,020
+this question in terms of a single node
+
+698
+00:24:22,030 --> 00:24:24,300
+database and now you've talked about how
+
+699
+00:24:24,310 --> 00:24:26,940
+it can be generalized to a distributed
+
+700
+00:24:26,950 --> 00:24:27,630
+system
+
+701
+00:24:27,640 --> 00:24:30,210
+by which you might say multi-node
+
+702
+00:24:30,220 --> 00:24:32,670
+Cassandra cluster where every node is
+
+703
+00:24:32,680 --> 00:24:35,070
+running Cassandra now it sounds like the
+
+704
+00:24:35,080 --> 00:24:37,110
+next step was you generalize that a
+
+705
+00:24:37,120 --> 00:24:38,970
+little bit further to the enterprise
+
+706
+00:24:38,980 --> 00:24:40,640
+where you have these heterogeneous
+
+707
+00:24:40,650 --> 00:24:44,190
+systems but you're still thinking about
+
+708
+00:24:44,200 --> 00:24:46,950
+the log in the same way as if the entire
+
+709
+00:24:46,960 --> 00:24:50,160
+enterprise is one big database did I get
+
+710
+00:24:50,170 --> 00:24:50,700
+that right
+
+711
+00:24:50,710 --> 00:24:53,330
+yeah I think that's exactly right so in
+
+712
+00:24:53,340 --> 00:24:56,340
+traditional single node database the log
+
+713
+00:24:56,350 --> 00:24:58,890
+is usually just you know on the the file
+
+714
+00:24:58,900 --> 00:25:02,040
+system and then it would be used to keep
+
+715
+00:25:02,050 --> 00:25:04,260
+replicas of that database in sync so
+
+716
+00:25:04,270 --> 00:25:05,730
+they would just take each change that
+
+717
+00:25:05,740 --> 00:25:08,250
+was applied on the you know primary or
+
+718
+00:25:08,260 --> 00:25:09,750
+master node and they would apply it on
+
+719
+00:25:09,760 --> 00:25:12,450
+the kind of secondary follower nodes and
+
+720
+00:25:12,460 --> 00:25:14,580
+then other applications might sink off
+
+721
+00:25:14,590 --> 00:25:17,130
+that so you know that was the kind of
+
+722
+00:25:17,140 --> 00:25:19,050
+typical architecture of a single node
+
+723
+00:25:19,060 --> 00:25:21,060
+database and then in distributed
+
+724
+00:25:21,070 --> 00:25:22,980
+databases people came up with you know
+
+725
+00:25:22,990 --> 00:25:25,530
+techniques for maintaining this kuiper
+
+726
+00:25:25,540 --> 00:25:27,630
+this type of distributed log across
+
+727
+00:25:27,640 --> 00:25:29,550
+multiple machines and and this is
+
+728
+00:25:29,560 --> 00:25:31,890
+figured pretty prominently in a lot of
+
+729
+00:25:31,900 --> 00:25:33,990
+the architectures of distributed
+
+730
+00:25:34,000 --> 00:25:37,490
+databases so things like Amazon's Aurora
+
+731
+00:25:37,500 --> 00:25:40,290
+Yahoo early on had a paper on a system
+
+732
+00:25:40,300 --> 00:25:42,360
+called key nuts that worked this way I
+
+733
+00:25:42,370 --> 00:25:43,710
+mean that was the name in the paper
+
+734
+00:25:43,720 --> 00:25:46,530
+anyway and so it clearly generalizes to
+
+735
+00:25:46,540 --> 00:25:48,450
+a distributed system where the you know
+
+736
+00:25:48,460 --> 00:25:51,210
+the individual nodes in that distributed
+
+737
+00:25:51,220 --> 00:25:53,760
+database all work asynchronously you
+
+738
+00:25:53,770 --> 00:25:55,400
+know they don't all work in lockstep and
+
+739
+00:25:55,410 --> 00:25:58,500
+and so it wasn't a huge jump for us to
+
+740
+00:25:58,510 --> 00:25:59,670
+think about like well what if those
+
+741
+00:25:59,680 --> 00:26:01,500
+nodes are doing different things with
+
+742
+00:26:01,510 --> 00:26:03,300
+the event you know that would work as
+
+743
+00:26:03,310 --> 00:26:05,610
+well two very important properties of
+
+744
+00:26:05,620 --> 00:26:07,650
+these logs which you've mentioned and
+
+745
+00:26:07,660 --> 00:26:10,110
+I'd like you to expand on why are these
+
+746
+00:26:10,120 --> 00:26:12,720
+properties important they are immutable
+
+747
+00:26:12,730 --> 00:26:16,170
+and append-only you know there's even a
+
+748
+00:26:16,180 --> 00:26:18,510
+third property which is you know kind of
+
+749
+00:26:18,520 --> 00:26:20,010
+maybe obvious just from my description
+
+750
+00:26:20,020 --> 00:26:22,080
+which is they're ordered and I think you
+
+751
+00:26:22,090 --> 00:26:24,360
+actually need all those things so you
+
+752
+00:26:24,370 --> 00:26:25,560
+need it to be the case that when
+
+753
+00:26:25,570 --> 00:26:28,140
+something happens you know new things
+
+754
+00:26:28,150 --> 00:26:30,480
+can happen but that past history doesn't
+
+755
+00:26:30,490 --> 00:26:32,400
+change in sneaky ways out from under you
+
+756
+00:26:32,410 --> 00:26:33,930
+and that's that's really important in a
+
+757
+00:26:33,940 --> 00:26:35,550
+database the database needs to be able
+
+758
+00:26:35,560 --> 00:26:37,200
+to take each of these changes integrate
+
+759
+00:26:37,210 --> 00:26:39,930
+it into its tables if you know there's a
+
+760
+00:26:39,940 --> 00:26:40,649
+random chain
+
+761
+00:26:40,659 --> 00:26:42,119
+just happening in the past of history
+
+762
+00:26:42,129 --> 00:26:43,259
+where you're kind of rewriting history
+
+763
+00:26:43,269 --> 00:26:45,389
+it's very hard to integrate that in a
+
+764
+00:26:45,399 --> 00:26:46,529
+correct way especially if you imagine
+
+765
+00:26:46,539 --> 00:26:49,289
+the database crashing at some instant in
+
+766
+00:26:49,299 --> 00:26:51,359
+time like what what state are we really
+
+767
+00:26:51,369 --> 00:26:53,789
+in you know or have we even made a full
+
+768
+00:26:53,799 --> 00:26:56,279
+atomic change and so you know this idea
+
+769
+00:26:56,289 --> 00:26:57,810
+really originally came out of the idea
+
+770
+00:26:57,820 --> 00:26:59,940
+of how do we get you know atomicity and
+
+771
+00:26:59,950 --> 00:27:02,279
+and how do we have transactional commits
+
+772
+00:27:02,289 --> 00:27:03,719
+and how do we you know how do we handle
+
+773
+00:27:03,729 --> 00:27:06,599
+correctness in a database but it's
+
+774
+00:27:06,609 --> 00:27:08,369
+actually you know arguably even more
+
+775
+00:27:08,379 --> 00:27:09,869
+important when you get into a big
+
+776
+00:27:09,879 --> 00:27:11,639
+diverse organization where you have
+
+777
+00:27:11,649 --> 00:27:13,859
+different parts of the organization you
+
+778
+00:27:13,869 --> 00:27:16,139
+know have different teams that you know
+
+779
+00:27:16,149 --> 00:27:18,119
+talk to each other less than they should
+
+780
+00:27:18,129 --> 00:27:20,580
+and our building independently you know
+
+781
+00:27:20,590 --> 00:27:21,690
+it needs to be the case that when
+
+782
+00:27:21,700 --> 00:27:23,580
+something occurs that there's a really
+
+783
+00:27:23,590 --> 00:27:25,469
+principled way that that propagates out
+
+784
+00:27:25,479 --> 00:27:27,359
+to all the other systems in the
+
+785
+00:27:27,369 --> 00:27:29,489
+organization we're at this point we
+
+786
+00:27:29,499 --> 00:27:32,159
+started talking about the problem of
+
+787
+00:27:32,169 --> 00:27:35,009
+integration the complexity of
+
+788
+00:27:35,019 --> 00:27:38,310
+point-to-point integrations you simplify
+
+789
+00:27:38,320 --> 00:27:40,499
+that you put the log at the center of
+
+790
+00:27:40,509 --> 00:27:43,169
+the architecture I think we have all the
+
+791
+00:27:43,179 --> 00:27:44,549
+pieces now or you could answer the
+
+792
+00:27:44,559 --> 00:27:46,769
+question what does the enterprise
+
+793
+00:27:46,779 --> 00:27:49,169
+architecture that you're talking about
+
+794
+00:27:49,179 --> 00:27:52,769
+look like yeah well the idea is that
+
+795
+00:27:52,779 --> 00:27:55,950
+it's based around events and that you
+
+796
+00:27:55,960 --> 00:27:57,479
+can think of you know events
+
+797
+00:27:57,489 --> 00:27:59,729
+representing both the the kind of
+
+798
+00:27:59,739 --> 00:28:01,320
+activity of the company but also the
+
+799
+00:28:01,330 --> 00:28:03,509
+state changes so if I update my profile
+
+800
+00:28:03,519 --> 00:28:05,039
+that's an event and so you could really
+
+801
+00:28:05,049 --> 00:28:06,509
+think about kind of all the different
+
+802
+00:28:06,519 --> 00:28:08,129
+types of data in an enterprise those
+
+803
+00:28:08,139 --> 00:28:11,310
+events and then the question is well
+
+804
+00:28:11,320 --> 00:28:13,469
+what's the what's the data structure for
+
+805
+00:28:13,479 --> 00:28:15,539
+an event what's the abstraction that you
+
+806
+00:28:15,549 --> 00:28:16,950
+know you can give to a software engineer
+
+807
+00:28:16,960 --> 00:28:18,839
+that they can work off of that and we we
+
+808
+00:28:18,849 --> 00:28:20,549
+felt this kind of commit log was really
+
+809
+00:28:20,559 --> 00:28:22,859
+the right way to do that and so the idea
+
+810
+00:28:22,869 --> 00:28:25,349
+is that you you know you commit to some
+
+811
+00:28:25,359 --> 00:28:26,549
+kind of log and you say okay this
+
+812
+00:28:26,559 --> 00:28:27,899
+occurred and this occurred and this
+
+813
+00:28:27,909 --> 00:28:29,339
+occurred in can many people writing to
+
+814
+00:28:29,349 --> 00:28:32,159
+that log and then you can have all all
+
+815
+00:28:32,169 --> 00:28:34,769
+these independent readers who read off
+
+816
+00:28:34,779 --> 00:28:36,450
+that log and apply the change and they
+
+817
+00:28:36,460 --> 00:28:37,830
+can do that kind of on their own
+
+818
+00:28:37,840 --> 00:28:39,690
+timetable so slower systems can do it
+
+819
+00:28:39,700 --> 00:28:41,519
+slowly real-time systems can do it you
+
+820
+00:28:41,529 --> 00:28:44,009
+know as quickly as they can and they'll
+
+821
+00:28:44,019 --> 00:28:46,169
+all get the same sequence of things
+
+822
+00:28:46,179 --> 00:28:48,539
+they'll all get them in the same order
+
+823
+00:28:48,549 --> 00:28:50,070
+and they can get them kind of on the
+
+824
+00:28:50,080 --> 00:28:52,440
+timeframe that they want but but there
+
+825
+00:28:52,450 --> 00:28:54,089
+has to be strong guarantees around this
+
+826
+00:28:54,099 --> 00:28:54,480
+right
+
+827
+00:28:54,490 --> 00:28:57,000
+if data can somehow be lost or oh if a
+
+828
+00:28:57,010 --> 00:28:59,190
+system goes down for a small period of
+
+829
+00:28:59,200 --> 00:29:00,660
+time it can't be that data you know
+
+830
+00:29:00,670 --> 00:29:02,610
+you're missing updates and all the
+
+831
+00:29:02,620 --> 00:29:04,470
+everything gets out of sync and you have
+
+832
+00:29:04,480 --> 00:29:07,170
+to go do some you know scavenger hunt to
+
+833
+00:29:07,180 --> 00:29:08,190
+figure out what happened to your data it
+
+834
+00:29:08,200 --> 00:29:10,320
+has to be you know guaranteed that when
+
+835
+00:29:10,330 --> 00:29:11,970
+something happens it will propagate out
+
+836
+00:29:11,980 --> 00:29:14,610
+to everything that's downstream and we
+
+837
+00:29:14,620 --> 00:29:16,290
+felt like that you know that that was
+
+838
+00:29:16,300 --> 00:29:17,880
+actually really clarifying if you kind
+
+839
+00:29:17,890 --> 00:29:19,110
+of steps back and you just thought this
+
+840
+00:29:19,120 --> 00:29:20,730
+way you think okay look the things that
+
+841
+00:29:20,740 --> 00:29:22,860
+happen in a company are events and we
+
+842
+00:29:22,870 --> 00:29:24,570
+need infrastructure that allows us to
+
+843
+00:29:24,580 --> 00:29:27,080
+propagate events that kind of a you know
+
+844
+00:29:27,090 --> 00:29:31,500
+global companies scale then and if we
+
+845
+00:29:31,510 --> 00:29:33,660
+think hey the the way you would build
+
+846
+00:29:33,670 --> 00:29:35,370
+that is this kind of commit log then it
+
+847
+00:29:35,380 --> 00:29:36,900
+really is just this just you know
+
+848
+00:29:36,910 --> 00:29:38,400
+distributed systems problem of how can
+
+849
+00:29:38,410 --> 00:29:39,390
+we build that how can we make it
+
+850
+00:29:39,400 --> 00:29:41,580
+accessible and then how you know what
+
+851
+00:29:41,590 --> 00:29:43,320
+are the programming abstractions to make
+
+852
+00:29:43,330 --> 00:29:45,420
+that really easy which is a lot of what
+
+853
+00:29:45,430 --> 00:29:47,550
+we've done you know since that blog post
+
+854
+00:29:47,560 --> 00:29:49,650
+was written was really and a confluence
+
+855
+00:29:49,660 --> 00:29:51,180
+really focused on the kind of up the
+
+856
+00:29:51,190 --> 00:29:52,830
+stack tools that allow you know people
+
+857
+00:29:52,840 --> 00:29:54,180
+to build against this in a really simple
+
+858
+00:29:54,190 --> 00:29:57,210
+way we did on entire show on Kafka it
+
+859
+00:29:57,220 --> 00:30:00,260
+was 215 it was about four years ago
+
+860
+00:30:00,270 --> 00:30:03,090
+listeners who want to get some
+
+861
+00:30:03,100 --> 00:30:04,590
+introduction to it could listen to that
+
+862
+00:30:04,600 --> 00:30:08,160
+show so I don't want to do a whole basic
+
+863
+00:30:08,170 --> 00:30:10,020
+intro to coffee here but how is the
+
+864
+00:30:10,030 --> 00:30:12,840
+Kafka platform changed in the last four
+
+865
+00:30:12,850 --> 00:30:15,570
+to five years since we lost covered it
+
+866
+00:30:15,580 --> 00:30:18,660
+yeah it's it's changed in a couple ways
+
+867
+00:30:18,670 --> 00:30:20,850
+so that the evolution of this was you
+
+868
+00:30:20,860 --> 00:30:22,620
+know we had a pretty big vision around
+
+869
+00:30:22,630 --> 00:30:25,860
+you know events and commit logs and how
+
+870
+00:30:25,870 --> 00:30:27,390
+it could really be kind of the central
+
+871
+00:30:27,400 --> 00:30:29,550
+nervous system for a company but we
+
+872
+00:30:29,560 --> 00:30:32,070
+couldn't build it all at once and so the
+
+873
+00:30:32,080 --> 00:30:34,050
+you know the first version that we built
+
+874
+00:30:34,060 --> 00:30:37,190
+was very scalable but it didn't provide
+
+875
+00:30:37,200 --> 00:30:39,720
+you know kind of replicated
+
+876
+00:30:39,730 --> 00:30:41,430
+fault-tolerance guarantees like a
+
+877
+00:30:41,440 --> 00:30:43,410
+database would right and so it was
+
+878
+00:30:43,420 --> 00:30:45,240
+applicable for these kind of high volume
+
+879
+00:30:45,250 --> 00:30:47,160
+activity data like messaging systems
+
+880
+00:30:47,170 --> 00:30:48,390
+might have but it wasn't really
+
+881
+00:30:48,400 --> 00:30:50,340
+applicable for kind of you know core
+
+882
+00:30:50,350 --> 00:30:52,500
+payments transactions can't lose data
+
+883
+00:30:52,510 --> 00:30:54,300
+and then you know then we did work to
+
+884
+00:30:54,310 --> 00:30:56,940
+add replication to that so then we had
+
+885
+00:30:56,950 --> 00:30:59,460
+something really right about right
+
+886
+00:30:59,470 --> 00:31:00,900
+around the time that that blog post was
+
+887
+00:31:00,910 --> 00:31:02,910
+written that was both fault-tolerant and
+
+888
+00:31:02,920 --> 00:31:05,580
+scalable but it was still relatively
+
+889
+00:31:05,590 --> 00:31:07,320
+low-level we were giving you this kind
+
+890
+00:31:07,330 --> 00:31:07,919
+of commit
+
+891
+00:31:07,929 --> 00:31:10,889
+you could go do with it as you please so
+
+892
+00:31:10,899 --> 00:31:12,539
+it was kind of a you know a very
+
+893
+00:31:12,549 --> 00:31:15,810
+primitive abstraction powerful but it
+
+894
+00:31:15,820 --> 00:31:17,430
+was up to you to figure out how to use
+
+895
+00:31:17,440 --> 00:31:19,259
+it and of course that's that's a lot of
+
+896
+00:31:19,269 --> 00:31:21,539
+work to take advantage of so a lot of
+
+897
+00:31:21,549 --> 00:31:23,159
+Silicon Valley companies it just had
+
+898
+00:31:23,169 --> 00:31:25,590
+very large engineering teams would you
+
+899
+00:31:25,600 --> 00:31:27,330
+know build around Kafka just build it
+
+900
+00:31:27,340 --> 00:31:28,680
+into all their different you know
+
+901
+00:31:28,690 --> 00:31:30,180
+applications and data systems and they
+
+902
+00:31:30,190 --> 00:31:31,710
+would get to really large-scale with it
+
+903
+00:31:31,720 --> 00:31:33,989
+but you know kind of outside of that
+
+904
+00:31:33,999 --> 00:31:35,369
+world it was very hard for people to
+
+905
+00:31:35,379 --> 00:31:37,080
+kind of take advantage of the idea and
+
+906
+00:31:37,090 --> 00:31:39,389
+so then you know I compliment the the
+
+907
+00:31:39,399 --> 00:31:40,919
+you know kind of big investments we've
+
+908
+00:31:40,929 --> 00:31:42,180
+made is you know kind of continuing to
+
+909
+00:31:42,190 --> 00:31:43,970
+make that foundation better and better
+
+910
+00:31:43,980 --> 00:31:47,039
+but also adding a layer that would
+
+911
+00:31:47,049 --> 00:31:49,739
+manage kind of pre-built off-the-shelf
+
+912
+00:31:49,749 --> 00:31:51,899
+connectors so you could just plug in you
+
+913
+00:31:51,909 --> 00:31:53,940
+know databases if you have my sequel
+
+914
+00:31:53,950 --> 00:31:55,230
+there's no reason you should have to
+
+915
+00:31:55,240 --> 00:31:57,989
+build the you know 10,000 and first my
+
+916
+00:31:57,999 --> 00:31:59,460
+sequel integration you should just be
+
+917
+00:31:59,470 --> 00:32:01,019
+able to get the connector and use it and
+
+918
+00:32:01,029 --> 00:32:03,840
+then build stream processing
+
+919
+00:32:03,850 --> 00:32:05,700
+capabilities it would allow you to build
+
+920
+00:32:05,710 --> 00:32:08,220
+applications that react to these event
+
+921
+00:32:08,230 --> 00:32:09,720
+streams and so we we found that people
+
+922
+00:32:09,730 --> 00:32:11,070
+were just kind of building the same
+
+923
+00:32:11,080 --> 00:32:12,810
+stuff over and over again as they were
+
+924
+00:32:12,820 --> 00:32:15,119
+trying to you know work against this and
+
+925
+00:32:15,129 --> 00:32:18,180
+we realized that in some sense you know
+
+926
+00:32:18,190 --> 00:32:20,279
+if you think about this kind of commit
+
+927
+00:32:20,289 --> 00:32:21,840
+log or event stream that you know with
+
+928
+00:32:21,850 --> 00:32:23,789
+the that that's a foundational
+
+929
+00:32:23,799 --> 00:32:25,830
+abstraction but it's pretty low level so
+
+930
+00:32:25,840 --> 00:32:27,269
+it's kind of like you know building
+
+931
+00:32:27,279 --> 00:32:28,680
+directly on top of that can be a little
+
+932
+00:32:28,690 --> 00:32:30,210
+bit like building a an application
+
+933
+00:32:30,220 --> 00:32:32,940
+directly on top of the file system in
+
+934
+00:32:32,950 --> 00:32:35,759
+terms of its data access and you know a
+
+935
+00:32:35,769 --> 00:32:37,889
+lot of the work in recent years has been
+
+936
+00:32:37,899 --> 00:32:39,210
+moving up the stack and trying to make
+
+937
+00:32:39,220 --> 00:32:40,529
+that more approachable and try and give
+
+938
+00:32:40,539 --> 00:32:42,629
+you know a much more like a kind of
+
+939
+00:32:42,639 --> 00:32:45,180
+almost like a relational database way of
+
+940
+00:32:45,190 --> 00:32:46,769
+working with event streams and that's
+
+941
+00:32:46,779 --> 00:32:49,139
+been this area of stream processing and
+
+942
+00:32:49,149 --> 00:32:50,789
+things like Kay sequel that allow you to
+
+943
+00:32:50,799 --> 00:32:53,009
+just apply sequel on top of data streams
+
+944
+00:32:53,019 --> 00:32:55,919
+and materialize new data structures and
+
+945
+00:32:55,929 --> 00:32:58,320
+data formats and things that you can act
+
+946
+00:32:58,330 --> 00:33:00,570
+upon well put some links in the show
+
+947
+00:33:00,580 --> 00:33:02,730
+notes where people can read about some
+
+948
+00:33:02,740 --> 00:33:05,580
+of these features join hundreds of
+
+949
+00:33:05,590 --> 00:33:07,200
+senior developers engineers and software
+
+950
+00:33:07,210 --> 00:33:09,239
+architects in New York this February to
+
+951
+00:33:09,249 --> 00:33:10,950
+learn new skills and technologies at the
+
+952
+00:33:10,960 --> 00:33:12,480
+o'reilly software architecture
+
+953
+00:33:12,490 --> 00:33:14,909
+conference network with and learn from
+
+954
+00:33:14,919 --> 00:33:16,590
+experts as they share their knowledge on
+
+955
+00:33:16,600 --> 00:33:18,359
+micro services cloud computing and
+
+956
+00:33:18,369 --> 00:33:20,460
+server lists as well as emerging trends
+
+957
+00:33:20,470 --> 00:33:21,280
+in a i'm
+
+958
+00:33:21,290 --> 00:33:23,470
+learning and data analytics whether
+
+959
+00:33:23,480 --> 00:33:25,150
+you're a seasoned architect or aspiring
+
+960
+00:33:25,160 --> 00:33:26,800
+to become one the O'Reilly software
+
+961
+00:33:26,810 --> 00:33:28,270
+architecture conference is designed to
+
+962
+00:33:28,280 --> 00:33:31,450
+help you go next level save 20% on your
+
+963
+00:33:31,460 --> 00:33:34,810
+pass with code ser 20 register at
+
+964
+00:33:34,820 --> 00:33:44,110
+O'Reilly si con comm / se radio one
+
+965
+00:33:44,120 --> 00:33:46,660
+other area on explore is if you're now
+
+966
+00:33:46,670 --> 00:33:49,600
+putting this if you're making the event
+
+967
+00:33:49,610 --> 00:33:53,290
+log the real core of your architecture
+
+968
+00:33:53,300 --> 00:33:56,080
+where it's becoming the system of record
+
+969
+00:33:56,090 --> 00:33:59,230
+in order to adopt it you need to ensure
+
+970
+00:33:59,240 --> 00:34:03,760
+that it has the same degree of disaster
+
+971
+00:34:03,770 --> 00:34:07,000
+recovery and survivability as the
+
+972
+00:34:07,010 --> 00:34:08,919
+enterprise database used to be which
+
+973
+00:34:08,929 --> 00:34:12,760
+some of it means features built into the
+
+974
+00:34:12,770 --> 00:34:14,860
+system like the ability to create
+
+975
+00:34:14,870 --> 00:34:17,440
+backups while it's running but then
+
+976
+00:34:17,450 --> 00:34:19,060
+other investments you need to make
+
+977
+00:34:19,070 --> 00:34:21,370
+outside of the event log which is what
+
+978
+00:34:21,380 --> 00:34:23,860
+you do with the backups where do you put
+
+979
+00:34:23,870 --> 00:34:26,260
+them how often do you have good
+
+980
+00:34:26,270 --> 00:34:28,210
+operational procedures around recovering
+
+981
+00:34:28,220 --> 00:34:32,290
+them have kafka evolved a feature set
+
+982
+00:34:32,300 --> 00:34:35,080
+that makes it worthy of being a system
+
+983
+00:34:35,090 --> 00:34:37,419
+of record yeah it's gotten better and
+
+984
+00:34:37,429 --> 00:34:39,640
+better in that area I I think what you
+
+985
+00:34:39,650 --> 00:34:41,140
+say is exactly right there's a there's a
+
+986
+00:34:41,150 --> 00:34:43,630
+set of features and then also a set of
+
+987
+00:34:43,640 --> 00:34:45,520
+operational practices that are that are
+
+988
+00:34:45,530 --> 00:34:46,840
+really important for anything that's
+
+989
+00:34:46,850 --> 00:34:48,580
+kind of a critical data store and so
+
+990
+00:34:48,590 --> 00:34:49,690
+it's important for people who are
+
+991
+00:34:49,700 --> 00:34:53,080
+adopting Kafka to know you know are they
+
+992
+00:34:53,090 --> 00:34:54,700
+using it just for transient data or are
+
+993
+00:34:54,710 --> 00:34:56,140
+they using it as something you can kind
+
+994
+00:34:56,150 --> 00:34:58,360
+of fall back on or rely upon and if the
+
+995
+00:34:58,370 --> 00:35:00,700
+latter then definitely the you know the
+
+996
+00:35:00,710 --> 00:35:02,560
+degree of operational excellence has to
+
+997
+00:35:02,570 --> 00:35:04,930
+be a lot higher and so it has gotten you
+
+998
+00:35:04,940 --> 00:35:06,220
+know better and better at storing data
+
+999
+00:35:06,230 --> 00:35:07,480
+better at scaling the number of
+
+1000
+00:35:07,490 --> 00:35:09,700
+partitions backing up something like a
+
+1001
+00:35:09,710 --> 00:35:11,740
+log is actually really easy because you
+
+1002
+00:35:11,750 --> 00:35:13,210
+can just subscribe to it and copy it
+
+1003
+00:35:13,220 --> 00:35:14,830
+elsewhere so in fact the backup features
+
+1004
+00:35:14,840 --> 00:35:16,900
+and databases are always built on top of
+
+1005
+00:35:16,910 --> 00:35:18,640
+the the commit log and the database or
+
+1006
+00:35:18,650 --> 00:35:20,890
+typically are so that parts you know
+
+1007
+00:35:20,900 --> 00:35:22,660
+relatively relatively straightforward to
+
+1008
+00:35:22,670 --> 00:35:24,820
+do but but that is a critical thing for
+
+1009
+00:35:24,830 --> 00:35:26,500
+people who are trying to you know rely
+
+1010
+00:35:26,510 --> 00:35:29,020
+on this you know commit log as something
+
+1011
+00:35:29,030 --> 00:35:31,420
+that you can actually restore off of
+
+1012
+00:35:31,430 --> 00:35:33,280
+without going back to source systems of
+
+1013
+00:35:33,290 --> 00:35:33,820
+you know
+
+1014
+00:35:33,830 --> 00:35:35,380
+trying to reconstruct it there's some
+
+1015
+00:35:35,390 --> 00:35:37,180
+interesting possibilities with this
+
+1016
+00:35:37,190 --> 00:35:38,830
+architecture I would like to get into
+
+1017
+00:35:38,840 --> 00:35:42,670
+one would be if we have all our data in
+
+1018
+00:35:42,680 --> 00:35:44,920
+let's say a relational database and we
+
+1019
+00:35:44,930 --> 00:35:46,540
+realize there's this new type of
+
+1020
+00:35:46,550 --> 00:35:48,040
+database called a graph database it's a
+
+1021
+00:35:48,050 --> 00:35:51,760
+really good fit to our use case how do
+
+1022
+00:35:51,770 --> 00:35:53,920
+we incorporate these other types of
+
+1023
+00:35:53,930 --> 00:35:57,100
+databases into the enterprise yeah
+
+1024
+00:35:57,110 --> 00:35:59,170
+that's that's a great point that you
+
+1025
+00:35:59,180 --> 00:36:01,470
+raise so one of the nice things about
+
+1026
+00:36:01,480 --> 00:36:04,720
+Kafka is it's kind of independent of any
+
+1027
+00:36:04,730 --> 00:36:06,790
+of the different representations or
+
+1028
+00:36:06,800 --> 00:36:08,560
+query capabilities you might have for
+
+1029
+00:36:08,570 --> 00:36:11,110
+data and so if you have data feeds that
+
+1030
+00:36:11,120 --> 00:36:13,750
+are in Kafka you can easily load them
+
+1031
+00:36:13,760 --> 00:36:15,670
+into different databases and get kind of
+
+1032
+00:36:15,680 --> 00:36:17,830
+almost like a materialized view of that
+
+1033
+00:36:17,840 --> 00:36:20,140
+data and so you can think of you know
+
+1034
+00:36:20,150 --> 00:36:21,850
+data warehousing and analytics layers
+
+1035
+00:36:21,860 --> 00:36:23,530
+that way you could think of a Search
+
+1036
+00:36:23,540 --> 00:36:25,450
+Search index that way you could think of
+
+1037
+00:36:25,460 --> 00:36:27,550
+a graph data store that way and and this
+
+1038
+00:36:27,560 --> 00:36:29,770
+is one of the core use cases people
+
+1039
+00:36:29,780 --> 00:36:31,630
+adopt something like Kafka for they
+
+1040
+00:36:31,640 --> 00:36:33,520
+typically have some kind of relational
+
+1041
+00:36:33,530 --> 00:36:36,220
+database which is serving you know live
+
+1042
+00:36:36,230 --> 00:36:40,150
+user experience type UI and that's
+
+1043
+00:36:40,160 --> 00:36:42,790
+actually creating the the kind of core
+
+1044
+00:36:42,800 --> 00:36:44,620
+transactional data stream so maybe your
+
+1045
+00:36:44,630 --> 00:36:46,750
+your set of users but then there's other
+
+1046
+00:36:46,760 --> 00:36:49,360
+systems like search or analytics that
+
+1047
+00:36:49,370 --> 00:36:51,130
+that need a representation of that data
+
+1048
+00:36:51,140 --> 00:36:53,740
+and so Kafka kind of acts as this you
+
+1049
+00:36:53,750 --> 00:36:56,410
+know log of those changes that can feed
+
+1050
+00:36:56,420 --> 00:36:58,780
+out to all the systems so oftentimes the
+
+1051
+00:36:58,790 --> 00:37:00,310
+data warehouse would feed slow or some
+
+1052
+00:37:00,320 --> 00:37:01,660
+kind of real-time analytics layer might
+
+1053
+00:37:01,670 --> 00:37:04,270
+be faster a search index usually you
+
+1054
+00:37:04,280 --> 00:37:06,250
+want to be in sync you know if it's if
+
+1055
+00:37:06,260 --> 00:37:07,960
+it's meant to be a live kind of search
+
+1056
+00:37:07,970 --> 00:37:10,450
+experience something like a graph
+
+1057
+00:37:10,460 --> 00:37:11,800
+database that's providing different
+
+1058
+00:37:11,810 --> 00:37:13,450
+types of queries could feed off of that
+
+1059
+00:37:13,460 --> 00:37:15,850
+as well and you know that's that's
+
+1060
+00:37:15,860 --> 00:37:18,360
+definitely a core motivation for this
+
+1061
+00:37:18,370 --> 00:37:21,130
+architectures actually as the set of
+
+1062
+00:37:21,140 --> 00:37:23,650
+databases but also even you know in the
+
+1063
+00:37:23,660 --> 00:37:24,820
+cloud a lot of the different SAS
+
+1064
+00:37:24,830 --> 00:37:26,590
+services and so on that you could kind
+
+1065
+00:37:26,600 --> 00:37:29,470
+of tap into data as a set of things has
+
+1066
+00:37:29,480 --> 00:37:32,140
+grown you know the the desire to have
+
+1067
+00:37:32,150 --> 00:37:33,670
+some kind of consistent way of
+
+1068
+00:37:33,680 --> 00:37:35,740
+broadcasting that out gets you know more
+
+1069
+00:37:35,750 --> 00:37:36,910
+and more and we're seeing more of that
+
+1070
+00:37:36,920 --> 00:37:38,410
+where it's you know it's not just new
+
+1071
+00:37:38,420 --> 00:37:40,240
+databases like people have integrations
+
+1072
+00:37:40,250 --> 00:37:42,490
+with things like Salesforce and you know
+
+1073
+00:37:42,500 --> 00:37:44,560
+with with rest services and with all
+
+1074
+00:37:44,570 --> 00:37:45,940
+kinds of other things that they want to
+
+1075
+00:37:45,950 --> 00:37:46,599
+react
+
+1076
+00:37:46,609 --> 00:37:49,120
+something happens in the article you
+
+1077
+00:37:49,130 --> 00:37:51,190
+express the idea that all of these
+
+1078
+00:37:51,200 --> 00:37:53,049
+different types of databases are just
+
+1079
+00:37:53,059 --> 00:37:55,269
+specialized indexes on the event log
+
+1080
+00:37:55,279 --> 00:37:57,849
+what do you mean by that yeah what I
+
+1081
+00:37:57,859 --> 00:38:00,819
+what I mean is you know in some sense if
+
+1082
+00:38:00,829 --> 00:38:02,710
+you peer inside of a lot of the
+
+1083
+00:38:02,720 --> 00:38:04,690
+distributed databases they are kind of a
+
+1084
+00:38:04,700 --> 00:38:07,960
+you know distributed log and then you
+
+1085
+00:38:07,970 --> 00:38:10,450
+know some kind of materialization of the
+
+1086
+00:38:10,460 --> 00:38:12,220
+data that's there for serving queries
+
+1087
+00:38:12,230 --> 00:38:15,579
+and by having this log as a service and
+
+1088
+00:38:15,589 --> 00:38:17,559
+sewn right you can run lots of those
+
+1089
+00:38:17,569 --> 00:38:19,359
+systems in the way we we just described
+
+1090
+00:38:19,369 --> 00:38:21,519
+and you can you could actually compute
+
+1091
+00:38:21,529 --> 00:38:23,829
+new things off the data stream and so
+
+1092
+00:38:23,839 --> 00:38:25,720
+you know it may be the thing that you
+
+1093
+00:38:25,730 --> 00:38:28,690
+want in your search index isn't just the
+
+1094
+00:38:28,700 --> 00:38:30,009
+simple record that you had in the
+
+1095
+00:38:30,019 --> 00:38:31,749
+database it may actually involve
+
+1096
+00:38:31,759 --> 00:38:33,279
+stitching together lots of bits of
+
+1097
+00:38:33,289 --> 00:38:34,660
+information that you have about the
+
+1098
+00:38:34,670 --> 00:38:37,120
+customer and then indexing that and so
+
+1099
+00:38:37,130 --> 00:38:39,190
+you may want to do processing on on top
+
+1100
+00:38:39,200 --> 00:38:41,289
+of that data stream and so you know that
+
+1101
+00:38:41,299 --> 00:38:43,269
+that's very much the idea and then you
+
+1102
+00:38:43,279 --> 00:38:44,680
+can think of that you know that search
+
+1103
+00:38:44,690 --> 00:38:46,599
+cluster is you know it's effectively
+
+1104
+00:38:46,609 --> 00:38:49,239
+just a kind of materialized view of your
+
+1105
+00:38:49,249 --> 00:38:50,739
+data you know it's just a representation
+
+1106
+00:38:50,749 --> 00:38:53,319
+that's feeding off of that commit log in
+
+1107
+00:38:53,329 --> 00:38:54,789
+database terms you could think of it as
+
+1108
+00:38:54,799 --> 00:38:56,979
+a you know in databases they have tables
+
+1109
+00:38:56,989 --> 00:38:58,450
+and they have you know materialized
+
+1110
+00:38:58,460 --> 00:39:00,069
+views that are calculated off the table
+
+1111
+00:39:00,079 --> 00:39:01,120
+so you could think of it very much like
+
+1112
+00:39:01,130 --> 00:39:02,650
+that it's just that this happens to be
+
+1113
+00:39:02,660 --> 00:39:05,200
+in a separate system that last point I
+
+1114
+00:39:05,210 --> 00:39:06,700
+want to drill a little bit down into
+
+1115
+00:39:06,710 --> 00:39:08,529
+this up to now we've been talking about
+
+1116
+00:39:08,539 --> 00:39:11,769
+a lot of examples of an event is some
+
+1117
+00:39:11,779 --> 00:39:13,839
+new information that came into the
+
+1118
+00:39:13,849 --> 00:39:15,720
+system from the outside world like
+
+1119
+00:39:15,730 --> 00:39:19,269
+somebody customer bought something you
+
+1120
+00:39:19,279 --> 00:39:21,819
+could have stock price feeds coming in
+
+1121
+00:39:21,829 --> 00:39:24,670
+from the market a vendor updated their
+
+1122
+00:39:24,680 --> 00:39:26,979
+inventory he's one of your systems to
+
+1123
+00:39:26,989 --> 00:39:28,509
+give that information into your
+
+1124
+00:39:28,519 --> 00:39:30,430
+enterprise but now you're talking about
+
+1125
+00:39:30,440 --> 00:39:32,589
+you could have events that subscribed to
+
+1126
+00:39:32,599 --> 00:39:36,099
+your eternal event stream process the
+
+1127
+00:39:36,109 --> 00:39:38,349
+events and let's say classify this
+
+1128
+00:39:38,359 --> 00:39:40,930
+customer is now a higher tier of
+
+1129
+00:39:40,940 --> 00:39:43,809
+customer or something you information
+
+1130
+00:39:43,819 --> 00:39:46,569
+been able to extract from data that came
+
+1131
+00:39:46,579 --> 00:39:48,849
+in by processing and then you publish
+
+1132
+00:39:48,859 --> 00:39:50,920
+that back out onto the event log in now
+
+1133
+00:39:50,930 --> 00:39:53,229
+other systems can react to that yeah
+
+1134
+00:39:53,239 --> 00:39:54,999
+that's that's exactly right so like a
+
+1135
+00:39:55,009 --> 00:39:57,789
+really simple example is in you know
+
+1136
+00:39:57,799 --> 00:40:00,920
+virtually any big company you have
+
+1137
+00:40:00,930 --> 00:40:02,630
+a bunch of bits of information about
+
+1138
+00:40:02,640 --> 00:40:04,730
+your customers right so you have maybe
+
+1139
+00:40:04,740 --> 00:40:06,579
+some primary account record but you have
+
+1140
+00:40:06,589 --> 00:40:08,870
+interactions with customer service and
+
+1141
+00:40:08,880 --> 00:40:11,900
+you have you know four settings and so
+
+1142
+00:40:11,910 --> 00:40:13,970
+on and you you know your payment
+
+1143
+00:40:13,980 --> 00:40:16,430
+information and so usually one project
+
+1144
+00:40:16,440 --> 00:40:18,260
+that's really common in companies is you
+
+1145
+00:40:18,270 --> 00:40:19,819
+know creating some kind of unified view
+
+1146
+00:40:19,829 --> 00:40:21,230
+of that that's used in a lot of
+
+1147
+00:40:21,240 --> 00:40:23,210
+different applications that's may be
+
+1148
+00:40:23,220 --> 00:40:25,370
+used for analytics and so you can think
+
+1149
+00:40:25,380 --> 00:40:27,200
+of it as really just you need to perform
+
+1150
+00:40:27,210 --> 00:40:30,530
+a kind of continuous join across you
+
+1151
+00:40:30,540 --> 00:40:31,880
+know these different systems which have
+
+1152
+00:40:31,890 --> 00:40:33,650
+different databases and data stores and
+
+1153
+00:40:33,660 --> 00:40:35,000
+so how you know how can you do that how
+
+1154
+00:40:35,010 --> 00:40:37,819
+can you do a kind of continuous join
+
+1155
+00:40:37,829 --> 00:40:40,069
+across you know a bunch of different
+
+1156
+00:40:40,079 --> 00:40:42,349
+systems that aren't even using the same
+
+1157
+00:40:42,359 --> 00:40:44,750
+underlying data storage and you know I
+
+1158
+00:40:44,760 --> 00:40:46,670
+think one answer to that is yeah you
+
+1159
+00:40:46,680 --> 00:40:48,440
+treat the updates in each of those
+
+1160
+00:40:48,450 --> 00:40:50,000
+systems as a kind of stream of events
+
+1161
+00:40:50,010 --> 00:40:53,120
+you use stream processing to you know
+
+1162
+00:40:53,130 --> 00:40:55,010
+join that together and create this
+
+1163
+00:40:55,020 --> 00:40:57,620
+stream of kind of unified customer
+
+1164
+00:40:57,630 --> 00:40:59,270
+profiles and then that could be
+
+1165
+00:40:59,280 --> 00:41:01,099
+materialized in a key-value store it
+
+1166
+00:41:01,109 --> 00:41:02,960
+could be sent off to a data warehouse
+
+1167
+00:41:02,970 --> 00:41:05,059
+for analytics but that that feed is
+
+1168
+00:41:05,069 --> 00:41:06,770
+basically published back as you say as a
+
+1169
+00:41:06,780 --> 00:41:08,240
+log and its own right which is
+
+1170
+00:41:08,250 --> 00:41:11,030
+consumable and subscribable I want to
+
+1171
+00:41:11,040 --> 00:41:13,190
+get into a little bit more of the
+
+1172
+00:41:13,200 --> 00:41:15,770
+programming aspects so application needs
+
+1173
+00:41:15,780 --> 00:41:19,520
+to get into data into the event log how
+
+1174
+00:41:19,530 --> 00:41:21,859
+does it do that yeah there's there's two
+
+1175
+00:41:21,869 --> 00:41:24,559
+ways in Kafka right you can you know
+
+1176
+00:41:24,569 --> 00:41:28,069
+directly write a record and you know
+
+1177
+00:41:28,079 --> 00:41:29,630
+it's actually not hard you just say
+
+1178
+00:41:29,640 --> 00:41:31,339
+something like send and you provide a
+
+1179
+00:41:31,349 --> 00:41:34,010
+kind of key value pair and that's sent
+
+1180
+00:41:34,020 --> 00:41:35,780
+off to some topic that you would specify
+
+1181
+00:41:35,790 --> 00:41:38,750
+and it's appended to the commit log for
+
+1182
+00:41:38,760 --> 00:41:41,240
+that topic and that's kind of like the
+
+1183
+00:41:41,250 --> 00:41:43,579
+lowest level of interaction is you know
+
+1184
+00:41:43,589 --> 00:41:45,859
+it's almost like just saying write in a
+
+1185
+00:41:45,869 --> 00:41:47,599
+file system you just write something and
+
+1186
+00:41:47,609 --> 00:41:50,630
+so that's kind of a push mechanism now
+
+1187
+00:41:50,640 --> 00:41:52,849
+if you think about existing systems you
+
+1188
+00:41:52,859 --> 00:41:55,099
+may have some you know SAS service you
+
+1189
+00:41:55,109 --> 00:41:56,870
+use you may have a database those
+
+1190
+00:41:56,880 --> 00:41:59,660
+systems don't know about Kafka and so
+
+1191
+00:41:59,670 --> 00:42:01,490
+they're not actively going to push data
+
+1192
+00:42:01,500 --> 00:42:04,099
+into Kafka you may actually want to pull
+
+1193
+00:42:04,109 --> 00:42:06,140
+data out of those systems and push it
+
+1194
+00:42:06,150 --> 00:42:07,220
+into Kafka and that's where these
+
+1195
+00:42:07,230 --> 00:42:09,859
+connectors come in and Kafka supports
+
+1196
+00:42:09,869 --> 00:42:11,720
+something called Kafka connects which is
+
+1197
+00:42:11,730 --> 00:42:13,370
+this distributed framework for running
+
+1198
+00:42:13,380 --> 00:42:14,180
+these connector
+
+1199
+00:42:14,190 --> 00:42:16,010
+managing them and so that's the other
+
+1200
+00:42:16,020 --> 00:42:17,960
+that's the other way to get data in and
+
+1201
+00:42:17,970 --> 00:42:20,750
+and then you know of course the you know
+
+1202
+00:42:20,760 --> 00:42:22,430
+the other the final you know version of
+
+1203
+00:42:22,440 --> 00:42:23,600
+that is kind of what you described which
+
+1204
+00:42:23,610 --> 00:42:25,850
+is you may be taking some of these
+
+1205
+00:42:25,860 --> 00:42:28,010
+streams and actually doing something
+
+1206
+00:42:28,020 --> 00:42:29,960
+with it and publishing back some you
+
+1207
+00:42:29,970 --> 00:42:32,720
+know derived stream of data back into
+
+1208
+00:42:32,730 --> 00:42:35,540
+Kafka and using simple application
+
+1209
+00:42:35,550 --> 00:42:37,730
+software using one of these stream
+
+1210
+00:42:37,740 --> 00:42:41,330
+processing tools like Kay sequel and you
+
+1211
+00:42:41,340 --> 00:42:43,160
+know maybe that's a third way all of
+
+1212
+00:42:43,170 --> 00:42:45,680
+these are built on the underlying you
+
+1213
+00:42:45,690 --> 00:42:47,870
+know producer and consumer layers and
+
+1214
+00:42:47,880 --> 00:42:49,520
+Kafka which do the the reads and writes
+
+1215
+00:42:49,530 --> 00:42:52,850
+I was writing an app today I know my
+
+1216
+00:42:52,860 --> 00:42:55,580
+Enterprise has kafka so there's not this
+
+1217
+00:42:55,590 --> 00:42:57,500
+question how do I retrofit this app
+
+1218
+00:42:57,510 --> 00:43:01,880
+that's writing into Postgres so and I
+
+1219
+00:43:01,890 --> 00:43:03,320
+want to make life easy for the
+
+1220
+00:43:03,330 --> 00:43:07,190
+programmer every time I do a transaction
+
+1221
+00:43:07,200 --> 00:43:09,410
+so this app is has its own database as
+
+1222
+00:43:09,420 --> 00:43:11,030
+well let's say that's also postcards
+
+1223
+00:43:11,040 --> 00:43:13,460
+every time I write a transaction two
+
+1224
+00:43:13,470 --> 00:43:15,440
+postcards do I have to now include some
+
+1225
+00:43:15,450 --> 00:43:18,920
+logic to write Kafka or is there a way a
+
+1226
+00:43:18,930 --> 00:43:21,740
+kind of an aspect oriented style where I
+
+1227
+00:43:21,750 --> 00:43:24,040
+could create a cross-cutting concern
+
+1228
+00:43:24,050 --> 00:43:26,930
+against every database transaction that
+
+1229
+00:43:26,940 --> 00:43:29,260
+wouldn't say to ship them all off to
+
+1230
+00:43:29,270 --> 00:43:32,390
+Kafka yeah usually this simple there's
+
+1231
+00:43:32,400 --> 00:43:34,790
+many ways to handle this and some of the
+
+1232
+00:43:34,800 --> 00:43:36,650
+things that some of the events that come
+
+1233
+00:43:36,660 --> 00:43:39,440
+out of applications may have no
+
+1234
+00:43:39,450 --> 00:43:41,420
+representation and a database and you
+
+1235
+00:43:41,430 --> 00:43:43,370
+may just write them directly but but
+
+1236
+00:43:43,380 --> 00:43:45,500
+often the simplest way to do this is to
+
+1237
+00:43:45,510 --> 00:43:48,490
+use the connector infrastructure so most
+
+1238
+00:43:48,500 --> 00:43:51,080
+databases like Postgres they actually
+
+1239
+00:43:51,090 --> 00:43:53,950
+expose the commit log in some way and so
+
+1240
+00:43:53,960 --> 00:43:56,720
+either by you know querying the tables
+
+1241
+00:43:56,730 --> 00:43:58,010
+or reading that commit log you can
+
+1242
+00:43:58,020 --> 00:43:59,750
+actually take that and publish it out in
+
+1243
+00:43:59,760 --> 00:44:02,030
+Chicago's you know data streams for each
+
+1244
+00:44:02,040 --> 00:44:04,850
+of the tables say and and so that's
+
+1245
+00:44:04,860 --> 00:44:06,740
+that's the pattern that's probably most
+
+1246
+00:44:06,750 --> 00:44:08,960
+common and and then there may be
+
+1247
+00:44:08,970 --> 00:44:10,970
+additional cleanup you want to do on
+
+1248
+00:44:10,980 --> 00:44:13,190
+that data and that can often happen you
+
+1249
+00:44:13,200 --> 00:44:14,540
+know via stream processing where you
+
+1250
+00:44:14,550 --> 00:44:15,860
+take the kind of original thing that was
+
+1251
+00:44:15,870 --> 00:44:17,000
+in the database and you stitch it
+
+1252
+00:44:17,010 --> 00:44:18,680
+together into something that is really
+
+1253
+00:44:18,690 --> 00:44:19,880
+what you want to publish out to the
+
+1254
+00:44:19,890 --> 00:44:21,440
+organization that that's in the right
+
+1255
+00:44:21,450 --> 00:44:24,020
+format for consumption I've done all my
+
+1256
+00:44:24,030 --> 00:44:26,780
+domain modeling I understand my business
+
+1257
+00:44:26,790 --> 00:44:27,620
+apps
+
+1258
+00:44:27,630 --> 00:44:29,600
+tractions then we get the database
+
+1259
+00:44:29,610 --> 00:44:31,250
+people involved and they normalize
+
+1260
+00:44:31,260 --> 00:44:32,810
+everything into all these tiny little
+
+1261
+00:44:32,820 --> 00:44:35,870
+tables so I commit this one object it
+
+1262
+00:44:35,880 --> 00:44:38,420
+writes rows into six different tables
+
+1263
+00:44:38,430 --> 00:44:41,300
+now you're gonna look at the commit log
+
+1264
+00:44:41,310 --> 00:44:43,130
+with your connector do you have to
+
+1265
+00:44:43,140 --> 00:44:46,370
+reverse engineer that back or maybe not
+
+1266
+00:44:46,380 --> 00:44:49,520
+reverse engineer that but do almost the
+
+1267
+00:44:49,530 --> 00:44:51,890
+inverse operation to transform that back
+
+1268
+00:44:51,900 --> 00:44:55,310
+into your event log model yeah I mean I
+
+1269
+00:44:55,320 --> 00:44:56,810
+guess there's different patterns for
+
+1270
+00:44:56,820 --> 00:44:59,000
+doing this and it depends somewhat what
+
+1271
+00:44:59,010 --> 00:45:01,970
+your goals are if you need to have read
+
+1272
+00:45:01,980 --> 00:45:04,340
+after write consistency in the database
+
+1273
+00:45:04,350 --> 00:45:06,200
+you do typically want to kind of commit
+
+1274
+00:45:06,210 --> 00:45:08,720
+to that database first and then have the
+
+1275
+00:45:08,730 --> 00:45:11,750
+Kafka log sync off of that and you know
+
+1276
+00:45:11,760 --> 00:45:13,490
+that could mean either you know having a
+
+1277
+00:45:13,500 --> 00:45:15,290
+table that directly represents the event
+
+1278
+00:45:15,300 --> 00:45:17,810
+as well as the you know the the more
+
+1279
+00:45:17,820 --> 00:45:19,220
+normalized representation and the
+
+1280
+00:45:19,230 --> 00:45:21,680
+database or it could mean stitching it
+
+1281
+00:45:21,690 --> 00:45:23,240
+back together off of the normalized
+
+1282
+00:45:23,250 --> 00:45:25,700
+representation and you know that
+
+1283
+00:45:25,710 --> 00:45:26,930
+probably depends whether you're writing
+
+1284
+00:45:26,940 --> 00:45:28,370
+the application from scratch or you're
+
+1285
+00:45:28,380 --> 00:45:29,720
+retrofitting something that already
+
+1286
+00:45:29,730 --> 00:45:31,580
+exists which of those what you would do
+
+1287
+00:45:31,590 --> 00:45:34,220
+if on the other hand that the database
+
+1288
+00:45:34,230 --> 00:45:36,740
+doesn't have to you know have that kind
+
+1289
+00:45:36,750 --> 00:45:38,210
+of read after write consistency you can
+
+1290
+00:45:38,220 --> 00:45:39,920
+always just you know publish the event
+
+1291
+00:45:39,930 --> 00:45:41,240
+stream to Kafka and populate the
+
+1292
+00:45:41,250 --> 00:45:42,980
+database off of that in that first
+
+1293
+00:45:42,990 --> 00:45:44,960
+pattern you talked about then if I
+
+1294
+00:45:44,970 --> 00:45:47,300
+understand it it's more like a double
+
+1295
+00:45:47,310 --> 00:45:50,480
+write but the writes all go to the
+
+1296
+00:45:50,490 --> 00:45:53,360
+database to take advantage of the acid
+
+1297
+00:45:53,370 --> 00:45:55,820
+property of postcards where you'd have
+
+1298
+00:45:55,830 --> 00:45:57,470
+one table and let's say it's called
+
+1299
+00:45:57,480 --> 00:45:59,810
+Kafka log and you write something there
+
+1300
+00:45:59,820 --> 00:46:02,500
+then Kafka could come and pull that out
+
+1301
+00:46:02,510 --> 00:46:05,270
+but you don't have the problem of
+
+1302
+00:46:05,280 --> 00:46:07,610
+updating two different logs and trying
+
+1303
+00:46:07,620 --> 00:46:09,740
+to ensure they both get committed yeah
+
+1304
+00:46:09,750 --> 00:46:11,660
+it depends a bit what you mean by double
+
+1305
+00:46:11,670 --> 00:46:13,540
+right I mean we don't we don't usually
+
+1306
+00:46:13,550 --> 00:46:15,590
+advocate that people kind of you know
+
+1307
+00:46:15,600 --> 00:46:17,210
+write to one and then write to the other
+
+1308
+00:46:17,220 --> 00:46:19,310
+because you know obviously if your
+
+1309
+00:46:19,320 --> 00:46:22,160
+application fails in the middle then you
+
+1310
+00:46:22,170 --> 00:46:23,390
+know the question is how do you keep
+
+1311
+00:46:23,400 --> 00:46:24,530
+those instincts so it's usually better
+
+1312
+00:46:24,540 --> 00:46:26,750
+to write to the database and have Kafka
+
+1313
+00:46:26,760 --> 00:46:28,280
+subscribes to the database or write to
+
+1314
+00:46:28,290 --> 00:46:29,900
+Kafka and have the database subscribe to
+
+1315
+00:46:29,910 --> 00:46:31,910
+that if you don't care about correctness
+
+1316
+00:46:31,920 --> 00:46:33,350
+and of course you can try and do that
+
+1317
+00:46:33,360 --> 00:46:34,910
+double right but it's it's a bit like
+
+1318
+00:46:34,920 --> 00:46:36,950
+those you know keeping caches in sync
+
+1319
+00:46:36,960 --> 00:46:39,260
+that way word it never it never quite
+
+1320
+00:46:39,270 --> 00:46:41,090
+works in the presence of failure and
+
+1321
+00:46:41,100 --> 00:46:41,450
+mult
+
+1322
+00:46:41,460 --> 00:46:44,240
+machines and and so on so usually
+
+1323
+00:46:44,250 --> 00:46:46,190
+picking either the database or Kafka and
+
+1324
+00:46:46,200 --> 00:46:48,589
+having you know one of those to be in
+
+1325
+00:46:48,599 --> 00:46:51,260
+front is is a is a cleaner pattern you
+
+1326
+00:46:51,270 --> 00:46:54,470
+put a table in postcards called Kafka
+
+1327
+00:46:54,480 --> 00:46:57,170
+events and you write to all your
+
+1328
+00:46:57,180 --> 00:46:59,390
+normalized tables and then you write the
+
+1329
+00:46:59,400 --> 00:47:02,599
+event out to that table and that's all
+
+1330
+00:47:02,609 --> 00:47:06,410
+one commits in Postgres and then Kafka
+
+1331
+00:47:06,420 --> 00:47:08,599
+can just look at that one table that's
+
+1332
+00:47:08,609 --> 00:47:10,370
+right and that would that would simplify
+
+1333
+00:47:10,380 --> 00:47:13,040
+the the downstream cleanup you would
+
+1334
+00:47:13,050 --> 00:47:15,470
+need to do and you know that obviously
+
+1335
+00:47:15,480 --> 00:47:17,450
+works only if you're able to go in and
+
+1336
+00:47:17,460 --> 00:47:18,950
+change the application if it's something
+
+1337
+00:47:18,960 --> 00:47:20,630
+owned by somebody else and you just want
+
+1338
+00:47:20,640 --> 00:47:22,790
+to you know subscribe to what's in the
+
+1339
+00:47:22,800 --> 00:47:24,260
+database then you got to stitch it back
+
+1340
+00:47:24,270 --> 00:47:26,540
+together in the stream processing side
+
+1341
+00:47:26,550 --> 00:47:28,579
+which has gotten easier and easier as
+
+1342
+00:47:28,589 --> 00:47:30,470
+the the stream processing tool set has
+
+1343
+00:47:30,480 --> 00:47:33,800
+gotten better so one more main area and
+
+1344
+00:47:33,810 --> 00:47:35,359
+like cover we're getting close to the
+
+1345
+00:47:35,369 --> 00:47:38,359
+end of our time with these event logs
+
+1346
+00:47:38,369 --> 00:47:41,359
+being immutable how do you deal with if
+
+1347
+00:47:41,369 --> 00:47:44,390
+bad events get written to the event log
+
+1348
+00:47:44,400 --> 00:47:46,579
+which could either be human error or you
+
+1349
+00:47:46,589 --> 00:47:48,650
+have some rogue application that has a
+
+1350
+00:47:48,660 --> 00:47:50,510
+bug and it's writing a bunch of bad
+
+1351
+00:47:50,520 --> 00:47:52,970
+events and now they're immutable are you
+
+1352
+00:47:52,980 --> 00:47:54,470
+stuck yeah that's that's a great
+
+1353
+00:47:54,480 --> 00:47:57,109
+question so you know it is very hard if
+
+1354
+00:47:57,119 --> 00:47:59,060
+you have systems all reading off this in
+
+1355
+00:47:59,070 --> 00:48:01,339
+real time to handle kind of bad data you
+
+1356
+00:48:01,349 --> 00:48:03,109
+know it's very similar to a you know the
+
+1357
+00:48:03,119 --> 00:48:04,820
+situation with the database except you
+
+1358
+00:48:04,830 --> 00:48:06,829
+may have many apps that all feed off the
+
+1359
+00:48:06,839 --> 00:48:08,780
+same thing and so as much as possible
+
+1360
+00:48:08,790 --> 00:48:11,270
+you know it is good to actually enforce
+
+1361
+00:48:11,280 --> 00:48:13,460
+these schemas so similar to a database
+
+1362
+00:48:13,470 --> 00:48:15,380
+right you know if you ship a version of
+
+1363
+00:48:15,390 --> 00:48:17,660
+your application that publishes corrupt
+
+1364
+00:48:17,670 --> 00:48:19,220
+data and overwrites good data with it
+
+1365
+00:48:19,230 --> 00:48:20,810
+you're in a bit of a bind you're gonna
+
+1366
+00:48:20,820 --> 00:48:23,390
+have to go kind of rewind and you know
+
+1367
+00:48:23,400 --> 00:48:25,910
+manually truncate and figure out how to
+
+1368
+00:48:25,920 --> 00:48:28,460
+get back into a clean state it's similar
+
+1369
+00:48:28,470 --> 00:48:29,900
+with Kafka where yeah you can kind of
+
+1370
+00:48:29,910 --> 00:48:31,280
+rewind to when it happened but you're
+
+1371
+00:48:31,290 --> 00:48:32,690
+actually better off trying to enforce
+
+1372
+00:48:32,700 --> 00:48:34,760
+the schema correctly and making sure
+
+1373
+00:48:34,770 --> 00:48:38,300
+that valid data is you know is what is
+
+1374
+00:48:38,310 --> 00:48:39,950
+published and that kind of schema
+
+1375
+00:48:39,960 --> 00:48:41,780
+enforcement ends up being really
+
+1376
+00:48:41,790 --> 00:48:43,250
+important as this scales in an
+
+1377
+00:48:43,260 --> 00:48:44,450
+organization I mean we've worked with a
+
+1378
+00:48:44,460 --> 00:48:45,710
+bunch of companies that have done this
+
+1379
+00:48:45,720 --> 00:48:47,300
+and the ones that have taken kind of a
+
+1380
+00:48:47,310 --> 00:48:49,970
+best-effort approach it tends to work up
+
+1381
+00:48:49,980 --> 00:48:52,160
+it to a certain point and then you know
+
+1382
+00:48:52,170 --> 00:48:53,420
+there's just somebody breaking
+
+1383
+00:48:53,430 --> 00:48:54,679
+everything down
+
+1384
+00:48:54,689 --> 00:48:56,120
+all the time because there's so many
+
+1385
+00:48:56,130 --> 00:48:58,429
+readers and so many writers that at any
+
+1386
+00:48:58,439 --> 00:49:00,289
+given point somebody has a has a bug
+
+1387
+00:49:00,299 --> 00:49:02,809
+somewhere what about the schema is
+
+1388
+00:49:02,819 --> 00:49:05,989
+correct but the values are not correct
+
+1389
+00:49:05,999 --> 00:49:08,929
+it has to be somehow cleaned up expose
+
+1390
+00:49:08,939 --> 00:49:11,509
+how do you fix it it's similar to any
+
+1391
+00:49:11,519 --> 00:49:13,999
+contract you might have right so you
+
+1392
+00:49:14,009 --> 00:49:16,009
+have the same issue if you're trying to
+
+1393
+00:49:16,019 --> 00:49:18,229
+you know update individual micro
+
+1394
+00:49:18,239 --> 00:49:19,429
+services and a micro service
+
+1395
+00:49:19,439 --> 00:49:22,459
+architecture if you have no contract at
+
+1396
+00:49:22,469 --> 00:49:24,949
+all that can be very hard even if you
+
+1397
+00:49:24,959 --> 00:49:27,140
+have a contract the contract can't
+
+1398
+00:49:27,150 --> 00:49:28,759
+really cover everything right so you may
+
+1399
+00:49:28,769 --> 00:49:31,519
+say there's some field which is URL
+
+1400
+00:49:31,529 --> 00:49:35,239
+fully normalized fully qualified URL or
+
+1401
+00:49:35,249 --> 00:49:36,949
+is it just the base of the URL right
+
+1402
+00:49:36,959 --> 00:49:38,809
+like ultimately the person upstream and
+
+1403
+00:49:38,819 --> 00:49:40,729
+the person downstream has to agree on
+
+1404
+00:49:40,739 --> 00:49:42,829
+that and and kind of keep that in sync
+
+1405
+00:49:42,839 --> 00:49:45,709
+if if you get something that's wrong you
+
+1406
+00:49:45,719 --> 00:49:47,870
+do have to you know either update the
+
+1407
+00:49:47,880 --> 00:49:50,660
+processing logic to handle that or go go
+
+1408
+00:49:50,670 --> 00:49:52,009
+back and clean out the log which is
+
+1409
+00:49:52,019 --> 00:49:53,419
+going to be a very kind of manual step
+
+1410
+00:49:53,429 --> 00:49:56,419
+that's hard to do it covers the prepared
+
+1411
+00:49:56,429 --> 00:49:58,279
+material I have is there anything else
+
+1412
+00:49:58,289 --> 00:50:01,099
+on this theme or from the article or
+
+1413
+00:50:01,109 --> 00:50:03,229
+discussing that you wanted to cover that
+
+1414
+00:50:03,239 --> 00:50:05,479
+we haven't talked about yeah I think
+
+1415
+00:50:05,489 --> 00:50:07,609
+maybe one of the interesting things that
+
+1416
+00:50:07,619 --> 00:50:10,099
+we've done recently that's very closely
+
+1417
+00:50:10,109 --> 00:50:12,499
+aligned to that is is around case equal
+
+1418
+00:50:12,509 --> 00:50:14,209
+DB which really kind of ties together
+
+1419
+00:50:14,219 --> 00:50:16,370
+the ideas you know we talked about some
+
+1420
+00:50:16,380 --> 00:50:17,749
+of the integration stuff but there was
+
+1421
+00:50:17,759 --> 00:50:18,859
+really kind of three points like
+
+1422
+00:50:18,869 --> 00:50:21,169
+integration stream processing and the
+
+1423
+00:50:21,179 --> 00:50:23,479
+role in data systems and in some sense
+
+1424
+00:50:23,489 --> 00:50:25,189
+that ties together all three so I think
+
+1425
+00:50:25,199 --> 00:50:26,839
+it might be fun to talk about that a
+
+1426
+00:50:26,849 --> 00:50:29,779
+little bit yeah let's go ahead why don't
+
+1427
+00:50:29,789 --> 00:50:31,489
+you describe what what it does what
+
+1428
+00:50:31,499 --> 00:50:34,160
+problem it solves yeah so really just
+
+1429
+00:50:34,170 --> 00:50:36,169
+last week we actually did a release of
+
+1430
+00:50:36,179 --> 00:50:37,999
+case equal DB and this is kind of the
+
+1431
+00:50:38,009 --> 00:50:40,370
+evolution of a system called K sequel
+
+1432
+00:50:40,380 --> 00:50:42,469
+that we've built to allow stream
+
+1433
+00:50:42,479 --> 00:50:44,809
+processing in sequel on top of Kafka and
+
+1434
+00:50:44,819 --> 00:50:47,059
+so the idea was you know these event
+
+1435
+00:50:47,069 --> 00:50:50,689
+streams are new and you know people may
+
+1436
+00:50:50,699 --> 00:50:51,979
+not know how to use them but everybody
+
+1437
+00:50:51,989 --> 00:50:53,630
+knows sequel is if you could just use
+
+1438
+00:50:53,640 --> 00:50:55,099
+sequel on top of the event stream so if
+
+1439
+00:50:55,109 --> 00:50:56,870
+you could say hey you know take the
+
+1440
+00:50:56,880 --> 00:51:00,079
+stream of updates to user profiles and
+
+1441
+00:51:00,089 --> 00:51:02,959
+join that on to the stream of activity
+
+1442
+00:51:02,969 --> 00:51:04,759
+from users and get you know both
+
+1443
+00:51:04,769 --> 00:51:06,680
+together and be able to you know
+
+1444
+00:51:06,690 --> 00:51:09,020
+act on that or transform it all in
+
+1445
+00:51:09,030 --> 00:51:11,150
+sequel that that would be really cool
+
+1446
+00:51:11,160 --> 00:51:14,720
+and we've evolved that system and it's
+
+1447
+00:51:14,730 --> 00:51:16,430
+really actually I think quite exciting
+
+1448
+00:51:16,440 --> 00:51:17,960
+and if you've if you've read this log
+
+1449
+00:51:17,970 --> 00:51:19,910
+article it's even more exciting because
+
+1450
+00:51:19,920 --> 00:51:21,800
+it brings together the ideas about
+
+1451
+00:51:21,810 --> 00:51:23,750
+stream processing you know acting on
+
+1452
+00:51:23,760 --> 00:51:25,370
+real-time streams of events it brings
+
+1453
+00:51:25,380 --> 00:51:27,620
+together the ideas on data systems that
+
+1454
+00:51:27,630 --> 00:51:29,180
+are built around blogs because it turns
+
+1455
+00:51:29,190 --> 00:51:32,180
+out that you know if we want to join our
+
+1456
+00:51:32,190 --> 00:51:33,860
+customer profiles to the customer
+
+1457
+00:51:33,870 --> 00:51:35,360
+activity you need some kind of stored
+
+1458
+00:51:35,370 --> 00:51:37,010
+fault-tolerant representation of
+
+1459
+00:51:37,020 --> 00:51:38,990
+customer profiles and so what this
+
+1460
+00:51:39,000 --> 00:51:40,640
+system now allows you to do that's
+
+1461
+00:51:40,650 --> 00:51:42,710
+pretty cool is you can take these event
+
+1462
+00:51:42,720 --> 00:51:45,410
+streams you can materialize some data
+
+1463
+00:51:45,420 --> 00:51:47,600
+set off of that you can use that data
+
+1464
+00:51:47,610 --> 00:51:49,220
+set to combine with other event streams
+
+1465
+00:51:49,230 --> 00:51:51,260
+and you can query it and so it's it's
+
+1466
+00:51:51,270 --> 00:51:53,390
+it's very much kind of a database built
+
+1467
+00:51:53,400 --> 00:51:55,040
+for working with event stream so you
+
+1468
+00:51:55,050 --> 00:51:56,870
+know it's not meant to replace post
+
+1469
+00:51:56,880 --> 00:51:58,790
+grass or Oracle or whatever you would
+
+1470
+00:51:58,800 --> 00:52:01,130
+you know kind of have as the you know
+
+1471
+00:52:01,140 --> 00:52:02,720
+the backend for a crud application but
+
+1472
+00:52:02,730 --> 00:52:04,340
+it is meant to solve this problem of hey
+
+1473
+00:52:04,350 --> 00:52:05,840
+I want to take a bunch of these
+
+1474
+00:52:05,850 --> 00:52:07,010
+different data streams I want to
+
+1475
+00:52:07,020 --> 00:52:08,690
+materialize it into some data set and
+
+1476
+00:52:08,700 --> 00:52:10,700
+build an application around that aims to
+
+1477
+00:52:10,710 --> 00:52:12,260
+make that as simple as possible and so
+
+1478
+00:52:12,270 --> 00:52:14,450
+it includes both you know sequel for
+
+1479
+00:52:14,460 --> 00:52:16,790
+processing streams of data continuously
+
+1480
+00:52:16,800 --> 00:52:18,830
+as well as the ability to do lookups off
+
+1481
+00:52:18,840 --> 00:52:20,870
+of whatever the result is one if that
+
+1482
+00:52:20,880 --> 00:52:23,600
+solves the problem we've been talking
+
+1483
+00:52:23,610 --> 00:52:27,710
+about where I based on postgrads
+
+1484
+00:52:27,720 --> 00:52:30,350
+I'm gonna commit everything to postcards
+
+1485
+00:52:30,360 --> 00:52:32,510
+and then we have the problem of pulling
+
+1486
+00:52:32,520 --> 00:52:35,050
+it back out on the back end so say I
+
+1487
+00:52:35,060 --> 00:52:37,580
+want it to be in the log why don't I
+
+1488
+00:52:37,590 --> 00:52:39,350
+just write it to the log in the first
+
+1489
+00:52:39,360 --> 00:52:42,650
+place the only problem then is you don't
+
+1490
+00:52:42,660 --> 00:52:44,960
+have the ability to read it from a
+
+1491
+00:52:44,970 --> 00:52:48,200
+sequel like interface until a little bit
+
+1492
+00:52:48,210 --> 00:52:50,750
+of time is elapsed where it propagates
+
+1493
+00:52:50,760 --> 00:52:53,600
+down and gets picked up and added to
+
+1494
+00:52:53,610 --> 00:52:59,060
+sequel as a subscribe step so can I then
+
+1495
+00:52:59,070 --> 00:53:01,970
+put it in stream and if I need to read
+
+1496
+00:53:01,980 --> 00:53:05,450
+it I can query it from sequel out of the
+
+1497
+00:53:05,460 --> 00:53:08,630
+stream now and avoid that consistency
+
+1498
+00:53:08,640 --> 00:53:11,540
+delay yeah I mean the use case that
+
+1499
+00:53:11,550 --> 00:53:13,610
+we're targeting initially it's not quite
+
+1500
+00:53:13,620 --> 00:53:15,710
+that right so our theory was people
+
+1501
+00:53:15,720 --> 00:53:17,690
+aren't going to replace Postgres for
+
+1502
+00:53:17,700 --> 00:53:18,580
+their you
+
+1503
+00:53:18,590 --> 00:53:21,490
+kind of crud applications or arrest
+
+1504
+00:53:21,500 --> 00:53:23,230
+services and you know we're not trying
+
+1505
+00:53:23,240 --> 00:53:24,580
+to get them to do that but if you think
+
+1506
+00:53:24,590 --> 00:53:27,520
+about the applications downstream of
+
+1507
+00:53:27,530 --> 00:53:29,980
+that of actually using event streams
+
+1508
+00:53:29,990 --> 00:53:32,410
+those are actually relatively difficult
+
+1509
+00:53:32,420 --> 00:53:34,810
+to build and they end up being kind of
+
+1510
+00:53:34,820 --> 00:53:36,760
+you're gluing together some of these
+
+1511
+00:53:36,770 --> 00:53:38,410
+connectors and you're gluing together
+
+1512
+00:53:38,420 --> 00:53:40,510
+some stream processing that you know
+
+1513
+00:53:40,520 --> 00:53:41,950
+does something with the events and then
+
+1514
+00:53:41,960 --> 00:53:44,260
+you're eventually gluing on some you
+
+1515
+00:53:44,270 --> 00:53:46,240
+know kind of data store to serve results
+
+1516
+00:53:46,250 --> 00:53:48,130
+up to some application we thought if we
+
+1517
+00:53:48,140 --> 00:53:49,960
+could consolidate the set of things
+
+1518
+00:53:49,970 --> 00:53:52,000
+downstream that would really make life
+
+1519
+00:53:52,010 --> 00:53:54,220
+much simpler and working with the bent
+
+1520
+00:53:54,230 --> 00:53:56,080
+streams and so you know a very simple
+
+1521
+00:53:56,090 --> 00:53:58,990
+example of that that I described was you
+
+1522
+00:53:59,000 --> 00:54:00,640
+know that that kind of customer 360
+
+1523
+00:54:00,650 --> 00:54:03,250
+where you're joining together data feeds
+
+1524
+00:54:03,260 --> 00:54:05,680
+about your customer across seven systems
+
+1525
+00:54:05,690 --> 00:54:06,820
+and then you want to be able to look up
+
+1526
+00:54:06,830 --> 00:54:08,650
+hey what's the current you know what's
+
+1527
+00:54:08,660 --> 00:54:10,870
+the current unified profile for this for
+
+1528
+00:54:10,880 --> 00:54:13,060
+customer one two three and so you could
+
+1529
+00:54:13,070 --> 00:54:14,860
+do that basically just in a couple of
+
+1530
+00:54:14,870 --> 00:54:16,290
+queries and I think that kind of
+
+1531
+00:54:16,300 --> 00:54:19,300
+materialized derived cache I think
+
+1532
+00:54:19,310 --> 00:54:20,650
+that's a problem we see everywhere like
+
+1533
+00:54:20,660 --> 00:54:23,170
+people have these older applications you
+
+1534
+00:54:23,180 --> 00:54:24,400
+know they're running the business you
+
+1535
+00:54:24,410 --> 00:54:25,900
+have new requirements and you need to
+
+1536
+00:54:25,910 --> 00:54:27,640
+build a new set data set that cuts
+
+1537
+00:54:27,650 --> 00:54:29,890
+across some of these the ability to tap
+
+1538
+00:54:29,900 --> 00:54:32,350
+into those and you know create a new
+
+1539
+00:54:32,360 --> 00:54:34,060
+data set off of it and then issue
+
+1540
+00:54:34,070 --> 00:54:36,100
+queries against it to kind of
+
+1541
+00:54:36,110 --> 00:54:38,740
+continually materialize a cached view of
+
+1542
+00:54:38,750 --> 00:54:40,960
+some part of the business that that's
+
+1543
+00:54:40,970 --> 00:54:42,970
+actually really really common and we
+
+1544
+00:54:42,980 --> 00:54:44,800
+think really well-suited to this and
+
+1545
+00:54:44,810 --> 00:54:46,540
+it's much easier to do it in a correct
+
+1546
+00:54:46,550 --> 00:54:48,850
+way than if you're trying to you know do
+
+1547
+00:54:48,860 --> 00:54:50,800
+some dual rights strategy that cuts
+
+1548
+00:54:50,810 --> 00:54:53,650
+across multiple applications in some you
+
+1549
+00:54:53,660 --> 00:54:55,120
+know transient cache because this is
+
+1550
+00:54:55,130 --> 00:54:57,190
+directly fed off of the changelog of all
+
+1551
+00:54:57,200 --> 00:54:58,720
+of those systems so those event streams
+
+1552
+00:54:58,730 --> 00:55:02,050
+populated it's always kept in sync I see
+
+1553
+00:55:02,060 --> 00:55:04,540
+what I think you're saying now is
+
+1554
+00:55:04,550 --> 00:55:07,600
+instead of writing a application to do
+
+1555
+00:55:07,610 --> 00:55:10,240
+that which is high programming
+
+1556
+00:55:10,250 --> 00:55:12,490
+complexity you've reduced it to I can
+
+1557
+00:55:12,500 --> 00:55:15,580
+write a sequel query against Kafka and
+
+1558
+00:55:15,590 --> 00:55:18,880
+get the answer yeah yeah so that what
+
+1559
+00:55:18,890 --> 00:55:20,680
+the the support that this provides is
+
+1560
+00:55:20,690 --> 00:55:23,710
+the ability to manage these connectors
+
+1561
+00:55:23,720 --> 00:55:26,500
+so so in my example the first thing I
+
+1562
+00:55:26,510 --> 00:55:28,120
+need to do is actually capture the
+
+1563
+00:55:28,130 --> 00:55:31,210
+stream from a number of different
+
+1564
+00:55:31,220 --> 00:55:34,030
+databases and so maybe I would you know
+
+1565
+00:55:34,040 --> 00:55:36,220
+I now have sequel support to kind of
+
+1566
+00:55:36,230 --> 00:55:37,839
+declare there's almost like external
+
+1567
+00:55:37,849 --> 00:55:40,390
+tables or external streams and capture
+
+1568
+00:55:40,400 --> 00:55:42,579
+that into Kafka the next thing I need to
+
+1569
+00:55:42,589 --> 00:55:44,800
+do is maybe join and clean up those data
+
+1570
+00:55:44,810 --> 00:55:47,410
+feeds and create my unified customer
+
+1571
+00:55:47,420 --> 00:55:49,030
+profile can do that also with this kind
+
+1572
+00:55:49,040 --> 00:55:51,190
+of stream processing sequel and then the
+
+1573
+00:55:51,200 --> 00:55:52,599
+final thing I need to do is be able to
+
+1574
+00:55:52,609 --> 00:55:55,059
+actually query and say oh I need the
+
+1575
+00:55:55,069 --> 00:55:56,829
+profile for this customer because I need
+
+1576
+00:55:56,839 --> 00:55:58,180
+to put it in my UI and so I could
+
+1577
+00:55:58,190 --> 00:55:59,680
+actually issue those real-time queries
+
+1578
+00:55:59,690 --> 00:56:01,930
+against that that date of heating so so
+
+1579
+00:56:01,940 --> 00:56:03,579
+bringing those together the ability to
+
+1580
+00:56:03,589 --> 00:56:06,760
+you know if you think about it in ETL
+
+1581
+00:56:06,770 --> 00:56:08,650
+terms you're kind of extracting streams
+
+1582
+00:56:08,660 --> 00:56:10,300
+of data you're transforming them and
+
+1583
+00:56:10,310 --> 00:56:12,579
+you're kind of loading them into some
+
+1584
+00:56:12,589 --> 00:56:14,200
+you know stored representation and then
+
+1585
+00:56:14,210 --> 00:56:15,670
+you're actually doing live queries
+
+1586
+00:56:15,680 --> 00:56:17,559
+against them you know it's really that
+
+1587
+00:56:17,569 --> 00:56:19,030
+whole end-to-end stack that would have
+
+1588
+00:56:19,040 --> 00:56:21,190
+otherwise required you know you to glue
+
+1589
+00:56:21,200 --> 00:56:22,809
+together specialized systems for each
+
+1590
+00:56:22,819 --> 00:56:25,450
+part and once you have all the data and
+
+1591
+00:56:25,460 --> 00:56:28,150
+Kafka that becomes the obvious place to
+
+1592
+00:56:28,160 --> 00:56:31,030
+do at least some of this processing yeah
+
+1593
+00:56:31,040 --> 00:56:33,190
+that's exactly right so you know we felt
+
+1594
+00:56:33,200 --> 00:56:35,109
+like the investments with the connectors
+
+1595
+00:56:35,119 --> 00:56:37,120
+helped unlock and get a lot of data into
+
+1596
+00:56:37,130 --> 00:56:39,069
+Kafka and then you know the complaint
+
+1597
+00:56:39,079 --> 00:56:40,720
+people have is great I have all these
+
+1598
+00:56:40,730 --> 00:56:42,520
+ideas for what I could do off of these
+
+1599
+00:56:42,530 --> 00:56:44,470
+streams of events but it's you know in
+
+1600
+00:56:44,480 --> 00:56:45,700
+the end it's pretty hard right you have
+
+1601
+00:56:45,710 --> 00:56:48,280
+to build you know custom Java code or
+
+1602
+00:56:48,290 --> 00:56:50,349
+Python code or whatever that that does
+
+1603
+00:56:50,359 --> 00:56:51,700
+any of these applications it gets
+
+1604
+00:56:51,710 --> 00:56:53,710
+complicated as you think about fault
+
+1605
+00:56:53,720 --> 00:56:55,599
+tolerance and so on and so having data
+
+1606
+00:56:55,609 --> 00:56:57,400
+layer that allows you to do that
+
+1607
+00:56:57,410 --> 00:57:00,400
+declaratively in sequel that handles the
+
+1608
+00:57:00,410 --> 00:57:01,960
+kind of more complex operations like
+
+1609
+00:57:01,970 --> 00:57:04,030
+joining or counting or adding
+
+1610
+00:57:04,040 --> 00:57:06,250
+aggregating that's actually really
+
+1611
+00:57:06,260 --> 00:57:09,370
+valuable that wraps things up J where
+
+1612
+00:57:09,380 --> 00:57:11,140
+can people find you on the internet
+
+1613
+00:57:11,150 --> 00:57:13,660
+probably the easiest way is on Twitter
+
+1614
+00:57:13,670 --> 00:57:16,059
+I'm Jake reps first name last name all
+
+1615
+00:57:16,069 --> 00:57:18,250
+altogether and you know other than that
+
+1616
+00:57:18,260 --> 00:57:20,440
+I you know I've got LinkedIn profiles
+
+1617
+00:57:20,450 --> 00:57:22,380
+and dozen other social media thinks
+
+1618
+00:57:22,390 --> 00:57:24,460
+usually pretty easy to find and
+
+1619
+00:57:24,470 --> 00:57:26,490
+confluent organ people find that
+
+1620
+00:57:26,500 --> 00:57:29,079
+confluence is confluence IO
+
+1621
+00:57:29,089 --> 00:57:31,809
+and so confluent produces you know a
+
+1622
+00:57:31,819 --> 00:57:35,500
+whole platform around Kafka that is you
+
+1623
+00:57:35,510 --> 00:57:36,819
+know community license you can just go
+
+1624
+00:57:36,829 --> 00:57:39,250
+take it and use it we produce also an
+
+1625
+00:57:39,260 --> 00:57:40,750
+enterprise software product that you can
+
+1626
+00:57:40,760 --> 00:57:41,859
+go if you're going to run this in
+
+1627
+00:57:41,869 --> 00:57:44,109
+production we produce a cloud service so
+
+1628
+00:57:44,119 --> 00:57:44,950
+you can actually
+
+1629
+00:57:44,960 --> 00:57:46,390
+you know if you're looking at this Kafka
+
+1630
+00:57:46,400 --> 00:57:48,040
+stuff and you're like I just don't want
+
+1631
+00:57:48,050 --> 00:57:50,079
+to run one more thing you can get it as
+
+1632
+00:57:50,089 --> 00:57:52,150
+a service in you know any of the major
+
+1633
+00:57:52,160 --> 00:57:56,310
+public clouds Google or AWS or your and
+
+1634
+00:57:56,320 --> 00:57:58,300
+you kind of just pay for what you use
+
+1635
+00:57:58,310 --> 00:58:01,420
+and you get all this infrastructure you
+
+1636
+00:58:01,430 --> 00:58:03,640
+know has a service jake reps thank you
+
+1637
+00:58:03,650 --> 00:58:05,440
+very much for speaking to software
+
+1638
+00:58:05,450 --> 00:58:07,270
+engineering radio thanks so much for
+
+1639
+00:58:07,280 --> 00:58:09,160
+having me for software engineering radio
+
+1640
+00:58:09,170 --> 00:58:11,109
+this has been Robert blumen thank you
+
+1641
+00:58:11,119 --> 00:58:13,960
+for listening thanks for listening to se
+
+1642
+00:58:13,970 --> 00:58:15,700
+radio an educational program brought to
+
+1643
+00:58:15,710 --> 00:58:18,160
+you by Triple E software magazine for
+
+1644
+00:58:18,170 --> 00:58:19,599
+more about the podcast including other
+
+1645
+00:58:19,609 --> 00:58:22,450
+episodes visit our website at SE - radio
+
+1646
+00:58:22,460 --> 00:58:25,300
+net to provide feedback you can comment
+
+1647
+00:58:25,310 --> 00:58:27,280
+on each episode on the website or reach
+
+1648
+00:58:27,290 --> 00:58:29,920
+us on LinkedIn Facebook Twitter or
+
+1649
+00:58:29,930 --> 00:58:31,720
+through our slack channel at SC
+
+1650
+00:58:31,730 --> 00:58:36,040
+radio.com you can also email us at team
+
+1651
+00:58:36,050 --> 00:58:39,700
+@ SC - radio net this and all other
+
+1652
+00:58:39,710 --> 00:58:41,770
+episodes of SU radio is licensed under
+
+1653
+00:58:41,780 --> 00:58:45,070
+Creative Commons license 2.5 thanks for
+
+1654
+00:58:45,080 --> 00:58:45,800
+listening
+
+1655
+00:58:45,810 --> 00:58:53,730
+[Music]

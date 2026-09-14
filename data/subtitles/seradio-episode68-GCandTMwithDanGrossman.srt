@@ -1,0 +1,5475 @@
+1
+00:00:02,260 --> 00:00:02,270
+software engineering radio episode 68
+
+2
+00:00:02,270 --> 00:00:04,220
+garbage collection and transactional
+
+3
+00:00:04,230 --> 00:00:08,140
+memory with Dan Grossman
+
+4
+00:00:28,830 --> 00:00:28,840
+hello listeners welcome to another
+
+5
+00:00:28,840 --> 00:00:32,250
+episode of software engineering radio in
+
+6
+00:00:32,260 --> 00:00:34,140
+this episode we are going to talk to Dan
+
+7
+00:00:34,150 --> 00:00:36,450
+Grossman about transactional memory and
+
+8
+00:00:36,460 --> 00:00:38,430
+garbage collection about an analogy
+
+9
+00:00:38,440 --> 00:00:40,500
+between the two topics so Dan welcome
+
+10
+00:00:40,510 --> 00:00:44,549
+thank you so then before we actually dig
+
+11
+00:00:44,559 --> 00:00:45,780
+into the topic why don't you introduce
+
+12
+00:00:45,790 --> 00:00:48,990
+yourself to our listeners sure I'm Dan
+
+13
+00:00:49,000 --> 00:00:51,299
+Grossman I'm a faculty member at the
+
+14
+00:00:51,309 --> 00:00:53,490
+University of Washington in Seattle and
+
+15
+00:00:53,500 --> 00:00:56,220
+I joined the faculty here about four
+
+16
+00:00:56,230 --> 00:00:58,770
+years ago after finishing my PhD at
+
+17
+00:00:58,780 --> 00:01:01,799
+Cornell University before that I was a
+
+18
+00:01:01,809 --> 00:01:04,079
+university student at Rice University in
+
+19
+00:01:04,089 --> 00:01:07,710
+Texas and my background has always been
+
+20
+00:01:07,720 --> 00:01:10,499
+in programming languages particularly
+
+21
+00:01:10,509 --> 00:01:13,109
+safe languages languages for increasing
+
+22
+00:01:13,119 --> 00:01:16,170
+robustness and software quality I used
+
+23
+00:01:16,180 --> 00:01:18,749
+to work more on low-level languages see
+
+24
+00:01:18,759 --> 00:01:21,080
+like languages or do you want to
+
+25
+00:01:21,090 --> 00:01:23,460
+implement an operating system or
+
+26
+00:01:23,470 --> 00:01:25,529
+low-level sort of systems code and more
+
+27
+00:01:25,539 --> 00:01:27,680
+recently I've become very interested in
+
+28
+00:01:27,690 --> 00:01:29,820
+concurrency and trying to make
+
+29
+00:01:29,830 --> 00:01:31,980
+programming easier for multi-core
+
+30
+00:01:31,990 --> 00:01:34,650
+architectures and sort of the mass
+
+31
+00:01:34,660 --> 00:01:37,680
+parallel programming that we're told is
+
+32
+00:01:37,690 --> 00:01:41,490
+on the horizon mm-hmm okay and and in
+
+33
+00:01:41,500 --> 00:01:43,020
+this year's oops law you have got a
+
+34
+00:01:43,030 --> 00:01:44,940
+paper about transactional memory and
+
+35
+00:01:44,950 --> 00:01:46,680
+garbage collection so most people I
+
+36
+00:01:46,690 --> 00:01:48,389
+think know what garbage collection is
+
+37
+00:01:48,399 --> 00:01:50,339
+but can you give us a brief introduction
+
+38
+00:01:50,349 --> 00:01:52,440
+about what transactional memory is all
+
+39
+00:01:52,450 --> 00:01:55,580
+about and what it's used for sure
+
+40
+00:01:55,590 --> 00:01:59,160
+transactional memory is the idea that
+
+41
+00:01:59,170 --> 00:02:02,010
+your memory operations you know a memory
+
+42
+00:02:02,020 --> 00:02:03,870
+is just things you you know you can read
+
+43
+00:02:03,880 --> 00:02:05,999
+from locations and write to locations
+
+44
+00:02:06,009 --> 00:02:09,479
+and typically if you're down in assembly
+
+45
+00:02:09,489 --> 00:02:11,220
+language or even up in the language like
+
+46
+00:02:11,230 --> 00:02:13,979
+Java you do individual reads and writes
+
+47
+00:02:13,989 --> 00:02:16,620
+and as soon as you do them anything
+
+48
+00:02:16,630 --> 00:02:18,449
+that's happening concurrently another
+
+49
+00:02:18,459 --> 00:02:21,000
+thread or whatever could see those
+
+50
+00:02:21,010 --> 00:02:23,640
+there's only sort of one memory and it
+
+51
+00:02:23,650 --> 00:02:25,949
+works at the granularity of individual
+
+52
+00:02:25,959 --> 00:02:28,229
+reads and writes with transactional
+
+53
+00:02:28,239 --> 00:02:29,759
+memory you just have the ability to
+
+54
+00:02:29,769 --> 00:02:33,390
+group a collection of reads and writes
+
+55
+00:02:33,400 --> 00:02:34,230
+into
+
+56
+00:02:34,240 --> 00:02:36,780
+transaction very much like you can group
+
+57
+00:02:36,790 --> 00:02:39,270
+a bunch of database operations into a
+
+58
+00:02:39,280 --> 00:02:41,490
+transaction in the database setting with
+
+59
+00:02:41,500 --> 00:02:43,530
+persistent storage but now we're really
+
+60
+00:02:43,540 --> 00:02:45,600
+dealing with program state with with
+
+61
+00:02:45,610 --> 00:02:48,180
+volatile memory and you can group them
+
+62
+00:02:48,190 --> 00:02:49,500
+together and by grouping them together
+
+63
+00:02:49,510 --> 00:02:51,720
+you guarantee that either all of them
+
+64
+00:02:51,730 --> 00:02:54,210
+happen or none of them happen and that
+
+65
+00:02:54,220 --> 00:02:57,750
+any concurrent observer sees all of the
+
+66
+00:02:57,760 --> 00:03:01,200
+updates at the same time mm-hmm so
+
+67
+00:03:01,210 --> 00:03:03,270
+actually just to connect this to a
+
+68
+00:03:03,280 --> 00:03:05,970
+previous episode on su radio we talked
+
+69
+00:03:05,980 --> 00:03:08,280
+with Brian gets and David Holmes about
+
+70
+00:03:08,290 --> 00:03:10,200
+concurrency about advanced concurrency
+
+71
+00:03:10,210 --> 00:03:11,690
+and right at the end they mentioned
+
+72
+00:03:11,700 --> 00:03:13,620
+transactional memory is something that's
+
+73
+00:03:13,630 --> 00:03:15,960
+on the horizon that might revolutionize
+
+74
+00:03:15,970 --> 00:03:18,720
+concurrent programming so can you
+
+75
+00:03:18,730 --> 00:03:21,060
+provide us an example of how we would
+
+76
+00:03:21,070 --> 00:03:23,490
+use transactional memory if it were
+
+77
+00:03:23,500 --> 00:03:25,320
+available and of course it's always a
+
+78
+00:03:25,330 --> 00:03:27,360
+bit of a problem to to talk about source
+
+79
+00:03:27,370 --> 00:03:30,210
+code in an audio-only form but but let's
+
+80
+00:03:30,220 --> 00:03:35,130
+try how will I ever do this without
+
+81
+00:03:35,140 --> 00:03:40,170
+waving my head well no it's so the
+
+82
+00:03:40,180 --> 00:03:42,180
+simplest way to think about it from a
+
+83
+00:03:42,190 --> 00:03:45,270
+programming perspective is that it gives
+
+84
+00:03:45,280 --> 00:03:47,880
+you a synchronization mechanism that you
+
+85
+00:03:47,890 --> 00:03:48,840
+didn't have before
+
+86
+00:03:48,850 --> 00:03:51,660
+right now if you program in Java the
+
+87
+00:03:51,670 --> 00:03:53,910
+most common synchronization mechanism is
+
+88
+00:03:53,920 --> 00:03:56,310
+locking using synchronized statements
+
+89
+00:03:56,320 --> 00:03:58,110
+okay and the reason why you use a
+
+90
+00:03:58,120 --> 00:03:59,760
+synchronized statement is because you
+
+91
+00:03:59,770 --> 00:04:02,490
+want the things in that statement to all
+
+92
+00:04:02,500 --> 00:04:06,510
+occur you know while no other thread has
+
+93
+00:04:06,520 --> 00:04:09,270
+that lock yep and here we're getting an
+
+94
+00:04:09,280 --> 00:04:11,100
+even stronger guarantee we're saying
+
+95
+00:04:11,110 --> 00:04:12,750
+let's get locks completely out of the
+
+96
+00:04:12,760 --> 00:04:15,090
+picture and you say the same thing you
+
+97
+00:04:15,100 --> 00:04:17,400
+say atomic left curly brace and then
+
+98
+00:04:17,410 --> 00:04:18,870
+some statement and then right curly
+
+99
+00:04:18,880 --> 00:04:20,460
+brace so instead of saying synchronize
+
+100
+00:04:20,470 --> 00:04:22,530
+and a lock to acquire you just say
+
+101
+00:04:22,540 --> 00:04:24,270
+atomic it's just a key word and you
+
+102
+00:04:24,280 --> 00:04:26,670
+don't specify any lock at all and that
+
+103
+00:04:26,680 --> 00:04:29,310
+just says that the computation that
+
+104
+00:04:29,320 --> 00:04:33,480
+happens in this block has to appear to
+
+105
+00:04:33,490 --> 00:04:36,030
+happen all at once to any other thread
+
+106
+00:04:36,040 --> 00:04:36,570
+mm-hm
+
+107
+00:04:36,580 --> 00:04:39,570
+and and again to connect to the other
+
+108
+00:04:39,580 --> 00:04:41,310
+episode in some sense it's basically
+
+109
+00:04:41,320 --> 00:04:43,800
+moving something that has been provided
+
+110
+00:04:43,810 --> 00:04:45,659
+in the form of libraries and which had
+
+111
+00:04:45,669 --> 00:04:47,740
+to be obeyed as a protocol
+
+112
+00:04:47,750 --> 00:04:49,600
+bring that into a language and making it
+
+113
+00:04:49,610 --> 00:04:51,640
+more declarative and by doing that of
+
+114
+00:04:51,650 --> 00:04:52,780
+course the compiler and the runtime
+
+115
+00:04:52,790 --> 00:04:54,610
+system has more options to optimize
+
+116
+00:04:54,620 --> 00:04:57,190
+right that's exactly right in the sense
+
+117
+00:04:57,200 --> 00:04:59,920
+that when you have an atomic block
+
+118
+00:04:59,930 --> 00:05:02,290
+you're not specifying any sort of
+
+119
+00:05:02,300 --> 00:05:04,870
+particularly anything like that you're
+
+120
+00:05:04,880 --> 00:05:07,270
+just saying this has to happen all at
+
+121
+00:05:07,280 --> 00:05:11,260
+once now absolutely the role of the
+
+122
+00:05:11,270 --> 00:05:13,690
+compiler in the runtime system now is to
+
+123
+00:05:13,700 --> 00:05:16,090
+preserve the illusion of it happening
+
+124
+00:05:16,100 --> 00:05:16,750
+all at once
+
+125
+00:05:16,760 --> 00:05:18,430
+yeah and what it really tries to do is
+
+126
+00:05:18,440 --> 00:05:21,460
+preserve as much parallelism as a can um
+
+127
+00:05:21,470 --> 00:05:23,410
+and the way it basically does that
+
+128
+00:05:23,420 --> 00:05:26,650
+there's you know there's people who very
+
+129
+00:05:26,660 --> 00:05:28,150
+very smart researchers who've devoted
+
+130
+00:05:28,160 --> 00:05:31,240
+years to the details but the basic idea
+
+131
+00:05:31,250 --> 00:05:35,080
+is that you have these different atomic
+
+132
+00:05:35,090 --> 00:05:37,090
+blocks or transactions running at the
+
+133
+00:05:37,100 --> 00:05:39,190
+same time and you just do enough
+
+134
+00:05:39,200 --> 00:05:40,720
+bookkeeping to make sure that they're
+
+135
+00:05:40,730 --> 00:05:42,880
+accessing disjoint memory mm-hm
+
+136
+00:05:42,890 --> 00:05:44,440
+yeah and as long as they're accessing
+
+137
+00:05:44,450 --> 00:05:46,240
+destroy memory it's fine to let them
+
+138
+00:05:46,250 --> 00:05:48,130
+happen at the same time the programmer
+
+139
+00:05:48,140 --> 00:05:49,750
+can't tell that they happen at the same
+
+140
+00:05:49,760 --> 00:05:53,410
+time yeah okay so your your claim in the
+
+141
+00:05:53,420 --> 00:05:56,320
+paper is that transactional memory is to
+
+142
+00:05:56,330 --> 00:05:58,750
+shared memory concurrency as garbage
+
+143
+00:05:58,760 --> 00:06:02,860
+collection is to memory management so so
+
+144
+00:06:02,870 --> 00:06:04,540
+before we look at the analogy and
+
+145
+00:06:04,550 --> 00:06:06,250
+actually when I read the paper I was
+
+146
+00:06:06,260 --> 00:06:08,620
+quite intrigued this is a really cool
+
+147
+00:06:08,630 --> 00:06:10,450
+stuff I mean it's really interesting how
+
+148
+00:06:10,460 --> 00:06:13,420
+you wrote the paper and and so let's
+
+149
+00:06:13,430 --> 00:06:15,940
+first recap we introduced a little bit
+
+150
+00:06:15,950 --> 00:06:18,160
+about garbage collection artworks and
+
+151
+00:06:18,170 --> 00:06:20,590
+and and things like the basic idea of
+
+152
+00:06:20,600 --> 00:06:22,390
+different algorithms so we can connect
+
+153
+00:06:22,400 --> 00:06:24,400
+to that when we talk about transactional
+
+154
+00:06:24,410 --> 00:06:26,410
+memory later I think that's a great idea
+
+155
+00:06:26,420 --> 00:06:28,060
+and maybe something else I could say
+
+156
+00:06:28,070 --> 00:06:31,090
+even before that is that this is a an
+
+157
+00:06:31,100 --> 00:06:33,100
+essay which is a slightly different kind
+
+158
+00:06:33,110 --> 00:06:35,680
+of paper yeah oops oh so there aren't
+
+159
+00:06:35,690 --> 00:06:38,140
+you know nothing we'll talk about or
+
+160
+00:06:38,150 --> 00:06:39,550
+nothing in the paper is necessarily a
+
+161
+00:06:39,560 --> 00:06:41,860
+new technical result sure it's really a
+
+162
+00:06:41,870 --> 00:06:43,840
+new perspective this analogy is not
+
+163
+00:06:43,850 --> 00:06:46,210
+something that's been focused on before
+
+164
+00:06:46,220 --> 00:06:48,400
+or even said before so this is a really
+
+165
+00:06:48,410 --> 00:06:51,310
+a reorganization of existing knowledge
+
+166
+00:06:51,320 --> 00:06:54,100
+yep so to do that you really have to
+
+167
+00:06:54,110 --> 00:06:55,950
+start from the beginning and you have to
+
+168
+00:06:55,960 --> 00:06:59,050
+give a perspective on you know what is
+
+169
+00:06:59,060 --> 00:07:01,210
+garbage collection and you know
+
+170
+00:07:01,220 --> 00:07:03,160
+I don't you know you can sort of take
+
+171
+00:07:03,170 --> 00:07:05,260
+the view of oh well it's that feature
+
+172
+00:07:05,270 --> 00:07:06,820
+that means you never have to write
+
+173
+00:07:06,830 --> 00:07:08,470
+freeze and you don't have any space
+
+174
+00:07:08,480 --> 00:07:09,910
+leaks and you don't have any dangling
+
+175
+00:07:09,920 --> 00:07:12,880
+pointer dereferences but if you take a
+
+176
+00:07:12,890 --> 00:07:16,300
+step back that's all true but really
+
+177
+00:07:16,310 --> 00:07:19,360
+what garbage collection is is a language
+
+178
+00:07:19,370 --> 00:07:22,600
+mechanism by which the runtime system
+
+179
+00:07:22,610 --> 00:07:25,360
+can reuse space in a way that the
+
+180
+00:07:25,370 --> 00:07:28,180
+programmer can never tell hmm you know
+
+181
+00:07:28,190 --> 00:07:30,310
+from a language definition perspective
+
+182
+00:07:30,320 --> 00:07:32,350
+in a language like Java all you do is
+
+183
+00:07:32,360 --> 00:07:34,540
+allocate new objects and they live
+
+184
+00:07:34,550 --> 00:07:38,110
+forever and it's up to the garbage
+
+185
+00:07:38,120 --> 00:07:39,670
+collector to maintain that illusion
+
+186
+00:07:39,680 --> 00:07:42,640
+while actually reusing memory and the
+
+187
+00:07:42,650 --> 00:07:46,210
+key approximation that it uses and I
+
+188
+00:07:46,220 --> 00:07:47,320
+think it's important to realize it's an
+
+189
+00:07:47,330 --> 00:07:49,480
+approximation is this idea of reach
+
+190
+00:07:49,490 --> 00:07:51,970
+ability okay the way garbage collectors
+
+191
+00:07:51,980 --> 00:07:57,100
+work from 35,000 feet is it looks at all
+
+192
+00:07:57,110 --> 00:07:58,810
+the variables you're still using any
+
+193
+00:07:58,820 --> 00:08:00,640
+program everything on your call stack
+
+194
+00:08:00,650 --> 00:08:02,260
+and all your global variables your
+
+195
+00:08:02,270 --> 00:08:05,020
+static fields and it sees what objects
+
+196
+00:08:05,030 --> 00:08:08,830
+those point to and then what objects the
+
+197
+00:08:08,840 --> 00:08:10,810
+fields of those objects point to and so
+
+198
+00:08:10,820 --> 00:08:13,420
+on transitively and it keeps all of that
+
+199
+00:08:13,430 --> 00:08:16,330
+and it collects everything else which it
+
+200
+00:08:16,340 --> 00:08:18,220
+calls the garbage and the reason why I
+
+201
+00:08:18,230 --> 00:08:20,230
+call it an approximation is this can
+
+202
+00:08:20,240 --> 00:08:22,900
+lead to keeping objects around longer
+
+203
+00:08:22,910 --> 00:08:25,270
+than necessary right and so you know for
+
+204
+00:08:25,280 --> 00:08:27,070
+example if you put a very large data
+
+205
+00:08:27,080 --> 00:08:28,870
+structure in a global variable and never
+
+206
+00:08:28,880 --> 00:08:30,970
+use the global variable again you're
+
+207
+00:08:30,980 --> 00:08:33,280
+just wasting space there's nothing that
+
+208
+00:08:33,290 --> 00:08:36,130
+garbage collectors can do about it so
+
+209
+00:08:36,140 --> 00:08:39,850
+and and based on that on that basic idea
+
+210
+00:08:39,860 --> 00:08:41,920
+and and and and concept of readability
+
+211
+00:08:41,930 --> 00:08:44,230
+there are probably a couple of different
+
+212
+00:08:44,240 --> 00:08:46,270
+higher level algorithms and probably a
+
+213
+00:08:46,280 --> 00:08:47,890
+couple of tricks that you can use to
+
+214
+00:08:47,900 --> 00:08:49,500
+optimize these kinds of things right
+
+215
+00:08:49,510 --> 00:08:52,990
+right at 35,000 feet you know I just
+
+216
+00:08:53,000 --> 00:08:54,490
+said it finds everything that's
+
+217
+00:08:54,500 --> 00:08:56,260
+reachable if you go down one level
+
+218
+00:08:56,270 --> 00:08:58,270
+deeper you say well well how does it do
+
+219
+00:08:58,280 --> 00:09:02,350
+that and you know one approach which is
+
+220
+00:09:02,360 --> 00:09:04,360
+called tracing garbage collection and
+
+221
+00:09:04,370 --> 00:09:07,240
+that's an approach that subsumes you
+
+222
+00:09:07,250 --> 00:09:09,100
+know some phrases there are some ideas
+
+223
+00:09:09,110 --> 00:09:10,840
+that listeners might have heard like
+
+224
+00:09:10,850 --> 00:09:13,230
+copying garbage collection or mark-sweep
+
+225
+00:09:13,240 --> 00:09:14,470
+is
+
+226
+00:09:14,480 --> 00:09:16,090
+to have the garbage collector literally
+
+227
+00:09:16,100 --> 00:09:19,870
+literally go through memory you know
+
+228
+00:09:19,880 --> 00:09:22,180
+marking everything that it finds that
+
+229
+00:09:22,190 --> 00:09:24,940
+it's alive and another approach is to
+
+230
+00:09:24,950 --> 00:09:26,860
+basically use automated reference
+
+231
+00:09:26,870 --> 00:09:28,450
+counting so an automated reference
+
+232
+00:09:28,460 --> 00:09:32,470
+counting as the program is running the
+
+233
+00:09:32,480 --> 00:09:35,430
+system just keeps track of how many
+
+234
+00:09:35,440 --> 00:09:37,690
+references there are to each object and
+
+235
+00:09:37,700 --> 00:09:40,720
+when you reach zero you can go ahead and
+
+236
+00:09:40,730 --> 00:09:42,190
+collect the object because you know that
+
+237
+00:09:42,200 --> 00:09:44,200
+it's no longer reachable yep
+
+238
+00:09:44,210 --> 00:09:46,270
+there is also real-time garbage
+
+239
+00:09:46,280 --> 00:09:47,770
+collection is probably a very special
+
+240
+00:09:47,780 --> 00:09:51,070
+case for for well embedded systems right
+
+241
+00:09:51,080 --> 00:09:54,670
+that's right so this this phase if you
+
+242
+00:09:54,680 --> 00:09:56,980
+will of finding what's reachable is
+
+243
+00:09:56,990 --> 00:09:58,690
+something that's not under programmer
+
+244
+00:09:58,700 --> 00:10:00,550
+control and a language like Java it
+
+245
+00:10:00,560 --> 00:10:03,040
+could happen at any moment and if it
+
+246
+00:10:03,050 --> 00:10:05,170
+takes a long time that could mess up any
+
+247
+00:10:05,180 --> 00:10:08,020
+sort of application that has timing
+
+248
+00:10:08,030 --> 00:10:10,420
+needs you know that either soft timing
+
+249
+00:10:10,430 --> 00:10:11,800
+needs like you need an interactive
+
+250
+00:10:11,810 --> 00:10:13,720
+application or hard timing needs like
+
+251
+00:10:13,730 --> 00:10:15,430
+you need to respond to sensors and
+
+252
+00:10:15,440 --> 00:10:17,290
+signals like embedded systems have and
+
+253
+00:10:17,300 --> 00:10:21,130
+so taking a basic garbage collector and
+
+254
+00:10:21,140 --> 00:10:25,180
+and giving it the property that it never
+
+255
+00:10:25,190 --> 00:10:27,730
+stops the regular program for more than
+
+256
+00:10:27,740 --> 00:10:30,100
+a very small amount of time is something
+
+257
+00:10:30,110 --> 00:10:31,960
+that's been studied we have algorithms
+
+258
+00:10:31,970 --> 00:10:34,420
+to do it but it's significantly more
+
+259
+00:10:34,430 --> 00:10:36,400
+difficult than a basic garbage collector
+
+260
+00:10:36,410 --> 00:10:40,000
+mm-hmm okay so now that we talked about
+
+261
+00:10:40,010 --> 00:10:42,640
+GC garbage collection as an introduction
+
+262
+00:10:42,650 --> 00:10:44,260
+let's now look at an introduction to
+
+263
+00:10:44,270 --> 00:10:46,470
+concurrency and transactional memory
+
+264
+00:10:46,480 --> 00:10:50,290
+sure so what I did in this analogy is
+
+265
+00:10:50,300 --> 00:10:52,180
+really assumed from the beginning shared
+
+266
+00:10:52,190 --> 00:10:54,580
+memory concurrency so people who are
+
+267
+00:10:54,590 --> 00:10:57,340
+more familiar with message passing or
+
+268
+00:10:57,350 --> 00:10:59,590
+coordination languages there's a lot of
+
+269
+00:10:59,600 --> 00:11:02,080
+models of parallel programming Erling is
+
+270
+00:11:02,090 --> 00:11:04,270
+becoming quite hype these days with its
+
+271
+00:11:04,280 --> 00:11:06,310
+echo base to a message passing thing
+
+272
+00:11:06,320 --> 00:11:08,620
+absolutely and I'm actually a pretty big
+
+273
+00:11:08,630 --> 00:11:10,540
+fan of things like message passing
+
+274
+00:11:10,550 --> 00:11:13,630
+languages um but you know that's a topic
+
+275
+00:11:13,640 --> 00:11:16,030
+for another yes so you know for today
+
+276
+00:11:16,040 --> 00:11:18,640
+I'm really imagining really the parallel
+
+277
+00:11:18,650 --> 00:11:21,550
+is a model we have and in modern
+
+278
+00:11:21,560 --> 00:11:23,080
+object-oriented languages like Java
+
+279
+00:11:23,090 --> 00:11:25,390
+which is you have multiple threads a
+
+280
+00:11:25,400 --> 00:11:27,820
+thread can create a new thread these are
+
+281
+00:11:27,830 --> 00:11:30,310
+separate bits of control you might have
+
+282
+00:11:30,320 --> 00:11:32,200
+multiple running at the same time or you
+
+283
+00:11:32,210 --> 00:11:34,330
+might be time slicing one running one
+
+284
+00:11:34,340 --> 00:11:35,800
+for a little while and running another
+
+285
+00:11:35,810 --> 00:11:37,750
+and the way they communicate because
+
+286
+00:11:37,760 --> 00:11:39,880
+it's it's you know multi-threaded
+
+287
+00:11:39,890 --> 00:11:41,710
+programming is not interesting until the
+
+288
+00:11:41,720 --> 00:11:43,690
+threads communicate yeah it's one thread
+
+289
+00:11:43,700 --> 00:11:45,610
+write some data to a location and
+
+290
+00:11:45,620 --> 00:11:47,320
+another thread reads that location and
+
+291
+00:11:47,330 --> 00:11:49,330
+that's exactly what I mean by shared
+
+292
+00:11:49,340 --> 00:11:52,990
+memory and then the next step is well
+
+293
+00:11:53,000 --> 00:11:55,750
+how do they coordinate write how do how
+
+294
+00:11:55,760 --> 00:11:57,700
+does one thread know that the value has
+
+295
+00:11:57,710 --> 00:12:00,370
+been written how does another thread how
+
+296
+00:12:00,380 --> 00:12:01,870
+do you keep two threads from writing to
+
+297
+00:12:01,880 --> 00:12:03,790
+the same location at the same time and
+
+298
+00:12:03,800 --> 00:12:06,870
+to me in general that's what you have
+
+299
+00:12:06,880 --> 00:12:09,640
+synchronization mechanisms for and it's
+
+300
+00:12:09,650 --> 00:12:12,580
+it's all the things one learns about
+
+301
+00:12:12,590 --> 00:12:14,680
+typically in an undergraduate operating
+
+302
+00:12:14,690 --> 00:12:17,170
+systems course blocks monitors
+
+303
+00:12:17,180 --> 00:12:19,360
+semaphores all of those things that well
+
+304
+00:12:19,370 --> 00:12:21,340
+and you need something like that and
+
+305
+00:12:21,350 --> 00:12:23,890
+it's a classic result of parallel
+
+306
+00:12:23,900 --> 00:12:25,660
+computing that's given one you can
+
+307
+00:12:25,670 --> 00:12:27,850
+typically code up all the others but you
+
+308
+00:12:27,860 --> 00:12:31,420
+need something to the way I like to
+
+309
+00:12:31,430 --> 00:12:33,670
+think of it is restrict are the
+
+310
+00:12:33,680 --> 00:12:36,190
+interleavings of different threats right
+
+311
+00:12:36,200 --> 00:12:38,230
+you need to make sure that if one thread
+
+312
+00:12:38,240 --> 00:12:40,510
+is stopped at a particular point right
+
+313
+00:12:40,520 --> 00:12:43,060
+between two statements and that can
+
+314
+00:12:43,070 --> 00:12:46,420
+happen that another thread won't proceed
+
+315
+00:12:46,430 --> 00:12:49,720
+to read the partial results of some
+
+316
+00:12:49,730 --> 00:12:51,250
+computation that isn't finished yet
+
+317
+00:12:51,260 --> 00:12:53,500
+mm-hm and of course then then we have
+
+318
+00:12:53,510 --> 00:12:54,940
+all these problems resulting from that
+
+319
+00:12:54,950 --> 00:12:57,400
+about dead logs and life logs if you try
+
+320
+00:12:57,410 --> 00:12:59,470
+something forever or if you don't if you
+
+321
+00:12:59,480 --> 00:13:01,090
+don't well if you try to acquire a log
+
+322
+00:13:01,100 --> 00:13:02,920
+that's already acquired nobody never
+
+323
+00:13:02,930 --> 00:13:04,600
+released and stuff so that's the typical
+
+324
+00:13:04,610 --> 00:13:06,030
+problems you get from implementing
+
+325
+00:13:06,040 --> 00:13:08,260
+concurrency as a protocol without
+
+326
+00:13:08,270 --> 00:13:10,480
+language support that's a great point is
+
+327
+00:13:10,490 --> 00:13:11,980
+and we should definitely walk through
+
+328
+00:13:11,990 --> 00:13:13,240
+those problems is you have things like
+
+329
+00:13:13,250 --> 00:13:15,100
+deadlock which is a collection of
+
+330
+00:13:15,110 --> 00:13:16,900
+threads unable to make progress because
+
+331
+00:13:16,910 --> 00:13:18,550
+they're all waiting for something else
+
+332
+00:13:18,560 --> 00:13:20,740
+to do something before they continue yes
+
+333
+00:13:20,750 --> 00:13:22,480
+and in some sense what you've done there
+
+334
+00:13:22,490 --> 00:13:24,760
+is you've taken away too many possible
+
+335
+00:13:24,770 --> 00:13:26,740
+thread interleavings the programmer has
+
+336
+00:13:26,750 --> 00:13:29,230
+through a programmer area but if you get
+
+337
+00:13:29,240 --> 00:13:31,510
+rid of too many locks then you have some
+
+338
+00:13:31,520 --> 00:13:33,640
+interleavings you didn't want and those
+
+339
+00:13:33,650 --> 00:13:34,690
+are typically what we call race
+
+340
+00:13:34,700 --> 00:13:37,390
+conditions and this is exactly the
+
+341
+00:13:37,400 --> 00:13:40,360
+tightrope that programmers have to walk
+
+342
+00:13:40,370 --> 00:13:41,470
+when they're when they're Pro
+
+343
+00:13:41,480 --> 00:13:44,530
+coming with locks is uh if you if you do
+
+344
+00:13:44,540 --> 00:13:46,150
+too little locking you'll have race
+
+345
+00:13:46,160 --> 00:13:47,980
+conditions and if you do too much you'll
+
+346
+00:13:47,990 --> 00:13:51,160
+have that lock yeah yeah and okay so we
+
+347
+00:13:51,170 --> 00:13:53,829
+talked about before how a transactional
+
+348
+00:13:53,839 --> 00:13:56,350
+memory simplifies these things by making
+
+349
+00:13:56,360 --> 00:13:58,150
+things more declarative and giving the
+
+350
+00:13:58,160 --> 00:14:00,400
+runtime system well let's say the right
+
+351
+00:14:00,410 --> 00:14:02,199
+level of freedom to optimize what's
+
+352
+00:14:02,209 --> 00:14:04,930
+optimizable so is transactional memory a
+
+353
+00:14:04,940 --> 00:14:07,000
+software only thing or is it actually a
+
+354
+00:14:07,010 --> 00:14:10,269
+software hardware combination yes and
+
+355
+00:14:10,279 --> 00:14:12,550
+all the more so transactional memory has
+
+356
+00:14:12,560 --> 00:14:15,460
+been very very active as a research
+
+357
+00:14:15,470 --> 00:14:16,689
+topic in the last two or three years
+
+358
+00:14:16,699 --> 00:14:19,269
+both from the computer architecture
+
+359
+00:14:19,279 --> 00:14:22,480
+community and the parallel programming
+
+360
+00:14:22,490 --> 00:14:25,540
+parallel algorithms community and also
+
+361
+00:14:25,550 --> 00:14:27,790
+the programming languages community and
+
+362
+00:14:27,800 --> 00:14:30,280
+we having joint workshops and we're all
+
+363
+00:14:30,290 --> 00:14:32,170
+talking together and there's just been a
+
+364
+00:14:32,180 --> 00:14:34,030
+lot of work and to answer your question
+
+365
+00:14:34,040 --> 00:14:38,050
+more directly there's been several
+
+366
+00:14:38,060 --> 00:14:40,000
+different proposals on how to provide
+
+367
+00:14:40,010 --> 00:14:42,250
+transactional memory completely and
+
+368
+00:14:42,260 --> 00:14:43,300
+hardware mm-hm
+
+369
+00:14:43,310 --> 00:14:45,160
+so you can really imagine down at the
+
+370
+00:14:45,170 --> 00:14:46,480
+assembly language having new
+
+371
+00:14:46,490 --> 00:14:49,840
+instructions like begin transaction end
+
+372
+00:14:49,850 --> 00:14:52,780
+transaction and abort transaction yeah
+
+373
+00:14:52,790 --> 00:14:54,519
+so the idea is that after you say begin
+
+374
+00:14:54,529 --> 00:14:57,970
+any loads and stores you do you'll be
+
+375
+00:14:57,980 --> 00:15:00,939
+allowed to say abort and then it says if
+
+376
+00:15:00,949 --> 00:15:03,579
+none of them happen or you can say end
+
+377
+00:15:03,589 --> 00:15:05,439
+transaction or sometimes called commit
+
+378
+00:15:05,449 --> 00:15:07,420
+transaction and then they all become
+
+379
+00:15:07,430 --> 00:15:09,160
+available to other threads what's
+
+380
+00:15:09,170 --> 00:15:11,620
+particularly good in hardware is that
+
+381
+00:15:11,630 --> 00:15:13,960
+they can do conflict detection they can
+
+382
+00:15:13,970 --> 00:15:16,509
+do this runtime optimization of letting
+
+383
+00:15:16,519 --> 00:15:18,850
+things happen in parallel if they can
+
+384
+00:15:18,860 --> 00:15:21,639
+very effectively using ideas similar to
+
+385
+00:15:21,649 --> 00:15:23,590
+cache coherence protocols which we've
+
+386
+00:15:23,600 --> 00:15:25,960
+known how to do for many years what they
+
+387
+00:15:25,970 --> 00:15:27,340
+can't do as well and I don't mean to
+
+388
+00:15:27,350 --> 00:15:28,960
+criticize because there's been very good
+
+389
+00:15:28,970 --> 00:15:31,180
+research papers on how to do it these
+
+390
+00:15:31,190 --> 00:15:33,160
+long transactions transactions that
+
+391
+00:15:33,170 --> 00:15:35,050
+access more than just a few memory
+
+392
+00:15:35,060 --> 00:15:37,329
+locations and their software
+
+393
+00:15:37,339 --> 00:15:39,250
+implementations things done entirely
+
+394
+00:15:39,260 --> 00:15:41,769
+with existing instruction sets but just
+
+395
+00:15:41,779 --> 00:15:44,860
+through compiler techniques tend to do a
+
+396
+00:15:44,870 --> 00:15:47,470
+little bit better they also tend to be
+
+397
+00:15:47,480 --> 00:15:49,600
+slower you know typically when you can
+
+398
+00:15:49,610 --> 00:15:52,509
+do something in hardware so you do but
+
+399
+00:15:52,519 --> 00:15:55,240
+software is also more flexible we
+
+400
+00:15:55,250 --> 00:15:57,569
+and explore different algorithms and
+
+401
+00:15:57,579 --> 00:16:00,280
+incorporate new advancements much more
+
+402
+00:16:00,290 --> 00:16:02,139
+quickly and there's been important work
+
+403
+00:16:02,149 --> 00:16:04,809
+on hybrid systems so and I think that
+
+404
+00:16:04,819 --> 00:16:08,679
+many people believe that that's where
+
+405
+00:16:08,689 --> 00:16:10,600
+the production quality systems will end
+
+406
+00:16:10,610 --> 00:16:13,629
+up is that you will use hardware to try
+
+407
+00:16:13,639 --> 00:16:15,759
+to complete a transaction do you give a
+
+408
+00:16:15,769 --> 00:16:18,280
+best effort but the hardware will have
+
+409
+00:16:18,290 --> 00:16:21,129
+the ability to say I wasn't able to do
+
+410
+00:16:21,139 --> 00:16:23,710
+it and the system will fail over to a
+
+411
+00:16:23,720 --> 00:16:25,780
+software implementation and the
+
+412
+00:16:25,790 --> 00:16:27,400
+challenge in that research and this is
+
+413
+00:16:27,410 --> 00:16:30,280
+not research that I did is to have a
+
+414
+00:16:30,290 --> 00:16:32,530
+running system where there are software
+
+415
+00:16:32,540 --> 00:16:34,240
+transactions and hardware transactions
+
+416
+00:16:34,250 --> 00:16:36,939
+happening at the same time but of course
+
+417
+00:16:36,949 --> 00:16:39,220
+from a developer's perspective in some
+
+418
+00:16:39,230 --> 00:16:40,660
+way you don't care because as long as
+
+419
+00:16:40,670 --> 00:16:42,160
+the language provides the features I
+
+420
+00:16:42,170 --> 00:16:43,360
+don't care whether the compiler
+
+421
+00:16:43,370 --> 00:16:45,189
+delegates to the hardware or just does
+
+422
+00:16:45,199 --> 00:16:45,939
+it himself
+
+423
+00:16:45,949 --> 00:16:49,809
+you're absolutely right and what you do
+
+424
+00:16:49,819 --> 00:16:52,179
+care about is the semantics so you know
+
+425
+00:16:52,189 --> 00:16:54,369
+when I say the atomic happens all at
+
+426
+00:16:54,379 --> 00:16:58,420
+once what do I mean by that and there
+
+427
+00:16:58,430 --> 00:17:00,999
+are some caveats that we haven't talked
+
+428
+00:17:01,009 --> 00:17:03,670
+about yet and these are caveats that the
+
+429
+00:17:03,680 --> 00:17:05,409
+community is still working its way
+
+430
+00:17:05,419 --> 00:17:08,860
+through for example the vast majority of
+
+431
+00:17:08,870 --> 00:17:11,319
+systems do not let you do i/o while
+
+432
+00:17:11,329 --> 00:17:13,329
+you're in transaction because how are
+
+433
+00:17:13,339 --> 00:17:16,809
+you going to undo it so and there are
+
+434
+00:17:16,819 --> 00:17:18,669
+some other things that if you assumed
+
+435
+00:17:18,679 --> 00:17:20,770
+all the implementations are hardware or
+
+436
+00:17:20,780 --> 00:17:22,600
+you assumed all the implementations were
+
+437
+00:17:22,610 --> 00:17:25,149
+software you might have slightly
+
+438
+00:17:25,159 --> 00:17:27,970
+different lists of caveats and what we
+
+439
+00:17:27,980 --> 00:17:29,740
+and the transactions community need to
+
+440
+00:17:29,750 --> 00:17:32,649
+do and are working at is figuring out
+
+441
+00:17:32,659 --> 00:17:35,020
+what those differences are and and what
+
+442
+00:17:35,030 --> 00:17:36,340
+we should be promising and our
+
+443
+00:17:36,350 --> 00:17:38,350
+programming languages that on the one
+
+444
+00:17:38,360 --> 00:17:41,169
+hand let's program is not care and on
+
+445
+00:17:41,179 --> 00:17:43,570
+the other hand allows a range of
+
+446
+00:17:43,580 --> 00:17:45,640
+implementations hardware if you have it
+
+447
+00:17:45,650 --> 00:17:48,549
+software if you don't and so on so from
+
+448
+00:17:48,559 --> 00:17:51,010
+from your last couple of paragraphs
+
+449
+00:17:51,020 --> 00:17:53,500
+basically I derived that this is still a
+
+450
+00:17:53,510 --> 00:17:55,120
+research topic it's not not something
+
+451
+00:17:55,130 --> 00:17:56,649
+that's used in production right but I
+
+452
+00:17:56,659 --> 00:17:58,419
+guess it's implemented in probably there
+
+453
+00:17:58,429 --> 00:17:59,950
+is a JVM that's transactional memory
+
+454
+00:17:59,960 --> 00:18:04,330
+somewhere that's right so let's see it
+
+455
+00:18:04,340 --> 00:18:06,220
+is still an active research topic I
+
+456
+00:18:06,230 --> 00:18:08,680
+don't know of
+
+457
+00:18:08,690 --> 00:18:11,620
+mercial say jvm that you can use right
+
+458
+00:18:11,630 --> 00:18:13,930
+now with transactional memory there are
+
+459
+00:18:13,940 --> 00:18:16,480
+certainly publicly available research
+
+460
+00:18:16,490 --> 00:18:20,620
+prototypes on the other hand all the
+
+461
+00:18:20,630 --> 00:18:24,520
+major companies that write vm's write
+
+462
+00:18:24,530 --> 00:18:28,870
+big software systems produce a big big
+
+463
+00:18:28,880 --> 00:18:32,890
+chip numbers of multi-core chips are not
+
+464
+00:18:32,900 --> 00:18:34,780
+only aware of the transactional memory
+
+465
+00:18:34,790 --> 00:18:36,310
+research but have research and
+
+466
+00:18:36,320 --> 00:18:39,430
+development teams working on it you know
+
+467
+00:18:39,440 --> 00:18:41,410
+just to you know there's been published
+
+468
+00:18:41,420 --> 00:18:43,900
+papers on transactional memory from
+
+469
+00:18:43,910 --> 00:18:47,350
+research groups at in let's say in
+
+470
+00:18:47,360 --> 00:18:50,710
+alphabetical order Intel Microsoft and
+
+471
+00:18:50,720 --> 00:18:54,400
+Sun yeah so there's a lot of industrial
+
+472
+00:18:54,410 --> 00:18:56,950
+interest and I have no inside
+
+473
+00:18:56,960 --> 00:18:58,930
+information and I have no crystal ball
+
+474
+00:18:58,940 --> 00:19:01,060
+but I would say we're talking a small
+
+475
+00:19:01,070 --> 00:19:02,770
+number of years before some of these
+
+476
+00:19:02,780 --> 00:19:05,080
+ideas are available so is there any
+
+477
+00:19:05,090 --> 00:19:06,880
+relationship to optimistic concurrency
+
+478
+00:19:06,890 --> 00:19:09,160
+and lock-free concurrent algorithms
+
+479
+00:19:09,170 --> 00:19:10,570
+that's something else we talked about in
+
+480
+00:19:10,580 --> 00:19:13,030
+the episode with Brian and David quite
+
+481
+00:19:13,040 --> 00:19:15,990
+at the end in the area of advanced stuff
+
+482
+00:19:16,000 --> 00:19:19,750
+yes there's very much a connection and
+
+483
+00:19:19,760 --> 00:19:21,370
+here's how I like to explain it and I
+
+484
+00:19:21,380 --> 00:19:22,660
+hope the people who understand this
+
+485
+00:19:22,670 --> 00:19:25,120
+connection better than me will like my
+
+486
+00:19:25,130 --> 00:19:28,330
+explanation is that transactional memory
+
+487
+00:19:28,340 --> 00:19:32,500
+is an optimistic concurrent data
+
+488
+00:19:32,510 --> 00:19:35,160
+structure so just like you might have a
+
+489
+00:19:35,170 --> 00:19:37,720
+cue that works with optimistic and
+
+490
+00:19:37,730 --> 00:19:39,940
+concurrency and has operations like NQ
+
+491
+00:19:39,950 --> 00:19:42,340
+and DQ and things like that
+
+492
+00:19:42,350 --> 00:19:45,070
+transactional memory is just one that
+
+493
+00:19:45,080 --> 00:19:47,500
+has operations like begin transaction
+
+494
+00:19:47,510 --> 00:19:49,270
+end transaction
+
+495
+00:19:49,280 --> 00:19:51,730
+abort transaction read memory and write
+
+496
+00:19:51,740 --> 00:19:55,540
+memory and once you have that what's
+
+497
+00:19:55,550 --> 00:19:58,360
+great is that the programmers can just
+
+498
+00:19:58,370 --> 00:20:01,150
+or the compiler or whatever can just use
+
+499
+00:20:01,160 --> 00:20:03,340
+those operations and all the optimistic
+
+500
+00:20:03,350 --> 00:20:06,550
+concurrency is is under the hood it's
+
+501
+00:20:06,560 --> 00:20:08,110
+just in the implementation of the data
+
+502
+00:20:08,120 --> 00:20:10,390
+structure the same way that using an
+
+503
+00:20:10,400 --> 00:20:12,970
+optimist that Q should not be any more
+
+504
+00:20:12,980 --> 00:20:14,940
+difficult than using a traditional
+
+505
+00:20:14,950 --> 00:20:19,240
+pessimistic or lock basic you and I have
+
+506
+00:20:19,250 --> 00:20:20,860
+another analogy here that I really like
+
+507
+00:20:20,870 --> 00:20:22,510
+and hopefully you need
+
+508
+00:20:22,520 --> 00:20:25,330
+like to which is that think about error
+
+509
+00:20:25,340 --> 00:20:27,900
+correction if all of our application
+
+510
+00:20:27,910 --> 00:20:30,970
+programs had to deal with error
+
+511
+00:20:30,980 --> 00:20:33,460
+correcting codes for memory it would be
+
+512
+00:20:33,470 --> 00:20:35,920
+a huge burden yep we get it for free
+
+513
+00:20:35,930 --> 00:20:39,010
+because our memory does error correction
+
+514
+00:20:39,020 --> 00:20:41,290
+for us yeah and so the idea of
+
+515
+00:20:41,300 --> 00:20:43,060
+transactional memory is that we can get
+
+516
+00:20:43,070 --> 00:20:45,610
+the optimistic concurrency sort of once
+
+517
+00:20:45,620 --> 00:20:47,170
+and for all and as long as we use the
+
+518
+00:20:47,180 --> 00:20:50,800
+transactional memory system we get the
+
+519
+00:20:50,810 --> 00:20:53,560
+optimism without actually having to
+
+520
+00:20:53,570 --> 00:20:56,350
+understand the the clever algorithms
+
+521
+00:20:56,360 --> 00:20:58,750
+that are that are that are used inside
+
+522
+00:20:58,760 --> 00:21:02,050
+it ok
+
+523
+00:21:02,060 --> 00:21:03,820
+so let's get to the meat of the matter I
+
+524
+00:21:03,830 --> 00:21:06,070
+guess and talk about the analogy between
+
+525
+00:21:06,080 --> 00:21:07,990
+garbage collection transactional memory
+
+526
+00:21:08,000 --> 00:21:11,980
+so um maybe I should briefly explain how
+
+527
+00:21:11,990 --> 00:21:14,100
+you wrote the paper to end and then
+
+528
+00:21:14,110 --> 00:21:16,390
+explain the challenge of doing that on
+
+529
+00:21:16,400 --> 00:21:20,380
+the podcast so so what then actually did
+
+530
+00:21:20,390 --> 00:21:23,110
+was he wrote a bunch of paragraphs on
+
+531
+00:21:23,120 --> 00:21:25,150
+different aspects of garbage collection
+
+532
+00:21:25,160 --> 00:21:28,300
+and then basically took the wording of
+
+533
+00:21:28,310 --> 00:21:31,660
+these paragraphs literally and exchanged
+
+534
+00:21:31,670 --> 00:21:34,060
+a couple of nouns the idea was to have
+
+535
+00:21:34,070 --> 00:21:36,730
+basically take exactly the same text and
+
+536
+00:21:36,740 --> 00:21:39,070
+just explain exchanged a couple of nouns
+
+537
+00:21:39,080 --> 00:21:41,380
+and verbs and and take exactly the same
+
+538
+00:21:41,390 --> 00:21:44,140
+structure to explain transactional
+
+539
+00:21:44,150 --> 00:21:46,810
+memory and concurrency and you advised
+
+540
+00:21:46,820 --> 00:21:48,700
+that people should read this stuff twice
+
+541
+00:21:48,710 --> 00:21:50,860
+once to understand and then the second
+
+542
+00:21:50,870 --> 00:21:53,740
+time to to see the to see that the well
+
+543
+00:21:53,750 --> 00:21:55,480
+the correspondence between the two and
+
+544
+00:21:55,490 --> 00:21:56,770
+of course we can't do that in the
+
+545
+00:21:56,780 --> 00:21:58,510
+podcast so we have to retract the
+
+546
+00:21:58,520 --> 00:22:01,240
+analogy might not show as nicely as in
+
+547
+00:22:01,250 --> 00:22:02,560
+the paper when we discussed these things
+
+548
+00:22:02,570 --> 00:22:05,620
+now well I'm certainly comfortable with
+
+549
+00:22:05,630 --> 00:22:07,600
+the conversation throwing out some of
+
+550
+00:22:07,610 --> 00:22:09,760
+the interesting ideas and and then and
+
+551
+00:22:09,770 --> 00:22:10,960
+then of course you're right it is the
+
+552
+00:22:10,970 --> 00:22:13,810
+sort of thing that is best done from
+
+553
+00:22:13,820 --> 00:22:15,880
+reading it although this idea of an
+
+554
+00:22:15,890 --> 00:22:18,430
+analogy just like you explained it is
+
+555
+00:22:18,440 --> 00:22:20,680
+for an analogy to make sense I have to
+
+556
+00:22:20,690 --> 00:22:22,950
+convince you that I'm saying true things
+
+557
+00:22:22,960 --> 00:22:25,600
+about both occurring things about
+
+558
+00:22:25,610 --> 00:22:27,130
+garbage collection you agree this and
+
+559
+00:22:27,140 --> 00:22:28,720
+I'm saying things about transactional
+
+560
+00:22:28,730 --> 00:22:30,940
+memory that you agree with and then I
+
+561
+00:22:30,950 --> 00:22:33,220
+have a third obligation you know through
+
+562
+00:22:33,230 --> 00:22:34,750
+things on one side through things on the
+
+563
+00:22:34,760 --> 00:22:36,190
+other side which is that those things
+
+564
+00:22:36,200 --> 00:22:39,190
+things are so similar in structure that
+
+565
+00:22:39,200 --> 00:22:42,190
+something deep is going on yeah so and
+
+566
+00:22:42,200 --> 00:22:44,289
+so what we'll do now is we'll step
+
+567
+00:22:44,299 --> 00:22:46,210
+through these different aspects you've
+
+568
+00:22:46,220 --> 00:22:48,009
+been looking at and we'll put of course
+
+569
+00:22:48,019 --> 00:22:49,360
+the link to the paper into the show
+
+570
+00:22:49,370 --> 00:22:51,100
+notes so the people who want to look at
+
+571
+00:22:51,110 --> 00:22:53,710
+your actual at the document to see how
+
+572
+00:22:53,720 --> 00:22:56,259
+does it really plays out very nicely can
+
+573
+00:22:56,269 --> 00:22:58,419
+actually read this stuff of course so
+
+574
+00:22:58,429 --> 00:23:01,330
+let's look at the two problems and how
+
+575
+00:23:01,340 --> 00:23:03,220
+they are similar sure
+
+576
+00:23:03,230 --> 00:23:06,460
+so we've already I think talked about on
+
+577
+00:23:06,470 --> 00:23:07,990
+the transactional memory side but we'll
+
+578
+00:23:08,000 --> 00:23:11,590
+do both so the problem with doing memory
+
+579
+00:23:11,600 --> 00:23:13,450
+management and you have to think back to
+
+580
+00:23:13,460 --> 00:23:15,639
+programming in C or C++ without a
+
+581
+00:23:15,649 --> 00:23:18,159
+garbage collector and think about when
+
+582
+00:23:18,169 --> 00:23:20,049
+you were really thinking about memory
+
+583
+00:23:20,059 --> 00:23:23,320
+management is that you're trying to use
+
+584
+00:23:23,330 --> 00:23:25,389
+as little memory as possible because you
+
+585
+00:23:25,399 --> 00:23:27,220
+don't want to run out of space or use so
+
+586
+00:23:27,230 --> 00:23:28,990
+much space that your program is sluggish
+
+587
+00:23:29,000 --> 00:23:31,330
+or consumes a lot of resources yeah but
+
+588
+00:23:31,340 --> 00:23:32,980
+if you use too little your program will
+
+589
+00:23:32,990 --> 00:23:35,320
+actually be wrong right so on the one
+
+590
+00:23:35,330 --> 00:23:38,710
+hand you have space leaks or space
+
+591
+00:23:38,720 --> 00:23:40,870
+exhaustion you're keeping around too
+
+592
+00:23:40,880 --> 00:23:42,580
+much memory and you have a performance
+
+593
+00:23:42,590 --> 00:23:44,440
+problem on the other hand you have
+
+594
+00:23:44,450 --> 00:23:46,659
+dangling pointer dereferences if you d
+
+595
+00:23:46,669 --> 00:23:48,970
+allocate memory before you're actually
+
+596
+00:23:48,980 --> 00:23:50,799
+done with it then your program is
+
+597
+00:23:50,809 --> 00:23:53,610
+completely wrong mm-hmm so you have to
+
+598
+00:23:53,620 --> 00:23:57,190
+balance this correctness keeping memory
+
+599
+00:23:57,200 --> 00:23:58,980
+around as long as you need it and
+
+600
+00:23:58,990 --> 00:24:01,180
+performance not keeping it around any
+
+601
+00:24:01,190 --> 00:24:03,759
+longer so that's the memory management
+
+602
+00:24:03,769 --> 00:24:06,759
+side and let's see if I can switch to
+
+603
+00:24:06,769 --> 00:24:09,009
+the transit to the concurrency side yeah
+
+604
+00:24:09,019 --> 00:24:10,600
+this is something we talked about before
+
+605
+00:24:10,610 --> 00:24:12,909
+but it's worth repeating right next to
+
+606
+00:24:12,919 --> 00:24:15,100
+it they're gonna do the analogy which is
+
+607
+00:24:15,110 --> 00:24:16,539
+you're trying to have as much
+
+608
+00:24:16,549 --> 00:24:19,060
+parallelism as possible let multiple
+
+609
+00:24:19,070 --> 00:24:22,269
+threads run at the same time and if you
+
+610
+00:24:22,279 --> 00:24:24,009
+don't have enough of that you're not
+
+611
+00:24:24,019 --> 00:24:26,110
+actually writing a parallel program you
+
+612
+00:24:26,120 --> 00:24:28,029
+end up having the performance problem of
+
+613
+00:24:28,039 --> 00:24:30,070
+really only one thread running at a time
+
+614
+00:24:30,080 --> 00:24:32,529
+or if you're even worse than that
+
+615
+00:24:32,539 --> 00:24:34,629
+deadlocking and not having any threads
+
+616
+00:24:34,639 --> 00:24:36,639
+running at all so you want to try to
+
+617
+00:24:36,649 --> 00:24:38,560
+keep as much parallelism as possible
+
+618
+00:24:38,570 --> 00:24:40,539
+from a performance angle but if you have
+
+619
+00:24:40,549 --> 00:24:42,460
+too much do you end up with race
+
+620
+00:24:42,470 --> 00:24:45,220
+conditions multiple threads stomping on
+
+621
+00:24:45,230 --> 00:24:46,990
+the same memory at the same time and
+
+622
+00:24:47,000 --> 00:24:49,060
+then your program is typically not
+
+623
+00:24:49,070 --> 00:24:49,810
+correct
+
+624
+00:24:49,820 --> 00:24:53,289
+you end up reading two parts of a value
+
+625
+00:24:53,299 --> 00:24:54,580
+that don't make sense together and
+
+626
+00:24:54,590 --> 00:24:56,350
+things like that so we have the same
+
+627
+00:24:56,360 --> 00:25:02,410
+dilemma of if we do too much in this on
+
+628
+00:25:02,420 --> 00:25:03,669
+the performance side we'll give up
+
+629
+00:25:03,679 --> 00:25:06,370
+correctness and if we work too hard for
+
+630
+00:25:06,380 --> 00:25:08,710
+correctness we'll end up giving away the
+
+631
+00:25:08,720 --> 00:25:10,510
+very performance advantages we're trying
+
+632
+00:25:10,520 --> 00:25:12,010
+to achieve by going for parallelism
+
+633
+00:25:12,020 --> 00:25:13,030
+mm-hmm
+
+634
+00:25:13,040 --> 00:25:15,310
+and I think even in the way you talked
+
+635
+00:25:15,320 --> 00:25:17,919
+about it now that the analogy shines
+
+636
+00:25:17,929 --> 00:25:20,890
+through really cool let's go to the to
+
+637
+00:25:20,900 --> 00:25:22,810
+the next aspect which is the solution in
+
+638
+00:25:22,820 --> 00:25:24,370
+one case garbage collection in the other
+
+639
+00:25:24,380 --> 00:25:26,830
+case a transactional memory when you go
+
+640
+00:25:26,840 --> 00:25:29,020
+to solve either of these problems
+
+641
+00:25:29,030 --> 00:25:31,390
+manually you end up using pretty subtle
+
+642
+00:25:31,400 --> 00:25:33,850
+protocols protocols that all of the code
+
+643
+00:25:33,860 --> 00:25:36,310
+in your application has to obey so in
+
+644
+00:25:36,320 --> 00:25:39,340
+the memory management side maybe if
+
+645
+00:25:39,350 --> 00:25:41,110
+you're doing it manually you have an
+
+646
+00:25:41,120 --> 00:25:42,880
+extra field in each object with a
+
+647
+00:25:42,890 --> 00:25:45,400
+reference count or whether it's still
+
+648
+00:25:45,410 --> 00:25:48,220
+needed or you tightly control what can
+
+649
+00:25:48,230 --> 00:25:50,289
+point to what else so that you know when
+
+650
+00:25:50,299 --> 00:25:52,120
+you're done with something and when you
+
+651
+00:25:52,130 --> 00:25:53,620
+implement a garbage collector if you
+
+652
+00:25:53,630 --> 00:25:55,330
+ever have it turns out you do all the
+
+653
+00:25:55,340 --> 00:25:57,700
+same things you have subtle protocols
+
+654
+00:25:57,710 --> 00:26:00,280
+all of the memory in your system is laid
+
+655
+00:26:00,290 --> 00:26:02,200
+out in a certain way they'll be header
+
+656
+00:26:02,210 --> 00:26:05,560
+field there be a certain bits that are
+
+657
+00:26:05,570 --> 00:26:07,270
+set to one if you're done with something
+
+658
+00:26:07,280 --> 00:26:09,520
+and zero if you're not so all of these
+
+659
+00:26:09,530 --> 00:26:12,760
+subtle whole program protocols are there
+
+660
+00:26:12,770 --> 00:26:15,730
+but they're not a part of the program
+
+661
+00:26:15,740 --> 00:26:17,740
+they're now part of the runtime system
+
+662
+00:26:17,750 --> 00:26:21,310
+where people who devote their lives to
+
+663
+00:26:21,320 --> 00:26:23,169
+writing good garbage collectors and a
+
+664
+00:26:23,179 --> 00:26:25,750
+real domain-specific experts in that can
+
+665
+00:26:25,760 --> 00:26:28,570
+get it right exactly once now they don't
+
+666
+00:26:28,580 --> 00:26:29,730
+know anything about your application
+
+667
+00:26:29,740 --> 00:26:32,440
+which is the challenge you know any time
+
+668
+00:26:32,450 --> 00:26:34,049
+you try to have a one-size-fits-all
+
+669
+00:26:34,059 --> 00:26:37,090
+solution it's not going to be specially
+
+670
+00:26:37,100 --> 00:26:39,730
+tuned to the application but they know
+
+671
+00:26:39,740 --> 00:26:42,190
+how to write garbage collectors and so
+
+672
+00:26:42,200 --> 00:26:44,650
+then for transactional memory it's the
+
+673
+00:26:44,660 --> 00:26:47,770
+same idea that now what we want to do is
+
+674
+00:26:47,780 --> 00:26:51,220
+we want to somehow keep track of are
+
+675
+00:26:51,230 --> 00:26:54,190
+these two transactions accessing the
+
+676
+00:26:54,200 --> 00:26:56,020
+same memory and the other thing
+
+677
+00:26:56,030 --> 00:26:57,460
+transactions have to do is they have to
+
+678
+00:26:57,470 --> 00:26:59,230
+have some way to take multiple updates
+
+679
+00:26:59,240 --> 00:27:02,470
+to memory and export them all at the
+
+680
+00:27:02,480 --> 00:27:03,450
+same time
+
+681
+00:27:03,460 --> 00:27:05,700
+and the protocols in doing that are
+
+682
+00:27:05,710 --> 00:27:08,400
+extremely subtle and involve all of the
+
+683
+00:27:08,410 --> 00:27:10,920
+code in the application doing the same
+
+684
+00:27:10,930 --> 00:27:12,600
+thing and doing it correctly but again
+
+685
+00:27:12,610 --> 00:27:15,750
+we have experts people who have
+
+686
+00:27:15,760 --> 00:27:17,250
+developed these algorithms and can
+
+687
+00:27:17,260 --> 00:27:19,380
+implement them once and for all and get
+
+688
+00:27:19,390 --> 00:27:24,240
+them right mm-hmm okay and also both
+
+689
+00:27:24,250 --> 00:27:26,760
+cases aren't useful in every in every
+
+690
+00:27:26,770 --> 00:27:28,860
+scenario they are incomplete solutions
+
+691
+00:27:28,870 --> 00:27:32,730
+in some sense right yeah and you know I
+
+692
+00:27:32,740 --> 00:27:34,590
+think garbage collection is great and I
+
+693
+00:27:34,600 --> 00:27:36,750
+don't want to come across as saying
+
+694
+00:27:36,760 --> 00:27:38,490
+anything otherwise in the same for
+
+695
+00:27:38,500 --> 00:27:41,670
+transactional memory but certainly once
+
+696
+00:27:41,680 --> 00:27:44,250
+you understand the approximations that
+
+697
+00:27:44,260 --> 00:27:45,840
+these systems make you can understand
+
+698
+00:27:45,850 --> 00:27:47,400
+that I can certainly write programs
+
+699
+00:27:47,410 --> 00:27:50,250
+where they do very very poorly so in
+
+700
+00:27:50,260 --> 00:27:52,160
+garbage collection
+
+701
+00:27:52,170 --> 00:27:54,420
+remember this key approximation is
+
+702
+00:27:54,430 --> 00:27:57,060
+reachable whatever is still reachable
+
+703
+00:27:57,070 --> 00:27:59,610
+will stay live and any time that's a bad
+
+704
+00:27:59,620 --> 00:28:02,040
+match for what should stay live anytime
+
+705
+00:28:02,050 --> 00:28:03,780
+you have an application or a bunch of
+
+706
+00:28:03,790 --> 00:28:06,900
+live things reachable things are no
+
+707
+00:28:06,910 --> 00:28:09,750
+longer needed programmers should really
+
+708
+00:28:09,760 --> 00:28:12,060
+get involved and somehow make those
+
+709
+00:28:12,070 --> 00:28:13,940
+things not reachable either by using
+
+710
+00:28:13,950 --> 00:28:16,200
+special language features like weak
+
+711
+00:28:16,210 --> 00:28:18,690
+pointers except or simply going in and
+
+712
+00:28:18,700 --> 00:28:20,610
+adjusting their data structure is quite
+
+713
+00:28:20,620 --> 00:28:22,170
+manually to make things no longer
+
+714
+00:28:22,180 --> 00:28:24,960
+reachable and when you start going down
+
+715
+00:28:24,970 --> 00:28:28,130
+that path you realize that you're
+
+716
+00:28:28,140 --> 00:28:31,110
+reintroducing the problems of manual
+
+717
+00:28:31,120 --> 00:28:36,900
+memory manager to make things not
+
+718
+00:28:36,910 --> 00:28:39,420
+reachable not too soon those are
+
+719
+00:28:39,430 --> 00:28:41,730
+incorrect and not too late or the data
+
+720
+00:28:41,740 --> 00:28:44,040
+will stay around yeah and I have a
+
+721
+00:28:44,050 --> 00:28:46,260
+little example in the paper in fact it
+
+722
+00:28:46,270 --> 00:28:48,660
+says if you are a very very stubborn
+
+723
+00:28:48,670 --> 00:28:50,790
+Java programmer who really wanted to do
+
+724
+00:28:50,800 --> 00:28:53,210
+manual memory management you can do it
+
+725
+00:28:53,220 --> 00:28:56,130
+you can set up a raise of objects and
+
+726
+00:28:56,140 --> 00:28:57,720
+when you're done with an object put it
+
+727
+00:28:57,730 --> 00:29:00,300
+back in the array and things like that
+
+728
+00:29:00,310 --> 00:29:03,660
+and and you really regain all of the
+
+729
+00:29:03,670 --> 00:29:06,000
+difficulties of manual memory management
+
+730
+00:29:06,010 --> 00:29:07,830
+and that's something that you might
+
+731
+00:29:07,840 --> 00:29:09,720
+actually want to do in an embedded
+
+732
+00:29:09,730 --> 00:29:11,490
+real-time systems where it's important
+
+733
+00:29:11,500 --> 00:29:13,620
+that the amount of memory is is well
+
+734
+00:29:13,630 --> 00:29:15,720
+it's constant and is also known in
+
+735
+00:29:15,730 --> 00:29:17,280
+advance when the system is built
+
+736
+00:29:17,290 --> 00:29:19,110
+deployed that's absolutely right and
+
+737
+00:29:19,120 --> 00:29:21,330
+I've even seen situations and people who
+
+738
+00:29:21,340 --> 00:29:24,390
+write garbage collectors don't like when
+
+739
+00:29:24,400 --> 00:29:26,160
+programmers do this but I've certainly
+
+740
+00:29:26,170 --> 00:29:28,830
+seen programs where for certain very
+
+741
+00:29:28,840 --> 00:29:34,020
+performance critical classes and and
+
+742
+00:29:34,030 --> 00:29:36,180
+algorithms people will do things like
+
+743
+00:29:36,190 --> 00:29:39,060
+have an array of packet objects so
+
+744
+00:29:39,070 --> 00:29:41,310
+simply cycle through it reusing the same
+
+745
+00:29:41,320 --> 00:29:43,680
+packet object memory rather than
+
+746
+00:29:43,690 --> 00:29:45,630
+constantly creating new packet objects
+
+747
+00:29:45,640 --> 00:29:48,000
+and freeing them and and going around
+
+748
+00:29:48,010 --> 00:29:50,610
+the loop and it really depends on your
+
+749
+00:29:50,620 --> 00:29:53,130
+system and your garbage collector people
+
+750
+00:29:53,140 --> 00:29:54,690
+often have the intuition and that
+
+751
+00:29:54,700 --> 00:29:57,120
+improves performance it really depends
+
+752
+00:29:57,130 --> 00:29:58,500
+on the system they're they're often not
+
+753
+00:29:58,510 --> 00:30:00,720
+correct yeah but it depends okay
+
+754
+00:30:00,730 --> 00:30:03,540
+TM site so on the transactional memory
+
+755
+00:30:03,550 --> 00:30:05,700
+side we have an approximation that is
+
+756
+00:30:05,710 --> 00:30:07,530
+the analogy of this reachability
+
+757
+00:30:07,540 --> 00:30:11,880
+approximation and that is that we don't
+
+758
+00:30:11,890 --> 00:30:15,140
+let two transactions proceed in parallel
+
+759
+00:30:15,150 --> 00:30:18,770
+if they have a memory conflict and that
+
+760
+00:30:18,780 --> 00:30:22,170
+almost means access the same memory it
+
+761
+00:30:22,180 --> 00:30:23,790
+turns out that as long as they're both
+
+762
+00:30:23,800 --> 00:30:25,770
+just reading the same memory we
+
+763
+00:30:25,780 --> 00:30:28,140
+typically allow parallel happen in that
+
+764
+00:30:28,150 --> 00:30:28,710
+case
+
+765
+00:30:28,720 --> 00:30:30,360
+but if there's a read write or write
+
+766
+00:30:30,370 --> 00:30:32,700
+write conflict we will not allow them to
+
+767
+00:30:32,710 --> 00:30:35,850
+both proceed and there are situations
+
+768
+00:30:35,860 --> 00:30:39,380
+where that is unnecessarily conservative
+
+769
+00:30:39,390 --> 00:30:43,760
+for example if they are both just
+
+770
+00:30:43,770 --> 00:30:46,710
+incrementing some counter it's just used
+
+771
+00:30:46,720 --> 00:30:50,580
+to say generate unique identifiers it
+
+772
+00:30:50,590 --> 00:30:51,960
+doesn't really matter that they can
+
+773
+00:30:51,970 --> 00:30:52,590
+flicked
+
+774
+00:30:52,600 --> 00:30:54,810
+one of them writes to to the counter the
+
+775
+00:30:54,820 --> 00:30:56,400
+next one writes three the next one
+
+776
+00:30:56,410 --> 00:30:59,700
+writes four doesn't really matter but
+
+777
+00:30:59,710 --> 00:31:02,070
+from the system's perspective from the
+
+778
+00:31:02,080 --> 00:31:03,540
+implementer of the transactional memory
+
+779
+00:31:03,550 --> 00:31:05,550
+it doesn't know that it sees that
+
+780
+00:31:05,560 --> 00:31:07,560
+because of this conflict
+
+781
+00:31:07,570 --> 00:31:09,990
+one thread saw the value three when it
+
+782
+00:31:10,000 --> 00:31:12,420
+should have gotten the value two and in
+
+783
+00:31:12,430 --> 00:31:14,340
+some sense only the application can know
+
+784
+00:31:14,350 --> 00:31:16,350
+that it doesn't matter whether it saw -
+
+785
+00:31:16,360 --> 00:31:18,060
+or three it just has to be a unique
+
+786
+00:31:18,070 --> 00:31:20,550
+value hmm and then I go ahead and show
+
+787
+00:31:20,560 --> 00:31:22,320
+that the extreme case just like a Java
+
+788
+00:31:22,330 --> 00:31:25,980
+programmer can regain the pluses and
+
+789
+00:31:25,990 --> 00:31:27,470
+minuses of manual memory management
+
+790
+00:31:27,480 --> 00:31:29,880
+someone program with transactional
+
+791
+00:31:29,890 --> 00:31:30,960
+memory
+
+792
+00:31:30,970 --> 00:31:34,049
+can write a locker class can go ahead
+
+793
+00:31:34,059 --> 00:31:36,360
+and implement locks on top of
+
+794
+00:31:36,370 --> 00:31:38,430
+transactional memory and then choose the
+
+795
+00:31:38,440 --> 00:31:40,740
+program in terms of method calls like
+
+796
+00:31:40,750 --> 00:31:43,700
+acquire lock and release lock yeah and
+
+797
+00:31:43,710 --> 00:31:46,260
+and then they'll have the same race
+
+798
+00:31:46,270 --> 00:31:48,450
+conditions and deadlock potentials in
+
+799
+00:31:48,460 --> 00:31:49,860
+their application that they had before
+
+800
+00:31:49,870 --> 00:31:52,860
+mmm very nice so I think these these
+
+801
+00:31:52,870 --> 00:31:55,080
+three aspects the problem solutions and
+
+802
+00:31:55,090 --> 00:31:56,870
+the incompleteness of the solution is
+
+803
+00:31:56,880 --> 00:31:59,490
+probably well from my perspective it's
+
+804
+00:31:59,500 --> 00:32:01,529
+the core of the analogy but it goes even
+
+805
+00:32:01,539 --> 00:32:04,049
+it goes even further I guess and you're
+
+806
+00:32:04,059 --> 00:32:05,549
+absolutely right that that is the core
+
+807
+00:32:05,559 --> 00:32:07,710
+of the analogy but then some of the
+
+808
+00:32:07,720 --> 00:32:09,450
+details turn out to push the idea
+
+809
+00:32:09,460 --> 00:32:13,020
+further so in in garbage collection it
+
+810
+00:32:13,030 --> 00:32:15,720
+turns out the two very basic approaches
+
+811
+00:32:15,730 --> 00:32:17,940
+are tracing which subsumes copying and
+
+812
+00:32:17,950 --> 00:32:20,340
+mark sweep and reference counting and
+
+813
+00:32:20,350 --> 00:32:22,169
+and and it turns out in for a few years
+
+814
+00:32:22,179 --> 00:32:25,080
+ago there was a very nice paper relating
+
+815
+00:32:25,090 --> 00:32:27,090
+these two basic approaches and showing
+
+816
+00:32:27,100 --> 00:32:29,909
+that they're actually duals kind of
+
+817
+00:32:29,919 --> 00:32:32,100
+complete opposites of each other in some
+
+818
+00:32:32,110 --> 00:32:35,760
+sense tracing traces be live data and
+
+819
+00:32:35,770 --> 00:32:38,490
+reference counting traces the dead data
+
+820
+00:32:38,500 --> 00:32:41,310
+and that's a much harder thing to to see
+
+821
+00:32:41,320 --> 00:32:42,930
+and I'll have to point you to that work
+
+822
+00:32:42,940 --> 00:32:46,770
+I think it was 2005 annual conference so
+
+823
+00:32:46,780 --> 00:32:51,659
+we will find out I'm sorry 2004 a paper
+
+824
+00:32:51,669 --> 00:32:54,110
+a unified theory of garbage collection
+
+825
+00:32:54,120 --> 00:32:57,750
+on the transactional memory side now we
+
+826
+00:32:57,760 --> 00:32:59,549
+have to get into just at the very
+
+827
+00:32:59,559 --> 00:33:01,230
+highest level how transactional memory
+
+828
+00:33:01,240 --> 00:33:03,299
+is implemented and again there's two
+
+829
+00:33:03,309 --> 00:33:06,390
+basic approaches one is that a
+
+830
+00:33:06,400 --> 00:33:08,490
+transaction while it's running goes
+
+831
+00:33:08,500 --> 00:33:11,039
+ahead and updates memory but then if it
+
+832
+00:33:11,049 --> 00:33:12,539
+can't complete because there's some
+
+833
+00:33:12,549 --> 00:33:14,520
+conflict with another transaction it
+
+834
+00:33:14,530 --> 00:33:17,010
+undoes or rolls back everything that it
+
+835
+00:33:17,020 --> 00:33:19,350
+had done previously the other
+
+836
+00:33:19,360 --> 00:33:21,570
+possibility is to not update shared
+
+837
+00:33:21,580 --> 00:33:23,310
+memory but instead while a transaction
+
+838
+00:33:23,320 --> 00:33:24,870
+is running it works on a private copy
+
+839
+00:33:24,880 --> 00:33:27,950
+and then if it successfully completes
+
+840
+00:33:27,960 --> 00:33:31,110
+then it reflects all the changes back to
+
+841
+00:33:31,120 --> 00:33:33,090
+shared memory using a complicated
+
+842
+00:33:33,100 --> 00:33:35,760
+protocol to do that and the interesting
+
+843
+00:33:35,770 --> 00:33:37,680
+thing how these two are opposites is
+
+844
+00:33:37,690 --> 00:33:40,830
+that if you do the update in place the
+
+845
+00:33:40,840 --> 00:33:43,990
+first version I talked about then
+
+846
+00:33:44,000 --> 00:33:46,540
+the transaction is trivial and aborting
+
+847
+00:33:46,550 --> 00:33:49,030
+in it is rather difficult yes and if you
+
+848
+00:33:49,040 --> 00:33:50,680
+do it with the private memory its exact
+
+849
+00:33:50,690 --> 00:33:52,470
+opposite aborting it is trivial and
+
+850
+00:33:52,480 --> 00:33:55,060
+committing it is quite difficult
+
+851
+00:33:55,070 --> 00:33:58,150
+hmm and and difficult also in sense of
+
+852
+00:33:58,160 --> 00:34:00,760
+performance cost that's right in both
+
+853
+00:34:00,770 --> 00:34:03,060
+cases the cost is usually of the
+
+854
+00:34:03,070 --> 00:34:05,770
+difficult part is proportional to the
+
+855
+00:34:05,780 --> 00:34:07,900
+number of memory locations that you
+
+856
+00:34:07,910 --> 00:34:11,140
+wrote to them which is good news and bad
+
+857
+00:34:11,150 --> 00:34:13,150
+news that doesn't sound big but remember
+
+858
+00:34:13,160 --> 00:34:14,680
+of course you already took the time in
+
+859
+00:34:14,690 --> 00:34:16,570
+your application to write to them yeah
+
+860
+00:34:16,580 --> 00:34:19,680
+so it's at least a proportional comment
+
+861
+00:34:19,690 --> 00:34:21,820
+okay you already mentioned before that
+
+862
+00:34:21,830 --> 00:34:24,160
+IO is a problem in case of transactional
+
+863
+00:34:24,170 --> 00:34:26,950
+memory because you can't undo IO so so
+
+864
+00:34:26,960 --> 00:34:29,860
+how is that in both cases well maybe
+
+865
+00:34:29,870 --> 00:34:31,420
+I'll just remind the listener is that
+
+866
+00:34:31,430 --> 00:34:33,310
+you know IO and garbage question is also
+
+867
+00:34:33,320 --> 00:34:36,400
+difficult this is why we serialize
+
+868
+00:34:36,410 --> 00:34:38,380
+objects rather than actually writing out
+
+869
+00:34:38,390 --> 00:34:40,390
+the pointers to disk because if you
+
+870
+00:34:40,400 --> 00:34:42,130
+write out a pointer to disk and the
+
+871
+00:34:42,140 --> 00:34:43,450
+garbage collector doesn't know you've
+
+872
+00:34:43,460 --> 00:34:45,400
+done that you might think the object is
+
+873
+00:34:45,410 --> 00:34:47,260
+no longer reachable collect the object
+
+874
+00:34:47,270 --> 00:34:49,090
+and then if you read the address back in
+
+875
+00:34:49,100 --> 00:34:51,700
+you might think that you can still
+
+876
+00:34:51,710 --> 00:34:53,200
+access the object and this is why
+
+877
+00:34:53,210 --> 00:34:55,360
+languages like Java don't let you
+
+878
+00:34:55,370 --> 00:34:57,430
+actually write addresses out to disk
+
+879
+00:34:57,440 --> 00:35:00,040
+this is also a challenge in distributed
+
+880
+00:35:00,050 --> 00:35:02,050
+computing in distributed garbage
+
+881
+00:35:02,060 --> 00:35:04,120
+collection is a well studied topic that
+
+882
+00:35:04,130 --> 00:35:07,200
+again is is much more difficult than
+
+883
+00:35:07,210 --> 00:35:09,640
+than in the non distributed setting and
+
+884
+00:35:09,650 --> 00:35:13,540
+so here in the analogy I guess the
+
+885
+00:35:13,550 --> 00:35:15,520
+biggest thing is the first question I'm
+
+886
+00:35:15,530 --> 00:35:16,840
+people are often asked about
+
+887
+00:35:16,850 --> 00:35:18,910
+transactional memory is what about i/o
+
+888
+00:35:18,920 --> 00:35:22,600
+it'll never work with i/o and and I am
+
+889
+00:35:22,610 --> 00:35:25,480
+optimistic that just like we've learned
+
+890
+00:35:25,490 --> 00:35:28,720
+how to sort of restrict programs enough
+
+891
+00:35:28,730 --> 00:35:30,670
+the garbage collection works even in the
+
+892
+00:35:30,680 --> 00:35:32,740
+presence of i/o hopefully we can do the
+
+893
+00:35:32,750 --> 00:35:34,690
+same thing for transactional memory yep
+
+894
+00:35:34,700 --> 00:35:37,330
+false sharing progress guarantees and
+
+895
+00:35:37,340 --> 00:35:40,090
+static analysis improvements how do they
+
+896
+00:35:40,100 --> 00:35:42,460
+fit together the performance of both
+
+897
+00:35:42,470 --> 00:35:44,470
+garbage collection and transactional
+
+898
+00:35:44,480 --> 00:35:45,910
+memory is not completely under
+
+899
+00:35:45,920 --> 00:35:48,220
+programmer control you can get a long
+
+900
+00:35:48,230 --> 00:35:50,470
+way if you really know how garbage
+
+901
+00:35:50,480 --> 00:35:52,210
+collectors work and you program in
+
+902
+00:35:52,220 --> 00:35:53,560
+certain ways you can really program
+
+903
+00:35:53,570 --> 00:35:56,230
+against the garbage collector to get
+
+904
+00:35:56,240 --> 00:35:57,609
+certain performance benefits
+
+905
+00:35:57,619 --> 00:35:59,049
+but there are situations where you just
+
+906
+00:35:59,059 --> 00:36:02,559
+cannot if your memory allocator which is
+
+907
+00:36:02,569 --> 00:36:04,299
+in sometimes part of your garbage
+
+908
+00:36:04,309 --> 00:36:06,549
+collector chooses to put two objects on
+
+909
+00:36:06,559 --> 00:36:08,859
+the same cache line can really hurt your
+
+910
+00:36:08,869 --> 00:36:10,269
+performance and this is not something
+
+911
+00:36:10,279 --> 00:36:12,910
+under programmer control mm-hmm it hurts
+
+912
+00:36:12,920 --> 00:36:14,170
+you both in the memory management
+
+913
+00:36:14,180 --> 00:36:16,359
+standpoint things might live longer than
+
+914
+00:36:16,369 --> 00:36:20,319
+you expect and longer in and and hurt
+
+915
+00:36:20,329 --> 00:36:21,430
+you in the transactional memory
+
+916
+00:36:21,440 --> 00:36:22,239
+standpoint
+
+917
+00:36:22,249 --> 00:36:24,940
+sometimes there's false conflicts
+
+918
+00:36:24,950 --> 00:36:27,039
+there's transactions abort even though
+
+919
+00:36:27,049 --> 00:36:29,049
+you didn't access the same memory maybe
+
+920
+00:36:29,059 --> 00:36:30,819
+you're accessing different fields of the
+
+921
+00:36:30,829 --> 00:36:32,079
+same object but the particular
+
+922
+00:36:32,089 --> 00:36:35,410
+transaction memory system only detected
+
+923
+00:36:35,420 --> 00:36:38,559
+things at the at the object level and so
+
+924
+00:36:38,569 --> 00:36:39,910
+there's an open question the
+
+925
+00:36:39,920 --> 00:36:42,220
+transactions community of how much we
+
+926
+00:36:42,230 --> 00:36:44,739
+need to expose this to programmers mm-hm
+
+927
+00:36:44,749 --> 00:36:46,359
+so that's an example of how things are
+
+928
+00:36:46,369 --> 00:36:49,239
+not under your control static analysis
+
+929
+00:36:49,249 --> 00:36:50,589
+optimizations you know certainly
+
+930
+00:36:50,599 --> 00:36:52,359
+programmers can't control exactly what
+
+931
+00:36:52,369 --> 00:36:54,789
+compiler optimizations are used and that
+
+932
+00:36:54,799 --> 00:36:56,440
+can really affect how long Emery lives
+
+933
+00:36:56,450 --> 00:36:59,019
+and can affect how often transactions
+
+934
+00:36:59,029 --> 00:37:00,309
+abort and things like that
+
+935
+00:37:00,319 --> 00:37:03,370
+hmm we recently had an episode well by
+
+936
+00:37:03,380 --> 00:37:05,769
+the time we published this one it's not
+
+937
+00:37:05,779 --> 00:37:08,259
+recently anymore about static analysis
+
+938
+00:37:08,269 --> 00:37:10,539
+tools and there of course they have the
+
+939
+00:37:10,549 --> 00:37:12,400
+challenge of trying to understand what
+
+940
+00:37:12,410 --> 00:37:14,200
+the program that program does because a
+
+941
+00:37:14,210 --> 00:37:15,700
+lot of the semantics is hidden in
+
+942
+00:37:15,710 --> 00:37:17,380
+complex protocols especially in
+
+943
+00:37:17,390 --> 00:37:19,809
+concurrent systems so making things more
+
+944
+00:37:19,819 --> 00:37:22,029
+declarative which is what transactional
+
+945
+00:37:22,039 --> 00:37:24,039
+memory does of course make static
+
+946
+00:37:24,049 --> 00:37:26,470
+analysis and therefore error detection
+
+947
+00:37:26,480 --> 00:37:28,299
+as well as improve performance
+
+948
+00:37:28,309 --> 00:37:29,410
+enhancements or performance
+
+949
+00:37:29,420 --> 00:37:30,970
+optimizations makes it much more
+
+950
+00:37:30,980 --> 00:37:33,609
+feasible right so well the essence of
+
+951
+00:37:33,619 --> 00:37:35,289
+concurrency as you say in your paper is
+
+952
+00:37:35,299 --> 00:37:37,539
+basically trading efficiency for
+
+953
+00:37:37,549 --> 00:37:39,819
+engineering effectiveness right so you
+
+954
+00:37:39,829 --> 00:37:42,370
+want to make life easier for developers
+
+955
+00:37:42,380 --> 00:37:44,829
+by providing transactional memory but
+
+956
+00:37:44,839 --> 00:37:46,839
+they might have well the program might
+
+957
+00:37:46,849 --> 00:37:50,109
+not be as good or as fast as if it was a
+
+958
+00:37:50,119 --> 00:37:53,079
+nicely handcrafted and correct block
+
+959
+00:37:53,089 --> 00:37:55,749
+based system so how much more easy is
+
+960
+00:37:55,759 --> 00:37:58,239
+going to concurrency going to be once we
+
+961
+00:37:58,249 --> 00:37:59,859
+have transactional memory what are the
+
+962
+00:37:59,869 --> 00:38:02,109
+advantages for developers so let me
+
+963
+00:38:02,119 --> 00:38:04,630
+answer that question once again this is
+
+964
+00:38:04,640 --> 00:38:06,430
+certainly my perspective but I should be
+
+965
+00:38:06,440 --> 00:38:07,900
+fair to the community and say some
+
+966
+00:38:07,910 --> 00:38:09,309
+people point out the transactional
+
+967
+00:38:09,319 --> 00:38:11,380
+memory can actually be faster the
+
+968
+00:38:11,390 --> 00:38:13,900
+there's optimistic concurrency yeah and
+
+969
+00:38:13,910 --> 00:38:15,850
+and that programmers are not
+
+970
+00:38:15,860 --> 00:38:17,980
+particularly good at handcrafted
+
+971
+00:38:17,990 --> 00:38:19,720
+lock-based solutions that that are
+
+972
+00:38:19,730 --> 00:38:21,940
+particularly efficient yes but that was
+
+973
+00:38:21,950 --> 00:38:24,180
+I was trying to hint at by saying a well
+
+974
+00:38:24,190 --> 00:38:26,530
+handcrafted and correct and it's and
+
+975
+00:38:26,540 --> 00:38:28,390
+people probably typically don't do this
+
+976
+00:38:28,400 --> 00:38:32,080
+it's not clear that lock-based programs
+
+977
+00:38:32,090 --> 00:38:34,150
+even carefully crafted ones will be
+
+978
+00:38:34,160 --> 00:38:36,040
+transactional moment transaction when we
+
+979
+00:38:36,050 --> 00:38:38,590
+may win but I agree with you that even
+
+980
+00:38:38,600 --> 00:38:41,110
+if transactional memory gives back some
+
+981
+00:38:41,120 --> 00:38:43,540
+of the straight line performance I have
+
+982
+00:38:43,550 --> 00:38:47,110
+the ability to write robust parallel
+
+983
+00:38:47,120 --> 00:38:49,780
+software in an easier way is worth it
+
+984
+00:38:49,790 --> 00:38:52,990
+yes and I think the biggest reason if I
+
+985
+00:38:53,000 --> 00:38:57,670
+can pick just one is that it's easier to
+
+986
+00:38:57,680 --> 00:38:59,470
+you don't have to maintain a locking
+
+987
+00:38:59,480 --> 00:39:02,290
+protocol you don't have to keep track of
+
+988
+00:39:02,300 --> 00:39:05,320
+what lock am I going to acquire before I
+
+989
+00:39:05,330 --> 00:39:07,660
+access this field yep sometimes that's
+
+990
+00:39:07,670 --> 00:39:11,310
+that is is done for you automatically
+
+991
+00:39:11,320 --> 00:39:14,800
+and in particular for avoiding deadlock
+
+992
+00:39:14,810 --> 00:39:17,110
+it's very hard to write an application
+
+993
+00:39:17,120 --> 00:39:19,420
+if you ever need to hold more than one
+
+994
+00:39:19,430 --> 00:39:22,030
+lock at once yeah for example if you
+
+995
+00:39:22,040 --> 00:39:24,160
+need to transfer some data from one
+
+996
+00:39:24,170 --> 00:39:26,470
+object to another and you need to
+
+997
+00:39:26,480 --> 00:39:29,020
+acquire both locks well if some other
+
+998
+00:39:29,030 --> 00:39:30,970
+thread requires the same two locks in
+
+999
+00:39:30,980 --> 00:39:33,010
+the reverse order you can deadlock and
+
+1000
+00:39:33,020 --> 00:39:36,030
+it's very hard to choose an order hmm so
+
+1001
+00:39:36,040 --> 00:39:39,520
+well just just as a remark the idea of
+
+1002
+00:39:39,530 --> 00:39:42,250
+trading if efficiency for developer
+
+1003
+00:39:42,260 --> 00:39:44,020
+effectiveness is for in transactional
+
+1004
+00:39:44,030 --> 00:39:45,430
+memories of course the same thing for
+
+1005
+00:39:45,440 --> 00:39:46,570
+garbage collection you make things
+
+1006
+00:39:46,580 --> 00:39:49,630
+easier for developers but it might not
+
+1007
+00:39:49,640 --> 00:39:52,240
+be as optimized as if memory was managed
+
+1008
+00:39:52,250 --> 00:39:54,970
+by hand correctly so there is not an
+
+1009
+00:39:54,980 --> 00:39:57,940
+energy exactly absolutely and the
+
+1010
+00:39:57,950 --> 00:39:59,500
+analogy goes further as well that there
+
+1011
+00:39:59,510 --> 00:40:01,090
+are situations where using garbage
+
+1012
+00:40:01,100 --> 00:40:03,400
+collection will be faster than not using
+
+1013
+00:40:03,410 --> 00:40:05,530
+garbage collection now understand the
+
+1014
+00:40:05,540 --> 00:40:07,660
+reason is that when you collect data and
+
+1015
+00:40:07,670 --> 00:40:10,900
+you move objects around you can get them
+
+1016
+00:40:10,910 --> 00:40:12,880
+to fit in cache you can get them to fit
+
+1017
+00:40:12,890 --> 00:40:14,290
+on the same cache line and things like
+
+1018
+00:40:14,300 --> 00:40:16,600
+that you increase locality mm-hm
+
+1019
+00:40:16,610 --> 00:40:20,410
+exactly so will programming of well
+
+1020
+00:40:20,420 --> 00:40:22,150
+concurrent programming be as easy as
+
+1021
+00:40:22,160 --> 00:40:23,680
+sequential process sequential
+
+1022
+00:40:23,690 --> 00:40:24,640
+programming with friends
+
+1023
+00:40:24,650 --> 00:40:27,029
+so memory so this is the key question
+
+1024
+00:40:27,039 --> 00:40:29,980
+that I bring always just because this
+
+1025
+00:40:29,990 --> 00:40:34,000
+analogy is there doesn't mean that we'll
+
+1026
+00:40:34,010 --> 00:40:35,440
+introduce transactional memory and
+
+1027
+00:40:35,450 --> 00:40:37,510
+suddenly parallel programming will be as
+
+1028
+00:40:37,520 --> 00:40:39,309
+easy as sequential programming with
+
+1029
+00:40:39,319 --> 00:40:41,279
+garbage collection not at all
+
+1030
+00:40:41,289 --> 00:40:44,410
+everything about transactional memory is
+
+1031
+00:40:44,420 --> 00:40:47,019
+about from a from a program or
+
+1032
+00:40:47,029 --> 00:40:48,640
+reliability standpoint maybe I shouldn't
+
+1033
+00:40:48,650 --> 00:40:50,859
+say all everything but a big part of it
+
+1034
+00:40:50,869 --> 00:40:52,660
+is letting you just write atomic left
+
+1035
+00:40:52,670 --> 00:40:54,579
+curly brace statement right curly brace
+
+1036
+00:40:54,589 --> 00:40:56,200
+yeah instead of having to choose a
+
+1037
+00:40:56,210 --> 00:40:58,120
+particular lock and worrying about race
+
+1038
+00:40:58,130 --> 00:41:00,220
+conditions and deadlock well what it
+
+1039
+00:41:00,230 --> 00:41:02,440
+doesn't talk about is where should you
+
+1040
+00:41:02,450 --> 00:41:04,660
+put that atomic statement right still
+
+1041
+00:41:04,670 --> 00:41:08,260
+the programmers job to decide what is a
+
+1042
+00:41:08,270 --> 00:41:10,089
+transaction what collection of
+
+1043
+00:41:10,099 --> 00:41:12,130
+operations need to happen all at once
+
+1044
+00:41:12,140 --> 00:41:14,769
+yeah and there's still the trade-off if
+
+1045
+00:41:14,779 --> 00:41:16,569
+you make them too big you'll hurt
+
+1046
+00:41:16,579 --> 00:41:18,250
+performance and you make them too small
+
+1047
+00:41:18,260 --> 00:41:20,620
+you'll hurt correctness yeah and the
+
+1048
+00:41:20,630 --> 00:41:23,170
+analogy doesn't help with that mm-hmm
+
+1049
+00:41:23,180 --> 00:41:26,019
+and it's exactly what does not come up
+
+1050
+00:41:26,029 --> 00:41:28,089
+in sequential programming in sequential
+
+1051
+00:41:28,099 --> 00:41:30,370
+programming there's no idea of what
+
+1052
+00:41:30,380 --> 00:41:32,170
+group of events need to happen all at
+
+1053
+00:41:32,180 --> 00:41:32,769
+once
+
+1054
+00:41:32,779 --> 00:41:34,690
+before another thread sees them because
+
+1055
+00:41:34,700 --> 00:41:38,260
+you're the only thread yeah sure so at
+
+1056
+00:41:38,270 --> 00:41:40,240
+some point you you know sequential
+
+1057
+00:41:40,250 --> 00:41:41,829
+programming is a special case of
+
+1058
+00:41:41,839 --> 00:41:44,620
+parallel programming and in the and and
+
+1059
+00:41:44,630 --> 00:41:46,809
+and so there's not gonna be an analogy
+
+1060
+00:41:46,819 --> 00:41:48,910
+that gets rid it's gonna reduce the
+
+1061
+00:41:48,920 --> 00:41:50,650
+general case to the special case yeah it
+
+1062
+00:41:50,660 --> 00:41:54,099
+just doesn't exist yeah okay so here is
+
+1063
+00:41:54,109 --> 00:41:55,690
+the 1 million dollar question
+
+1064
+00:41:55,700 --> 00:41:57,760
+what's the point of the analogy why did
+
+1065
+00:41:57,770 --> 00:42:00,490
+you write the paper why did I write the
+
+1066
+00:42:00,500 --> 00:42:02,170
+paper for a couple of reasons
+
+1067
+00:42:02,180 --> 00:42:07,480
+one is that I think it's it will really
+
+1068
+00:42:07,490 --> 00:42:10,480
+help with research ok that once you have
+
+1069
+00:42:10,490 --> 00:42:14,019
+an analogy it can motivate new ideas
+
+1070
+00:42:14,029 --> 00:42:16,599
+right you you know I look on the garbage
+
+1071
+00:42:16,609 --> 00:42:19,329
+collection side and I see generational
+
+1072
+00:42:19,339 --> 00:42:21,190
+garbage collection an idea from the
+
+1073
+00:42:21,200 --> 00:42:23,170
+early to mid 80s that has been extremely
+
+1074
+00:42:23,180 --> 00:42:25,750
+important in efficient garbage
+
+1075
+00:42:25,760 --> 00:42:27,700
+collection implementation techniques and
+
+1076
+00:42:27,710 --> 00:42:29,230
+I don't yet see something on the
+
+1077
+00:42:29,240 --> 00:42:31,059
+transactional memory side and if writing
+
+1078
+00:42:31,069 --> 00:42:33,940
+this paper can inspire someone to come
+
+1079
+00:42:33,950 --> 00:42:35,620
+up with something just as important on
+
+1080
+00:42:35,630 --> 00:42:38,080
+transactional memory by thinking what is
+
+1081
+00:42:38,090 --> 00:42:39,400
+you know what is the thing on the other
+
+1082
+00:42:39,410 --> 00:42:41,470
+side I think that would be a huge
+
+1083
+00:42:41,480 --> 00:42:46,390
+advance and so this idea of using an
+
+1084
+00:42:46,400 --> 00:42:48,670
+analogy even an informal one to come up
+
+1085
+00:42:48,680 --> 00:42:49,960
+with new ideas is something I think
+
+1086
+00:42:49,970 --> 00:42:51,430
+humans do all the time
+
+1087
+00:42:51,440 --> 00:42:54,070
+and and I wanted to share this one so
+
+1088
+00:42:54,080 --> 00:42:55,990
+that other people could come up with
+
+1089
+00:42:56,000 --> 00:43:01,360
+ideas less important reasons are I think
+
+1090
+00:43:01,370 --> 00:43:04,180
+it can help explain transactional memory
+
+1091
+00:43:04,190 --> 00:43:06,220
+as you know just to understand what it
+
+1092
+00:43:06,230 --> 00:43:07,780
+is it's a new thing a lot of people know
+
+1093
+00:43:07,790 --> 00:43:09,610
+about garbage collection maybe this will
+
+1094
+00:43:09,620 --> 00:43:10,720
+help them understand some of the
+
+1095
+00:43:10,730 --> 00:43:12,970
+limitations and benefits of
+
+1096
+00:43:12,980 --> 00:43:15,640
+transactional memory it works for me and
+
+1097
+00:43:15,650 --> 00:43:17,860
+the final reason I have to admit is once
+
+1098
+00:43:17,870 --> 00:43:20,410
+I saw these connections I just thought
+
+1099
+00:43:20,420 --> 00:43:21,670
+this was you know one of the most
+
+1100
+00:43:21,680 --> 00:43:23,440
+beautiful things I've ever seen in
+
+1101
+00:43:23,450 --> 00:43:25,060
+computer science and I wanted to share
+
+1102
+00:43:25,070 --> 00:43:26,710
+it yeah absolutely and again I recommend
+
+1103
+00:43:26,720 --> 00:43:29,730
+readers listeners to become readers and
+
+1104
+00:43:29,740 --> 00:43:33,760
+read the paper from the analogy you also
+
+1105
+00:43:33,770 --> 00:43:36,430
+risked a couple of possible predictions
+
+1106
+00:43:36,440 --> 00:43:38,200
+about hardware support and other stuff
+
+1107
+00:43:38,210 --> 00:43:41,050
+right right so I have a section in the
+
+1108
+00:43:41,060 --> 00:43:42,930
+pages you know we've talked really about
+
+1109
+00:43:42,940 --> 00:43:46,030
+the technical stuff you know coding and
+
+1110
+00:43:46,040 --> 00:43:47,800
+software engineering and really the
+
+1111
+00:43:47,810 --> 00:43:50,470
+theory of garbage quotient transactional
+
+1112
+00:43:50,480 --> 00:43:53,830
+memory but then I said you know there's
+
+1113
+00:43:53,840 --> 00:43:54,970
+some other things we can say about
+
+1114
+00:43:54,980 --> 00:43:56,560
+garbage question that might or might not
+
+1115
+00:43:56,570 --> 00:43:59,110
+be true about transactional memory one
+
+1116
+00:43:59,120 --> 00:44:02,020
+is you know a lot of time if you go back
+
+1117
+00:44:02,030 --> 00:44:03,880
+a couple decades or three or four
+
+1118
+00:44:03,890 --> 00:44:05,230
+decades people felt that garbage
+
+1119
+00:44:05,240 --> 00:44:07,750
+question was very slow and absolutely
+
+1120
+00:44:07,760 --> 00:44:09,670
+needed hardware support the old lisp
+
+1121
+00:44:09,680 --> 00:44:11,860
+machine add hardware support for garbage
+
+1122
+00:44:11,870 --> 00:44:14,290
+collection and people don't feel that
+
+1123
+00:44:14,300 --> 00:44:14,800
+way anymore
+
+1124
+00:44:14,810 --> 00:44:17,800
+and so perhaps if we push the analogy a
+
+1125
+00:44:17,810 --> 00:44:19,600
+little too far people will someday feel
+
+1126
+00:44:19,610 --> 00:44:21,910
+the transactional memory doesn't need
+
+1127
+00:44:21,920 --> 00:44:23,770
+hardware support either I just kind of
+
+1128
+00:44:23,780 --> 00:44:25,720
+throw that out almost to be provocative
+
+1129
+00:44:25,730 --> 00:44:29,980
+and the second one is that you know we
+
+1130
+00:44:29,990 --> 00:44:31,660
+had the basic garbage collection
+
+1131
+00:44:31,670 --> 00:44:35,770
+algorithms figured out in the 1960s and
+
+1132
+00:44:35,780 --> 00:44:38,320
+I say we in the general sense I wasn't
+
+1133
+00:44:38,330 --> 00:44:40,630
+even born yet and yet you know garbage
+
+1134
+00:44:40,640 --> 00:44:41,980
+collection in the mainstream we're
+
+1135
+00:44:41,990 --> 00:44:45,210
+really talking the 1990s and so
+
+1136
+00:44:45,220 --> 00:44:47,200
+unfortunately may need to be prepared
+
+1137
+00:44:47,210 --> 00:44:48,760
+for transactional memory to take a
+
+1138
+00:44:48,770 --> 00:44:51,500
+slower road to mainstream adoption and
+
+1139
+00:44:51,510 --> 00:44:54,590
+many of us would like mm-hmm sad message
+
+1140
+00:44:54,600 --> 00:44:57,770
+but probably realistic but you know I'm
+
+1141
+00:44:57,780 --> 00:44:59,210
+actually even though I say that in the
+
+1142
+00:44:59,220 --> 00:45:01,460
+paper and I'm actually optimistic you
+
+1143
+00:45:01,470 --> 00:45:03,380
+know there's all the new high
+
+1144
+00:45:03,390 --> 00:45:05,930
+performance computing languages chapel
+
+1145
+00:45:05,940 --> 00:45:09,680
+from cray x10 from IBM and fortress from
+
+1146
+00:45:09,690 --> 00:45:12,260
+Sun all three of them have an idea of
+
+1147
+00:45:12,270 --> 00:45:14,210
+transactions and the atomic statements
+
+1148
+00:45:14,220 --> 00:45:17,770
+in their draft languages and so you know
+
+1149
+00:45:17,780 --> 00:45:20,060
+should those languages take on and I
+
+1150
+00:45:20,070 --> 00:45:22,130
+take off and I think they're all very
+
+1151
+00:45:22,140 --> 00:45:22,970
+interesting
+
+1152
+00:45:22,980 --> 00:45:25,610
+I think transactions will get out pretty
+
+1153
+00:45:25,620 --> 00:45:29,690
+quickly mm-hmm yeah so playing devil's
+
+1154
+00:45:29,700 --> 00:45:31,850
+advocate and now not with regards to
+
+1155
+00:45:31,860 --> 00:45:33,230
+your analogy but rather to a
+
+1156
+00:45:33,240 --> 00:45:35,180
+transactional memory in general isn't it
+
+1157
+00:45:35,190 --> 00:45:37,730
+a trivial finding that making something
+
+1158
+00:45:37,740 --> 00:45:40,630
+that developers had to implement as
+
+1159
+00:45:40,640 --> 00:45:43,490
+procedural statements protocols making
+
+1160
+00:45:43,500 --> 00:45:45,230
+that part of the language in making that
+
+1161
+00:45:45,240 --> 00:45:47,720
+more declarative isn't it trivial to to
+
+1162
+00:45:47,730 --> 00:45:50,270
+find out that this is an advantage yeah
+
+1163
+00:45:50,280 --> 00:45:52,490
+on that level absolutely moving things
+
+1164
+00:45:52,500 --> 00:45:54,380
+higher level providing runtime services
+
+1165
+00:45:54,390 --> 00:45:57,770
+all of those things in that sense it's
+
+1166
+00:45:57,780 --> 00:46:00,950
+not you know the analogy is so basic so
+
+1167
+00:46:00,960 --> 00:46:03,080
+simple it's just that one idea we could
+
+1168
+00:46:03,090 --> 00:46:05,680
+throw a lot of things in exceptions
+
+1169
+00:46:05,690 --> 00:46:11,000
+getting rid of go to you know a library
+
+1170
+00:46:11,010 --> 00:46:13,160
+support for serialization and process
+
+1171
+00:46:13,170 --> 00:46:16,510
+migration all of these things just just
+
+1172
+00:46:16,520 --> 00:46:18,740
+give something to programmers that they
+
+1173
+00:46:18,750 --> 00:46:20,300
+used to have to do and a tedious and
+
+1174
+00:46:20,310 --> 00:46:22,670
+error-prone way yeah and I think what
+
+1175
+00:46:22,680 --> 00:46:26,440
+goes further here is the idea that
+
+1176
+00:46:26,450 --> 00:46:30,440
+memory management is about reusing
+
+1177
+00:46:30,450 --> 00:46:33,320
+memory as much as you can but not more
+
+1178
+00:46:33,330 --> 00:46:37,040
+and concurrency is about getting as much
+
+1179
+00:46:37,050 --> 00:46:39,050
+to happen in parallel as you can but not
+
+1180
+00:46:39,060 --> 00:46:42,230
+more and that this in some sense it's
+
+1181
+00:46:42,240 --> 00:46:44,870
+it's time versus space memory mansion is
+
+1182
+00:46:44,880 --> 00:46:46,760
+about space parallelism is about time
+
+1183
+00:46:46,770 --> 00:46:48,830
+and garbage collection transactional
+
+1184
+00:46:48,840 --> 00:46:52,340
+memory as solutions are a rather similar
+
+1185
+00:46:52,350 --> 00:46:54,790
+runtime services much more similar than
+
+1186
+00:46:54,800 --> 00:46:57,380
+then I think has been been appreciated
+
+1187
+00:46:57,390 --> 00:47:00,050
+before and I'm you know could you take a
+
+1188
+00:47:00,060 --> 00:47:01,640
+third thing like one of the things I
+
+1189
+00:47:01,650 --> 00:47:04,010
+mentioned like exceptions and try to
+
+1190
+00:47:04,020 --> 00:47:05,390
+write you know four or five
+
+1191
+00:47:05,400 --> 00:47:07,610
+ages of sentence analogy with garbage
+
+1192
+00:47:07,620 --> 00:47:10,700
+collection maybe and if so I'd love to
+
+1193
+00:47:10,710 --> 00:47:11,090
+read it
+
+1194
+00:47:11,100 --> 00:47:14,450
+yeah but I don't think so yeah so that
+
+1195
+00:47:14,460 --> 00:47:16,370
+the remaining challenge you mentioned is
+
+1196
+00:47:16,380 --> 00:47:18,860
+of course the transaction demarcation to
+
+1197
+00:47:18,870 --> 00:47:21,260
+big to small and so on how much can we
+
+1198
+00:47:21,270 --> 00:47:23,360
+learn from the database community how
+
+1199
+00:47:23,370 --> 00:47:25,130
+much interaction is there between the
+
+1200
+00:47:25,140 --> 00:47:26,630
+transactional memory community in the
+
+1201
+00:47:26,640 --> 00:47:29,060
+database folks well there's an old joke
+
+1202
+00:47:29,070 --> 00:47:30,950
+in programming languages that what we do
+
+1203
+00:47:30,960 --> 00:47:33,290
+is we take database solutions from 20
+
+1204
+00:47:33,300 --> 00:47:34,760
+years ago and finally figure out what
+
+1205
+00:47:34,770 --> 00:47:37,100
+they were talking about and there's some
+
+1206
+00:47:37,110 --> 00:47:40,310
+truth to that I feel that myself and
+
+1207
+00:47:40,320 --> 00:47:41,330
+perhaps some of my colleagues and
+
+1208
+00:47:41,340 --> 00:47:43,760
+transactions have not learned as much or
+
+1209
+00:47:43,770 --> 00:47:45,470
+learned as quickly from the database
+
+1210
+00:47:45,480 --> 00:47:48,110
+community as we should but there are
+
+1211
+00:47:48,120 --> 00:47:50,840
+some important differences as well you
+
+1212
+00:47:50,850 --> 00:47:53,660
+know in the database world the data is
+
+1213
+00:47:53,670 --> 00:47:56,540
+is much more structured and the
+
+1214
+00:47:56,550 --> 00:47:58,610
+programming languages if you will things
+
+1215
+00:47:58,620 --> 00:48:01,310
+like SQL and things like that are much
+
+1216
+00:48:01,320 --> 00:48:03,560
+more restrictive on purpose and that
+
+1217
+00:48:03,570 --> 00:48:06,170
+makes sense in that domain in our
+
+1218
+00:48:06,180 --> 00:48:07,970
+general-purpose programming languages
+
+1219
+00:48:07,980 --> 00:48:11,540
+perhaps we should not let you start and
+
+1220
+00:48:11,550 --> 00:48:15,110
+end transactions wherever you want or we
+
+1221
+00:48:15,120 --> 00:48:16,610
+should provide some sort of tools
+
+1222
+00:48:16,620 --> 00:48:19,810
+support for helping you to determine
+
+1223
+00:48:19,820 --> 00:48:22,640
+what invariants are maintained depending
+
+1224
+00:48:22,650 --> 00:48:24,640
+where you start and your transactions
+
+1225
+00:48:24,650 --> 00:48:27,170
+you know maybe they're things are things
+
+1226
+00:48:27,180 --> 00:48:28,670
+to learn from the database community
+
+1227
+00:48:28,680 --> 00:48:32,150
+about where transactions should begin
+
+1228
+00:48:32,160 --> 00:48:34,490
+and end but I do think it's a harder
+
+1229
+00:48:34,500 --> 00:48:36,770
+problem for us I think in the database
+
+1230
+00:48:36,780 --> 00:48:38,240
+world and maybe I'm missing something
+
+1231
+00:48:38,250 --> 00:48:41,690
+you know it's usually easy to say well
+
+1232
+00:48:41,700 --> 00:48:45,830
+you know this update to the personnel
+
+1233
+00:48:45,840 --> 00:48:47,660
+records you know just needs to be a
+
+1234
+00:48:47,670 --> 00:48:49,880
+transaction or this money transfer it
+
+1235
+00:48:49,890 --> 00:48:52,670
+needs to be a transaction and in our
+
+1236
+00:48:52,680 --> 00:48:54,260
+more general-purpose unstructured
+
+1237
+00:48:54,270 --> 00:48:57,680
+applications I'm not sure we programmers
+
+1238
+00:48:57,690 --> 00:49:00,470
+are as good at drawing those lines mm-hm
+
+1239
+00:49:00,480 --> 00:49:03,950
+okay to wrap this up concurrency is
+
+1240
+00:49:03,960 --> 00:49:05,240
+obviously becoming more and more
+
+1241
+00:49:05,250 --> 00:49:07,550
+important and atomic and well
+
+1242
+00:49:07,560 --> 00:49:09,050
+transactional memory is a hot topic
+
+1243
+00:49:09,060 --> 00:49:13,580
+there what other approaches are there on
+
+1244
+00:49:13,590 --> 00:49:16,010
+the horizon that might make concurrency
+
+1245
+00:49:16,020 --> 00:49:18,680
+more tractable for for Joe developer as
+
+1246
+00:49:18,690 --> 00:49:19,069
+as
+
+1247
+00:49:19,079 --> 00:49:21,469
+say for example one thing we talked
+
+1248
+00:49:21,479 --> 00:49:23,329
+about was the message passing stuff in
+
+1249
+00:49:23,339 --> 00:49:26,269
+Erlang or for example also Scala sector
+
+1250
+00:49:26,279 --> 00:49:27,949
+framework or something so what do you
+
+1251
+00:49:27,959 --> 00:49:28,430
+see
+
+1252
+00:49:28,440 --> 00:49:30,739
+so we'll transactional memory is that
+
+1253
+00:49:30,749 --> 00:49:32,390
+the only kid on the block to make things
+
+1254
+00:49:32,400 --> 00:49:35,059
+easier or other alternatives also in the
+
+1255
+00:49:35,069 --> 00:49:37,339
+shared memory space well I think it's
+
+1256
+00:49:37,349 --> 00:49:38,749
+certainly the biggest kid on the block
+
+1257
+00:49:38,759 --> 00:49:41,029
+if you look at research interest and and
+
+1258
+00:49:41,039 --> 00:49:43,009
+that sort of stuff and I think you've
+
+1259
+00:49:43,019 --> 00:49:44,900
+drawn exactly the right distinction that
+
+1260
+00:49:44,910 --> 00:49:47,499
+I think in the space of shared memory
+
+1261
+00:49:47,509 --> 00:49:51,620
+it's in my opinion the biggest and most
+
+1262
+00:49:51,630 --> 00:49:54,499
+intriguing advance we've seen in awhile
+
+1263
+00:49:54,509 --> 00:49:56,359
+now the basic idea is for transactional
+
+1264
+00:49:56,369 --> 00:49:58,009
+memory actually goes back to Elliott
+
+1265
+00:49:58,019 --> 00:50:00,890
+Moss and Mars Herlihy in the mid 80s so
+
+1266
+00:50:00,900 --> 00:50:04,160
+you know a lot of this is is fleshing
+
+1267
+00:50:04,170 --> 00:50:06,380
+out the ideas and and and extending the
+
+1268
+00:50:06,390 --> 00:50:08,029
+idea is being more efficient all the
+
+1269
+00:50:08,039 --> 00:50:11,059
+software stuff came later and so on but
+
+1270
+00:50:11,069 --> 00:50:12,380
+transactional memory is big in the
+
+1271
+00:50:12,390 --> 00:50:16,160
+shared memory space but whenever I talk
+
+1272
+00:50:16,170 --> 00:50:18,229
+about transactions I always say but
+
+1273
+00:50:18,239 --> 00:50:19,880
+that's just in the shared memory space
+
+1274
+00:50:19,890 --> 00:50:21,859
+you know I think there's a huge space
+
+1275
+00:50:21,869 --> 00:50:24,890
+you know Erlang for example not just has
+
+1276
+00:50:24,900 --> 00:50:26,930
+all this message-passing stuff but one
+
+1277
+00:50:26,940 --> 00:50:28,489
+of the reasons it works so well is that
+
+1278
+00:50:28,499 --> 00:50:30,229
+it's a mostly functional language chip
+
+1279
+00:50:30,239 --> 00:50:32,150
+and the great thing about functional
+
+1280
+00:50:32,160 --> 00:50:34,609
+language is it is if you don't mutate
+
+1281
+00:50:34,619 --> 00:50:36,890
+memory your synchronization problems go
+
+1282
+00:50:36,900 --> 00:50:39,229
+away if to a large extent the first
+
+1283
+00:50:39,239 --> 00:50:40,939
+thing when I teach sophomores concurrent
+
+1284
+00:50:40,949 --> 00:50:42,499
+programming which may surprise some of
+
+1285
+00:50:42,509 --> 00:50:44,959
+your listeners that we do now and I
+
+1286
+00:50:44,969 --> 00:50:45,979
+think this will become our comm and
+
+1287
+00:50:45,989 --> 00:50:48,199
+teach sophomores basics of concurrent
+
+1288
+00:50:48,209 --> 00:50:50,420
+programming yeah the first thing I tell
+
+1289
+00:50:50,430 --> 00:50:51,920
+them is don't use concurrent programming
+
+1290
+00:50:51,930 --> 00:50:53,870
+unless you have to yeah second thing I
+
+1291
+00:50:53,880 --> 00:50:55,759
+tell them is don't share data unless you
+
+1292
+00:50:55,769 --> 00:50:57,439
+have to yeah the third thing I tell them
+
+1293
+00:50:57,449 --> 00:50:59,089
+is if you do have to share data don't
+
+1294
+00:50:59,099 --> 00:51:00,469
+mutate it unless you have to
+
+1295
+00:51:00,479 --> 00:51:02,420
+yeah and only when none of that is
+
+1296
+00:51:02,430 --> 00:51:04,430
+appropriate for your application do we
+
+1297
+00:51:04,440 --> 00:51:06,079
+need to start talking about locks and
+
+1298
+00:51:06,089 --> 00:51:07,579
+their hands actions and memory are great
+
+1299
+00:51:07,589 --> 00:51:09,079
+but of course for all these things you
+
+1300
+00:51:09,089 --> 00:51:10,849
+need language support otherwise you you
+
+1301
+00:51:10,859 --> 00:51:12,739
+accidentally modify stuff and then
+
+1302
+00:51:12,749 --> 00:51:14,509
+you're screwed that's right and I think
+
+1303
+00:51:14,519 --> 00:51:17,029
+there's there's a real opportunity here
+
+1304
+00:51:17,039 --> 00:51:21,949
+to revisit a lot of the classic ideas on
+
+1305
+00:51:21,959 --> 00:51:24,109
+programming models language to preface
+
+1306
+00:51:24,119 --> 00:51:27,459
+illusion see message passing
+
+1307
+00:51:27,469 --> 00:51:30,079
+coordination things like that and and
+
+1308
+00:51:30,089 --> 00:51:31,549
+see which of them are going to help us
+
+1309
+00:51:31,559 --> 00:51:32,900
+and I think I'm
+
+1310
+00:51:32,910 --> 00:51:34,520
+always of the opinion that it's not
+
+1311
+00:51:34,530 --> 00:51:37,430
+about finding the best overall solution
+
+1312
+00:51:37,440 --> 00:51:39,260
+and declaring it the winner it's going
+
+1313
+00:51:39,270 --> 00:51:41,000
+to depend on the application and the
+
+1314
+00:51:41,010 --> 00:51:43,630
+language the type of programmers and
+
+1315
+00:51:43,640 --> 00:51:45,710
+it's a really exciting time for
+
+1316
+00:51:45,720 --> 00:51:49,400
+concurrency you know you can be a cynic
+
+1317
+00:51:49,410 --> 00:51:51,560
+and say there's no new ideas or you can
+
+1318
+00:51:51,570 --> 00:51:52,970
+be an optimist and say there's a new
+
+1319
+00:51:52,980 --> 00:51:56,060
+opportunity to extend and adapt those
+
+1320
+00:51:56,070 --> 00:52:00,020
+ideas to to the chicken current
+
+1321
+00:52:00,030 --> 00:52:01,400
+programming because it's so much more
+
+1322
+00:52:01,410 --> 00:52:02,570
+important than it's ever been
+
+1323
+00:52:02,580 --> 00:52:06,860
+yeah ok so that was really really cool
+
+1324
+00:52:06,870 --> 00:52:08,450
+very interesting is there anything I
+
+1325
+00:52:08,460 --> 00:52:11,060
+should have asked you but didn't maybe I
+
+1326
+00:52:11,070 --> 00:52:14,230
+drew just emphasize again this analogy
+
+1327
+00:52:14,240 --> 00:52:17,270
+is really all about perspective and
+
+1328
+00:52:17,280 --> 00:52:20,960
+about taking a big step back and but the
+
+1329
+00:52:20,970 --> 00:52:22,610
+actual research that's making
+
+1330
+00:52:22,620 --> 00:52:24,530
+transactional memory happen has been
+
+1331
+00:52:24,540 --> 00:52:26,030
+done by a lot of really great great
+
+1332
+00:52:26,040 --> 00:52:28,880
+people a lot of colleagues of mine and
+
+1333
+00:52:28,890 --> 00:52:30,980
+and if this analogy can kind of serve to
+
+1334
+00:52:30,990 --> 00:52:35,180
+help popularize or make available some
+
+1335
+00:52:35,190 --> 00:52:36,560
+of their work and that's another
+
+1336
+00:52:36,570 --> 00:52:39,530
+advantage of it you know this was this
+
+1337
+00:52:39,540 --> 00:52:43,820
+was a an insight and an essay that sort
+
+1338
+00:52:43,830 --> 00:52:46,130
+of really mean having the chance to take
+
+1339
+00:52:46,140 --> 00:52:49,100
+a step back and and and it was really
+
+1340
+00:52:49,110 --> 00:52:51,050
+fun to do and fun to talk about with you
+
+1341
+00:52:51,060 --> 00:52:52,550
+and I'll have fun talking about it oops
+
+1342
+00:52:52,560 --> 00:52:55,940
+Allah and but we've got a lot more down
+
+1343
+00:52:55,950 --> 00:52:58,070
+and dirty work to do too and and we're
+
+1344
+00:52:58,080 --> 00:53:00,290
+doing that as well ok then thank you
+
+1345
+00:53:00,300 --> 00:53:01,910
+very much for being on the show you're
+
+1346
+00:53:01,920 --> 00:53:02,790
+welcome
+
+1347
+00:53:02,800 --> 00:53:24,110
+[Music]
+
+1348
+00:53:24,120 --> 00:53:26,250
+thanks for listening to software
+
+1349
+00:53:26,260 --> 00:53:28,290
+engineering radio if you want to get
+
+1350
+00:53:28,300 --> 00:53:29,640
+more information about software
+
+1351
+00:53:29,650 --> 00:53:31,470
+engineering radio or if you want to give
+
+1352
+00:53:31,480 --> 00:53:34,110
+us feedback please go to our website at
+
+1353
+00:53:34,120 --> 00:53:38,340
+se - radio dot net you can also contact
+
+1354
+00:53:38,350 --> 00:53:43,200
+the team at team at SAE - radio net
+
+1355
+00:53:43,210 --> 00:53:45,240
+although we prefer entries in our
+
+1356
+00:53:45,250 --> 00:53:47,010
+comment system on the website
+
+1357
+00:53:47,020 --> 00:53:48,990
+so other people can see what you think
+
+1358
+00:53:49,000 --> 00:53:50,940
+software engineering radio wants to
+
+1359
+00:53:50,950 --> 00:53:53,040
+thank Henning Cowley for the intro and
+
+1360
+00:53:53,050 --> 00:53:55,680
+outro music as well as Lipson for
+
+1361
+00:53:55,690 --> 00:53:58,800
+providing the bandwidth this episode of
+
+1362
+00:53:58,810 --> 00:54:01,440
+se radio as well as all other episodes
+
+1363
+00:54:01,450 --> 00:54:03,750
+is licensed under Creative Commons
+
+1364
+00:54:03,760 --> 00:54:04,740
+license
+
+1365
+00:54:04,750 --> 00:54:06,810
+see the software engineering radio
+
+1366
+00:54:06,820 --> 00:54:10,040
+website for details
+
+1367
+00:54:10,050 --> 00:54:15,559
+[Music]
+
+1368
+00:54:15,569 --> 00:54:15,930
+you
+
+1369
+00:54:15,940 --> 00:54:19,030
+[Music]

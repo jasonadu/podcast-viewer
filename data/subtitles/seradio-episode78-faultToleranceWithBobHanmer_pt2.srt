@@ -1,0 +1,4559 @@
+1
+00:00:02,899 --> 00:00:02,909
+software engineering radio episode 78
+
+2
+00:00:02,909 --> 00:00:07,420
+fault tolerance with Bob hammer part 2
+
+3
+00:00:07,430 --> 00:00:22,960
+[Music]
+
+4
+00:00:25,820 --> 00:00:25,830
+hello everybody this is the second part
+
+5
+00:00:25,830 --> 00:00:28,310
+of the fault tolerance discussion with
+
+6
+00:00:28,320 --> 00:00:31,850
+Bob hammer the first part obviously was
+
+7
+00:00:31,860 --> 00:00:34,790
+last episode ten days ago if you haven't
+
+8
+00:00:34,800 --> 00:00:37,910
+heard the previous episode on fault
+
+9
+00:00:37,920 --> 00:00:39,830
+tolerance you should really go back and
+
+10
+00:00:39,840 --> 00:00:42,259
+listen to that first in the previous
+
+11
+00:00:42,269 --> 00:00:44,509
+episode we discussed a number of terms
+
+12
+00:00:44,519 --> 00:00:46,549
+we're using here like reliability
+
+13
+00:00:46,559 --> 00:00:50,119
+availability fault error failure we
+
+14
+00:00:50,129 --> 00:00:51,350
+talked a little bit about the fault
+
+15
+00:00:51,360 --> 00:00:53,570
+tolerance mindset about how to build
+
+16
+00:00:53,580 --> 00:00:55,969
+systems keep it simple quality versus
+
+17
+00:00:55,979 --> 00:00:58,460
+fault tolerance and stuff we talked a
+
+18
+00:00:58,470 --> 00:01:00,799
+little bit about the shared context in
+
+19
+00:01:00,809 --> 00:01:02,930
+which all of those patterns reside and
+
+20
+00:01:02,940 --> 00:01:05,270
+then we had a little overview over all
+
+21
+00:01:05,280 --> 00:01:07,340
+the patterns and over how this episode
+
+22
+00:01:07,350 --> 00:01:09,710
+is structured and stuff and we started
+
+23
+00:01:09,720 --> 00:01:12,200
+with discussing architectural patterns
+
+24
+00:01:12,210 --> 00:01:14,300
+in this episode we're going to continue
+
+25
+00:01:14,310 --> 00:01:16,880
+with a detection patterns and then also
+
+26
+00:01:16,890 --> 00:01:18,770
+look at error recovery patterns around
+
+27
+00:01:18,780 --> 00:01:20,840
+mitigation patterns fault treatment
+
+28
+00:01:20,850 --> 00:01:22,730
+patterns and then a discussion at the
+
+29
+00:01:22,740 --> 00:01:24,170
+end about designing with the patterns
+
+30
+00:01:24,180 --> 00:01:27,200
+and why Bob wrote the book so again if
+
+31
+00:01:27,210 --> 00:01:28,910
+you didn't listen to the previous
+
+32
+00:01:28,920 --> 00:01:31,130
+episode go back do it otherwise this one
+
+33
+00:01:31,140 --> 00:01:33,770
+probably won't make sense okay so here
+
+34
+00:01:33,780 --> 00:01:34,250
+we go
+
+35
+00:01:34,260 --> 00:01:37,310
+have fun let's look at the the second
+
+36
+00:01:37,320 --> 00:01:38,960
+bunch of patterns which the error
+
+37
+00:01:38,970 --> 00:01:40,790
+detection patterns are actually
+
+38
+00:01:40,800 --> 00:01:42,770
+generally the detection patterns it can
+
+39
+00:01:42,780 --> 00:01:46,790
+be false or arrows I guess so let's
+
+40
+00:01:46,800 --> 00:01:49,220
+start with fault correlation fault
+
+41
+00:01:49,230 --> 00:01:53,510
+correlation is a pattern that relates to
+
+42
+00:01:53,520 --> 00:01:56,210
+you've got these error reports that are
+
+43
+00:01:56,220 --> 00:01:59,210
+going into the fault observer and you'd
+
+44
+00:01:59,220 --> 00:02:01,520
+like to know what it is that went wrong
+
+45
+00:02:01,530 --> 00:02:03,950
+so you want to know what the fault is
+
+46
+00:02:03,960 --> 00:02:05,930
+and so forth correlation is the thing
+
+47
+00:02:05,940 --> 00:02:08,809
+that's looking to see have I seen this
+
+48
+00:02:08,819 --> 00:02:10,880
+kind of error before you know this error
+
+49
+00:02:10,890 --> 00:02:13,369
+signature you know do I know that this
+
+50
+00:02:13,379 --> 00:02:15,380
+this means that we had a bad message
+
+51
+00:02:15,390 --> 00:02:17,270
+that we received or do I know that this
+
+52
+00:02:17,280 --> 00:02:19,520
+means that we have corrupt memory
+
+53
+00:02:19,530 --> 00:02:22,339
+somehow and so we're taking fault
+
+54
+00:02:22,349 --> 00:02:23,960
+correlation as taking the detection
+
+55
+00:02:23,970 --> 00:02:26,390
+report you know some part of the system
+
+56
+00:02:26,400 --> 00:02:28,759
+detected a problem and fault correlation
+
+57
+00:02:28,769 --> 00:02:32,750
+is classifying it deciding which bucket
+
+58
+00:02:32,760 --> 00:02:34,910
+it belongs and because each of the
+
+59
+00:02:34,920 --> 00:02:38,030
+buckets probably has a different set of
+
+60
+00:02:38,040 --> 00:02:40,699
+techniques to be used to help resolve
+
+61
+00:02:40,709 --> 00:02:43,400
+the problem okay and the next one our
+
+62
+00:02:43,410 --> 00:02:45,530
+containment barrier sounds a bit like
+
+63
+00:02:45,540 --> 00:02:47,600
+the firewall we've been talking before
+
+64
+00:02:47,610 --> 00:02:49,729
+yes it is it's the firewall and it
+
+65
+00:02:49,739 --> 00:02:51,680
+points right back to units of mitigation
+
+66
+00:02:51,690 --> 00:02:55,100
+that point here is that you want to
+
+67
+00:02:55,110 --> 00:02:59,240
+confine the error you detect it and the
+
+68
+00:02:59,250 --> 00:03:01,580
+first thing that you need to do in a
+
+69
+00:03:01,590 --> 00:03:03,500
+fault-tolerant system is to isolate the
+
+70
+00:03:03,510 --> 00:03:06,050
+error you need and isolate in the
+
+71
+00:03:06,060 --> 00:03:08,059
+firewall sense I'm cut it off from the
+
+72
+00:03:08,069 --> 00:03:09,770
+rest of the system so it can't propagate
+
+73
+00:03:09,780 --> 00:03:11,870
+and error containment barrier is telling
+
+74
+00:03:11,880 --> 00:03:16,070
+you to just you to do just that okay how
+
+75
+00:03:16,080 --> 00:03:18,740
+do Aero spread generally it means for
+
+76
+00:03:18,750 --> 00:03:20,570
+example you have some bad data that is
+
+77
+00:03:20,580 --> 00:03:22,759
+then used or that it's passed to another
+
+78
+00:03:22,769 --> 00:03:26,059
+subsystem to another unit of mitigation
+
+79
+00:03:26,069 --> 00:03:28,100
+and that would mean that this this other
+
+80
+00:03:28,110 --> 00:03:30,170
+unit would also fail because it now
+
+81
+00:03:30,180 --> 00:03:31,880
+works with with a faulty data and that's
+
+82
+00:03:31,890 --> 00:03:33,590
+basically what you want to prevent right
+
+83
+00:03:33,600 --> 00:03:37,100
+yes exactly okay isolation is a really
+
+84
+00:03:37,110 --> 00:03:39,410
+really important thing and its really
+
+85
+00:03:39,420 --> 00:03:42,470
+really system specific and unit of
+
+86
+00:03:42,480 --> 00:03:45,860
+mitigation specific so it's really hard
+
+87
+00:03:45,870 --> 00:03:48,770
+to come up with generic patterns on how
+
+88
+00:03:48,780 --> 00:03:50,990
+to do the isolation because it is so
+
+89
+00:03:51,000 --> 00:03:54,319
+context specific mmm-hmm but one way of
+
+90
+00:03:54,329 --> 00:03:56,360
+doing that and that's as it happens the
+
+91
+00:03:56,370 --> 00:03:59,300
+next pattern is probably to check very
+
+92
+00:03:59,310 --> 00:04:01,729
+carefully and not just syntactically but
+
+93
+00:04:01,739 --> 00:04:03,140
+also to some sense in some some
+
+94
+00:04:03,150 --> 00:04:05,569
+semantically the parameters that that
+
+95
+00:04:05,579 --> 00:04:07,729
+that are for example passed in an
+
+96
+00:04:07,739 --> 00:04:09,860
+Operations call in another unit of
+
+97
+00:04:09,870 --> 00:04:12,020
+mitigation right right complete
+
+98
+00:04:12,030 --> 00:04:14,720
+parameter checking is the pattern and it
+
+99
+00:04:14,730 --> 00:04:16,940
+would argue that you should check you
+
+100
+00:04:16,950 --> 00:04:18,680
+know every return code and make sure
+
+101
+00:04:18,690 --> 00:04:22,039
+that it's correct that you should check
+
+102
+00:04:22,049 --> 00:04:23,840
+the value you know in addition to
+
+103
+00:04:23,850 --> 00:04:25,250
+checking the return code you should also
+
+104
+00:04:25,260 --> 00:04:28,130
+check that the return values are correct
+
+105
+00:04:28,140 --> 00:04:30,200
+or within the correct range that kind of
+
+106
+00:04:30,210 --> 00:04:32,980
+thing this is really similar to
+
+107
+00:04:32,990 --> 00:04:35,810
+programming by contract yeah I was about
+
+108
+00:04:35,820 --> 00:04:40,400
+to ask that yeah so as is contracts or
+
+109
+00:04:40,410 --> 00:04:44,149
+this kind of DBC stuff Allah is that
+
+110
+00:04:44,159 --> 00:04:46,580
+used in these kinds of systems or is it
+
+111
+00:04:46,590 --> 00:04:48,510
+basically well just manual
+
+112
+00:04:48,520 --> 00:04:50,129
+if statements in all in all those places
+
+113
+00:04:50,139 --> 00:04:52,529
+that are used to check these things it
+
+114
+00:04:52,539 --> 00:04:54,360
+from the systems I've seen it's been
+
+115
+00:04:54,370 --> 00:04:56,969
+manually it's been manually done with if
+
+116
+00:04:56,979 --> 00:04:58,770
+statements rather than any kind of
+
+117
+00:04:58,780 --> 00:05:01,020
+larger framework and part of the reason
+
+118
+00:05:01,030 --> 00:05:04,559
+goes back to predating the design by
+
+119
+00:05:04,569 --> 00:05:06,749
+contract yeah and then part of it goes
+
+120
+00:05:06,759 --> 00:05:08,820
+back to keeping it simple yeah you know
+
+121
+00:05:08,830 --> 00:05:10,619
+that's extra if you've got a framework
+
+122
+00:05:10,629 --> 00:05:12,270
+to help you do that kind of thing that's
+
+123
+00:05:12,280 --> 00:05:14,460
+a extra infrastructure that could have
+
+124
+00:05:14,470 --> 00:05:16,950
+failures and nobody's using eiffel which
+
+125
+00:05:16,960 --> 00:05:18,420
+would provide language support but I
+
+126
+00:05:18,430 --> 00:05:20,100
+guess that's out of the question anyway
+
+127
+00:05:20,110 --> 00:05:21,120
+right
+
+128
+00:05:21,130 --> 00:05:24,270
+okay the next bunch of patterns are more
+
+129
+00:05:24,280 --> 00:05:26,129
+or less related to to monitoring the
+
+130
+00:05:26,139 --> 00:05:28,409
+system system monitor or versus watchdog
+
+131
+00:05:28,419 --> 00:05:29,850
+versus heartbeat they all sound
+
+132
+00:05:29,860 --> 00:05:33,240
+relatively similar to me yes and they're
+
+133
+00:05:33,250 --> 00:05:34,770
+they all they work together very very
+
+134
+00:05:34,780 --> 00:05:38,100
+closely system monitor is kind of the
+
+135
+00:05:38,110 --> 00:05:40,409
+higher-level pattern it's saying to
+
+136
+00:05:40,419 --> 00:05:42,420
+create some part of the system that will
+
+137
+00:05:42,430 --> 00:05:45,089
+watch the important things so there are
+
+138
+00:05:45,099 --> 00:05:46,890
+some things in your system that really
+
+139
+00:05:46,900 --> 00:05:49,709
+have to always happen and the system
+
+140
+00:05:49,719 --> 00:05:51,719
+monitors saying okay set up some other
+
+141
+00:05:51,729 --> 00:05:53,610
+something that is going to monitor that
+
+142
+00:05:53,620 --> 00:05:56,640
+and then how does it do it gets to
+
+143
+00:05:56,650 --> 00:05:59,159
+watchdog and heartbeat and I'll go about
+
+144
+00:05:59,169 --> 00:06:02,219
+heartbeat first heartbeat you know the
+
+145
+00:06:02,229 --> 00:06:05,850
+typical heartbeat message sending a you
+
+146
+00:06:05,860 --> 00:06:08,249
+know a ping sending a message from one
+
+147
+00:06:08,259 --> 00:06:10,379
+place to another and waiting for the
+
+148
+00:06:10,389 --> 00:06:11,820
+response and if the response doesn't
+
+149
+00:06:11,830 --> 00:06:13,409
+come quickly enough assuming that the
+
+150
+00:06:13,419 --> 00:06:15,300
+other ones in trouble or it comes garble
+
+151
+00:06:15,310 --> 00:06:17,420
+assume the other ones in trouble mm-hmm
+
+152
+00:06:17,430 --> 00:06:19,950
+and that can go either way it could be
+
+153
+00:06:19,960 --> 00:06:22,800
+you know are you okay oh yeah I'm okay
+
+154
+00:06:22,810 --> 00:06:25,740
+or it could be a periodic you know I'm
+
+155
+00:06:25,750 --> 00:06:28,920
+okay I'm okay you know so it works both
+
+156
+00:06:28,930 --> 00:06:32,189
+ways yeah in order to do a heartbeat you
+
+157
+00:06:32,199 --> 00:06:33,570
+really have to put something into the
+
+158
+00:06:33,580 --> 00:06:36,360
+system ah because it needs to know that
+
+159
+00:06:36,370 --> 00:06:37,860
+it needs to send the heartbeat or
+
+160
+00:06:37,870 --> 00:06:40,260
+acknowledge the heartbeat yeah and there
+
+161
+00:06:40,270 --> 00:06:41,909
+are some cases where you just can't do
+
+162
+00:06:41,919 --> 00:06:44,939
+that and that gets to the watchdog
+
+163
+00:06:44,949 --> 00:06:47,879
+pattern and watchdog is a really good
+
+164
+00:06:47,889 --> 00:06:50,670
+pattern Michel Pont has some excellent
+
+165
+00:06:50,680 --> 00:06:52,680
+versions of it yeah and it's a really
+
+166
+00:06:52,690 --> 00:06:55,140
+rich area so there are lots of watchdog
+
+167
+00:06:55,150 --> 00:06:58,050
+patterns and typically you think of it
+
+168
+00:06:58,060 --> 00:07:00,659
+as being like a watchdog processor a
+
+169
+00:07:00,669 --> 00:07:02,380
+little timer that's doing
+
+170
+00:07:02,390 --> 00:07:04,690
+watchdogging but you could also put in
+
+171
+00:07:04,700 --> 00:07:07,060
+the software structures to have a
+
+172
+00:07:07,070 --> 00:07:10,090
+third-party monitor that messages were
+
+173
+00:07:10,100 --> 00:07:12,640
+flowing between the first and second
+
+174
+00:07:12,650 --> 00:07:15,160
+party and use that information to
+
+175
+00:07:15,170 --> 00:07:17,350
+determine whether they were operating
+
+176
+00:07:17,360 --> 00:07:19,780
+correctly and by doing that you haven't
+
+177
+00:07:19,790 --> 00:07:22,360
+modified the first two yeah you know so
+
+178
+00:07:22,370 --> 00:07:24,430
+you're watching it from afar watchdog
+
+179
+00:07:24,440 --> 00:07:26,740
+relies on existing message flow and
+
+180
+00:07:26,750 --> 00:07:28,900
+information whereas the heartbeat relies
+
+181
+00:07:28,910 --> 00:07:32,410
+on specific messages that are built in
+
+182
+00:07:32,420 --> 00:07:34,840
+the system specifically for that exactly
+
+183
+00:07:34,850 --> 00:07:36,580
+okay there's a pattern realistic
+
+184
+00:07:36,590 --> 00:07:39,430
+thresholds that discusses how you would
+
+185
+00:07:39,440 --> 00:07:41,860
+pick the appropriate threshold values to
+
+186
+00:07:41,870 --> 00:07:45,010
+use with the heartbeats and so on right
+
+187
+00:07:45,020 --> 00:07:46,900
+because if you have too much of that it
+
+188
+00:07:46,910 --> 00:07:49,330
+probably deteriorates the the system
+
+189
+00:07:49,340 --> 00:07:51,850
+performance yes it gets the system
+
+190
+00:07:51,860 --> 00:07:53,950
+performance or you might trigger think
+
+191
+00:07:53,960 --> 00:07:55,480
+that there's a fault too often or not
+
+192
+00:07:55,490 --> 00:07:57,670
+often enough so there's some things to
+
+193
+00:07:57,680 --> 00:07:59,230
+think about and so that's included in
+
+194
+00:07:59,240 --> 00:08:01,720
+here yeah so that leads us to the to the
+
+195
+00:08:01,730 --> 00:08:04,270
+metrics I guess to detect resource
+
+196
+00:08:04,280 --> 00:08:06,430
+acquisition problems based on existing
+
+197
+00:08:06,440 --> 00:08:08,950
+metrics and experience I guess yes we
+
+198
+00:08:08,960 --> 00:08:10,180
+talked about performance in the
+
+199
+00:08:10,190 --> 00:08:12,880
+introduction and perform there
+
+200
+00:08:12,890 --> 00:08:14,440
+probably our system performance
+
+201
+00:08:14,450 --> 00:08:16,390
+requirements on how the system should
+
+202
+00:08:16,400 --> 00:08:19,420
+perform under different workloads and if
+
+203
+00:08:19,430 --> 00:08:21,490
+the system is getting too many workloads
+
+204
+00:08:21,500 --> 00:08:24,070
+and in the telephone network case we
+
+205
+00:08:24,080 --> 00:08:27,400
+talk about events like a hurricane or an
+
+206
+00:08:27,410 --> 00:08:28,930
+earthquake and everybody wants to call
+
+207
+00:08:28,940 --> 00:08:31,030
+their friends or you know that new
+
+208
+00:08:31,040 --> 00:08:33,790
+soccer match you know everybody wants to
+
+209
+00:08:33,800 --> 00:08:36,190
+dial in for those tickets and that's the
+
+210
+00:08:36,200 --> 00:08:38,200
+worst time to be adding extra workload
+
+211
+00:08:38,210 --> 00:08:40,420
+to the system to tell you that you're in
+
+212
+00:08:40,430 --> 00:08:42,190
+an overload know you want to use
+
+213
+00:08:42,200 --> 00:08:43,840
+existing metrics you want to use things
+
+214
+00:08:43,850 --> 00:08:45,700
+that are really easy to compute really
+
+215
+00:08:45,710 --> 00:08:48,300
+simple and that already exists because
+
+216
+00:08:48,310 --> 00:08:51,190
+when you need this information about
+
+217
+00:08:51,200 --> 00:08:53,020
+overloads and performance problems the
+
+218
+00:08:53,030 --> 00:08:55,270
+most is when you have the least amount
+
+219
+00:08:55,280 --> 00:08:57,430
+of resources to spend computing things
+
+220
+00:08:57,440 --> 00:09:01,240
+hmm good point the next two patterns are
+
+221
+00:09:01,250 --> 00:09:03,850
+checksumming and voting I know that what
+
+222
+00:09:03,860 --> 00:09:05,380
+the first one is I don't know what the
+
+223
+00:09:05,390 --> 00:09:07,120
+second one is so why don't you elaborate
+
+224
+00:09:07,130 --> 00:09:11,080
+the differences okay it's interesting
+
+225
+00:09:11,090 --> 00:09:12,640
+workers because I haven't I've never
+
+226
+00:09:12,650 --> 00:09:13,930
+really thought of these two as being
+
+227
+00:09:13,940 --> 00:09:15,810
+that closely related so
+
+228
+00:09:15,820 --> 00:09:17,670
+it's interesting and every time I look
+
+229
+00:09:17,680 --> 00:09:19,740
+at this I learned something new
+
+230
+00:09:19,750 --> 00:09:21,780
+so the checksum is the traditional
+
+231
+00:09:21,790 --> 00:09:24,810
+checksum yeah you know compute some
+
+232
+00:09:24,820 --> 00:09:27,300
+value that will tell you that the value
+
+233
+00:09:27,310 --> 00:09:30,480
+that you computed from is correct you
+
+234
+00:09:30,490 --> 00:09:33,780
+know voting is used in cases where you
+
+235
+00:09:33,790 --> 00:09:36,540
+might have multiple redundant elements
+
+236
+00:09:36,550 --> 00:09:39,750
+operating and you need to decide which
+
+237
+00:09:39,760 --> 00:09:41,370
+of these values you're going to believe
+
+238
+00:09:41,380 --> 00:09:43,440
+so you get two redundant processors
+
+239
+00:09:43,450 --> 00:09:45,450
+computing a result which one's correct
+
+240
+00:09:45,460 --> 00:09:48,950
+and so you voting as a method provides
+
+241
+00:09:48,960 --> 00:09:51,660
+some techniques to use to help you
+
+242
+00:09:51,670 --> 00:09:53,220
+determine which is the correct result
+
+243
+00:09:53,230 --> 00:09:56,820
+when given multiple results okay that
+
+244
+00:09:56,830 --> 00:09:59,340
+the next two or three patterns I guess
+
+245
+00:09:59,350 --> 00:10:04,170
+are again related to humans or let's say
+
+246
+00:10:04,180 --> 00:10:07,740
+external observers they are routine
+
+247
+00:10:07,750 --> 00:10:11,400
+maintenance exercises and audits and and
+
+248
+00:10:11,410 --> 00:10:13,740
+these are related to humans as you said
+
+249
+00:10:13,750 --> 00:10:16,350
+but they also can be automated and the
+
+250
+00:10:16,360 --> 00:10:18,330
+whole point of these is you know no
+
+251
+00:10:18,340 --> 00:10:20,880
+system is no system should be designed
+
+252
+00:10:20,890 --> 00:10:24,750
+to be you know busy 100% of the time so
+
+253
+00:10:24,760 --> 00:10:27,090
+there's always some idle time and so
+
+254
+00:10:27,100 --> 00:10:28,620
+during that I don't think you know do
+
+255
+00:10:28,630 --> 00:10:30,390
+some routine maintenance check you know
+
+256
+00:10:30,400 --> 00:10:32,820
+and they could be cleaning stuff up like
+
+257
+00:10:32,830 --> 00:10:34,770
+garbage collection or it could be
+
+258
+00:10:34,780 --> 00:10:37,080
+running the correcting audits to make
+
+259
+00:10:37,090 --> 00:10:39,330
+sure that the data is correct routine
+
+260
+00:10:39,340 --> 00:10:41,370
+exercises is a specific case where
+
+261
+00:10:41,380 --> 00:10:44,250
+you've got an active and a standby and
+
+262
+00:10:44,260 --> 00:10:45,960
+you want to make sure that the standby
+
+263
+00:10:45,970 --> 00:10:47,940
+will work when you need it to and these
+
+264
+00:10:47,950 --> 00:10:50,250
+can all be triggered by humans or they
+
+265
+00:10:50,260 --> 00:10:52,140
+could also you know be triggered
+
+266
+00:10:52,150 --> 00:10:55,740
+automatically mm-hmm okay the next two I
+
+267
+00:10:55,750 --> 00:10:58,110
+guess are are probably also related
+
+268
+00:10:58,120 --> 00:11:00,810
+riding over transients and leaky bucket
+
+269
+00:11:00,820 --> 00:11:03,960
+counter in both cases I think that the
+
+270
+00:11:03,970 --> 00:11:06,030
+the problem is that you don't want to be
+
+271
+00:11:06,040 --> 00:11:09,450
+disturbed by well spurious errors I
+
+272
+00:11:09,460 --> 00:11:11,280
+guess things that go away automatically
+
+273
+00:11:11,290 --> 00:11:13,350
+or from without doing anything right
+
+274
+00:11:13,360 --> 00:11:15,090
+right and then what's the difference
+
+275
+00:11:15,100 --> 00:11:17,640
+between the two well writing over
+
+276
+00:11:17,650 --> 00:11:20,520
+transient is the bigger pattern and it's
+
+277
+00:11:20,530 --> 00:11:22,320
+telling you just what you said that you
+
+278
+00:11:22,330 --> 00:11:24,710
+don't want to waste time dealing with
+
+279
+00:11:24,720 --> 00:11:26,640
+problems that will clear up
+
+280
+00:11:26,650 --> 00:11:29,770
+automatically and leaky bucket counter
+
+281
+00:11:29,780 --> 00:11:35,130
+is a really classic technique for
+
+282
+00:11:35,140 --> 00:11:38,440
+actually implementing a counter to
+
+283
+00:11:38,450 --> 00:11:40,930
+determine if a problem that's an error
+
+284
+00:11:40,940 --> 00:11:43,210
+that you're detecting is happening often
+
+285
+00:11:43,220 --> 00:11:45,190
+enough that it should be treated rather
+
+286
+00:11:45,200 --> 00:11:48,130
+than so seldom that you can ignore it
+
+287
+00:11:48,140 --> 00:11:49,840
+mm-hmm and the way you do this is
+
+288
+00:11:49,850 --> 00:11:52,330
+literally but decrementing that the
+
+289
+00:11:52,340 --> 00:11:55,570
+counter with a specific speed basically
+
+290
+00:11:55,580 --> 00:11:58,000
+and then if the the increase because of
+
+291
+00:11:58,010 --> 00:12:00,370
+the error is getting bigger then you run
+
+292
+00:12:00,380 --> 00:12:02,080
+over a threshold and then you raise the
+
+293
+00:12:02,090 --> 00:12:05,650
+alarm right yes and the perfect existing
+
+294
+00:12:05,660 --> 00:12:07,210
+is a bucket with a hole at the bottom
+
+295
+00:12:07,220 --> 00:12:09,790
+right exactly that's yeah it's always
+
+296
+00:12:09,800 --> 00:12:12,540
+nice if patterns have real-world
+
+297
+00:12:12,550 --> 00:12:17,250
+analogies that you can visually picture
+
+298
+00:12:17,260 --> 00:12:20,940
+okay so that concludes the section on
+
+299
+00:12:20,950 --> 00:12:24,070
+detection patterns now that we know what
+
+300
+00:12:24,080 --> 00:12:26,350
+what the fault is or what the failure is
+
+301
+00:12:26,360 --> 00:12:27,970
+what the problem of the error is we can
+
+302
+00:12:27,980 --> 00:12:29,740
+now try to recover some of these things
+
+303
+00:12:29,750 --> 00:12:33,940
+so one of the ways for doing that is of
+
+304
+00:12:33,950 --> 00:12:36,820
+course if we try to contain the fault to
+
+305
+00:12:36,830 --> 00:12:38,920
+a specific unit of mitigation that
+
+306
+00:12:38,930 --> 00:12:40,900
+already well it sounds like a quarantine
+
+307
+00:12:40,910 --> 00:12:42,550
+right yeah so that's the first pattern
+
+308
+00:12:42,560 --> 00:12:44,950
+here and the first of the error recovery
+
+309
+00:12:44,960 --> 00:12:46,600
+patterns these are the patterns again
+
+310
+00:12:46,610 --> 00:12:48,100
+that are gonna take you to a new state
+
+311
+00:12:48,110 --> 00:12:50,320
+in the system so move the program
+
+312
+00:12:50,330 --> 00:12:51,760
+counter but the first thing the first
+
+313
+00:12:51,770 --> 00:12:54,730
+pattern here is quarantine again putting
+
+314
+00:12:54,740 --> 00:12:57,040
+those boundaries up to isolate because
+
+315
+00:12:57,050 --> 00:12:58,960
+you want to isolate the error so that it
+
+316
+00:12:58,970 --> 00:13:01,030
+doesn't propagate okay and the
+
+317
+00:13:01,040 --> 00:13:02,590
+quarantine pattern is pretty much a room
+
+318
+00:13:02,600 --> 00:13:04,810
+for just a reminder that you want to do
+
+319
+00:13:04,820 --> 00:13:07,690
+that isolation quickly before it creates
+
+320
+00:13:07,700 --> 00:13:11,829
+much harm the next one is concentrated
+
+321
+00:13:11,839 --> 00:13:14,350
+recovery what does that mean putting all
+
+322
+00:13:14,360 --> 00:13:16,180
+your system resources to try to solve
+
+323
+00:13:16,190 --> 00:13:20,170
+the problem well yes it can be it could
+
+324
+00:13:20,180 --> 00:13:22,329
+be putting all your system resources to
+
+325
+00:13:22,339 --> 00:13:25,470
+try to solve the problem or it could be
+
+326
+00:13:25,480 --> 00:13:28,380
+just that all the resources you put
+
+327
+00:13:28,390 --> 00:13:31,630
+towards solving the problem you dedicate
+
+328
+00:13:31,640 --> 00:13:33,550
+them exclusively to solving the problem
+
+329
+00:13:33,560 --> 00:13:37,230
+because if you continue trying to
+
+330
+00:13:37,240 --> 00:13:40,180
+receive and process new requests for
+
+331
+00:13:40,190 --> 00:13:42,430
+service for example everything is going
+
+332
+00:13:42,440 --> 00:13:43,480
+to take longer those are
+
+333
+00:13:43,490 --> 00:13:44,799
+for service are gonna take longer
+
+334
+00:13:44,809 --> 00:13:47,109
+because there's the recovery going on in
+
+335
+00:13:47,119 --> 00:13:48,910
+the background and the recovery is going
+
+336
+00:13:48,920 --> 00:13:50,949
+to take longer and so concentrated
+
+337
+00:13:50,959 --> 00:13:54,519
+recovery is advocating you know forget
+
+338
+00:13:54,529 --> 00:13:55,989
+about the new request for service while
+
+339
+00:13:55,999 --> 00:13:57,369
+you're doing the recovery just go ahead
+
+340
+00:13:57,379 --> 00:13:59,259
+and you know do the recovery as fast as
+
+341
+00:13:59,269 --> 00:14:02,949
+you can mm-hmm okay it sounds a bit
+
+342
+00:14:02,959 --> 00:14:05,799
+counterintuitive to some extent I mean
+
+343
+00:14:05,809 --> 00:14:08,079
+because during that time your system is
+
+344
+00:14:08,089 --> 00:14:08,829
+not available
+
+345
+00:14:08,839 --> 00:14:15,220
+yes but and and it gets to the different
+
+346
+00:14:15,230 --> 00:14:18,280
+kinds of reliability and availability
+
+347
+00:14:18,290 --> 00:14:20,410
+requirements the system might have
+
+348
+00:14:20,420 --> 00:14:23,799
+mm-hmm sometimes some systems are
+
+349
+00:14:23,809 --> 00:14:25,900
+measured based upon total system
+
+350
+00:14:25,910 --> 00:14:29,489
+availability and other times they're
+
+351
+00:14:29,499 --> 00:14:32,650
+only given requirements about partial
+
+352
+00:14:32,660 --> 00:14:36,879
+system availability so you have to trade
+
+353
+00:14:36,889 --> 00:14:38,889
+that off and again you know these
+
+354
+00:14:38,899 --> 00:14:41,019
+patterns have to be customized yeah for
+
+355
+00:14:41,029 --> 00:14:44,400
+your precise situation because sometimes
+
+356
+00:14:44,410 --> 00:14:47,079
+as long as you can let a little bit of
+
+357
+00:14:47,089 --> 00:14:48,220
+traffic or workload
+
+358
+00:14:48,230 --> 00:14:50,829
+you know dribble through the system flow
+
+359
+00:14:50,839 --> 00:14:54,160
+through the system slowly then you're
+
+360
+00:14:54,170 --> 00:14:56,169
+okay and you haven't you aren't
+
+361
+00:14:56,179 --> 00:14:59,139
+unavailable but in other cases you know
+
+362
+00:14:59,149 --> 00:15:00,970
+it's that's not the way things are
+
+363
+00:15:00,980 --> 00:15:03,730
+counted but again it it may not be the
+
+364
+00:15:03,740 --> 00:15:05,889
+whole system in a multiprocessor or
+
+365
+00:15:05,899 --> 00:15:08,319
+multiple cores you know maybe you
+
+366
+00:15:08,329 --> 00:15:10,179
+dedicate one core to doing the recovery
+
+367
+00:15:10,189 --> 00:15:12,309
+and the other we continue yeah but on
+
+368
+00:15:12,319 --> 00:15:13,989
+that one that's doing the recovery you
+
+369
+00:15:13,999 --> 00:15:15,639
+don't do any other work mm-hmm
+
+370
+00:15:15,649 --> 00:15:18,249
+the next one is error handler which is
+
+371
+00:15:18,259 --> 00:15:19,689
+probably a bit more than a simple
+
+372
+00:15:19,699 --> 00:15:22,749
+try-catch block I guess right the the
+
+373
+00:15:22,759 --> 00:15:25,049
+point of error handler it's
+
+374
+00:15:25,059 --> 00:15:27,100
+concentrating some of the error handling
+
+375
+00:15:27,110 --> 00:15:30,759
+code into one place which on the one
+
+376
+00:15:30,769 --> 00:15:33,280
+hand increases the complexity slightly
+
+377
+00:15:33,290 --> 00:15:34,449
+because now you have to transfer
+
+378
+00:15:34,459 --> 00:15:35,889
+somewhere and you have to take enough
+
+379
+00:15:35,899 --> 00:15:37,660
+context within so that you can know what
+
+380
+00:15:37,670 --> 00:15:40,179
+you're fixing it but on the other hand
+
+381
+00:15:40,189 --> 00:15:42,970
+you've concentrated that code and so you
+
+382
+00:15:42,980 --> 00:15:45,340
+can get you can get the faults out of it
+
+383
+00:15:45,350 --> 00:15:49,030
+and also it's only one place to change
+
+384
+00:15:49,040 --> 00:15:50,319
+when you discover you have a new
+
+385
+00:15:50,329 --> 00:15:51,939
+strategy or you need to try something
+
+386
+00:15:51,949 --> 00:15:54,220
+different the only one place to change
+
+387
+00:15:54,230 --> 00:15:55,869
+and you don't forget about other places
+
+388
+00:15:55,879 --> 00:15:57,250
+and so
+
+389
+00:15:57,260 --> 00:15:59,050
+there's a balancing act here and the
+
+390
+00:15:59,060 --> 00:16:01,390
+pattern tries to point out some of the
+
+391
+00:16:01,400 --> 00:16:04,540
+things to consider about having a
+
+392
+00:16:04,550 --> 00:16:06,340
+separate air handler versus putting it
+
+393
+00:16:06,350 --> 00:16:09,700
+in line okay so that's a relatively low
+
+394
+00:16:09,710 --> 00:16:12,790
+level implementation pattern I guess one
+
+395
+00:16:12,800 --> 00:16:15,370
+of the lower level ones yes but well so
+
+396
+00:16:15,380 --> 00:16:18,670
+people don't get Mis can get confused
+
+397
+00:16:18,680 --> 00:16:21,400
+none of these patterns really go to the
+
+398
+00:16:21,410 --> 00:16:23,230
+level of coding these are all design and
+
+399
+00:16:23,240 --> 00:16:25,000
+architecture level so there's still a
+
+400
+00:16:25,010 --> 00:16:26,920
+lot of specific design stuff you have to
+
+401
+00:16:26,930 --> 00:16:29,800
+do based upon them know so the next one
+
+402
+00:16:29,810 --> 00:16:31,960
+is restyled so that basically just means
+
+403
+00:16:31,970 --> 00:16:33,940
+if something goes wrong shut down the
+
+404
+00:16:33,950 --> 00:16:36,570
+system and restart it again yes
+
+405
+00:16:36,580 --> 00:16:40,300
+sometimes that's what you need to do we
+
+406
+00:16:40,310 --> 00:16:41,920
+try to avoid that because it takes a
+
+407
+00:16:41,930 --> 00:16:44,110
+long time to do the restart but
+
+408
+00:16:44,120 --> 00:16:46,060
+sometimes you know that's the best way
+
+409
+00:16:46,070 --> 00:16:49,060
+and that typically only occurs at the
+
+410
+00:16:49,070 --> 00:16:50,980
+end of a sequence of escalation we've
+
+411
+00:16:50,990 --> 00:16:53,260
+tried a number of things and none of
+
+412
+00:16:53,270 --> 00:16:55,360
+them have worked and so okay you know
+
+413
+00:16:55,370 --> 00:16:57,100
+now we'll bring out the big gun and
+
+414
+00:16:57,110 --> 00:16:58,990
+we'll do a restart yep
+
+415
+00:16:59,000 --> 00:17:03,400
+there are several less well smaller or
+
+416
+00:17:03,410 --> 00:17:06,670
+earlier or less escalated approaches
+
+417
+00:17:06,680 --> 00:17:09,250
+roll back roll forward and return to
+
+418
+00:17:09,260 --> 00:17:12,550
+reference point what's the relationship
+
+419
+00:17:12,560 --> 00:17:14,680
+between these three and what do they do
+
+420
+00:17:14,690 --> 00:17:18,220
+roll back is kind of the typical thing
+
+421
+00:17:18,230 --> 00:17:20,530
+that we're going to we encounter an
+
+422
+00:17:20,540 --> 00:17:22,660
+error and now we're gonna roll back and
+
+423
+00:17:22,670 --> 00:17:25,900
+retry yeah and you know maybe we have to
+
+424
+00:17:25,910 --> 00:17:27,310
+restore from checkpoint which we'll come
+
+425
+00:17:27,320 --> 00:17:29,080
+to in a couple of minutes but we've gone
+
+426
+00:17:29,090 --> 00:17:31,110
+to a previous state we're gonna retry
+
+427
+00:17:31,120 --> 00:17:34,780
+roll forward is for those cases where
+
+428
+00:17:34,790 --> 00:17:36,520
+you don't need to or it's inappropriate
+
+429
+00:17:36,530 --> 00:17:39,100
+to roll back and retry and so actually
+
+430
+00:17:39,110 --> 00:17:40,930
+roll forward is oh we're in the middle
+
+431
+00:17:40,940 --> 00:17:43,030
+of this transaction we've gotten an
+
+432
+00:17:43,040 --> 00:17:44,800
+error we'll just discard the rest of and
+
+433
+00:17:44,810 --> 00:17:46,810
+we'll go on to the next one mm-hmm that
+
+434
+00:17:46,820 --> 00:17:47,610
+kind of thing
+
+435
+00:17:47,620 --> 00:17:50,470
+return to reference point is very
+
+436
+00:17:50,480 --> 00:17:53,770
+closely related to these two but it is
+
+437
+00:17:53,780 --> 00:17:57,760
+more intended for the non main
+
+438
+00:17:57,770 --> 00:18:00,790
+application like code so you're doing a
+
+439
+00:18:00,800 --> 00:18:03,730
+correcting audit for example and you
+
+440
+00:18:03,740 --> 00:18:07,210
+know which isn't you know arguably the
+
+441
+00:18:07,220 --> 00:18:09,490
+main application function of processing
+
+442
+00:18:09,500 --> 00:18:11,140
+telephone calls or web requests
+
+443
+00:18:11,150 --> 00:18:14,290
+or anything and you've got an error in
+
+444
+00:18:14,300 --> 00:18:16,990
+there where do you go from there and so
+
+445
+00:18:17,000 --> 00:18:19,390
+return to reference point is putting
+
+446
+00:18:19,400 --> 00:18:20,860
+this is getting the signal system
+
+447
+00:18:20,870 --> 00:18:23,140
+synchronized again because you know you
+
+448
+00:18:23,150 --> 00:18:25,600
+may not need to roll back if an audit
+
+449
+00:18:25,610 --> 00:18:27,549
+has an error you might want to just
+
+450
+00:18:27,559 --> 00:18:31,900
+restart normal execution with I don't
+
+451
+00:18:31,910 --> 00:18:33,880
+mean the restart pattern you might want
+
+452
+00:18:33,890 --> 00:18:36,040
+to resume the normal execution you know
+
+453
+00:18:36,050 --> 00:18:37,690
+and forget about the error happening
+
+454
+00:18:37,700 --> 00:18:40,650
+mm-hmm so roll back and roll forward are
+
+455
+00:18:40,660 --> 00:18:42,790
+basically for the main application
+
+456
+00:18:42,800 --> 00:18:45,310
+return the reference point is for the
+
+457
+00:18:45,320 --> 00:18:47,770
+maintenance code if you will and restart
+
+458
+00:18:47,780 --> 00:18:49,600
+is like the toll system if you've got a
+
+459
+00:18:49,610 --> 00:18:52,090
+big problem and a rollback is basically
+
+460
+00:18:52,100 --> 00:18:55,060
+retry whereas roll forward is ignore yes
+
+461
+00:18:55,070 --> 00:18:57,490
+okay so if you if you retry there is
+
+462
+00:18:57,500 --> 00:18:59,890
+probably always the trade-off SN in the
+
+463
+00:18:59,900 --> 00:19:03,280
+in the in the heartbeat area that you
+
+464
+00:19:03,290 --> 00:19:05,080
+have to trade off the number of limits
+
+465
+00:19:05,090 --> 00:19:07,930
+you you retry the number of times you
+
+466
+00:19:07,940 --> 00:19:10,840
+retry the well yeah the retries if you
+
+467
+00:19:10,850 --> 00:19:12,970
+try too often then your system might get
+
+468
+00:19:12,980 --> 00:19:15,070
+stuck with retrying old crap that never
+
+469
+00:19:15,080 --> 00:19:18,040
+is gonna work exactly and that's it was
+
+470
+00:19:18,050 --> 00:19:20,380
+an important concept that I included the
+
+471
+00:19:20,390 --> 00:19:22,450
+pattern limit retry sin in here to
+
+472
+00:19:22,460 --> 00:19:27,340
+remind you to put some threshold some
+
+473
+00:19:27,350 --> 00:19:29,500
+limit on how many times you're gonna
+
+474
+00:19:29,510 --> 00:19:31,960
+retry yeah and this is exactly where
+
+475
+00:19:31,970 --> 00:19:35,290
+someone in charge that pattern from the
+
+476
+00:19:35,300 --> 00:19:37,750
+architecture huh chapter comes to play
+
+477
+00:19:37,760 --> 00:19:40,660
+because it's that someone in charge that
+
+478
+00:19:40,670 --> 00:19:42,490
+is going to be the one to say okay we've
+
+479
+00:19:42,500 --> 00:19:44,020
+had enough retries now it's time to
+
+480
+00:19:44,030 --> 00:19:44,919
+escalate mm-hm
+
+481
+00:19:44,929 --> 00:19:46,870
+yeah right that that was a good point
+
+482
+00:19:46,880 --> 00:19:49,270
+what do you do if you've reached that
+
+483
+00:19:49,280 --> 00:19:50,770
+them and you escalate to some other
+
+484
+00:19:50,780 --> 00:19:52,810
+strategy which might then be for example
+
+485
+00:19:52,820 --> 00:19:56,590
+roll forward or restart yes okay the
+
+486
+00:19:56,600 --> 00:19:58,690
+next one is failover I thought that was
+
+487
+00:19:58,700 --> 00:20:01,510
+a relatively general term how does that
+
+488
+00:20:01,520 --> 00:20:03,040
+fit into these more or less specific
+
+489
+00:20:03,050 --> 00:20:06,130
+strategies here well it's a we had
+
+490
+00:20:06,140 --> 00:20:09,520
+redundancy in the architecture chat
+
+491
+00:20:09,530 --> 00:20:11,860
+error and so failover is a really
+
+492
+00:20:11,870 --> 00:20:14,049
+important concept with regard to
+
+493
+00:20:14,059 --> 00:20:15,760
+redundancy and so I thought I needed to
+
+494
+00:20:15,770 --> 00:20:19,930
+include it and it's exactly what you
+
+495
+00:20:19,940 --> 00:20:21,700
+thought it was failing over we've got
+
+496
+00:20:21,710 --> 00:20:24,580
+one that doesn't have stopped working
+
+497
+00:20:24,590 --> 00:20:25,540
+and we fail
+
+498
+00:20:25,550 --> 00:20:28,630
+over to the other one of a redundant
+
+499
+00:20:28,640 --> 00:20:30,970
+pair or redundant set and resume
+
+500
+00:20:30,980 --> 00:20:34,330
+execution there yeah and it's not
+
+501
+00:20:34,340 --> 00:20:37,720
+strictly a hardware concept mm-hmm so so
+
+502
+00:20:37,730 --> 00:20:39,190
+there's some ideas in this pattern about
+
+503
+00:20:39,200 --> 00:20:41,590
+doing it with software yeah yeah okay
+
+504
+00:20:41,600 --> 00:20:43,720
+and the last one for this section or
+
+505
+00:20:43,730 --> 00:20:46,290
+chapter is checkpoint which is probably
+
+506
+00:20:46,300 --> 00:20:48,940
+important if you want to be able to
+
+507
+00:20:48,950 --> 00:20:50,650
+return to reference point or rollback
+
+508
+00:20:50,660 --> 00:20:52,780
+something right you already mentioned it
+
+509
+00:20:52,790 --> 00:20:54,880
+before by the way yes we've mentioned it
+
+510
+00:20:54,890 --> 00:20:56,680
+before I mean this is a really important
+
+511
+00:20:56,690 --> 00:20:59,200
+concept and this is one this is one of
+
+512
+00:20:59,210 --> 00:21:00,520
+those things that I'm sure people will
+
+513
+00:21:00,530 --> 00:21:03,610
+pick up the book and immediately say oh
+
+514
+00:21:03,620 --> 00:21:04,930
+yes okay he's got a lot of that
+
+515
+00:21:04,940 --> 00:21:08,200
+checkpointing it's there been whole
+
+516
+00:21:08,210 --> 00:21:11,530
+books written on checkpointing also it's
+
+517
+00:21:11,540 --> 00:21:14,800
+a very important concept and the
+
+518
+00:21:14,810 --> 00:21:17,320
+patterns it's again a little set
+
+519
+00:21:17,330 --> 00:21:19,690
+kind of like the some of the others
+
+520
+00:21:19,700 --> 00:21:21,730
+we've seen so checkpointing is
+
+521
+00:21:21,740 --> 00:21:23,350
+explaining a little bit about how it's
+
+522
+00:21:23,360 --> 00:21:25,630
+storing state information away can help
+
+523
+00:21:25,640 --> 00:21:28,000
+you recover faster mm-hmm but then
+
+524
+00:21:28,010 --> 00:21:30,250
+there's some empty open questions at the
+
+525
+00:21:30,260 --> 00:21:31,870
+end of it like what is it that you're
+
+526
+00:21:31,880 --> 00:21:33,160
+supposed to say what's the best
+
+527
+00:21:33,170 --> 00:21:35,050
+information to save in the checkpoints
+
+528
+00:21:35,060 --> 00:21:37,330
+and then where do you store the check
+
+529
+00:21:37,340 --> 00:21:40,930
+and so you know that could be a lot of
+
+530
+00:21:40,940 --> 00:21:43,270
+different things and then then there's
+
+531
+00:21:43,280 --> 00:21:45,550
+another pattern to when do you do the
+
+532
+00:21:45,560 --> 00:21:47,350
+checkpoint you know do you always do it
+
+533
+00:21:47,360 --> 00:21:49,810
+yeah well how often should you do it who
+
+534
+00:21:49,820 --> 00:21:51,370
+decides when it's time to do it and so
+
+535
+00:21:51,380 --> 00:21:53,680
+these are all covered in other patterns
+
+536
+00:21:53,690 --> 00:21:55,450
+within this error recovery chapter yeah
+
+537
+00:21:55,460 --> 00:21:57,850
+okay as a usual trade-off again if you
+
+538
+00:21:57,860 --> 00:21:59,650
+take point too often then the overhead
+
+539
+00:21:59,660 --> 00:22:01,390
+of creating the checkpoint this is too
+
+540
+00:22:01,400 --> 00:22:03,010
+big and if you do it too seldomly
+
+541
+00:22:03,020 --> 00:22:06,280
+you have to go too big well that the the
+
+542
+00:22:06,290 --> 00:22:09,370
+stuff you have lost is going to be too
+
+543
+00:22:09,380 --> 00:22:11,440
+much so well yes a lot of trade-offs to
+
+544
+00:22:11,450 --> 00:22:14,260
+be made there are and so I hope these
+
+545
+00:22:14,270 --> 00:22:16,450
+patterns will be useful to the reader to
+
+546
+00:22:16,460 --> 00:22:18,160
+remind them about all these things they
+
+547
+00:22:18,170 --> 00:22:19,900
+have to consider and trade-off sure but
+
+548
+00:22:19,910 --> 00:22:22,060
+but one thing that that you need in
+
+549
+00:22:22,070 --> 00:22:22,960
+order to be able to make these
+
+550
+00:22:22,970 --> 00:22:24,430
+trade-offs this is a good set of
+
+551
+00:22:24,440 --> 00:22:26,680
+specific requirements and would guess
+
+552
+00:22:26,690 --> 00:22:28,450
+that many of the people who do not work
+
+553
+00:22:28,460 --> 00:22:31,810
+in this like safety-critical or fault
+
+554
+00:22:31,820 --> 00:22:34,210
+tolerance required areas like you do
+
+555
+00:22:34,220 --> 00:22:37,000
+they haven't seen many of these specific
+
+556
+00:22:37,010 --> 00:22:38,830
+requirements specifically if we talk
+
+557
+00:22:38,840 --> 00:22:39,370
+about
+
+558
+00:22:39,380 --> 00:22:41,710
+functional requirements just always wha
+
+559
+00:22:41,720 --> 00:22:43,660
+yeah the system must be available it
+
+560
+00:22:43,670 --> 00:22:45,880
+must be fast you can't make these
+
+561
+00:22:45,890 --> 00:22:47,140
+trade-offs if you don't know I don't
+
+562
+00:22:47,150 --> 00:22:49,990
+know any more specifics that you're
+
+563
+00:22:50,000 --> 00:22:52,180
+absolutely right it's important to get
+
+564
+00:22:52,190 --> 00:22:55,060
+those requirements or without a
+
+565
+00:22:55,070 --> 00:22:57,520
+specification or requirement you can't
+
+566
+00:22:57,530 --> 00:22:59,200
+have a failure yeah you're right that
+
+567
+00:22:59,210 --> 00:23:01,330
+goes back to that point which is also
+
+568
+00:23:01,340 --> 00:23:03,910
+practical if you can't fail also a good
+
+569
+00:23:03,920 --> 00:23:04,840
+situation to be in
+
+570
+00:23:04,850 --> 00:23:07,840
+yep okay let's look at the error
+
+571
+00:23:07,850 --> 00:23:09,100
+mitigation pattern
+
+572
+00:23:09,110 --> 00:23:10,840
+patterns and they are different from the
+
+573
+00:23:10,850 --> 00:23:12,940
+error acock to recovery patterns again
+
+574
+00:23:12,950 --> 00:23:15,460
+in what sense well the error recovery
+
+575
+00:23:15,470 --> 00:23:17,650
+patterns are the ones that move you to
+
+576
+00:23:17,660 --> 00:23:19,270
+another side right so we've rolled back
+
+577
+00:23:19,280 --> 00:23:20,860
+to a different state you know basically
+
+578
+00:23:20,870 --> 00:23:22,840
+you know in a really low level we've
+
+579
+00:23:22,850 --> 00:23:24,550
+changed the program counter at some
+
+580
+00:23:24,560 --> 00:23:27,130
+weight now but there are many situations
+
+581
+00:23:27,140 --> 00:23:29,590
+and especially performance related
+
+582
+00:23:29,600 --> 00:23:32,530
+problems overloads where we don't change
+
+583
+00:23:32,540 --> 00:23:35,650
+the state we can do something here
+
+584
+00:23:35,660 --> 00:23:40,980
+locally excuse me that will allow us to
+
+585
+00:23:40,990 --> 00:23:44,320
+continue execution but we've mitigated
+
+586
+00:23:44,330 --> 00:23:46,540
+the error so these are in the chapter on
+
+587
+00:23:46,550 --> 00:23:49,000
+error mitigation so we've done something
+
+588
+00:23:49,010 --> 00:23:51,700
+to to make the world better but we
+
+589
+00:23:51,710 --> 00:23:53,320
+haven't changed the state okay so the
+
+590
+00:23:53,330 --> 00:23:56,070
+first pattern in the section is overload
+
+591
+00:23:56,080 --> 00:23:59,500
+overload toolboxes what's that about so
+
+592
+00:23:59,510 --> 00:24:01,570
+overload toolboxes I mentioned this a
+
+593
+00:24:01,580 --> 00:24:03,550
+long time ago also in the instruction
+
+594
+00:24:03,560 --> 00:24:07,120
+that knot or in relation to fault
+
+595
+00:24:07,130 --> 00:24:09,130
+correlation that there are different
+
+596
+00:24:09,140 --> 00:24:11,890
+kinds of techniques that you'll use to
+
+597
+00:24:11,900 --> 00:24:13,620
+resolve different kinds of problems and
+
+598
+00:24:13,630 --> 00:24:17,170
+overload toolboxes is pointing out that
+
+599
+00:24:17,180 --> 00:24:19,090
+you might have different tools to deal
+
+600
+00:24:19,100 --> 00:24:22,840
+with overloads in terms of memory you're
+
+601
+00:24:22,850 --> 00:24:23,950
+running out of memory for the
+
+602
+00:24:23,960 --> 00:24:26,410
+application whatever that however that
+
+603
+00:24:26,420 --> 00:24:28,120
+might happen you're running out of
+
+604
+00:24:28,130 --> 00:24:30,550
+tangible resources maybe network ports
+
+605
+00:24:30,560 --> 00:24:34,290
+or you know peripheral equipment or your
+
+606
+00:24:34,300 --> 00:24:37,210
+cpu time is going high but it's going to
+
+607
+00:24:37,220 --> 00:24:39,520
+be different techniques for each to help
+
+608
+00:24:39,530 --> 00:24:41,500
+resolve overloads of each of those
+
+609
+00:24:41,510 --> 00:24:43,780
+different areas and so you need multiple
+
+610
+00:24:43,790 --> 00:24:45,610
+toolboxes to deal with those different
+
+611
+00:24:45,620 --> 00:24:48,100
+kinds of problems okay you know it's
+
+612
+00:24:48,110 --> 00:24:51,850
+it's a classic case of you know the old
+
+613
+00:24:51,860 --> 00:24:53,049
+joke that
+
+614
+00:24:53,059 --> 00:24:55,179
+when the only tool you have is a hammer
+
+615
+00:24:55,189 --> 00:24:57,669
+everything looks like a nail okay and
+
+616
+00:24:57,679 --> 00:24:59,799
+this is trying to remind you that no
+
+617
+00:24:59,809 --> 00:25:01,569
+there are you know there isn't one
+
+618
+00:25:01,579 --> 00:25:03,189
+single solution that's gonna work with
+
+619
+00:25:03,199 --> 00:25:05,289
+all these different overloads okay so
+
+620
+00:25:05,299 --> 00:25:07,089
+then let's look at the couple of these
+
+621
+00:25:07,099 --> 00:25:09,279
+solutions the first one that I see here
+
+622
+00:25:09,289 --> 00:25:12,009
+is deferrable work so basically whenever
+
+623
+00:25:12,019 --> 00:25:13,749
+you can do something later do it later
+
+624
+00:25:13,759 --> 00:25:15,429
+my principle in life
+
+625
+00:25:15,439 --> 00:25:17,919
+oh yeah that's basically right we talked
+
+626
+00:25:17,929 --> 00:25:19,779
+about the routine maintenance kinds of
+
+627
+00:25:19,789 --> 00:25:22,719
+tasks those are easily deferrable you
+
+628
+00:25:22,729 --> 00:25:24,579
+know if the system is in overload it
+
+629
+00:25:24,589 --> 00:25:26,559
+must be working pretty well mmm good
+
+630
+00:25:26,569 --> 00:25:28,389
+already yeah if it doesn't have other
+
+631
+00:25:28,399 --> 00:25:30,039
+errors so the first some of that work
+
+632
+00:25:30,049 --> 00:25:31,299
+that would check if it's working out
+
+633
+00:25:31,309 --> 00:25:33,189
+well although the error the overload
+
+634
+00:25:33,199 --> 00:25:35,829
+might be a consequence of some fault
+
+635
+00:25:35,839 --> 00:25:37,229
+somewhere else because for example
+
+636
+00:25:37,239 --> 00:25:40,899
+something isn't DQ'd after it has been
+
+637
+00:25:40,909 --> 00:25:42,819
+processed so the same thing is processed
+
+638
+00:25:42,829 --> 00:25:43,779
+over and over and over again
+
+639
+00:25:43,789 --> 00:25:47,049
+yes luck and that and that gets to
+
+640
+00:25:47,059 --> 00:25:49,029
+another pattern reassess overload
+
+641
+00:25:49,039 --> 00:25:50,739
+decision which is reminding you to have
+
+642
+00:25:50,749 --> 00:25:53,949
+the system periodically check that it's
+
+643
+00:25:53,959 --> 00:25:56,199
+applying the correct techniques because
+
+644
+00:25:56,209 --> 00:25:58,239
+there might be more information to tell
+
+645
+00:25:58,249 --> 00:26:00,099
+you exactly what you said that it's a
+
+646
+00:26:00,109 --> 00:26:01,959
+fault and you're not dequeuing something
+
+647
+00:26:01,969 --> 00:26:05,079
+rather than an overload huh since we
+
+648
+00:26:05,089 --> 00:26:07,599
+talked about queues the next thing to do
+
+649
+00:26:07,609 --> 00:26:10,119
+to mitigate overload situations is queue
+
+650
+00:26:10,129 --> 00:26:11,859
+for resources what does that mean
+
+651
+00:26:11,869 --> 00:26:14,349
+sometimes you can get away with queueing
+
+652
+00:26:14,359 --> 00:26:16,899
+requests as they come in to process them
+
+653
+00:26:16,909 --> 00:26:18,789
+a little later because it might be you
+
+654
+00:26:18,799 --> 00:26:21,849
+know very momentary spike or it'll also
+
+655
+00:26:21,859 --> 00:26:24,849
+smooth the arrival rate to the point
+
+656
+00:26:24,859 --> 00:26:27,309
+where the processor will able to handle
+
+657
+00:26:27,319 --> 00:26:28,719
+it more efficiently mm-hm
+
+658
+00:26:28,729 --> 00:26:30,279
+but you have to be sure to do it
+
+659
+00:26:30,289 --> 00:26:32,079
+equitably so that everybody receives
+
+660
+00:26:32,089 --> 00:26:34,239
+good service in some way and again the
+
+661
+00:26:34,249 --> 00:26:35,799
+requirements should specify what good
+
+662
+00:26:35,809 --> 00:26:39,009
+service is next one is chat load right
+
+663
+00:26:39,019 --> 00:26:41,259
+sometimes you just get too much work in
+
+664
+00:26:41,269 --> 00:26:44,289
+and you need to get rid of it and so you
+
+665
+00:26:44,299 --> 00:26:46,869
+need to design the system and know in
+
+666
+00:26:46,879 --> 00:26:48,639
+advance how you're going to do that how
+
+667
+00:26:48,649 --> 00:26:50,799
+you're going to discard those requests
+
+668
+00:26:50,809 --> 00:26:53,409
+that come in that you can't poss this
+
+669
+00:26:53,419 --> 00:26:54,909
+process right now mm-hmm
+
+670
+00:26:54,919 --> 00:26:57,369
+you know ignoring deadlines just
+
+671
+00:26:57,379 --> 00:26:59,109
+discarding things off the queue not
+
+672
+00:26:59,119 --> 00:27:00,279
+putting things under the queue in the
+
+673
+00:27:00,289 --> 00:27:01,959
+first place or some examples of the way
+
+674
+00:27:01,969 --> 00:27:03,830
+you might shed load
+
+675
+00:27:03,840 --> 00:27:06,440
+and when you're shedding load you want
+
+676
+00:27:06,450 --> 00:27:08,119
+to do that very efficiently because
+
+677
+00:27:08,129 --> 00:27:09,950
+you're doing it in a period of overload
+
+678
+00:27:09,960 --> 00:27:11,599
+so you want to really be efficient in
+
+679
+00:27:11,609 --> 00:27:14,659
+the way you do it and not have errors
+
+680
+00:27:14,669 --> 00:27:17,570
+occur during that discarding yeah and so
+
+681
+00:27:17,580 --> 00:27:19,489
+you know final handling is another
+
+682
+00:27:19,499 --> 00:27:20,989
+pattern that talks about that kind of
+
+683
+00:27:20,999 --> 00:27:23,930
+stuff mm-hmm okay and and if you can't
+
+684
+00:27:23,940 --> 00:27:25,549
+shed the load you might share it with
+
+685
+00:27:25,559 --> 00:27:28,190
+some other component of the system as an
+
+686
+00:27:28,200 --> 00:27:31,039
+alternative right again the patterns are
+
+687
+00:27:31,049 --> 00:27:33,619
+can be applied at design time so you can
+
+688
+00:27:33,629 --> 00:27:35,659
+think about that where can you what
+
+689
+00:27:35,669 --> 00:27:38,419
+other processes are in the complex that
+
+690
+00:27:38,429 --> 00:27:40,279
+you're building or other cores that are
+
+691
+00:27:40,289 --> 00:27:41,659
+doing different kinds of work that you
+
+692
+00:27:41,669 --> 00:27:45,589
+can start allocating resources from when
+
+693
+00:27:45,599 --> 00:27:47,180
+you get to a period of overload you know
+
+694
+00:27:47,190 --> 00:27:48,950
+and it could be local like I mentioned
+
+695
+00:27:48,960 --> 00:27:50,629
+processor cores or it could be across
+
+696
+00:27:50,639 --> 00:27:52,700
+the network that all of a sudden you
+
+697
+00:27:52,710 --> 00:27:54,499
+start sending requests to different
+
+698
+00:27:54,509 --> 00:27:57,889
+places and these are examples of ways of
+
+699
+00:27:57,899 --> 00:28:00,950
+expanding the possible ways of resolving
+
+700
+00:28:00,960 --> 00:28:03,739
+the problem of expanding the resources
+
+701
+00:28:03,749 --> 00:28:05,930
+so it's an expansive automatic control
+
+702
+00:28:05,940 --> 00:28:07,190
+mm-hmm
+
+703
+00:28:07,200 --> 00:28:08,959
+and then another way is of course
+
+704
+00:28:08,969 --> 00:28:10,820
+instead of shedding or sharing just
+
+705
+00:28:10,830 --> 00:28:12,560
+doing everything a little bit slower I
+
+706
+00:28:12,570 --> 00:28:16,369
+guess right just slow it down just
+
+707
+00:28:16,379 --> 00:28:19,099
+because by doing that you keep the
+
+708
+00:28:19,109 --> 00:28:23,089
+system saying you are limiting what
+
+709
+00:28:23,099 --> 00:28:24,349
+you're doing you're shedding some work
+
+710
+00:28:24,359 --> 00:28:27,049
+and you're processing what you can but
+
+711
+00:28:27,059 --> 00:28:28,879
+you're conscious about processing
+
+712
+00:28:28,889 --> 00:28:30,799
+accepting only as much work as the
+
+713
+00:28:30,809 --> 00:28:33,289
+system can process at any given moment
+
+714
+00:28:33,299 --> 00:28:34,940
+and therefore you're going to keep it
+
+715
+00:28:34,950 --> 00:28:38,119
+out of an overload situation that could
+
+716
+00:28:38,129 --> 00:28:40,279
+lead to a failure or keep it out of an
+
+717
+00:28:40,289 --> 00:28:44,320
+overload situation that is unrecoverable
+
+718
+00:28:44,330 --> 00:28:47,209
+the next two patterns are fresh work
+
+719
+00:28:47,219 --> 00:28:49,869
+before stale and finish work in progress
+
+720
+00:28:49,879 --> 00:28:53,119
+how do they relate so both of these
+
+721
+00:28:53,129 --> 00:28:54,709
+patterns fresh work before stale and
+
+722
+00:28:54,719 --> 00:28:56,599
+finish work and progress are related to
+
+723
+00:28:56,609 --> 00:28:59,779
+the cueing fresh work before stale in
+
+724
+00:28:59,789 --> 00:29:01,879
+some situations especially where there
+
+725
+00:29:01,889 --> 00:29:03,979
+are humans on the other end like of the
+
+726
+00:29:03,989 --> 00:29:06,200
+telephone or of a web request you know
+
+727
+00:29:06,210 --> 00:29:08,509
+they get impatient if the thing doesn't
+
+728
+00:29:08,519 --> 00:29:09,619
+happen fast enough they're going to
+
+729
+00:29:09,629 --> 00:29:13,159
+resubmit it and so it's possible in some
+
+730
+00:29:13,169 --> 00:29:15,139
+situations to get multiple requests that
+
+731
+00:29:15,149 --> 00:29:17,120
+are identical in the queue
+
+732
+00:29:17,130 --> 00:29:19,610
+because the person has resubmitted them
+
+733
+00:29:19,620 --> 00:29:21,470
+and so you want to take fresh work
+
+734
+00:29:21,480 --> 00:29:23,030
+before stale so you get the most recent
+
+735
+00:29:23,040 --> 00:29:26,000
+request and then by the time you get to
+
+736
+00:29:26,010 --> 00:29:28,430
+the old requests you'll have some
+
+737
+00:29:28,440 --> 00:29:29,930
+indication that it should definitely be
+
+738
+00:29:29,940 --> 00:29:33,500
+ignored finish work-in-progress deals
+
+739
+00:29:33,510 --> 00:29:36,560
+with transactions that must complete and
+
+740
+00:29:36,570 --> 00:29:39,080
+and maybe the things that are long-lived
+
+741
+00:29:39,090 --> 00:29:41,150
+and so you know there might be a lot of
+
+742
+00:29:41,160 --> 00:29:43,880
+messages that get received or the system
+
+743
+00:29:43,890 --> 00:29:47,030
+has significant work time invested in
+
+744
+00:29:47,040 --> 00:29:49,160
+seeing that they complete and so you
+
+745
+00:29:49,170 --> 00:29:51,440
+want to do what you can to make sure
+
+746
+00:29:51,450 --> 00:29:53,420
+that they're allowed to complete and
+
+747
+00:29:53,430 --> 00:29:56,180
+maybe defer some new work requests to
+
+748
+00:29:56,190 --> 00:29:57,770
+allow the continuation of these others
+
+749
+00:29:57,780 --> 00:30:00,890
+already in the system this fresh work to
+
+750
+00:30:00,900 --> 00:30:02,450
+fall stylist is something that's
+
+751
+00:30:02,460 --> 00:30:04,850
+probably used in many telephone systems
+
+752
+00:30:04,860 --> 00:30:06,740
+I guess because I've had that experience
+
+753
+00:30:06,750 --> 00:30:09,170
+if I try to call some whatever call
+
+754
+00:30:09,180 --> 00:30:11,150
+center and I don't get through I just
+
+755
+00:30:11,160 --> 00:30:12,860
+hang up and try again and and now I
+
+756
+00:30:12,870 --> 00:30:14,390
+can't get through so it seems like
+
+757
+00:30:14,400 --> 00:30:15,860
+that's something that's used quite a bit
+
+758
+00:30:15,870 --> 00:30:18,590
+yes it's a very common thing and some of
+
+759
+00:30:18,600 --> 00:30:20,240
+these patterns in this chapter
+
+760
+00:30:20,250 --> 00:30:22,700
+particularly like fresh work with for
+
+761
+00:30:22,710 --> 00:30:24,260
+sale and finish work in progress were
+
+762
+00:30:24,270 --> 00:30:26,750
+first written in pattern form by Gerard
+
+763
+00:30:26,760 --> 00:30:29,540
+Meszaros who worked for another telecom
+
+764
+00:30:29,550 --> 00:30:33,310
+company and so this is building upon
+
+765
+00:30:33,320 --> 00:30:36,110
+lots of good Telecom experience and some
+
+766
+00:30:36,120 --> 00:30:38,410
+of these overload handling techniques
+
+767
+00:30:38,420 --> 00:30:43,130
+marked data as the next pattern yeah go
+
+768
+00:30:43,140 --> 00:30:45,140
+ahead no I'm sure you say what you're
+
+769
+00:30:45,150 --> 00:30:47,000
+just gonna say that it sounds a bit like
+
+770
+00:30:47,010 --> 00:30:50,030
+checksum that you somehow hi mark data
+
+771
+00:30:50,040 --> 00:30:51,710
+with some property so you can check
+
+772
+00:30:51,720 --> 00:30:53,120
+whether it's correct but I'm not sure if
+
+773
+00:30:53,130 --> 00:30:57,530
+that's appropriate no it's the next one
+
+774
+00:30:57,540 --> 00:30:59,630
+after this error correction code is like
+
+775
+00:30:59,640 --> 00:31:02,390
+that it's error correction code is
+
+776
+00:31:02,400 --> 00:31:05,060
+taking in is giving some redundant
+
+777
+00:31:05,070 --> 00:31:06,560
+information so that you can reconstruct
+
+778
+00:31:06,570 --> 00:31:08,720
+the correct value if if for example the
+
+779
+00:31:08,730 --> 00:31:11,390
+checksum says it's incorrect now the
+
+780
+00:31:11,400 --> 00:31:13,030
+mark date is a little different it's
+
+781
+00:31:13,040 --> 00:31:15,680
+sort of like the I Triple E not a number
+
+782
+00:31:15,690 --> 00:31:17,840
+standard or Ward Cunningham had a
+
+783
+00:31:17,850 --> 00:31:20,240
+pattern that was related to and it's
+
+784
+00:31:20,250 --> 00:31:23,240
+you've got a data value it's incorrect
+
+785
+00:31:23,250 --> 00:31:25,100
+you know it's incorrect you can't figure
+
+786
+00:31:25,110 --> 00:31:27,230
+out what it should be made equal to you
+
+787
+00:31:27,240 --> 00:31:28,820
+can't use so the correcting audit can't
+
+788
+00:31:28,830 --> 00:31:30,250
+correct it
+
+789
+00:31:30,260 --> 00:31:32,320
+instead of that you put a flag on it
+
+790
+00:31:32,330 --> 00:31:34,270
+they lets everyone know this value isn't
+
+791
+00:31:34,280 --> 00:31:36,580
+correct don't use it but then you let
+
+792
+00:31:36,590 --> 00:31:38,980
+that data value and its flag ripple
+
+793
+00:31:38,990 --> 00:31:41,590
+through the system and the system just
+
+794
+00:31:41,600 --> 00:31:43,720
+respond oh that I can't use that value
+
+795
+00:31:43,730 --> 00:31:47,860
+mm-hmm um that might mean if you want to
+
+796
+00:31:47,870 --> 00:31:50,020
+use this mechanism in a system that
+
+797
+00:31:50,030 --> 00:31:51,850
+instead of just using an integer or
+
+798
+00:31:51,860 --> 00:31:53,409
+somewhere you might use a struct that
+
+799
+00:31:53,419 --> 00:31:55,600
+holds the int as well as some kind of
+
+800
+00:31:55,610 --> 00:31:57,520
+markup some kind of confidence value or
+
+801
+00:31:57,530 --> 00:31:59,890
+whatever which in turn might be a
+
+802
+00:31:59,900 --> 00:32:02,440
+performance hit so is it is it fair to
+
+803
+00:32:02,450 --> 00:32:04,990
+say that in reliable systems and
+
+804
+00:32:05,000 --> 00:32:07,210
+fault-tolerant systems you might be
+
+805
+00:32:07,220 --> 00:32:08,799
+willing or you will have to take that
+
+806
+00:32:08,809 --> 00:32:11,110
+performance hit that performance
+
+807
+00:32:11,120 --> 00:32:13,980
+overhead or memory overhead to get the
+
+808
+00:32:13,990 --> 00:32:17,710
+benefit in in reliability yes that's
+
+809
+00:32:17,720 --> 00:32:19,480
+going to be true that there are going to
+
+810
+00:32:19,490 --> 00:32:21,610
+be extra overheads in memory and
+
+811
+00:32:21,620 --> 00:32:23,530
+processor time associated with being
+
+812
+00:32:23,540 --> 00:32:27,220
+fault tolerant and those are mitigated a
+
+813
+00:32:27,230 --> 00:32:28,930
+little bit by the fact that we want to
+
+814
+00:32:28,940 --> 00:32:31,539
+keep it simple yeah but you're very true
+
+815
+00:32:31,549 --> 00:32:33,520
+that it's either you're gonna have to
+
+816
+00:32:33,530 --> 00:32:36,549
+trade some resources off so the the cost
+
+817
+00:32:36,559 --> 00:32:38,860
+aspect you talked about before or fault
+
+818
+00:32:38,870 --> 00:32:41,080
+tolerance is not free wasn't just about
+
+819
+00:32:41,090 --> 00:32:43,480
+the the money or the effort you put into
+
+820
+00:32:43,490 --> 00:32:45,400
+designing the system it's also that you
+
+821
+00:32:45,410 --> 00:32:47,380
+have to tolerate certain runtime
+
+822
+00:32:47,390 --> 00:32:50,020
+overhead to be able to detect and and
+
+823
+00:32:50,030 --> 00:32:52,000
+monitor the system and defaults and the
+
+824
+00:32:52,010 --> 00:32:53,080
+arrows that's correct
+
+825
+00:32:53,090 --> 00:32:54,610
+kind of obvious not that I think about
+
+826
+00:32:54,620 --> 00:32:57,460
+it ok that concludes the arrow
+
+827
+00:32:57,470 --> 00:32:59,320
+mitigation pattern section and that
+
+828
+00:32:59,330 --> 00:33:01,030
+leads us to the last pattern section
+
+829
+00:33:01,040 --> 00:33:02,350
+which is about fault
+
+830
+00:33:02,360 --> 00:33:04,510
+treatment so this is about looking at
+
+831
+00:33:04,520 --> 00:33:06,580
+the root cause and solving the real
+
+832
+00:33:06,590 --> 00:33:10,030
+problem right yes in real time the
+
+833
+00:33:10,040 --> 00:33:14,460
+system has detected the error or fault
+
+834
+00:33:14,470 --> 00:33:16,750
+hopefully before it became a failure and
+
+835
+00:33:16,760 --> 00:33:18,549
+we've done the recovery or mitigation
+
+836
+00:33:18,559 --> 00:33:20,799
+steps the system's back operating
+
+837
+00:33:20,809 --> 00:33:23,110
+normally and now it's time to really fix
+
+838
+00:33:23,120 --> 00:33:23,830
+the fault
+
+839
+00:33:23,840 --> 00:33:26,200
+you know correct that misplaced comma
+
+840
+00:33:26,210 --> 00:33:29,350
+yeah and so these are some patterns that
+
+841
+00:33:29,360 --> 00:33:31,930
+do that to help you do that ok but they
+
+842
+00:33:31,940 --> 00:33:33,909
+don't happen automatically at runtime
+
+843
+00:33:33,919 --> 00:33:35,860
+there is something that that's more or
+
+844
+00:33:35,870 --> 00:33:37,659
+less again process stuff what do you
+
+845
+00:33:37,669 --> 00:33:40,450
+manually do how do you release the next
+
+846
+00:33:40,460 --> 00:33:41,770
+version of the software or something
+
+847
+00:33:41,780 --> 00:33:44,110
+like that yes okay so that's
+
+848
+00:33:44,120 --> 00:33:45,669
+first look at the world let's look at
+
+849
+00:33:45,679 --> 00:33:47,320
+the first of the pattern is called let
+
+850
+00:33:47,330 --> 00:33:50,169
+sleeping dogs lie sounds nice
+
+851
+00:33:50,179 --> 00:33:51,730
+yes and I don't know if this is an
+
+852
+00:33:51,740 --> 00:33:54,279
+expression that translates well and if
+
+853
+00:33:54,289 --> 00:33:56,049
+if it's a common thing that you've heard
+
+854
+00:33:56,059 --> 00:33:58,330
+before it's a bit different in German
+
+855
+00:33:58,340 --> 00:34:01,360
+it's called a Beca con - laughs and in
+
+856
+00:34:01,370 --> 00:34:03,010
+Haeundae which means don't wake Sleeping
+
+857
+00:34:03,020 --> 00:34:05,350
+Dogs up but it's kind of say okay
+
+858
+00:34:05,360 --> 00:34:08,680
+and I've heard that before so and and
+
+859
+00:34:08,690 --> 00:34:10,780
+the point is that there might be some
+
+860
+00:34:10,790 --> 00:34:14,379
+faults in the system that aren't worth
+
+861
+00:34:14,389 --> 00:34:17,050
+fixing it's better to leave this fault
+
+862
+00:34:17,060 --> 00:34:18,609
+there even though they might cause an
+
+863
+00:34:18,619 --> 00:34:21,399
+error again than to fix it because maybe
+
+864
+00:34:21,409 --> 00:34:23,440
+the fix would have to be really really
+
+865
+00:34:23,450 --> 00:34:26,770
+complicated and so if it's really
+
+866
+00:34:26,780 --> 00:34:29,919
+complicated you risk screwing it up and
+
+867
+00:34:29,929 --> 00:34:33,220
+introducing more faults or maybe it's in
+
+868
+00:34:33,230 --> 00:34:35,500
+functionality that is really set used
+
+869
+00:34:35,510 --> 00:34:37,839
+seldom so it's not worth the effort to
+
+870
+00:34:37,849 --> 00:34:40,389
+actually make the correction because
+
+871
+00:34:40,399 --> 00:34:41,740
+it's going to be such a low probability
+
+872
+00:34:41,750 --> 00:34:44,230
+event so let's leapings life's die
+
+873
+00:34:44,240 --> 00:34:47,909
+is meant to point out to the reader that
+
+874
+00:34:47,919 --> 00:34:50,470
+just because there's a fault you should
+
+875
+00:34:50,480 --> 00:34:51,820
+think about whether you want to fix it
+
+876
+00:34:51,830 --> 00:34:53,470
+but of course that's only true if you
+
+877
+00:34:53,480 --> 00:34:55,659
+have a system that is fault tolerant ie
+
+878
+00:34:55,669 --> 00:34:58,150
+doesn't completely fail as a consequence
+
+879
+00:34:58,160 --> 00:34:58,960
+of that fault
+
+880
+00:34:58,970 --> 00:35:01,270
+exactly okay that's an important thing
+
+881
+00:35:01,280 --> 00:35:03,790
+it doesn't it's not about recommending
+
+882
+00:35:03,800 --> 00:35:06,190
+not to fix bugs you should only not fix
+
+883
+00:35:06,200 --> 00:35:08,170
+those bugs if they aren't going to
+
+884
+00:35:08,180 --> 00:35:10,720
+result in a serious problem right you'd
+
+885
+00:35:10,730 --> 00:35:13,240
+need to do the the cost-benefit analysis
+
+886
+00:35:13,250 --> 00:35:15,520
+of you know the cost of fixing it and
+
+887
+00:35:15,530 --> 00:35:17,620
+risk of fixing it and the benefit of
+
+888
+00:35:17,630 --> 00:35:20,170
+fixing it out and weigh all that
+
+889
+00:35:20,180 --> 00:35:20,859
+together
+
+890
+00:35:20,869 --> 00:35:24,450
+yep next one is reintegration and
+
+891
+00:35:24,460 --> 00:35:29,200
+reintegration is discussing when you are
+
+892
+00:35:29,210 --> 00:35:31,690
+actually making the fix when you're
+
+893
+00:35:31,700 --> 00:35:34,150
+putting it in that you should have some
+
+894
+00:35:34,160 --> 00:35:37,960
+predefined process or method to actually
+
+895
+00:35:37,970 --> 00:35:40,630
+put it in you shouldn't just go in and
+
+896
+00:35:40,640 --> 00:35:42,370
+start typing and assuming it will work
+
+897
+00:35:42,380 --> 00:35:45,040
+the same every time so write down how
+
+898
+00:35:45,050 --> 00:35:46,329
+you're going to do it develop a
+
+899
+00:35:46,339 --> 00:35:50,160
+procedure and this is partly because a
+
+900
+00:35:50,170 --> 00:35:52,060
+concept that we didn't talk about
+
+901
+00:35:52,070 --> 00:35:55,030
+earlier is that experience has shown
+
+902
+00:35:55,040 --> 00:35:57,880
+that failures in system
+
+903
+00:35:57,890 --> 00:35:59,950
+are related to either the hardware the
+
+904
+00:35:59,960 --> 00:36:02,890
+software or the it's we call it a
+
+905
+00:36:02,900 --> 00:36:05,200
+procedural error so something human did
+
+906
+00:36:05,210 --> 00:36:07,480
+and so you want to have a procedure a
+
+907
+00:36:07,490 --> 00:36:10,090
+process or someone to follow so we can
+
+908
+00:36:10,100 --> 00:36:11,740
+reduce the number of those procedural
+
+909
+00:36:11,750 --> 00:36:15,910
+errors okay the next one is reproducible
+
+910
+00:36:15,920 --> 00:36:17,410
+error what's that about
+
+911
+00:36:17,420 --> 00:36:20,140
+reproducible error is basic testing to
+
+912
+00:36:20,150 --> 00:36:21,730
+to make sure that you can really
+
+913
+00:36:21,740 --> 00:36:24,400
+reproduce the error you know so that
+
+914
+00:36:24,410 --> 00:36:26,230
+you've really identified what it is and
+
+915
+00:36:26,240 --> 00:36:28,510
+then fix it and if you can't reproduce
+
+916
+00:36:28,520 --> 00:36:32,500
+it in the laboratory okay why not you
+
+917
+00:36:32,510 --> 00:36:34,930
+know is maybe you don't know precisely
+
+918
+00:36:34,940 --> 00:36:37,630
+what it is and so make sure that you can
+
+919
+00:36:37,640 --> 00:36:41,070
+reproduce it and so it's basic testing
+
+920
+00:36:41,080 --> 00:36:44,050
+to be able to find that you you be sure
+
+921
+00:36:44,060 --> 00:36:46,000
+that you really have the same error that
+
+922
+00:36:46,010 --> 00:36:47,500
+occurs so you know what the fault was
+
+923
+00:36:47,510 --> 00:36:49,510
+and then after you fix it after you
+
+924
+00:36:49,520 --> 00:36:51,940
+think you fix it that you really gotten
+
+925
+00:36:51,950 --> 00:36:53,680
+it out of the system as it basically
+
+926
+00:36:53,690 --> 00:36:56,770
+means first try to really nail the
+
+927
+00:36:56,780 --> 00:36:59,800
+problem down before you in a hurry try
+
+928
+00:36:59,810 --> 00:37:02,650
+to fix something yes okay yes that was a
+
+929
+00:37:02,660 --> 00:37:05,620
+very good short summary okay
+
+930
+00:37:05,630 --> 00:37:08,200
+small patches is probably than the idea
+
+931
+00:37:08,210 --> 00:37:10,030
+of just changing a little bit of the
+
+932
+00:37:10,040 --> 00:37:11,860
+system instead of redelivery the whole
+
+933
+00:37:11,870 --> 00:37:14,020
+big thing right and this will be
+
+934
+00:37:14,030 --> 00:37:16,660
+governed by the tools and the languages
+
+935
+00:37:16,670 --> 00:37:18,160
+you know a whole bunch of other
+
+936
+00:37:18,170 --> 00:37:21,580
+constraints upon your contacts but you
+
+937
+00:37:21,590 --> 00:37:27,040
+know smaller patches result in fewer
+
+938
+00:37:27,050 --> 00:37:29,410
+hiding places for other faults and you
+
+939
+00:37:29,420 --> 00:37:33,760
+know fixing faults within patches is a
+
+940
+00:37:33,770 --> 00:37:36,730
+well-known problem that is is best
+
+941
+00:37:36,740 --> 00:37:40,420
+avoided the fix on fix problem yeah yeah
+
+942
+00:37:40,430 --> 00:37:42,070
+that's the whole point if you just
+
+943
+00:37:42,080 --> 00:37:44,710
+insert a small piece of patch it then
+
+944
+00:37:44,720 --> 00:37:46,540
+you don't necessarily know how it might
+
+945
+00:37:46,550 --> 00:37:48,100
+affect the rest of the system so you
+
+946
+00:37:48,110 --> 00:37:49,870
+might you might change something that's
+
+947
+00:37:49,880 --> 00:37:51,820
+actually incompatible with the rest of
+
+948
+00:37:51,830 --> 00:37:54,130
+the system creating new box or false
+
+949
+00:37:54,140 --> 00:37:58,090
+yeah yeah yeah but again it's dependent
+
+950
+00:37:58,100 --> 00:38:00,550
+on your tool yeah but in any case even
+
+951
+00:38:00,560 --> 00:38:02,110
+if you just deliver a small patch you
+
+952
+00:38:02,120 --> 00:38:04,390
+probably have to retest right that's
+
+953
+00:38:04,400 --> 00:38:06,100
+right and that gets to the reintegration
+
+954
+00:38:06,110 --> 00:38:10,030
+pattern so the rear aggression would
+
+955
+00:38:10,040 --> 00:38:11,289
+discuss
+
+956
+00:38:11,299 --> 00:38:12,729
+the test after you think you've
+
+957
+00:38:12,739 --> 00:38:14,949
+installed your small patch to make sure
+
+958
+00:38:14,959 --> 00:38:15,999
+that it was installed correctly
+
+959
+00:38:16,009 --> 00:38:19,779
+interview yeah okay the route cost
+
+960
+00:38:19,789 --> 00:38:22,749
+analysis is the next pattern again you
+
+961
+00:38:22,759 --> 00:38:25,029
+said this really early once we have an
+
+962
+00:38:25,039 --> 00:38:27,309
+error we want to fix the root cause we
+
+963
+00:38:27,319 --> 00:38:29,679
+don't want to fix just the symptoms and
+
+964
+00:38:29,689 --> 00:38:32,380
+the root cause you know could be in many
+
+965
+00:38:32,390 --> 00:38:34,989
+levels deep and this is another place
+
+966
+00:38:34,999 --> 00:38:36,549
+where the fault tolerant mindset comes
+
+967
+00:38:36,559 --> 00:38:38,949
+in and one simple technique which is
+
+968
+00:38:38,959 --> 00:38:41,409
+what I write about in the book is to ask
+
+969
+00:38:41,419 --> 00:38:45,699
+a series of wise - you know why the why
+
+970
+00:38:45,709 --> 00:38:46,509
+did this happen
+
+971
+00:38:46,519 --> 00:38:48,159
+yeah and then you've come up with the
+
+972
+00:38:48,169 --> 00:38:49,899
+answer well why did that happen and just
+
+973
+00:38:49,909 --> 00:38:52,899
+keep answering a series of wise kind of
+
+974
+00:38:52,909 --> 00:38:54,249
+until you get tired of it or until you
+
+975
+00:38:54,259 --> 00:38:56,079
+reach what you think is a written really
+
+976
+00:38:56,089 --> 00:38:57,999
+the root cause of the problem or the
+
+977
+00:38:58,009 --> 00:39:00,039
+best thing to just level to fix it like
+
+978
+00:39:00,049 --> 00:39:03,249
+a stack trace and and the last pattern
+
+979
+00:39:03,259 --> 00:39:05,409
+of the sections to revise procedure it's
+
+980
+00:39:05,419 --> 00:39:08,019
+probably then basically fixing a Fault
+
+981
+00:39:08,029 --> 00:39:11,079
+in in the procedures if it's a Fault in
+
+982
+00:39:11,089 --> 00:39:12,909
+the you in the operation of the system I
+
+983
+00:39:12,919 --> 00:39:15,339
+guess write procedural errors account
+
+984
+00:39:15,349 --> 00:39:18,639
+for a significant number of problems
+
+985
+00:39:18,649 --> 00:39:20,349
+that are reported like in the u.s.
+
+986
+00:39:20,359 --> 00:39:23,319
+telephone network and just because
+
+987
+00:39:23,329 --> 00:39:25,269
+you've produced a procedure for help
+
+988
+00:39:25,279 --> 00:39:26,469
+with reintegration
+
+989
+00:39:26,479 --> 00:39:28,419
+you should feel willing to make changes
+
+990
+00:39:28,429 --> 00:39:30,579
+to it if it doesn't work you know so
+
+991
+00:39:30,589 --> 00:39:32,439
+it's possible that that root cause
+
+992
+00:39:32,449 --> 00:39:36,939
+analysis is going to point to some human
+
+993
+00:39:36,949 --> 00:39:38,409
+error that was done somewhere you know
+
+994
+00:39:38,419 --> 00:39:40,569
+and it could be during the design and
+
+995
+00:39:40,579 --> 00:39:42,749
+coding level and so feel free to change
+
+996
+00:39:42,759 --> 00:39:45,189
+those procedures and those methods also
+
+997
+00:39:45,199 --> 00:39:48,969
+to make them more robust yeah ok this
+
+998
+00:39:48,979 --> 00:39:51,129
+concludes our discussion of the patterns
+
+999
+00:39:51,139 --> 00:39:54,239
+that was really alone a long thing here
+
+1000
+00:39:54,249 --> 00:39:57,999
+but I mean now that we know the patterns
+
+1001
+00:39:58,009 --> 00:40:00,429
+we don't necessarily know what to do
+
+1002
+00:40:00,439 --> 00:40:02,199
+with them that's more or less always the
+
+1003
+00:40:02,209 --> 00:40:03,909
+problem with patterns they give you a
+
+1004
+00:40:03,919 --> 00:40:07,089
+toolbox of well more or less little or
+
+1005
+00:40:07,099 --> 00:40:10,929
+big strategies of doing things but but
+
+1006
+00:40:10,939 --> 00:40:13,329
+there is still a big gap to making you
+
+1007
+00:40:13,339 --> 00:40:15,609
+an expert to fault-tolerant systems and
+
+1008
+00:40:15,619 --> 00:40:18,549
+so one one issue is how do you work with
+
+1009
+00:40:18,559 --> 00:40:20,049
+these patterns how do you design an
+
+1010
+00:40:20,059 --> 00:40:22,179
+architect systems with these patterns so
+
+1011
+00:40:22,189 --> 00:40:23,739
+do you have any recommendations there
+
+1012
+00:40:23,749 --> 00:40:25,100
+what people actually do
+
+1013
+00:40:25,110 --> 00:40:27,110
+now except for obviously buying and
+
+1014
+00:40:27,120 --> 00:40:28,640
+reading the book so they get multi tails
+
+1015
+00:40:28,650 --> 00:40:30,470
+and this is something I've been saying
+
+1016
+00:40:30,480 --> 00:40:34,010
+for a long time and about the way to use
+
+1017
+00:40:34,020 --> 00:40:36,890
+patterns is I think the best way to use
+
+1018
+00:40:36,900 --> 00:40:38,840
+patterns you know in these
+
+1019
+00:40:38,850 --> 00:40:40,610
+fault-tolerant patterns are really any
+
+1020
+00:40:40,620 --> 00:40:43,670
+is to become familiar with the patterns
+
+1021
+00:40:43,680 --> 00:40:45,140
+that are out there and then when you're
+
+1022
+00:40:45,150 --> 00:40:47,000
+confronted with just with a design
+
+1023
+00:40:47,010 --> 00:40:50,060
+problem you can say oh yeah I think I
+
+1024
+00:40:50,070 --> 00:40:51,860
+saw a pattern about that and then you
+
+1025
+00:40:51,870 --> 00:40:53,780
+can go and find it and refresh your
+
+1026
+00:40:53,790 --> 00:40:56,300
+memory on what the things are yeah and
+
+1027
+00:40:56,310 --> 00:40:59,630
+so become familiar with with these
+
+1028
+00:40:59,640 --> 00:41:01,430
+patterns and the other patterns and then
+
+1029
+00:41:01,440 --> 00:41:03,260
+when you're confronted with a new design
+
+1030
+00:41:03,270 --> 00:41:07,670
+problem think about okay state where
+
+1031
+00:41:07,680 --> 00:41:09,740
+have I seen patterns about dealing with
+
+1032
+00:41:09,750 --> 00:41:11,750
+state and fault-tolerance with regard to
+
+1033
+00:41:11,760 --> 00:41:13,760
+state and you know so start thinking
+
+1034
+00:41:13,770 --> 00:41:15,560
+about the patterns in terms of your
+
+1035
+00:41:15,570 --> 00:41:18,800
+domain problem domain and you might
+
+1036
+00:41:18,810 --> 00:41:20,960
+think oh the system I'm building doesn't
+
+1037
+00:41:20,970 --> 00:41:23,180
+have any state that really gets saved so
+
+1038
+00:41:23,190 --> 00:41:24,890
+I don't even need to pay attention with
+
+1039
+00:41:24,900 --> 00:41:27,110
+the checkpointing patterns yeah yeah and
+
+1040
+00:41:27,120 --> 00:41:30,680
+so you've got this big pool of patterns
+
+1041
+00:41:30,690 --> 00:41:32,300
+like from this book and all the other
+
+1042
+00:41:32,310 --> 00:41:34,310
+books and then when you come with a
+
+1043
+00:41:34,320 --> 00:41:36,860
+design problem pull out those patterns
+
+1044
+00:41:36,870 --> 00:41:40,160
+that are most applicable and then start
+
+1045
+00:41:40,170 --> 00:41:42,380
+using them when you do your architecture
+
+1046
+00:41:42,390 --> 00:41:45,110
+and your design yeah one way I like to
+
+1047
+00:41:45,120 --> 00:41:47,480
+look at it in the way that I talk about
+
+1048
+00:41:47,490 --> 00:41:50,660
+that with people is that assume you're
+
+1049
+00:41:50,670 --> 00:41:52,430
+designing your system and you have this
+
+1050
+00:41:52,440 --> 00:41:54,920
+multi-dimensional design space it's a
+
+1051
+00:41:54,930 --> 00:41:57,230
+big empty space initially and this
+
+1052
+00:41:57,240 --> 00:41:59,540
+initial empty space is populated with
+
+1053
+00:41:59,550 --> 00:42:02,000
+some matter basically and these are the
+
+1054
+00:42:02,010 --> 00:42:05,020
+patterns they they're basically like a
+
+1055
+00:42:05,030 --> 00:42:07,730
+specific well-defined points in that
+
+1056
+00:42:07,740 --> 00:42:09,800
+n-dimensional space so you wander around
+
+1057
+00:42:09,810 --> 00:42:12,380
+you build your system you talk about
+
+1058
+00:42:12,390 --> 00:42:14,360
+something you've read a pattern you get
+
+1059
+00:42:14,370 --> 00:42:16,430
+near this pattern ah you're you you
+
+1060
+00:42:16,440 --> 00:42:17,990
+basically gravitate to that pattern
+
+1061
+00:42:18,000 --> 00:42:20,180
+you're now on that pattern you think of
+
+1062
+00:42:20,190 --> 00:42:22,190
+how you can use that pattern is it
+
+1063
+00:42:22,200 --> 00:42:23,660
+sensible to and need to tweak the
+
+1064
+00:42:23,670 --> 00:42:25,280
+pattern a little bit and if so use it
+
+1065
+00:42:25,290 --> 00:42:26,900
+and then just go on designing your
+
+1066
+00:42:26,910 --> 00:42:29,140
+system and you might find more of these
+
+1067
+00:42:29,150 --> 00:42:32,180
+gravity sources of patterns as you as
+
+1068
+00:42:32,190 --> 00:42:34,760
+you go along mm-hmm yes that sounds
+
+1069
+00:42:34,770 --> 00:42:35,780
+really good I haven't heard that
+
+1070
+00:42:35,790 --> 00:42:37,250
+expressed that way before but that
+
+1071
+00:42:37,260 --> 00:42:37,880
+sounds good
+
+1072
+00:42:37,890 --> 00:42:38,770
+it's
+
+1073
+00:42:38,780 --> 00:42:41,080
+well came up in discussions with with
+
+1074
+00:42:41,090 --> 00:42:42,730
+people about patterns
+
+1075
+00:42:42,740 --> 00:42:47,500
+well yeah it's nice nicely visual so to
+
+1076
+00:42:47,510 --> 00:42:49,330
+conclude our discussion why did you
+
+1077
+00:42:49,340 --> 00:42:52,540
+write this book well obviously because
+
+1078
+00:42:52,550 --> 00:42:54,430
+you want systems to be more reliable I
+
+1079
+00:42:54,440 --> 00:42:56,920
+guess but wasn't there any material out
+
+1080
+00:42:56,930 --> 00:42:59,140
+there before no that was the big
+
+1081
+00:42:59,150 --> 00:43:00,730
+disappointment that there are a number
+
+1082
+00:43:00,740 --> 00:43:02,860
+of really good books about soccer
+
+1083
+00:43:02,870 --> 00:43:05,950
+reliability engineering or there are a
+
+1084
+00:43:05,960 --> 00:43:08,070
+few books about software reliability
+
+1085
+00:43:08,080 --> 00:43:12,480
+techniques but they don't really convey
+
+1086
+00:43:12,490 --> 00:43:15,250
+the range of solutions there's some
+
+1087
+00:43:15,260 --> 00:43:16,840
+books that might focus on inversion
+
+1088
+00:43:16,850 --> 00:43:19,330
+program or that kind of flavor of stuff
+
+1089
+00:43:19,340 --> 00:43:22,720
+and then a whole lot of books that talk
+
+1090
+00:43:22,730 --> 00:43:26,320
+about doing the analysis and might have
+
+1091
+00:43:26,330 --> 00:43:28,210
+a little bit about some of the
+
+1092
+00:43:28,220 --> 00:43:32,770
+techniques and so I I was always looking
+
+1093
+00:43:32,780 --> 00:43:34,600
+on my bookshelf and never seeing the
+
+1094
+00:43:34,610 --> 00:43:37,090
+book that I wanted about that had a you
+
+1095
+00:43:37,100 --> 00:43:38,860
+know they're really the tips to help
+
+1096
+00:43:38,870 --> 00:43:41,770
+designers build fault-tolerant systems
+
+1097
+00:43:41,780 --> 00:43:42,430
+mhm
+
+1098
+00:43:42,440 --> 00:43:44,590
+not how to analyze them but how to build
+
+1099
+00:43:44,600 --> 00:43:46,540
+them and so that's the niche that I'm
+
+1100
+00:43:46,550 --> 00:43:49,780
+hoping to fill with yeah I mean I've
+
+1101
+00:43:49,790 --> 00:43:52,030
+read several of your patterns before
+
+1102
+00:43:52,040 --> 00:43:54,190
+since I'm obviously also quite involved
+
+1103
+00:43:54,200 --> 00:43:55,780
+in the patterns community and I've
+
+1104
+00:43:55,790 --> 00:43:57,880
+always looked forward to seeing them in
+
+1105
+00:43:57,890 --> 00:43:59,860
+a book so I really I really like this
+
+1106
+00:43:59,870 --> 00:44:01,840
+stuff that's also why I although I'm
+
+1107
+00:44:01,850 --> 00:44:03,550
+building these kinds of systems but as
+
+1108
+00:44:03,560 --> 00:44:05,410
+you said everybody should have some of
+
+1109
+00:44:05,420 --> 00:44:07,030
+these things in their mind because it
+
+1110
+00:44:07,040 --> 00:44:08,860
+just makes the toolbox if of software
+
+1111
+00:44:08,870 --> 00:44:10,210
+architects and designers and developers
+
+1112
+00:44:10,220 --> 00:44:12,910
+a bit bigger with regard to certain very
+
+1113
+00:44:12,920 --> 00:44:15,070
+important points or some important
+
+1114
+00:44:15,080 --> 00:44:17,650
+aspects of software development so I
+
+1115
+00:44:17,660 --> 00:44:18,850
+think it's a really good really
+
+1116
+00:44:18,860 --> 00:44:20,050
+interesting and good book and I'm
+
+1117
+00:44:20,060 --> 00:44:21,610
+looking forward to read the printed
+
+1118
+00:44:21,620 --> 00:44:24,550
+version good thank you then thank you
+
+1119
+00:44:24,560 --> 00:44:25,900
+very much for being on the show
+
+1120
+00:44:25,910 --> 00:44:27,400
+you're very welcome thank you for
+
+1121
+00:44:27,410 --> 00:44:29,710
+inviting me no problem thanks
+
+1122
+00:44:29,720 --> 00:44:51,079
+[Music]
+
+1123
+00:44:51,089 --> 00:44:53,219
+thanks for listening to software
+
+1124
+00:44:53,229 --> 00:44:55,259
+engineering radio if you want to get
+
+1125
+00:44:55,269 --> 00:44:56,609
+more information about software
+
+1126
+00:44:56,619 --> 00:44:58,440
+engineering radio or if you want to give
+
+1127
+00:44:58,450 --> 00:45:01,109
+us feedback please go to our website at
+
+1128
+00:45:01,119 --> 00:45:05,339
+se - radio dot net you can also contact
+
+1129
+00:45:05,349 --> 00:45:10,170
+the team at team at SAE - radio net
+
+1130
+00:45:10,180 --> 00:45:12,209
+although we prefer entries in our
+
+1131
+00:45:12,219 --> 00:45:14,370
+comment system on the website so other
+
+1132
+00:45:14,380 --> 00:45:16,709
+people can see what you think software
+
+1133
+00:45:16,719 --> 00:45:18,479
+engineering radio wants to thank Henning
+
+1134
+00:45:18,489 --> 00:45:20,940
+Cowley for the intro and outro music as
+
+1135
+00:45:20,950 --> 00:45:23,279
+well as Lipson for providing the
+
+1136
+00:45:23,289 --> 00:45:26,880
+bandwidth this episode of se radio as
+
+1137
+00:45:26,890 --> 00:45:29,819
+well as all other episodes is licensed
+
+1138
+00:45:29,829 --> 00:45:31,709
+under Creative Commons license
+
+1139
+00:45:31,719 --> 00:45:33,779
+see the software engineering radio
+
+1140
+00:45:33,789 --> 00:45:42,620
+website for details

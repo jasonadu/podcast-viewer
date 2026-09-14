@@ -1,0 +1,6427 @@
+1
+00:00:00,870 --> 00:00:00,880
+[Music]
+
+2
+00:00:00,880 --> 00:00:02,790
+this is software engineering radio the
+
+3
+00:00:02,800 --> 00:00:04,789
+podcast for professional developers on
+
+4
+00:00:04,799 --> 00:00:07,749
+the web at se-radio.net
+
+5
+00:00:07,759 --> 00:00:09,750
+sc radio is brought to you by the ieee
+
+6
+00:00:09,760 --> 00:00:11,830
+computer society by ieee software
+
+7
+00:00:11,840 --> 00:00:16,950
+magazine online at computer.org software
+
+8
+00:00:16,960 --> 00:00:19,269
+for software engineering radio this is
+
+9
+00:00:19,279 --> 00:00:22,710
+robert blumen today i have with me sam
+
+10
+00:00:22,720 --> 00:00:25,109
+boyer sam is a principal software
+
+11
+00:00:25,119 --> 00:00:28,070
+engineer at grafana labs contributes to
+
+12
+00:00:28,080 --> 00:00:31,029
+open source projects especially in the
+
+13
+00:00:31,039 --> 00:00:33,830
+go community and he's the author of the
+
+14
+00:00:33,840 --> 00:00:36,389
+article so you want to write a package
+
+15
+00:00:36,399 --> 00:00:38,470
+manager which will be the subject of our
+
+16
+00:00:38,480 --> 00:00:40,549
+conversation today sam welcome to
+
+17
+00:00:40,559 --> 00:00:42,869
+software engineering radio
+
+18
+00:00:42,879 --> 00:00:44,310
+thank you for having me i'm delighted to
+
+19
+00:00:44,320 --> 00:00:45,910
+be here is there anything else you'd
+
+20
+00:00:45,920 --> 00:00:47,350
+like listeners to know about your
+
+21
+00:00:47,360 --> 00:00:48,470
+background
+
+22
+00:00:48,480 --> 00:00:51,270
+i can do the quick things i have been
+
+23
+00:00:51,280 --> 00:00:53,189
+i'm a self-taught engineer i started in
+
+24
+00:00:53,199 --> 00:00:53,990
+the
+
+25
+00:00:54,000 --> 00:00:56,549
+industry about 12 years ago i've been
+
+26
+00:00:56,559 --> 00:00:58,709
+working in open source for a long
+
+27
+00:00:58,719 --> 00:01:01,029
+long time and it was in large part my
+
+28
+00:01:01,039 --> 00:01:02,950
+interest in the way the communities work
+
+29
+00:01:02,960 --> 00:01:04,710
+that drove me to
+
+30
+00:01:04,720 --> 00:01:06,630
+my interest in package management in the
+
+31
+00:01:06,640 --> 00:01:08,789
+first place great before we talk about
+
+32
+00:01:08,799 --> 00:01:13,750
+package management what is a package
+
+33
+00:01:13,760 --> 00:01:15,590
+so this is this is a totally natural
+
+34
+00:01:15,600 --> 00:01:18,630
+place to start and it is
+
+35
+00:01:18,640 --> 00:01:20,630
+a surprisingly
+
+36
+00:01:20,640 --> 00:01:22,789
+subtle question so
+
+37
+00:01:22,799 --> 00:01:24,870
+most people most the time
+
+38
+00:01:24,880 --> 00:01:27,190
+think of i think the
+
+39
+00:01:27,200 --> 00:01:29,030
+the packages they work with in terms of
+
+40
+00:01:29,040 --> 00:01:30,230
+the actual
+
+41
+00:01:30,240 --> 00:01:31,590
+systems they're in right you know if
+
+42
+00:01:31,600 --> 00:01:32,950
+you're writing
+
+43
+00:01:32,960 --> 00:01:34,710
+javascript or typescript or whatever
+
+44
+00:01:34,720 --> 00:01:36,789
+you're going to think of npm packages
+
+45
+00:01:36,799 --> 00:01:38,390
+and package.json and like the contents
+
+46
+00:01:38,400 --> 00:01:40,550
+of that you might also think of system
+
+47
+00:01:40,560 --> 00:01:43,270
+packages or system package managers for
+
+48
+00:01:43,280 --> 00:01:45,510
+your old apps or your rpms or more
+
+49
+00:01:45,520 --> 00:01:47,830
+modern like kubernetes things
+
+50
+00:01:47,840 --> 00:01:50,069
+but if you actually want to like give a
+
+51
+00:01:50,079 --> 00:01:51,749
+sufficiently general definition of what
+
+52
+00:01:51,759 --> 00:01:53,749
+a package is it's
+
+53
+00:01:53,759 --> 00:01:55,429
+kind of frustratingly useless like the
+
+54
+00:01:55,439 --> 00:01:57,429
+best one i can give is that a package is
+
+55
+00:01:57,439 --> 00:02:00,069
+a collection of stuff with a name and
+
+56
+00:02:00,079 --> 00:02:01,910
+some kind of logical boundary that
+
+57
+00:02:01,920 --> 00:02:04,389
+separates the stuff that it contains
+
+58
+00:02:04,399 --> 00:02:07,109
+from other packages of the same kind at
+
+59
+00:02:07,119 --> 00:02:10,389
+their stuff within some larger context
+
+60
+00:02:10,399 --> 00:02:12,630
+and that is a it's it's like i said
+
+61
+00:02:12,640 --> 00:02:14,790
+frustratingly abstract like stuff can be
+
+62
+00:02:14,800 --> 00:02:16,229
+source code or compiled code or
+
+63
+00:02:16,239 --> 00:02:17,910
+configuration files or a bunch of cat
+
+64
+00:02:17,920 --> 00:02:19,750
+gifs like what's
+
+65
+00:02:19,760 --> 00:02:22,630
+the contents of the package and what it
+
+66
+00:02:22,640 --> 00:02:24,070
+means to be a valid package is a
+
+67
+00:02:24,080 --> 00:02:25,510
+function of the ecosystem that the
+
+68
+00:02:25,520 --> 00:02:26,949
+package is from
+
+69
+00:02:26,959 --> 00:02:28,309
+it's an npm package it should have
+
+70
+00:02:28,319 --> 00:02:29,350
+certain properties it should have a
+
+71
+00:02:29,360 --> 00:02:31,030
+package json a rust package should have
+
+72
+00:02:31,040 --> 00:02:32,869
+a cargo tunnel and i think a non-zero
+
+73
+00:02:32,879 --> 00:02:34,630
+number of rs
+
+74
+00:02:34,640 --> 00:02:35,750
+files this is one of the weird
+
+75
+00:02:35,760 --> 00:02:37,110
+subtleties of package management though
+
+76
+00:02:37,120 --> 00:02:38,710
+it starts right at the beginning is it's
+
+77
+00:02:38,720 --> 00:02:41,190
+hard to actually pin a really precise
+
+78
+00:02:41,200 --> 00:02:43,670
+definition on what constitutes a package
+
+79
+00:02:43,680 --> 00:02:45,589
+might help people to understand if you
+
+80
+00:02:45,599 --> 00:02:48,309
+could pick one language and talk about
+
+81
+00:02:48,319 --> 00:02:50,869
+one or more packages in that language to
+
+82
+00:02:50,879 --> 00:02:52,390
+illustrate it
+
+83
+00:02:52,400 --> 00:02:56,070
+okay offhand oh man oh would i pick
+
+84
+00:02:56,080 --> 00:02:57,589
+so in
+
+85
+00:02:57,599 --> 00:02:59,110
+go
+
+86
+00:02:59,120 --> 00:03:01,430
+we could talk about
+
+87
+00:03:01,440 --> 00:03:03,430
+go where the the thing that we think of
+
+88
+00:03:03,440 --> 00:03:05,910
+as packages elsewhere are referred to as
+
+89
+00:03:05,920 --> 00:03:08,309
+modules we could talk about like the go
+
+90
+00:03:08,319 --> 00:03:10,949
+kit package sure popular micro services
+
+91
+00:03:10,959 --> 00:03:11,990
+framework
+
+92
+00:03:12,000 --> 00:03:13,670
+and so
+
+93
+00:03:13,680 --> 00:03:16,070
+that is a there's a git repository that
+
+94
+00:03:16,080 --> 00:03:17,509
+the actual process of developing the
+
+95
+00:03:17,519 --> 00:03:19,589
+code is done in but what we would think
+
+96
+00:03:19,599 --> 00:03:22,149
+of as a package itself is
+
+97
+00:03:22,159 --> 00:03:25,509
+a git tag that is attached to a
+
+98
+00:03:25,519 --> 00:03:28,390
+particular commit to make a release
+
+99
+00:03:28,400 --> 00:03:30,309
+that refers to then the snapshot of all
+
+100
+00:03:30,319 --> 00:03:33,430
+the files in the git repository and
+
+101
+00:03:33,440 --> 00:03:37,270
+the identifying features of that
+
+102
+00:03:37,280 --> 00:03:39,430
+go package would be all the go files
+
+103
+00:03:39,440 --> 00:03:41,589
+themselves and then the metadata files
+
+104
+00:03:41,599 --> 00:03:43,750
+that communicate information at the
+
+105
+00:03:43,760 --> 00:03:46,149
+package level the go.mod file to go.some
+
+106
+00:03:46,159 --> 00:03:47,750
+file in the case of
+
+107
+00:03:47,760 --> 00:03:50,470
+go okay so packages so it's a bunch of
+
+108
+00:03:50,480 --> 00:03:52,710
+code that i might want to use in my
+
+109
+00:03:52,720 --> 00:03:53,990
+program so i don't have to go to the
+
+110
+00:03:54,000 --> 00:03:55,830
+trouble of writing it all
+
+111
+00:03:55,840 --> 00:03:59,190
+myself and then there's some metadata
+
+112
+00:03:59,200 --> 00:04:01,910
+in if it's too hard to answer this in
+
+113
+00:04:01,920 --> 00:04:03,670
+general talk about some things you might
+
+114
+00:04:03,680 --> 00:04:05,990
+find in the metadata you could pick a
+
+115
+00:04:06,000 --> 00:04:08,550
+particular language yeah well i mean the
+
+116
+00:04:08,560 --> 00:04:09,750
+the most important things that you're
+
+117
+00:04:09,760 --> 00:04:10,869
+going to find in metadata you're always
+
+118
+00:04:10,879 --> 00:04:14,070
+going to find a name and you may or may
+
+119
+00:04:14,080 --> 00:04:16,150
+not find a version
+
+120
+00:04:16,160 --> 00:04:19,030
+sometimes that is considered to be
+
+121
+00:04:19,040 --> 00:04:20,710
+something that is held inside of the
+
+122
+00:04:20,720 --> 00:04:21,990
+package but it always has to be
+
+123
+00:04:22,000 --> 00:04:23,590
+something that's also like outside of
+
+124
+00:04:23,600 --> 00:04:25,030
+the package so that other things can
+
+125
+00:04:25,040 --> 00:04:26,390
+refer to
+
+126
+00:04:26,400 --> 00:04:28,950
+it but that's sort of your your your
+
+127
+00:04:28,960 --> 00:04:31,430
+two-point coordinate system in in the
+
+128
+00:04:31,440 --> 00:04:33,510
+universe of of packages is you need to
+
+129
+00:04:33,520 --> 00:04:34,790
+have a name and then a particular
+
+130
+00:04:34,800 --> 00:04:37,990
+version of that name right good yeah i
+
+131
+00:04:38,000 --> 00:04:41,110
+don't only want to use a go kit
+
+132
+00:04:41,120 --> 00:04:43,030
+package i want you to know that i want
+
+133
+00:04:43,040 --> 00:04:44,790
+2.1
+
+134
+00:04:44,800 --> 00:04:47,510
+right and they might release 2.2 2.3 but
+
+135
+00:04:47,520 --> 00:04:50,310
+i'm not ready to upgrade to 2.3 so i
+
+136
+00:04:50,320 --> 00:04:53,189
+want to stay on 2.1 something like that
+
+137
+00:04:53,199 --> 00:04:54,870
+yeah yeah those are the those are the
+
+138
+00:04:54,880 --> 00:04:57,590
+two absolute essentials the other major
+
+139
+00:04:57,600 --> 00:04:58,950
+thing that
+
+140
+00:04:58,960 --> 00:04:59,749
+you
+
+141
+00:04:59,759 --> 00:05:01,270
+will typically see in these metadata
+
+142
+00:05:01,280 --> 00:05:03,110
+files is you'll see a list of
+
+143
+00:05:03,120 --> 00:05:04,950
+dependencies list of other packages
+
+144
+00:05:04,960 --> 00:05:07,670
+required by that package and possibly
+
+145
+00:05:07,680 --> 00:05:09,909
+also some construction about the version
+
+146
+00:05:09,919 --> 00:05:11,510
+that's supposed to be
+
+147
+00:05:11,520 --> 00:05:13,590
+used with those the answer to this is
+
+148
+00:05:13,600 --> 00:05:16,870
+going to be in very broad ranges
+
+149
+00:05:16,880 --> 00:05:19,990
+if i'm if i'm building a a product let's
+
+150
+00:05:20,000 --> 00:05:22,550
+say it's a commercial product that is
+
+151
+00:05:22,560 --> 00:05:25,270
+running for business somewhere
+
+152
+00:05:25,280 --> 00:05:27,990
+and so i'm going to build a
+
+153
+00:05:28,000 --> 00:05:29,670
+server
+
+154
+00:05:29,680 --> 00:05:32,070
+how many packages
+
+155
+00:05:32,080 --> 00:05:34,230
+might if we look at the packages and
+
+156
+00:05:34,240 --> 00:05:35,990
+their dependencies and we have to go all
+
+157
+00:05:36,000 --> 00:05:38,629
+the way down to the bottom we talking
+
+158
+00:05:38,639 --> 00:05:41,350
+tens hundreds thousands how many
+
+159
+00:05:41,360 --> 00:05:43,990
+packages does a typical modern software
+
+160
+00:05:44,000 --> 00:05:46,150
+application need
+
+161
+00:05:46,160 --> 00:05:48,150
+so it really depends on the ecosystem
+
+162
+00:05:48,160 --> 00:05:50,550
+you're going to see a lot more in
+
+163
+00:05:50,560 --> 00:05:51,430
+the
+
+164
+00:05:51,440 --> 00:05:55,270
+npm ecosystem than you would in
+
+165
+00:05:55,280 --> 00:05:57,350
+the call ecosystem or the rust ecosystem
+
+166
+00:05:57,360 --> 00:06:01,029
+for example i don't have like
+
+167
+00:06:01,039 --> 00:06:03,110
+i'm not sure that i would be able to
+
+168
+00:06:03,120 --> 00:06:05,510
+meaningfully construct like an average
+
+169
+00:06:05,520 --> 00:06:07,670
+number if only because
+
+170
+00:06:07,680 --> 00:06:09,909
+you can't like even if i had access to
+
+171
+00:06:09,919 --> 00:06:11,350
+all the if i had access to all the
+
+172
+00:06:11,360 --> 00:06:12,870
+private software written everywhere in
+
+173
+00:06:12,880 --> 00:06:14,230
+the world then i could construct like an
+
+174
+00:06:14,240 --> 00:06:15,510
+average number but there's a selection
+
+175
+00:06:15,520 --> 00:06:17,749
+bias involved with polling only the open
+
+176
+00:06:17,759 --> 00:06:20,469
+source available ones so i think the
+
+177
+00:06:20,479 --> 00:06:21,749
+best i can say is yeah you might see
+
+178
+00:06:21,759 --> 00:06:24,150
+thousands in in javascript land and you
+
+179
+00:06:24,160 --> 00:06:26,870
+might see tens to hundreds in like a go
+
+180
+00:06:26,880 --> 00:06:29,749
+or a or a rust and i don't i think most
+
+181
+00:06:29,759 --> 00:06:31,110
+of the other
+
+182
+00:06:31,120 --> 00:06:32,469
+javascript is really the one that is
+
+183
+00:06:32,479 --> 00:06:34,070
+like an order of magnitude more than
+
+184
+00:06:34,080 --> 00:06:37,350
+most npm yeah this means
+
+185
+00:06:37,360 --> 00:06:39,029
+that if i am
+
+186
+00:06:39,039 --> 00:06:41,189
+shipping software that most of what i'm
+
+187
+00:06:41,199 --> 00:06:42,230
+shipping
+
+188
+00:06:42,240 --> 00:06:44,710
+is stuff written by other people my
+
+189
+00:06:44,720 --> 00:06:47,590
+contribution is only a tiny amount
+
+190
+00:06:47,600 --> 00:06:49,270
+you get into this a little bit in your
+
+191
+00:06:49,280 --> 00:06:51,830
+article when you talk about yeah maybe
+
+192
+00:06:51,840 --> 00:06:52,790
+we want to talk about like what a
+
+193
+00:06:52,800 --> 00:06:54,469
+package manager does first that actually
+
+194
+00:06:54,479 --> 00:06:56,550
+might be a better way to
+
+195
+00:06:56,560 --> 00:07:00,550
+let's move on to our main topic which is
+
+196
+00:07:00,560 --> 00:07:02,870
+we need some kind of a tool
+
+197
+00:07:02,880 --> 00:07:04,870
+i think that's motivated by if there's
+
+198
+00:07:04,880 --> 00:07:07,430
+thousands of these things it goes beyond
+
+199
+00:07:07,440 --> 00:07:09,670
+human comprehension to keep track of all
+
+200
+00:07:09,680 --> 00:07:11,110
+the packages
+
+201
+00:07:11,120 --> 00:07:13,589
+what problem does a package manager
+
+202
+00:07:13,599 --> 00:07:15,110
+solve
+
+203
+00:07:15,120 --> 00:07:16,390
+so i mean the
+
+204
+00:07:16,400 --> 00:07:18,070
+obvious thing that it does right is it
+
+205
+00:07:18,080 --> 00:07:21,270
+like downloads a bunch of stuff from
+
+206
+00:07:21,280 --> 00:07:22,950
+the internet and
+
+207
+00:07:22,960 --> 00:07:25,029
+puts it in places on
+
+208
+00:07:25,039 --> 00:07:27,589
+on disk so that you can run programs so
+
+209
+00:07:27,599 --> 00:07:29,589
+in a sense it's an automation
+
+210
+00:07:29,599 --> 00:07:31,990
+tool but i think that as with a lot of
+
+211
+00:07:32,000 --> 00:07:33,350
+automation
+
+212
+00:07:33,360 --> 00:07:35,909
+the value is not so much
+
+213
+00:07:35,919 --> 00:07:37,350
+certainly there's value in keeping from
+
+214
+00:07:37,360 --> 00:07:39,189
+having you to do rote tasks over and
+
+215
+00:07:39,199 --> 00:07:42,230
+over again but it's in the uniformity of
+
+216
+00:07:42,240 --> 00:07:44,790
+the way that a system is created on the
+
+217
+00:07:44,800 --> 00:07:46,150
+other side of like running a package
+
+218
+00:07:46,160 --> 00:07:48,390
+manager command all of the same packages
+
+219
+00:07:48,400 --> 00:07:50,309
+all the same versions it's part of a
+
+220
+00:07:50,319 --> 00:07:53,270
+like a reproducible build concept that
+
+221
+00:07:53,280 --> 00:07:56,070
+when you have a tool that
+
+222
+00:07:56,080 --> 00:07:58,070
+grabs everything in a uniform way and
+
+223
+00:07:58,080 --> 00:08:01,430
+lays it out in a uniform way it removes
+
+224
+00:08:01,440 --> 00:08:02,790
+the goal is usually to remove
+
+225
+00:08:02,800 --> 00:08:05,830
+unnecessary choice from the operator in
+
+226
+00:08:05,840 --> 00:08:07,990
+terms of how all these these
+
+227
+00:08:08,000 --> 00:08:10,230
+dependencies are arranged
+
+228
+00:08:10,240 --> 00:08:12,390
+okay so it's going to ensure that you
+
+229
+00:08:12,400 --> 00:08:14,629
+have reasonable versions of all the
+
+230
+00:08:14,639 --> 00:08:17,589
+packages that you need so you can do a
+
+231
+00:08:17,599 --> 00:08:19,670
+build is that a fair statement
+
+232
+00:08:19,680 --> 00:08:21,990
+yeah the and actually the word the word
+
+233
+00:08:22,000 --> 00:08:24,230
+reasonable is incredibly important here
+
+234
+00:08:24,240 --> 00:08:26,950
+because version selection is the core of
+
+235
+00:08:26,960 --> 00:08:28,550
+of all of this like which versions of
+
+236
+00:08:28,560 --> 00:08:31,110
+the packages do you actually want to use
+
+237
+00:08:31,120 --> 00:08:31,990
+and
+
+238
+00:08:32,000 --> 00:08:33,350
+i my
+
+239
+00:08:33,360 --> 00:08:36,070
+stance is that we should actually think
+
+240
+00:08:36,080 --> 00:08:37,509
+about
+
+241
+00:08:37,519 --> 00:08:40,630
+the job of a package manager as at least
+
+242
+00:08:40,640 --> 00:08:42,949
+by default its job is to pick the
+
+243
+00:08:42,959 --> 00:08:44,949
+correct version which itself is a term
+
+244
+00:08:44,959 --> 00:08:46,389
+that we need to unpack
+
+245
+00:08:46,399 --> 00:08:47,990
+but it sets us in the right frame of
+
+246
+00:08:48,000 --> 00:08:51,110
+mind that the the real job of package
+
+247
+00:08:51,120 --> 00:08:52,150
+managers
+
+248
+00:08:52,160 --> 00:08:53,670
+is to
+
+249
+00:08:53,680 --> 00:08:55,509
+be a system that
+
+250
+00:08:55,519 --> 00:08:58,630
+has an opinion about what it means for
+
+251
+00:08:58,640 --> 00:09:00,150
+the like artifact it creates on the
+
+252
+00:09:00,160 --> 00:09:01,910
+other side the composition of your code
+
+253
+00:09:01,920 --> 00:09:03,750
+and all your dependency code
+
+254
+00:09:03,760 --> 00:09:06,550
+to be correct and to enforce that and to
+
+255
+00:09:06,560 --> 00:09:09,269
+tell you when it can't meet that
+
+256
+00:09:09,279 --> 00:09:10,550
+yeah
+
+257
+00:09:10,560 --> 00:09:12,310
+okay we're going to come back to the
+
+258
+00:09:12,320 --> 00:09:13,910
+dependency
+
+259
+00:09:13,920 --> 00:09:15,990
+versioning issue and discuss that in
+
+260
+00:09:16,000 --> 00:09:17,590
+depth in a bit
+
+261
+00:09:17,600 --> 00:09:20,790
+could you toss out the names of some
+
+262
+00:09:20,800 --> 00:09:23,509
+popular languages and frameworks and the
+
+263
+00:09:23,519 --> 00:09:25,590
+package managers
+
+264
+00:09:25,600 --> 00:09:27,670
+that go along with them
+
+265
+00:09:27,680 --> 00:09:30,389
+sure we've got there's
+
+266
+00:09:30,399 --> 00:09:33,509
+node and npm or yarn and then there's
+
+267
+00:09:33,519 --> 00:09:35,430
+rust and cargo and
+
+268
+00:09:35,440 --> 00:09:38,150
+go and go modules is the way you should
+
+269
+00:09:38,160 --> 00:09:39,509
+probably refer to it
+
+270
+00:09:39,519 --> 00:09:43,190
+we're talking about commonalities to
+
+271
+00:09:43,200 --> 00:09:45,590
+something that exists in nearly all
+
+272
+00:09:45,600 --> 00:09:47,829
+different software is the package
+
+273
+00:09:47,839 --> 00:09:49,190
+manager
+
+274
+00:09:49,200 --> 00:09:50,630
+usually
+
+275
+00:09:50,640 --> 00:09:53,269
+issued or built by the same
+
+276
+00:09:53,279 --> 00:09:55,910
+team that built the language itself and
+
+277
+00:09:55,920 --> 00:09:58,470
+it comes as a part of a toolkit
+
+278
+00:09:58,480 --> 00:10:00,389
+if i download
+
+279
+00:10:00,399 --> 00:10:01,910
+python i would get the python package
+
+280
+00:10:01,920 --> 00:10:03,430
+manager or does there tend to be
+
+281
+00:10:03,440 --> 00:10:06,150
+competition among package managers even
+
+282
+00:10:06,160 --> 00:10:09,030
+within the same language community where
+
+283
+00:10:09,040 --> 00:10:10,790
+different developers have a different
+
+284
+00:10:10,800 --> 00:10:12,790
+idea of how
+
+285
+00:10:12,800 --> 00:10:14,310
+package management should be done for
+
+286
+00:10:14,320 --> 00:10:16,870
+language a and so you would have a range
+
+287
+00:10:16,880 --> 00:10:18,389
+of choices
+
+288
+00:10:18,399 --> 00:10:20,389
+even within language a
+
+289
+00:10:20,399 --> 00:10:22,389
+yeah nowadays
+
+290
+00:10:22,399 --> 00:10:24,870
+i think it's pretty well accepted
+
+291
+00:10:24,880 --> 00:10:25,750
+that
+
+292
+00:10:25,760 --> 00:10:28,470
+you really can't ship a language without
+
+293
+00:10:28,480 --> 00:10:30,069
+shipping a package manager at least not
+
+294
+00:10:30,079 --> 00:10:32,630
+if you want any kind of community to
+
+295
+00:10:32,640 --> 00:10:33,590
+exist
+
+296
+00:10:33,600 --> 00:10:35,829
+but that's not always been the case
+
+297
+00:10:35,839 --> 00:10:37,750
+certainly so there is a shift in this
+
+298
+00:10:37,760 --> 00:10:40,310
+over time older languages
+
+299
+00:10:40,320 --> 00:10:42,389
+you will there's more separation between
+
+300
+00:10:42,399 --> 00:10:43,509
+like the language tooling and the
+
+301
+00:10:43,519 --> 00:10:45,750
+package manager newer ones tend to build
+
+302
+00:10:45,760 --> 00:10:46,949
+a writer
+
+303
+00:10:46,959 --> 00:10:48,949
+would the package manager be written in
+
+304
+00:10:48,959 --> 00:10:50,470
+the same language
+
+305
+00:10:50,480 --> 00:10:52,710
+as the primary language
+
+306
+00:10:52,720 --> 00:10:55,590
+yeah almost always the main limit here
+
+307
+00:10:55,600 --> 00:10:57,190
+is that
+
+308
+00:10:57,200 --> 00:10:58,069
+you
+
+309
+00:10:58,079 --> 00:11:00,550
+absolutely have to have your package
+
+310
+00:11:00,560 --> 00:11:03,590
+manager be ex executable
+
+311
+00:11:03,600 --> 00:11:06,470
+wherever your language is executable and
+
+312
+00:11:06,480 --> 00:11:09,110
+as nice as it might be if like
+
+313
+00:11:09,120 --> 00:11:11,110
+we could write the
+
+314
+00:11:11,120 --> 00:11:12,550
+mother algorithm for all package
+
+315
+00:11:12,560 --> 00:11:15,110
+management in like one language
+
+316
+00:11:15,120 --> 00:11:16,710
+you end up in a really awkward situation
+
+317
+00:11:16,720 --> 00:11:18,310
+as a language designer if you're having
+
+318
+00:11:18,320 --> 00:11:20,710
+to juggle between your compiler or
+
+319
+00:11:20,720 --> 00:11:22,310
+whatever and like what platforms it can
+
+320
+00:11:22,320 --> 00:11:24,790
+run on and then your package manager not
+
+321
+00:11:24,800 --> 00:11:26,550
+being aligned
+
+322
+00:11:26,560 --> 00:11:30,069
+for example python itself is built in c
+
+323
+00:11:30,079 --> 00:11:30,870
+but
+
+324
+00:11:30,880 --> 00:11:32,470
+i wouldn't necessarily want to have to
+
+325
+00:11:32,480 --> 00:11:34,710
+have a c compiler
+
+326
+00:11:34,720 --> 00:11:37,350
+just to build a python package manager
+
+327
+00:11:37,360 --> 00:11:40,550
+it should be written in python okay now
+
+328
+00:11:40,560 --> 00:11:42,389
+take a python it's a language i'm
+
+329
+00:11:42,399 --> 00:11:43,750
+familiar with there are many packages
+
+330
+00:11:43,760 --> 00:11:46,150
+which are built in to python i don't
+
+331
+00:11:46,160 --> 00:11:48,069
+need to manage them because when i get
+
+332
+00:11:48,079 --> 00:11:50,550
+python i get a bunch of
+
+333
+00:11:50,560 --> 00:11:53,269
+common packages is it a requirement that
+
+334
+00:11:53,279 --> 00:11:55,750
+the package manager only depend on
+
+335
+00:11:55,760 --> 00:11:57,750
+built-ins so that we don't have to
+
+336
+00:11:57,760 --> 00:12:00,069
+package manage
+
+337
+00:12:00,079 --> 00:12:01,910
+while we're bootstrapping the package
+
+338
+00:12:01,920 --> 00:12:02,949
+manager
+
+339
+00:12:02,959 --> 00:12:05,110
+i mean it i think that's
+
+340
+00:12:05,120 --> 00:12:07,829
+mostly a question of
+
+341
+00:12:07,839 --> 00:12:09,590
+the more has to do with
+
+342
+00:12:09,600 --> 00:12:11,590
+the previous question right like is the
+
+343
+00:12:11,600 --> 00:12:13,750
+package manager a part of the tool chain
+
+344
+00:12:13,760 --> 00:12:15,030
+that's distributed with the language if
+
+345
+00:12:15,040 --> 00:12:17,269
+it is well probably yes we're not going
+
+346
+00:12:17,279 --> 00:12:19,110
+to depend on anything external if it's
+
+347
+00:12:19,120 --> 00:12:21,110
+not then do you have more degrees of
+
+348
+00:12:21,120 --> 00:12:22,389
+freedom
+
+349
+00:12:22,399 --> 00:12:25,670
+there okay package manager you mentioned
+
+350
+00:12:25,680 --> 00:12:27,350
+that it goes out to
+
+351
+00:12:27,360 --> 00:12:30,470
+the interwebs and finds things
+
+352
+00:12:30,480 --> 00:12:32,150
+where does it go
+
+353
+00:12:32,160 --> 00:12:34,389
+to find the packages
+
+354
+00:12:34,399 --> 00:12:35,269
+yeah
+
+355
+00:12:35,279 --> 00:12:37,350
+so there's a few there's a few
+
+356
+00:12:37,360 --> 00:12:41,269
+approaches most package managers rely on
+
+357
+00:12:41,279 --> 00:12:44,310
+some kind of central repository i would
+
+358
+00:12:44,320 --> 00:12:45,509
+say you can really say there's there's
+
+359
+00:12:45,519 --> 00:12:47,829
+four models you can have
+
+360
+00:12:47,839 --> 00:12:49,750
+the model where there is only one
+
+361
+00:12:49,760 --> 00:12:52,230
+central repository you can have the
+
+362
+00:12:52,240 --> 00:12:54,790
+model where there's like a search
+
+363
+00:12:54,800 --> 00:12:56,550
+algorithm that picks between multiple
+
+364
+00:12:56,560 --> 00:12:59,269
+repositories that can be specified you
+
+365
+00:12:59,279 --> 00:13:01,750
+can try to go fully distributed and use
+
+366
+00:13:01,760 --> 00:13:03,670
+like a like i've seen a couple of
+
+367
+00:13:03,680 --> 00:13:05,430
+blockchain related package managers that
+
+368
+00:13:05,440 --> 00:13:06,629
+want to like store the packages on the
+
+369
+00:13:06,639 --> 00:13:08,389
+blockchain so your addresses are not
+
+370
+00:13:08,399 --> 00:13:09,750
+going to a server they're instead going
+
+371
+00:13:09,760 --> 00:13:12,389
+to this this distributed address
+
+372
+00:13:12,399 --> 00:13:13,910
+resolution system
+
+373
+00:13:13,920 --> 00:13:15,430
+not finding good words there and then
+
+374
+00:13:15,440 --> 00:13:18,069
+you can go for something more
+
+375
+00:13:18,079 --> 00:13:20,389
+strictly like url shape like the actual
+
+376
+00:13:20,399 --> 00:13:22,710
+names of your packages are
+
+377
+00:13:22,720 --> 00:13:25,430
+urls effectively and so you're relying
+
+378
+00:13:25,440 --> 00:13:27,990
+on dns to give meaning to names
+
+379
+00:13:28,000 --> 00:13:30,310
+at least the highest level instead of a
+
+380
+00:13:30,320 --> 00:13:33,269
+like a central service so if it's
+
+381
+00:13:33,279 --> 00:13:35,269
+built into the package manager there's a
+
+382
+00:13:35,279 --> 00:13:36,150
+one
+
+383
+00:13:36,160 --> 00:13:39,189
+repository everything's there it goes
+
+384
+00:13:39,199 --> 00:13:40,550
+there we could
+
+385
+00:13:40,560 --> 00:13:42,310
+put the name of the repository in the
+
+386
+00:13:42,320 --> 00:13:43,269
+code
+
+387
+00:13:43,279 --> 00:13:46,150
+if there are several or i want it to be
+
+388
+00:13:46,160 --> 00:13:48,870
+configurable would there be a setup step
+
+389
+00:13:48,880 --> 00:13:50,710
+or i usually some command like add
+
+390
+00:13:50,720 --> 00:13:54,150
+remote repository followed by a url
+
+391
+00:13:54,160 --> 00:13:56,470
+yeah if if that's the that's the model
+
+392
+00:13:56,480 --> 00:13:58,710
+that's been chosen by the the creators
+
+393
+00:13:58,720 --> 00:14:00,710
+of the package manager the the scope of
+
+394
+00:14:00,720 --> 00:14:02,069
+this ends up being really important
+
+395
+00:14:02,079 --> 00:14:03,189
+right like
+
+396
+00:14:03,199 --> 00:14:05,590
+for a system package manager you might
+
+397
+00:14:05,600 --> 00:14:08,389
+configure at a system level
+
+398
+00:14:08,399 --> 00:14:10,150
+you know in your etsy directory some
+
+399
+00:14:10,160 --> 00:14:12,310
+additional repositories that get used
+
+400
+00:14:12,320 --> 00:14:14,790
+right that way all users share them one
+
+401
+00:14:14,800 --> 00:14:16,069
+of the main issues is that since we're
+
+402
+00:14:16,079 --> 00:14:17,829
+ultimately talking about name resolution
+
+403
+00:14:17,839 --> 00:14:18,790
+here
+
+404
+00:14:18,800 --> 00:14:19,750
+is
+
+405
+00:14:19,760 --> 00:14:22,310
+in order to have
+
+406
+00:14:22,320 --> 00:14:24,069
+multiple repositories you have to have a
+
+407
+00:14:24,079 --> 00:14:25,030
+way
+
+408
+00:14:25,040 --> 00:14:26,790
+of distributing
+
+409
+00:14:26,800 --> 00:14:29,350
+the names of all of the name resolution
+
+410
+00:14:29,360 --> 00:14:31,269
+services effectively to
+
+411
+00:14:31,279 --> 00:14:33,110
+any client that's going to end up trying
+
+412
+00:14:33,120 --> 00:14:34,470
+to resolve all those packages because
+
+413
+00:14:34,480 --> 00:14:35,910
+otherwise you don't have the same
+
+414
+00:14:35,920 --> 00:14:38,310
+uniformity across all of your users that
+
+415
+00:14:38,320 --> 00:14:42,069
+is so important within an enterprise
+
+416
+00:14:42,079 --> 00:14:44,069
+there could be security reasons or
+
+417
+00:14:44,079 --> 00:14:45,990
+availability reasons why you might not
+
+418
+00:14:46,000 --> 00:14:48,949
+want to pull everything from a remote
+
+419
+00:14:48,959 --> 00:14:51,189
+repository or perhaps the amount of
+
+420
+00:14:51,199 --> 00:14:53,590
+bandwidth going over the network suppose
+
+421
+00:14:53,600 --> 00:14:56,949
+we want either to run our own repository
+
+422
+00:14:56,959 --> 00:14:59,670
+or have caches or mirrors on a
+
+423
+00:14:59,680 --> 00:15:01,829
+internal network
+
+424
+00:15:01,839 --> 00:15:04,710
+is that a common use case and do all of
+
+425
+00:15:04,720 --> 00:15:06,870
+these package managers support that it's
+
+426
+00:15:06,880 --> 00:15:08,790
+a range it's certainly common there's
+
+427
+00:15:08,800 --> 00:15:10,230
+any number of reasons whether it is
+
+428
+00:15:10,240 --> 00:15:12,550
+performance security i guess those are
+
+429
+00:15:12,560 --> 00:15:13,910
+the two major broad categories of
+
+430
+00:15:13,920 --> 00:15:15,509
+reasons that that jump to mine right
+
+431
+00:15:15,519 --> 00:15:17,030
+away actually i supposed to be
+
+432
+00:15:17,040 --> 00:15:18,710
+performance security and then also
+
+433
+00:15:18,720 --> 00:15:20,629
+correctness in the sense of ensuring
+
+434
+00:15:20,639 --> 00:15:23,189
+uniform name resolution again would be
+
+435
+00:15:23,199 --> 00:15:25,110
+the major reasons that people want some
+
+436
+00:15:25,120 --> 00:15:28,230
+kind of intermediary to
+
+437
+00:15:28,240 --> 00:15:30,150
+to not just have things touching
+
+438
+00:15:30,160 --> 00:15:32,230
+the interwebs the manner in which these
+
+439
+00:15:32,240 --> 00:15:33,590
+are supported
+
+440
+00:15:33,600 --> 00:15:36,069
+varies i'm i'm not aware of any
+
+441
+00:15:36,079 --> 00:15:37,990
+like general framework for being able to
+
+442
+00:15:38,000 --> 00:15:40,629
+talk about it mostly because the way
+
+443
+00:15:40,639 --> 00:15:42,310
+that you would inject an intermediary is
+
+444
+00:15:42,320 --> 00:15:44,230
+largely a function of
+
+445
+00:15:44,240 --> 00:15:45,910
+how your name resolution works in the
+
+446
+00:15:45,920 --> 00:15:47,829
+first place and so it's dependent upon
+
+447
+00:15:47,839 --> 00:15:50,230
+something that varies in the first place
+
+448
+00:15:50,240 --> 00:15:52,069
+across packet managers
+
+449
+00:15:52,079 --> 00:15:54,470
+how does the package get
+
+450
+00:15:54,480 --> 00:15:57,269
+pushed up into the repository
+
+451
+00:15:57,279 --> 00:15:59,910
+this is uh it's so it's very clear that
+
+452
+00:15:59,920 --> 00:16:01,990
+package managers are responsible for the
+
+453
+00:16:02,000 --> 00:16:04,389
+read step they have varying degrees of
+
+454
+00:16:04,399 --> 00:16:06,069
+responsibility for the right
+
+455
+00:16:06,079 --> 00:16:07,110
+path
+
+456
+00:16:07,120 --> 00:16:09,430
+it's more common when you have a
+
+457
+00:16:09,440 --> 00:16:11,910
+repository that you that you maintain
+
+458
+00:16:11,920 --> 00:16:13,269
+yourself that is specific to your
+
+459
+00:16:13,279 --> 00:16:16,069
+ecosystem of packages that the
+
+460
+00:16:16,079 --> 00:16:18,870
+tool will bundle in the right path
+
+461
+00:16:18,880 --> 00:16:21,749
+but this also gets into
+
+462
+00:16:21,759 --> 00:16:24,230
+like the nature of what your
+
+463
+00:16:24,240 --> 00:16:26,150
+what your package actually contains
+
+464
+00:16:26,160 --> 00:16:28,069
+right i mean it's you're making a
+
+465
+00:16:28,079 --> 00:16:30,150
+release so you generally want to like
+
+466
+00:16:30,160 --> 00:16:32,230
+hook this kind of thing into a ci
+
+467
+00:16:32,240 --> 00:16:33,509
+workflow something that gives you
+
+468
+00:16:33,519 --> 00:16:35,430
+assurances that the thing you're about
+
+469
+00:16:35,440 --> 00:16:36,949
+to release is correct with respect to
+
+470
+00:16:36,959 --> 00:16:39,670
+whatever rules you've devised for your
+
+471
+00:16:39,680 --> 00:16:40,710
+package
+
+472
+00:16:40,720 --> 00:16:42,470
+and yeah then then you have to figure
+
+473
+00:16:42,480 --> 00:16:44,870
+out how how to map the
+
+474
+00:16:44,880 --> 00:16:46,150
+i think what i'm trying to say is like
+
+475
+00:16:46,160 --> 00:16:47,509
+with respect to
+
+476
+00:16:47,519 --> 00:16:49,749
+the tooling the job of the people
+
+477
+00:16:49,759 --> 00:16:52,470
+writing the package manager is
+
+478
+00:16:52,480 --> 00:16:54,150
+to probably be as
+
+479
+00:16:54,160 --> 00:16:56,389
+as non-invasive as possible into
+
+480
+00:16:56,399 --> 00:16:58,550
+people's workflows because people are
+
+481
+00:16:58,560 --> 00:16:59,670
+going to put a lot of different things
+
+482
+00:16:59,680 --> 00:17:00,710
+together
+
+483
+00:17:00,720 --> 00:17:02,389
+when it comes to being sure that they're
+
+484
+00:17:02,399 --> 00:17:04,150
+actually ready to make a release and
+
+485
+00:17:04,160 --> 00:17:07,189
+trying to bake too much of that
+
+486
+00:17:07,199 --> 00:17:08,470
+into
+
+487
+00:17:08,480 --> 00:17:10,630
+into like what you would write in the in
+
+488
+00:17:10,640 --> 00:17:12,710
+a standard tool for package management
+
+489
+00:17:12,720 --> 00:17:13,829
+ends up
+
+490
+00:17:13,839 --> 00:17:15,429
+hindering because you're cutting off
+
+491
+00:17:15,439 --> 00:17:16,710
+certain workflows that will be important
+
+492
+00:17:16,720 --> 00:17:19,270
+to people so if i have a compiled
+
+493
+00:17:19,280 --> 00:17:22,150
+language maybe my source code is in git
+
+494
+00:17:22,160 --> 00:17:25,429
+hub i've decided this code it's passed
+
+495
+00:17:25,439 --> 00:17:27,189
+all the validations we're ready to
+
+496
+00:17:27,199 --> 00:17:28,230
+release
+
+497
+00:17:28,240 --> 00:17:29,750
+2.4
+
+498
+00:17:29,760 --> 00:17:31,430
+there would be some workflow i would go
+
+499
+00:17:31,440 --> 00:17:33,270
+through which might involve compiling
+
+500
+00:17:33,280 --> 00:17:35,830
+and creating libs or jars or whatever
+
+501
+00:17:35,840 --> 00:17:36,710
+the
+
+502
+00:17:36,720 --> 00:17:39,029
+archival format is and then pushing
+
+503
+00:17:39,039 --> 00:17:41,029
+those up into
+
+504
+00:17:41,039 --> 00:17:43,990
+an account that i have for our project
+
+505
+00:17:44,000 --> 00:17:46,630
+on the repository server
+
+506
+00:17:46,640 --> 00:17:48,789
+is that what the workflow looks like
+
+507
+00:17:48,799 --> 00:17:51,110
+yeah more or less yeah perhaps it's
+
+508
+00:17:51,120 --> 00:17:52,710
+something that i mean especially
+
+509
+00:17:52,720 --> 00:17:54,310
+nowadays you know i would expect that
+
+510
+00:17:54,320 --> 00:17:56,150
+this kind of thing is
+
+511
+00:17:56,160 --> 00:17:57,669
+something you would create an automation
+
+512
+00:17:57,679 --> 00:18:00,230
+for which is very important i mean again
+
+513
+00:18:00,240 --> 00:18:01,029
+the
+
+514
+00:18:01,039 --> 00:18:03,270
+the goal with packages in general
+
+515
+00:18:03,280 --> 00:18:07,110
+is this uniformity of the package object
+
+516
+00:18:07,120 --> 00:18:09,510
+and removing as much
+
+517
+00:18:09,520 --> 00:18:11,590
+a necessary source of user error in the
+
+518
+00:18:11,600 --> 00:18:13,430
+process of both creating and consuming
+
+519
+00:18:13,440 --> 00:18:15,430
+these things is essential to
+
+520
+00:18:15,440 --> 00:18:17,350
+reliability so
+
+521
+00:18:17,360 --> 00:18:18,310
+yeah
+
+522
+00:18:18,320 --> 00:18:20,230
+automate that but in general yeah what
+
+523
+00:18:20,240 --> 00:18:21,590
+you described is
+
+524
+00:18:21,600 --> 00:18:23,029
+is the way that one should imagine using
+
+525
+00:18:23,039 --> 00:18:27,190
+it do the package manager support an api
+
+526
+00:18:27,200 --> 00:18:29,830
+that looks like give me all the versions
+
+527
+00:18:29,840 --> 00:18:31,350
+you know about
+
+528
+00:18:31,360 --> 00:18:33,990
+of this package by name
+
+529
+00:18:34,000 --> 00:18:35,590
+usually yes it's almost impossible to
+
+530
+00:18:35,600 --> 00:18:37,110
+write a version selection algorithm
+
+531
+00:18:37,120 --> 00:18:39,110
+without having knowledge of the
+
+532
+00:18:39,120 --> 00:18:41,190
+universal versions
+
+533
+00:18:41,200 --> 00:18:42,789
+are there
+
+534
+00:18:42,799 --> 00:18:44,549
+validations like
+
+535
+00:18:44,559 --> 00:18:47,830
+code signing to ensure that what you get
+
+536
+00:18:47,840 --> 00:18:50,549
+is the trusted package that you asked
+
+537
+00:18:50,559 --> 00:18:51,750
+for
+
+538
+00:18:51,760 --> 00:18:54,150
+yeah this is i mean the tricky thing
+
+539
+00:18:54,160 --> 00:18:56,070
+here is since we're we're down at the
+
+540
+00:18:56,080 --> 00:18:57,830
+level of like
+
+541
+00:18:57,840 --> 00:18:59,909
+giving meaning to names
+
+542
+00:18:59,919 --> 00:19:01,990
+you can easily get to the canonicality
+
+543
+00:19:02,000 --> 00:19:03,830
+issues when it comes to like
+
+544
+00:19:03,840 --> 00:19:05,830
+verifying the original upstream source
+
+545
+00:19:05,840 --> 00:19:08,310
+you know if i if
+
+546
+00:19:08,320 --> 00:19:11,190
+if i have a if i have a repository in
+
+547
+00:19:11,200 --> 00:19:12,950
+some configuration file that i have
+
+548
+00:19:12,960 --> 00:19:15,190
+added then that thing needs to be the
+
+549
+00:19:15,200 --> 00:19:17,029
+thing that i check against for the
+
+550
+00:19:17,039 --> 00:19:19,270
+validity of the package name that i'm
+
+551
+00:19:19,280 --> 00:19:21,430
+asking it to resolve but if someone can
+
+552
+00:19:21,440 --> 00:19:22,950
+attack like
+
+553
+00:19:22,960 --> 00:19:24,630
+the config file that i have about which
+
+554
+00:19:24,640 --> 00:19:26,549
+repository that i talk to then how do i
+
+555
+00:19:26,559 --> 00:19:28,470
+know that my verification is correct
+
+556
+00:19:28,480 --> 00:19:30,070
+this the whole feel of you know software
+
+557
+00:19:30,080 --> 00:19:32,390
+supply chain security is invested in in
+
+558
+00:19:32,400 --> 00:19:33,430
+trying to
+
+559
+00:19:33,440 --> 00:19:34,870
+formalize a lot of the answers to this
+
+560
+00:19:34,880 --> 00:19:37,029
+so that we at least don't have a lot of
+
+561
+00:19:37,039 --> 00:19:40,230
+unforced errors in in this area but yes
+
+562
+00:19:40,240 --> 00:19:41,830
+certainly that can be a part of of the
+
+563
+00:19:41,840 --> 00:19:43,830
+process and can be considered an aspect
+
+564
+00:19:43,840 --> 00:19:45,110
+of what
+
+565
+00:19:45,120 --> 00:19:48,470
+constitutes the correctness of a package
+
+566
+00:19:48,480 --> 00:19:51,830
+that is a great topic i would like for
+
+567
+00:19:51,840 --> 00:19:53,990
+us to do an entire hour or i mean
+
+568
+00:19:54,000 --> 00:19:55,430
+software engineering radio to do entire
+
+569
+00:19:55,440 --> 00:19:57,750
+hour on supply chain security at some
+
+570
+00:19:57,760 --> 00:19:58,789
+point
+
+571
+00:19:58,799 --> 00:20:01,909
+but to continue with it our discussion
+
+572
+00:20:01,919 --> 00:20:04,710
+what does the developer workflow look
+
+573
+00:20:04,720 --> 00:20:05,510
+like
+
+574
+00:20:05,520 --> 00:20:08,149
+when using a package manager and if
+
+575
+00:20:08,159 --> 00:20:09,909
+there isn't a general
+
+576
+00:20:09,919 --> 00:20:12,870
+case answer then it's pick one language
+
+577
+00:20:12,880 --> 00:20:14,950
+that you can talk about
+
+578
+00:20:14,960 --> 00:20:16,070
+what are the
+
+579
+00:20:16,080 --> 00:20:17,669
+developer runs
+
+580
+00:20:17,679 --> 00:20:19,990
+i mean there are a pretty general set of
+
+581
+00:20:20,000 --> 00:20:21,990
+of commands right like and they are
+
+582
+00:20:22,000 --> 00:20:24,230
+essentially they're they're cruddish
+
+583
+00:20:24,240 --> 00:20:26,789
+it's i want to add a package i want to
+
+584
+00:20:26,799 --> 00:20:28,549
+change the version of the package i want
+
+585
+00:20:28,559 --> 00:20:30,310
+to remove a package
+
+586
+00:20:30,320 --> 00:20:32,230
+add a package
+
+587
+00:20:32,240 --> 00:20:33,590
+sorry here we're talking like this is
+
+588
+00:20:33,600 --> 00:20:34,950
+the developer working on a project
+
+589
+00:20:34,960 --> 00:20:36,310
+talking about the dependencies for the
+
+590
+00:20:36,320 --> 00:20:38,470
+project that they're in correct yeah uh
+
+591
+00:20:38,480 --> 00:20:39,590
+yeah
+
+592
+00:20:39,600 --> 00:20:42,070
+so yeah let's drill down into that so so
+
+593
+00:20:42,080 --> 00:20:44,470
+add packages i've decided i need to do
+
+594
+00:20:44,480 --> 00:20:47,430
+some feature in my
+
+595
+00:20:47,440 --> 00:20:49,430
+program and there's a package for it i
+
+596
+00:20:49,440 --> 00:20:52,390
+know the name i know the package i want
+
+597
+00:20:52,400 --> 00:20:54,710
+so i'm going to add a package do i have
+
+598
+00:20:54,720 --> 00:20:55,750
+a
+
+599
+00:20:55,760 --> 00:20:57,510
+config file
+
+600
+00:20:57,520 --> 00:20:59,350
+that tells the package manager here are
+
+601
+00:20:59,360 --> 00:21:01,350
+all the packages i want i go and edit
+
+602
+00:21:01,360 --> 00:21:02,950
+that config file and then i run a
+
+603
+00:21:02,960 --> 00:21:04,390
+command like
+
+604
+00:21:04,400 --> 00:21:06,310
+sync or add
+
+605
+00:21:06,320 --> 00:21:08,390
+can be it varies the
+
+606
+00:21:08,400 --> 00:21:10,230
+in general the two interfaces to package
+
+607
+00:21:10,240 --> 00:21:12,870
+managers are a command line interface
+
+608
+00:21:12,880 --> 00:21:14,710
+and then a file because you certainly
+
+609
+00:21:14,720 --> 00:21:17,430
+have to record state in order to be able
+
+610
+00:21:17,440 --> 00:21:19,029
+to do anything with with a package
+
+611
+00:21:19,039 --> 00:21:21,430
+manager you have to record dependencies
+
+612
+00:21:21,440 --> 00:21:24,149
+it's typically far more convenient to
+
+613
+00:21:24,159 --> 00:21:26,230
+offer people a command line interface
+
+614
+00:21:26,240 --> 00:21:28,310
+to to do most of these things
+
+615
+00:21:28,320 --> 00:21:30,070
+more scriptable etc because then the
+
+616
+00:21:30,080 --> 00:21:31,430
+other thing that you can do which is
+
+617
+00:21:31,440 --> 00:21:33,430
+especially important for for automation
+
+618
+00:21:33,440 --> 00:21:34,710
+purposes is
+
+619
+00:21:34,720 --> 00:21:36,950
+if you're able to have
+
+620
+00:21:36,960 --> 00:21:38,070
+the tool
+
+621
+00:21:38,080 --> 00:21:40,470
+take its action and then update the
+
+622
+00:21:40,480 --> 00:21:43,110
+written file this is usually the most
+
+623
+00:21:43,120 --> 00:21:44,470
+preferable flow
+
+624
+00:21:44,480 --> 00:21:46,950
+not sure i follow what you mean by that
+
+625
+00:21:46,960 --> 00:21:48,870
+do you mean if i add a package to the
+
+626
+00:21:48,880 --> 00:21:49,990
+code
+
+627
+00:21:50,000 --> 00:21:51,190
+that the package manager might detect
+
+628
+00:21:51,200 --> 00:21:53,510
+this package is missing i need to add it
+
+629
+00:21:53,520 --> 00:21:55,190
+to the package list
+
+630
+00:21:55,200 --> 00:21:57,350
+yeah that if i if i say you know add
+
+631
+00:21:57,360 --> 00:21:58,710
+dependency foo
+
+632
+00:21:58,720 --> 00:22:00,870
+on my in my terminal i do
+
+633
+00:22:00,880 --> 00:22:03,909
+package add foo then
+
+634
+00:22:03,919 --> 00:22:04,710
+when
+
+635
+00:22:04,720 --> 00:22:06,870
+the command completes if the command
+
+636
+00:22:06,880 --> 00:22:08,470
+completes successfully
+
+637
+00:22:08,480 --> 00:22:10,870
+i should be able to expect that
+
+638
+00:22:10,880 --> 00:22:13,590
+that package is present and available
+
+639
+00:22:13,600 --> 00:22:16,310
+on my file system or whatever it means
+
+640
+00:22:16,320 --> 00:22:18,549
+for the package to be available
+
+641
+00:22:18,559 --> 00:22:20,789
+such that when i go to like execute the
+
+642
+00:22:20,799 --> 00:22:23,510
+program the linker the loader whatever
+
+643
+00:22:23,520 --> 00:22:25,430
+it is is able to get at the contents of
+
+644
+00:22:25,440 --> 00:22:27,830
+the package so i can expect that that
+
+645
+00:22:27,840 --> 00:22:30,789
+requirement is satisfied and also that
+
+646
+00:22:30,799 --> 00:22:33,510
+a record of the require a record that
+
+647
+00:22:33,520 --> 00:22:36,549
+the requirement of the package exists
+
+648
+00:22:36,559 --> 00:22:38,470
+is written into this thing we usually
+
+649
+00:22:38,480 --> 00:22:41,590
+call a manifest file i realize i don't
+
+650
+00:22:41,600 --> 00:22:43,750
+like this package i'm going to remove it
+
+651
+00:22:43,760 --> 00:22:45,750
+from the code
+
+652
+00:22:45,760 --> 00:22:48,630
+what does the remove workflow look like
+
+653
+00:22:48,640 --> 00:22:50,710
+so the i mean the main thing that's
+
+654
+00:22:50,720 --> 00:22:52,870
+really tricky here right is that
+
+655
+00:22:52,880 --> 00:22:54,470
+usually
+
+656
+00:22:54,480 --> 00:22:56,630
+the question is what the relationship is
+
+657
+00:22:56,640 --> 00:22:58,549
+between the metadata file
+
+658
+00:22:58,559 --> 00:23:00,310
+and the actual code base like if you
+
+659
+00:23:00,320 --> 00:23:02,870
+have import statements that continue to
+
+660
+00:23:02,880 --> 00:23:05,270
+reference a that continue to reference a
+
+661
+00:23:05,280 --> 00:23:07,830
+package which you are trying to remove i
+
+662
+00:23:07,840 --> 00:23:09,590
+mean i'm not really sure why you're
+
+663
+00:23:09,600 --> 00:23:10,870
+trying to do that there there are
+
+664
+00:23:10,880 --> 00:23:12,070
+reasons to do it but there isn't like a
+
+665
+00:23:12,080 --> 00:23:13,909
+general case for it so what we're really
+
+666
+00:23:13,919 --> 00:23:15,909
+talking about is a synchronization
+
+667
+00:23:15,919 --> 00:23:18,070
+relationship between the dependencies as
+
+668
+00:23:18,080 --> 00:23:19,190
+expressed in the code and the
+
+669
+00:23:19,200 --> 00:23:21,270
+dependencies as expressed in the package
+
+670
+00:23:21,280 --> 00:23:24,310
+level metadata
+
+671
+00:23:24,320 --> 00:23:25,510
+so
+
+672
+00:23:25,520 --> 00:23:27,190
+are you referring to the case where like
+
+673
+00:23:27,200 --> 00:23:29,350
+usually what this entails is
+
+674
+00:23:29,360 --> 00:23:31,590
+the developer needs to go in and excise
+
+675
+00:23:31,600 --> 00:23:34,070
+any references to the package from their
+
+676
+00:23:34,080 --> 00:23:35,909
+code and the final step is just like
+
+677
+00:23:35,919 --> 00:23:38,070
+remove it from the metadata function yes
+
+678
+00:23:38,080 --> 00:23:40,789
+okay yeah now i think it would be a good
+
+679
+00:23:40,799 --> 00:23:42,710
+time to start going
+
+680
+00:23:42,720 --> 00:23:44,789
+into dependencies
+
+681
+00:23:44,799 --> 00:23:46,549
+you talked about this a little earlier
+
+682
+00:23:46,559 --> 00:23:47,350
+where
+
+683
+00:23:47,360 --> 00:23:49,510
+i like this package it does something
+
+684
+00:23:49,520 --> 00:23:50,470
+useful
+
+685
+00:23:50,480 --> 00:23:52,149
+i'm going to add it to my package
+
+686
+00:23:52,159 --> 00:23:53,190
+manager
+
+687
+00:23:53,200 --> 00:23:54,710
+this package
+
+688
+00:23:54,720 --> 00:23:57,510
+because it's software
+
+689
+00:23:57,520 --> 00:23:58,950
+it relies on
+
+690
+00:23:58,960 --> 00:24:00,149
+other packages which are its
+
+691
+00:24:00,159 --> 00:24:03,510
+dependencies so you have recursive
+
+692
+00:24:03,520 --> 00:24:04,950
+process
+
+693
+00:24:04,960 --> 00:24:07,590
+so before i ask you some more questions
+
+694
+00:24:07,600 --> 00:24:08,390
+anything
+
+695
+00:24:08,400 --> 00:24:10,470
+you'd like to say generally about
+
+696
+00:24:10,480 --> 00:24:13,029
+dependencies and then we'll get into
+
+697
+00:24:13,039 --> 00:24:15,510
+some more detailed discussion sure i
+
+698
+00:24:15,520 --> 00:24:19,110
+mean so the the graph of connections
+
+699
+00:24:19,120 --> 00:24:20,310
+between
+
+700
+00:24:20,320 --> 00:24:22,310
+software packages and and the packages
+
+701
+00:24:22,320 --> 00:24:23,909
+that they depend on
+
+702
+00:24:23,919 --> 00:24:26,310
+and certain key rules about this graph
+
+703
+00:24:26,320 --> 00:24:28,549
+which include well certain key rules
+
+704
+00:24:28,559 --> 00:24:29,590
+about that graph are some of the most
+
+705
+00:24:29,600 --> 00:24:31,590
+important fundamental properties of any
+
+706
+00:24:31,600 --> 00:24:32,549
+package
+
+707
+00:24:32,559 --> 00:24:33,830
+ecosystem and i'm sure the next
+
+708
+00:24:33,840 --> 00:24:35,350
+questions you have will drive us right
+
+709
+00:24:35,360 --> 00:24:38,549
+at those clearly we don't want
+
+710
+00:24:38,559 --> 00:24:41,750
+circular dependencies but cycle is a
+
+711
+00:24:41,760 --> 00:24:44,230
+property of the entire graph
+
+712
+00:24:44,240 --> 00:24:47,029
+how does a developer of a package ensure
+
+713
+00:24:47,039 --> 00:24:49,430
+that they're not depending on something
+
+714
+00:24:49,440 --> 00:24:50,710
+that is
+
+715
+00:24:50,720 --> 00:24:52,870
+in the wrong layer and would create
+
+716
+00:24:52,880 --> 00:24:55,110
+potentially create a cycle in general
+
+717
+00:24:55,120 --> 00:24:56,549
+they can't i mean because as you noted
+
+718
+00:24:56,559 --> 00:24:57,990
+it's a it's a property of the graph
+
+719
+00:24:58,000 --> 00:24:59,990
+right certainly i'm not sure that
+
+720
+00:25:00,000 --> 00:25:02,070
+there's a general answer to cycles most
+
+721
+00:25:02,080 --> 00:25:04,549
+package managers do allow
+
+722
+00:25:04,559 --> 00:25:07,190
+cycles of some kind at least
+
+723
+00:25:07,200 --> 00:25:09,590
+primarily because it's mostly like not
+
+724
+00:25:09,600 --> 00:25:12,230
+up to an individual developer to to
+
+725
+00:25:12,240 --> 00:25:13,909
+resolve that like it's no it's a little
+
+726
+00:25:13,919 --> 00:25:15,350
+kind of the definition of a cycle right
+
+727
+00:25:15,360 --> 00:25:17,350
+like it's no one person's fault if
+
+728
+00:25:17,360 --> 00:25:19,830
+there's well at least there's three oh
+
+729
+00:25:19,840 --> 00:25:21,190
+no it's not one person's fault there's a
+
+730
+00:25:21,200 --> 00:25:23,750
+cycle because the arrows go in a circle
+
+731
+00:25:23,760 --> 00:25:25,750
+whether or not you can
+
+732
+00:25:25,760 --> 00:25:27,510
+construct a sane logical system on the
+
+733
+00:25:27,520 --> 00:25:29,269
+other side of there being dependency
+
+734
+00:25:29,279 --> 00:25:31,269
+cycles tends to be the challenge and the
+
+735
+00:25:31,279 --> 00:25:33,029
+reason why you wouldn't allow
+
+736
+00:25:33,039 --> 00:25:34,950
+cyclic dependencies at the
+
+737
+00:25:34,960 --> 00:25:36,310
+package level
+
+738
+00:25:36,320 --> 00:25:39,909
+yeah okay now i we've established if i
+
+739
+00:25:39,919 --> 00:25:42,549
+want a package i have to specify
+
+740
+00:25:42,559 --> 00:25:44,549
+the version i want
+
+741
+00:25:44,559 --> 00:25:46,470
+the package itself
+
+742
+00:25:46,480 --> 00:25:48,630
+is going to specify
+
+743
+00:25:48,640 --> 00:25:51,909
+versions or maybe a range of versions of
+
+744
+00:25:51,919 --> 00:25:54,310
+its dependencies how do versions and
+
+745
+00:25:54,320 --> 00:25:56,870
+dependencies interact
+
+746
+00:25:56,880 --> 00:25:58,950
+so yeah this is the most one of the most
+
+747
+00:25:58,960 --> 00:26:00,470
+important properties
+
+748
+00:26:00,480 --> 00:26:02,710
+for any ecosystem i think i'll talk
+
+749
+00:26:02,720 --> 00:26:05,190
+first about about like
+
+750
+00:26:05,200 --> 00:26:07,190
+ranges versus sorry first i'll talk
+
+751
+00:26:07,200 --> 00:26:09,350
+about what yehuda katz likes to call the
+
+752
+00:26:09,360 --> 00:26:11,350
+uh the highlander rule and then i'll
+
+753
+00:26:11,360 --> 00:26:14,070
+talk about uh version ranges so
+
+754
+00:26:14,080 --> 00:26:15,269
+every
+
+755
+00:26:15,279 --> 00:26:17,269
+package ecosystem
+
+756
+00:26:17,279 --> 00:26:19,430
+needs to make a decision about whether
+
+757
+00:26:19,440 --> 00:26:22,149
+given that you know given a and b and
+
+758
+00:26:22,159 --> 00:26:23,750
+they both depend on c
+
+759
+00:26:23,760 --> 00:26:25,510
+every package ecosystem
+
+760
+00:26:25,520 --> 00:26:27,430
+or rather the the thing consuming the
+
+761
+00:26:27,440 --> 00:26:30,070
+package ecosystem needs to decide
+
+762
+00:26:30,080 --> 00:26:31,029
+whether
+
+763
+00:26:31,039 --> 00:26:33,990
+there are two instances of c or one
+
+764
+00:26:34,000 --> 00:26:35,669
+one for a one for b or one that they
+
+765
+00:26:35,679 --> 00:26:36,950
+both have to share
+
+766
+00:26:36,960 --> 00:26:39,430
+and the semantics of that are
+
+767
+00:26:39,440 --> 00:26:41,190
+complicated they have to do with what
+
+768
+00:26:41,200 --> 00:26:42,950
+actual kind of artifact you're trying to
+
+769
+00:26:42,960 --> 00:26:45,190
+create on the other side of putting a b
+
+770
+00:26:45,200 --> 00:26:46,149
+and c
+
+771
+00:26:46,159 --> 00:26:48,230
+together it tends to be
+
+772
+00:26:48,240 --> 00:26:49,190
+that
+
+773
+00:26:49,200 --> 00:26:50,870
+compiled languages or at least
+
+774
+00:26:50,880 --> 00:26:53,029
+statically type statically type checked
+
+775
+00:26:53,039 --> 00:26:54,310
+languages
+
+776
+00:26:54,320 --> 00:26:56,870
+have a lot of difficulty allowing that
+
+777
+00:26:56,880 --> 00:26:58,070
+duplication
+
+778
+00:26:58,080 --> 00:27:00,070
+it's necessary to
+
+779
+00:27:00,080 --> 00:27:01,669
+come to a compromise on the version so
+
+780
+00:27:01,679 --> 00:27:03,510
+that there can be exactly one instance
+
+781
+00:27:03,520 --> 00:27:05,909
+of c so that names have proper meaning
+
+782
+00:27:05,919 --> 00:27:07,350
+so that you can
+
+783
+00:27:07,360 --> 00:27:08,950
+let types flow through the program and
+
+784
+00:27:08,960 --> 00:27:10,149
+not have
+
+785
+00:27:10,159 --> 00:27:11,750
+your type checker blow up dynamic
+
+786
+00:27:11,760 --> 00:27:14,149
+languages can get away without it
+
+787
+00:27:14,159 --> 00:27:16,789
+and sure enough npm until recently at
+
+788
+00:27:16,799 --> 00:27:19,269
+least until npm 7 basically name spaced
+
+789
+00:27:19,279 --> 00:27:22,070
+everything and most other languages
+
+790
+00:27:22,080 --> 00:27:23,430
+don't they
+
+791
+00:27:23,440 --> 00:27:24,549
+follow the rule there has to there could
+
+792
+00:27:24,559 --> 00:27:25,990
+be only one this is the source of the
+
+793
+00:27:26,000 --> 00:27:27,909
+highlander reference there can be only
+
+794
+00:27:27,919 --> 00:27:30,870
+one seed okay let me give an example if
+
+795
+00:27:30,880 --> 00:27:33,590
+i'm bringing in different packages and
+
+796
+00:27:33,600 --> 00:27:36,549
+all of those packages use logging
+
+797
+00:27:36,559 --> 00:27:39,029
+it might happen that package a
+
+798
+00:27:39,039 --> 00:27:42,470
+says i want 1.4 of the logging package
+
+799
+00:27:42,480 --> 00:27:44,470
+and package b says
+
+800
+00:27:44,480 --> 00:27:48,149
+no i want 1.5 of logging you're saying
+
+801
+00:27:48,159 --> 00:27:50,310
+there are two solutions one is great we
+
+802
+00:27:50,320 --> 00:27:53,590
+have a uses 1.4 and b is 1.5 we have two
+
+803
+00:27:53,600 --> 00:27:55,350
+versions of logging
+
+804
+00:27:55,360 --> 00:27:58,310
+now that might not work because
+
+805
+00:27:58,320 --> 00:27:59,830
+this could depend on the language
+
+806
+00:27:59,840 --> 00:28:01,430
+runtime that
+
+807
+00:28:01,440 --> 00:28:03,510
+logging is some kind of a unique name in
+
+808
+00:28:03,520 --> 00:28:05,269
+the language you can't
+
+809
+00:28:05,279 --> 00:28:08,230
+namespace it so now you have to agree
+
+810
+00:28:08,240 --> 00:28:09,909
+or just because of the nature of what
+
+811
+00:28:09,919 --> 00:28:11,909
+logging is maybe
+
+812
+00:28:11,919 --> 00:28:14,070
+the log aggregator you use you can only
+
+813
+00:28:14,080 --> 00:28:16,549
+have one of them
+
+814
+00:28:16,559 --> 00:28:18,789
+those are the different
+
+815
+00:28:18,799 --> 00:28:20,549
+options you're talking about correct
+
+816
+00:28:20,559 --> 00:28:23,990
+yeah those yeah so the the if so if okay
+
+817
+00:28:24,000 --> 00:28:25,909
+if you have uh let's imagine that we
+
+818
+00:28:25,919 --> 00:28:27,110
+have a
+
+819
+00:28:27,120 --> 00:28:30,470
+a depends on b and a depends on c b and
+
+820
+00:28:30,480 --> 00:28:32,710
+c both depend on logging
+
+821
+00:28:32,720 --> 00:28:34,789
+the question is
+
+822
+00:28:34,799 --> 00:28:37,029
+from from a type checking perspective is
+
+823
+00:28:37,039 --> 00:28:39,430
+it possible that any of the logging
+
+824
+00:28:39,440 --> 00:28:40,549
+types
+
+825
+00:28:40,559 --> 00:28:43,510
+flow back through
+
+826
+00:28:43,520 --> 00:28:46,630
+back up into a and need to be the same
+
+827
+00:28:46,640 --> 00:28:49,269
+type because they actually rejoin an a
+
+828
+00:28:49,279 --> 00:28:51,269
+and the type checker needs to approve
+
+829
+00:28:51,279 --> 00:28:53,750
+that all these types are valid if you're
+
+830
+00:28:53,760 --> 00:28:55,110
+in a language where you do have a type
+
+831
+00:28:55,120 --> 00:28:56,389
+checker and we have to be sure of that
+
+832
+00:28:56,399 --> 00:28:59,029
+in order to compile then it's generally
+
+833
+00:28:59,039 --> 00:29:00,630
+not feasible to
+
+834
+00:29:00,640 --> 00:29:03,350
+have multiple instances of c because
+
+835
+00:29:03,360 --> 00:29:04,950
+they have different names they've been
+
+836
+00:29:04,960 --> 00:29:07,350
+namespaced somehow and the type checker
+
+837
+00:29:07,360 --> 00:29:08,710
+is going to blow up in a dynamic
+
+838
+00:29:08,720 --> 00:29:09,990
+language
+
+839
+00:29:10,000 --> 00:29:11,190
+you can get by without it the other
+
+840
+00:29:11,200 --> 00:29:12,310
+thing is what you're talking about where
+
+841
+00:29:12,320 --> 00:29:14,230
+essentially if c relies usually it's a
+
+842
+00:29:14,240 --> 00:29:17,430
+global state question if c relies on
+
+843
+00:29:17,440 --> 00:29:19,990
+some kind of well global state or
+
+844
+00:29:20,000 --> 00:29:21,669
+external resources question
+
+845
+00:29:21,679 --> 00:29:22,389
+but
+
+846
+00:29:22,399 --> 00:29:24,549
+it's effectively the same thing like
+
+847
+00:29:24,559 --> 00:29:26,230
+if the the conventional thing gets
+
+848
+00:29:26,240 --> 00:29:27,110
+talked about here is more like a
+
+849
+00:29:27,120 --> 00:29:28,950
+database connection if c has a database
+
+850
+00:29:28,960 --> 00:29:30,389
+connection embedded in it somehow you
+
+851
+00:29:30,399 --> 00:29:32,310
+don't necessarily want to have two
+
+852
+00:29:32,320 --> 00:29:33,750
+copies of it because you don't want two
+
+853
+00:29:33,760 --> 00:29:36,870
+copies of a connection to your database
+
+854
+00:29:36,880 --> 00:29:39,510
+in some languages there's a concept of
+
+855
+00:29:39,520 --> 00:29:42,950
+global variable the language would not
+
+856
+00:29:42,960 --> 00:29:44,710
+allow you to have two global variables
+
+857
+00:29:44,720 --> 00:29:46,389
+that are different but have the same
+
+858
+00:29:46,399 --> 00:29:49,190
+name so in that case you have to agree
+
+859
+00:29:49,200 --> 00:29:52,870
+on they're say an object called logging
+
+860
+00:29:52,880 --> 00:29:55,190
+and it's a global variable in some cases
+
+861
+00:29:55,200 --> 00:29:57,990
+that can only be one
+
+862
+00:29:58,000 --> 00:30:00,470
+yep okay now
+
+863
+00:30:00,480 --> 00:30:03,269
+what am i going to see if i run a
+
+864
+00:30:03,279 --> 00:30:05,029
+package
+
+865
+00:30:05,039 --> 00:30:07,510
+add or sync command
+
+866
+00:30:07,520 --> 00:30:11,350
+if it detects an issue of this type
+
+867
+00:30:11,360 --> 00:30:13,830
+what am i going to see in the output
+
+868
+00:30:13,840 --> 00:30:16,789
+so it it this this is where it gets very
+
+869
+00:30:16,799 --> 00:30:18,389
+interesting in
+
+870
+00:30:18,399 --> 00:30:19,590
+the the first things you want to talk
+
+871
+00:30:19,600 --> 00:30:21,350
+about is a
+
+872
+00:30:21,360 --> 00:30:22,789
+a language which does not follow the
+
+873
+00:30:22,799 --> 00:30:24,389
+highlander rule right you can you can
+
+874
+00:30:24,399 --> 00:30:26,470
+duplicate vlogging yeah i mean in that
+
+875
+00:30:26,480 --> 00:30:28,789
+case like we don't have a problem right
+
+876
+00:30:28,799 --> 00:30:30,710
+you what you're going to see is success
+
+877
+00:30:30,720 --> 00:30:32,149
+great you know we picked this version
+
+878
+00:30:32,159 --> 00:30:33,750
+for this version of logging for a in
+
+879
+00:30:33,760 --> 00:30:35,430
+this version of logging for b
+
+880
+00:30:35,440 --> 00:30:37,990
+in a language where you do have to solve
+
+881
+00:30:38,000 --> 00:30:40,070
+the problem you have a few different
+
+882
+00:30:40,080 --> 00:30:41,430
+there are a few different options and
+
+883
+00:30:41,440 --> 00:30:42,470
+they really depend on the way that the
+
+884
+00:30:42,480 --> 00:30:43,990
+version selection algorithm for that
+
+885
+00:30:44,000 --> 00:30:45,909
+package manager works
+
+886
+00:30:45,919 --> 00:30:47,269
+so
+
+887
+00:30:47,279 --> 00:30:48,789
+there are
+
+888
+00:30:48,799 --> 00:30:51,029
+some package managers which
+
+889
+00:30:51,039 --> 00:30:52,710
+use a version selection algorithm that
+
+890
+00:30:52,720 --> 00:30:54,630
+essentially can't fail
+
+891
+00:30:54,640 --> 00:30:56,470
+perhaps even when it should
+
+892
+00:30:56,480 --> 00:30:57,509
+so
+
+893
+00:30:57,519 --> 00:30:59,269
+there are advantages to this approach
+
+894
+00:30:59,279 --> 00:31:00,389
+mostly
+
+895
+00:31:00,399 --> 00:31:03,110
+algorithmically it's faster and it's the
+
+896
+00:31:03,120 --> 00:31:06,310
+behavior tends to be more predictable
+
+897
+00:31:06,320 --> 00:31:08,310
+so even though you get you know
+
+898
+00:31:08,320 --> 00:31:10,630
+even though you can plausibly get a an
+
+899
+00:31:10,640 --> 00:31:11,830
+outcome which like won't actually
+
+900
+00:31:11,840 --> 00:31:13,669
+compile you
+
+901
+00:31:13,679 --> 00:31:15,669
+you at least don't have odd failures
+
+902
+00:31:15,679 --> 00:31:16,950
+because the problem is the failures get
+
+903
+00:31:16,960 --> 00:31:19,750
+really complicated too so if you
+
+904
+00:31:19,760 --> 00:31:21,750
+have a version selection algorithm which
+
+905
+00:31:21,760 --> 00:31:23,590
+sees the problem and tries to do
+
+906
+00:31:23,600 --> 00:31:24,549
+something
+
+907
+00:31:24,559 --> 00:31:26,870
+about it we're now talking about the
+
+908
+00:31:26,880 --> 00:31:29,830
+search problem effectively can we find
+
+909
+00:31:29,840 --> 00:31:33,269
+versions of b and c
+
+910
+00:31:33,279 --> 00:31:35,350
+which can agree
+
+911
+00:31:35,360 --> 00:31:36,230
+on
+
+912
+00:31:36,240 --> 00:31:38,789
+a version of logging
+
+913
+00:31:38,799 --> 00:31:39,669
+and
+
+914
+00:31:39,679 --> 00:31:41,190
+then we get into
+
+915
+00:31:41,200 --> 00:31:42,789
+the question of
+
+916
+00:31:42,799 --> 00:31:44,870
+what agreement means but the output that
+
+917
+00:31:44,880 --> 00:31:46,549
+you may see in that case it'll vary
+
+918
+00:31:46,559 --> 00:31:48,149
+widely like
+
+919
+00:31:48,159 --> 00:31:49,590
+it varies depending on whether or not it
+
+920
+00:31:49,600 --> 00:31:52,230
+was possible to find a version of
+
+921
+00:31:52,240 --> 00:31:54,389
+logging that b and c agree on because if
+
+922
+00:31:54,399 --> 00:31:55,830
+it was then the package manager probably
+
+923
+00:31:55,840 --> 00:31:57,029
+won't tell you there's a problem it'll
+
+924
+00:31:57,039 --> 00:31:58,470
+just say i picked this version because
+
+925
+00:31:58,480 --> 00:32:00,389
+it appears to satisfy constraints
+
+926
+00:32:00,399 --> 00:32:03,190
+if it did fail to find a version
+
+927
+00:32:03,200 --> 00:32:04,870
+the output can be potentially very
+
+928
+00:32:04,880 --> 00:32:06,549
+complicated because there it may have
+
+929
+00:32:06,559 --> 00:32:07,350
+gone
+
+930
+00:32:07,360 --> 00:32:09,110
+in order to exhaust the possibility
+
+931
+00:32:09,120 --> 00:32:10,470
+space of all the different versions of b
+
+932
+00:32:10,480 --> 00:32:12,789
+and c it may have a whole lot to tell
+
+933
+00:32:12,799 --> 00:32:14,070
+you about all the things that didn't
+
+934
+00:32:14,080 --> 00:32:15,110
+work
+
+935
+00:32:15,120 --> 00:32:18,070
+so there there's a there's a range of
+
+936
+00:32:18,080 --> 00:32:19,509
+output you may see
+
+937
+00:32:19,519 --> 00:32:23,190
+an example we gave a few minutes ago we
+
+938
+00:32:23,200 --> 00:32:25,830
+were talking about package b1's logging
+
+939
+00:32:25,840 --> 00:32:29,590
+1.4 in package c1 slogging 1.5
+
+940
+00:32:29,600 --> 00:32:32,149
+you could imagine package pieces i am
+
+941
+00:32:32,159 --> 00:32:36,630
+comfortable with 1.4 or greater up to
+
+942
+00:32:36,640 --> 00:32:40,789
+2.0 and package c says i want 1.7 or
+
+943
+00:32:40,799 --> 00:32:44,470
+greater up to 3.0 there is clearly an
+
+944
+00:32:44,480 --> 00:32:45,830
+intersect
+
+945
+00:32:45,840 --> 00:32:48,789
+of things they could both agree on but
+
+946
+00:32:48,799 --> 00:32:50,470
+there could be more than one right
+
+947
+00:32:50,480 --> 00:32:51,909
+answer
+
+948
+00:32:51,919 --> 00:32:53,909
+how does a package manager
+
+949
+00:32:53,919 --> 00:32:55,430
+choose you could have a range of
+
+950
+00:32:55,440 --> 00:32:58,070
+acceptable versions how does it choose
+
+951
+00:32:58,080 --> 00:32:59,269
+so this is
+
+952
+00:32:59,279 --> 00:33:01,430
+i mean that is effectively that question
+
+953
+00:33:01,440 --> 00:33:03,830
+reduces to how does a
+
+954
+00:33:03,840 --> 00:33:05,909
+how does a stat solver work you you have
+
+955
+00:33:05,919 --> 00:33:09,269
+a range of possible versions and i mean
+
+956
+00:33:09,279 --> 00:33:11,430
+in general the the simplest way to think
+
+957
+00:33:11,440 --> 00:33:12,630
+about it is
+
+958
+00:33:12,640 --> 00:33:14,710
+latest version acceptable from all
+
+959
+00:33:14,720 --> 00:33:17,750
+parties is the one that you should
+
+960
+00:33:17,760 --> 00:33:20,710
+get but that is actually a deeply
+
+961
+00:33:20,720 --> 00:33:23,909
+insufficient answer itself because just
+
+962
+00:33:23,919 --> 00:33:25,029
+because you're running version selection
+
+963
+00:33:25,039 --> 00:33:27,590
+doesn't actually mean that you want to
+
+964
+00:33:27,600 --> 00:33:29,750
+update like if
+
+965
+00:33:29,760 --> 00:33:31,269
+b requires
+
+966
+00:33:31,279 --> 00:33:34,630
+logging 1.5 and c requires logging 1.4
+
+967
+00:33:34,640 --> 00:33:37,029
+and you're a and you're pulling in b and
+
+968
+00:33:37,039 --> 00:33:38,950
+c both at the first time well if there's
+
+969
+00:33:38,960 --> 00:33:41,669
+a version of c that is 1.6
+
+970
+00:33:41,679 --> 00:33:43,269
+does that mean you should get that
+
+971
+00:33:43,279 --> 00:33:45,269
+version of c that's 1.6 because that's
+
+972
+00:33:45,279 --> 00:33:47,350
+not the version that either b or c asked
+
+973
+00:33:47,360 --> 00:33:49,190
+for in the first place
+
+974
+00:33:49,200 --> 00:33:52,789
+there's a range of considerations here
+
+975
+00:33:52,799 --> 00:33:55,350
+that are that are not easy to
+
+976
+00:33:55,360 --> 00:33:57,909
+to resolve in a straightforward way the
+
+977
+00:33:57,919 --> 00:33:59,029
+thing though that i think is important
+
+978
+00:33:59,039 --> 00:34:00,230
+to point to
+
+979
+00:34:00,240 --> 00:34:02,149
+is that even if
+
+980
+00:34:02,159 --> 00:34:04,710
+well sorry not even if it's easy to look
+
+981
+00:34:04,720 --> 00:34:06,549
+at these numbers and almost be like oh
+
+982
+00:34:06,559 --> 00:34:07,990
+this is fine i get to write an algorithm
+
+983
+00:34:08,000 --> 00:34:08,869
+that like
+
+984
+00:34:08,879 --> 00:34:10,710
+solves constraints but the reality is
+
+985
+00:34:10,720 --> 00:34:13,030
+that those constraints that are written
+
+986
+00:34:13,040 --> 00:34:15,109
+down are almost
+
+987
+00:34:15,119 --> 00:34:17,510
+like almost certainly wrong
+
+988
+00:34:17,520 --> 00:34:19,589
+almost anything that you write down at
+
+989
+00:34:19,599 --> 00:34:22,069
+least if you are asking of your
+
+990
+00:34:22,079 --> 00:34:24,550
+version range version constraint system
+
+991
+00:34:24,560 --> 00:34:26,710
+if you are asking the user to make a
+
+992
+00:34:26,720 --> 00:34:29,349
+precise statement about which versions
+
+993
+00:34:29,359 --> 00:34:30,950
+of its dependencies the software
+
+994
+00:34:30,960 --> 00:34:32,470
+actually works with for a range of
+
+995
+00:34:32,480 --> 00:34:33,510
+reasons
+
+996
+00:34:33,520 --> 00:34:35,030
+that is almost never going to actually
+
+997
+00:34:35,040 --> 00:34:35,829
+be
+
+998
+00:34:35,839 --> 00:34:36,869
+correct
+
+999
+00:34:36,879 --> 00:34:39,190
+so this is why well people talk about
+
+1000
+00:34:39,200 --> 00:34:40,629
+dependency hell right the problem where
+
+1001
+00:34:40,639 --> 00:34:43,030
+you're trying to essentially negotiate
+
+1002
+00:34:43,040 --> 00:34:45,190
+between b and c with logging right you
+
+1003
+00:34:45,200 --> 00:34:46,950
+know your a there's b and c they depend
+
+1004
+00:34:46,960 --> 00:34:48,470
+on logging they disagree
+
+1005
+00:34:48,480 --> 00:34:50,470
+which version like works i think
+
+1006
+00:34:50,480 --> 00:34:51,510
+actually it's more interesting to talk
+
+1007
+00:34:51,520 --> 00:34:53,430
+about dependency limbo and dependency
+
+1008
+00:34:53,440 --> 00:34:54,310
+health
+
+1009
+00:34:54,320 --> 00:34:55,909
+because i think we spend a lot of time
+
+1010
+00:34:55,919 --> 00:34:57,990
+in dependency limbo where
+
+1011
+00:34:58,000 --> 00:34:59,349
+we're confused about the output from our
+
+1012
+00:34:59,359 --> 00:35:03,030
+package manager and we are unsure
+
+1013
+00:35:03,040 --> 00:35:07,030
+as to whether there does exist or not
+
+1014
+00:35:07,040 --> 00:35:09,510
+a version of logging that will satisfy
+
+1015
+00:35:09,520 --> 00:35:10,710
+vnc
+
+1016
+00:35:10,720 --> 00:35:11,990
+then there's two branches of that
+
+1017
+00:35:12,000 --> 00:35:13,670
+question there is is there a version of
+
+1018
+00:35:13,680 --> 00:35:16,150
+logging that will satisfy b and c
+
+1019
+00:35:16,160 --> 00:35:17,750
+according to what they've written down
+
+1020
+00:35:17,760 --> 00:35:19,589
+and then is there a version of logging
+
+1021
+00:35:19,599 --> 00:35:21,349
+that will satisfy b and c according to
+
+1022
+00:35:21,359 --> 00:35:22,790
+reality like will my code actually
+
+1023
+00:35:22,800 --> 00:35:25,109
+compile and be correct whether or not
+
+1024
+00:35:25,119 --> 00:35:26,710
+the things that b and c wrote down about
+
+1025
+00:35:26,720 --> 00:35:29,190
+logging actually are satisfied
+
+1026
+00:35:29,200 --> 00:35:31,190
+so dependency hell i would say is when
+
+1027
+00:35:31,200 --> 00:35:32,550
+there's a real problem and well compiled
+
+1028
+00:35:32,560 --> 00:35:33,829
+and your code's incorrect and dependency
+
+1029
+00:35:33,839 --> 00:35:36,310
+limbo is when you're just not sure
+
+1030
+00:35:36,320 --> 00:35:39,270
+let's delve a bit more into dependency
+
+1031
+00:35:39,280 --> 00:35:40,150
+health
+
+1032
+00:35:40,160 --> 00:35:41,910
+would this be where
+
+1033
+00:35:41,920 --> 00:35:43,030
+i
+
+1034
+00:35:43,040 --> 00:35:45,670
+run the sync it says you get two
+
+1035
+00:35:45,680 --> 00:35:48,150
+conflicting versions of
+
+1036
+00:35:48,160 --> 00:35:49,190
+logging
+
+1037
+00:35:49,200 --> 00:35:51,349
+one of your packages needs
+
+1038
+00:35:51,359 --> 00:35:53,829
+1.4 or less and one of them needs 1.5 or
+
+1039
+00:35:53,839 --> 00:35:55,589
+greater so i say okay i'm going to
+
+1040
+00:35:55,599 --> 00:35:57,990
+upgrade some things to get on a higher
+
+1041
+00:35:58,000 --> 00:35:59,670
+version of logging
+
+1042
+00:35:59,680 --> 00:36:01,030
+and that should resolve that and then it
+
+1043
+00:36:01,040 --> 00:36:02,950
+breaks something else
+
+1044
+00:36:02,960 --> 00:36:04,630
+sure i think there's many circles in
+
+1045
+00:36:04,640 --> 00:36:06,710
+dependency held and the problem is that
+
+1046
+00:36:06,720 --> 00:36:09,750
+because ultimately we're we're at this
+
+1047
+00:36:09,760 --> 00:36:12,470
+10 000 foot view of the actual
+
+1048
+00:36:12,480 --> 00:36:13,990
+behavior of our software and we're
+
+1049
+00:36:14,000 --> 00:36:15,349
+trying to make really coarse-grained
+
+1050
+00:36:15,359 --> 00:36:17,430
+choices to arrange things in our
+
+1051
+00:36:17,440 --> 00:36:19,270
+dependency tree just in order to get
+
+1052
+00:36:19,280 --> 00:36:22,630
+things to work yes certainly i change in
+
+1053
+00:36:22,640 --> 00:36:24,150
+order to satisfy that in order to deal
+
+1054
+00:36:24,160 --> 00:36:26,630
+with b and c's issue with logging i
+
+1055
+00:36:26,640 --> 00:36:28,230
+update other things and then things
+
+1056
+00:36:28,240 --> 00:36:30,470
+break over there like it ends up being a
+
+1057
+00:36:30,480 --> 00:36:31,829
+problem where you can suck in the
+
+1058
+00:36:31,839 --> 00:36:33,430
+entirety of your application just trying
+
+1059
+00:36:33,440 --> 00:36:34,710
+to fix one
+
+1060
+00:36:34,720 --> 00:36:37,270
+problem and it's it's difficult to tell
+
+1061
+00:36:37,280 --> 00:36:39,430
+which way is even up
+
+1062
+00:36:39,440 --> 00:36:41,510
+could imagine this happening
+
+1063
+00:36:41,520 --> 00:36:42,870
+we're talking about logging which is
+
+1064
+00:36:42,880 --> 00:36:44,950
+something pretty concrete i usually know
+
+1065
+00:36:44,960 --> 00:36:47,430
+which logging system i want to use
+
+1066
+00:36:47,440 --> 00:36:50,310
+but it could also be that i'm pulling in
+
+1067
+00:36:50,320 --> 00:36:52,950
+some very high level packages to do some
+
+1068
+00:36:52,960 --> 00:36:54,870
+something like machine learning and
+
+1069
+00:36:54,880 --> 00:36:56,790
+seven levels deep
+
+1070
+00:36:56,800 --> 00:36:57,910
+they
+
+1071
+00:36:57,920 --> 00:36:59,589
+give me the name of something that's
+
+1072
+00:36:59,599 --> 00:37:03,030
+live g r p n f
+
+1073
+00:37:03,040 --> 00:37:04,630
+zero here i don't even know what that
+
+1074
+00:37:04,640 --> 00:37:05,589
+does
+
+1075
+00:37:05,599 --> 00:37:07,750
+i never asked for it
+
+1076
+00:37:07,760 --> 00:37:10,470
+i don't want it i don't know what the
+
+1077
+00:37:10,480 --> 00:37:12,710
+risks are if i
+
+1078
+00:37:12,720 --> 00:37:15,829
+say just go ahead and use this anyway
+
+1079
+00:37:15,839 --> 00:37:17,589
+and i wouldn't really know how to
+
+1080
+00:37:17,599 --> 00:37:20,310
+resolve it what do i do sam
+
+1081
+00:37:20,320 --> 00:37:22,630
+that you you you mourn the dependency
+
+1082
+00:37:22,640 --> 00:37:24,630
+hell is real i mean this this is this is
+
+1083
+00:37:24,640 --> 00:37:26,390
+why again i kind of like the limbo thing
+
+1084
+00:37:26,400 --> 00:37:27,829
+more is because
+
+1085
+00:37:27,839 --> 00:37:29,750
+what is hellish about the experience so
+
+1086
+00:37:29,760 --> 00:37:32,310
+often is our uncertainty about what is
+
+1087
+00:37:32,320 --> 00:37:34,470
+okay to do we are often solving problems
+
+1088
+00:37:34,480 --> 00:37:36,230
+that are not our own in some deeply
+
+1089
+00:37:36,240 --> 00:37:38,630
+nested set of packages why did they make
+
+1090
+00:37:38,640 --> 00:37:40,550
+these decisions are these constraints
+
+1091
+00:37:40,560 --> 00:37:42,230
+real can i violate them and still have
+
+1092
+00:37:42,240 --> 00:37:43,910
+things be correct how can i be sure that
+
+1093
+00:37:43,920 --> 00:37:45,270
+things are correct on the other side of
+
+1094
+00:37:45,280 --> 00:37:46,950
+violating them how can i be sure they're
+
+1095
+00:37:46,960 --> 00:37:49,190
+correct even if i haven't violated them
+
+1096
+00:37:49,200 --> 00:37:51,430
+like it's this this series of questions
+
+1097
+00:37:51,440 --> 00:37:53,910
+that is like usually these systems work
+
+1098
+00:37:53,920 --> 00:37:55,270
+well enough
+
+1099
+00:37:55,280 --> 00:37:58,069
+that certainly we all get by with them
+
+1100
+00:37:58,079 --> 00:38:01,430
+but there is this there's this cliff and
+
+1101
+00:38:01,440 --> 00:38:03,430
+much of it involves just the the gray
+
+1102
+00:38:03,440 --> 00:38:05,750
+uncertainty about how to fix problems
+
+1103
+00:38:05,760 --> 00:38:06,950
+when they arise and whether problems
+
+1104
+00:38:06,960 --> 00:38:08,870
+exist in the first place
+
+1105
+00:38:08,880 --> 00:38:12,230
+is there typically a command or setting
+
+1106
+00:38:12,240 --> 00:38:14,550
+where i can and and perhaps what you
+
+1107
+00:38:14,560 --> 00:38:16,310
+mean by dependency in limbo i can make
+
+1108
+00:38:16,320 --> 00:38:19,829
+the call that this package says it needs
+
+1109
+00:38:19,839 --> 00:38:21,589
+one dot
+
+1110
+00:38:21,599 --> 00:38:24,390
+or a high or one to four or less but i
+
+1111
+00:38:24,400 --> 00:38:26,310
+am pretty sure it's gonna work with 1.5
+
+1112
+00:38:26,320 --> 00:38:29,990
+they developer did not upgrade is a bit
+
+1113
+00:38:30,000 --> 00:38:32,550
+too strict so i'm going to say
+
+1114
+00:38:32,560 --> 00:38:33,990
+pax measures says you have these two
+
+1115
+00:38:34,000 --> 00:38:36,150
+conflicting versions on the 41.5 i can
+
+1116
+00:38:36,160 --> 00:38:36,870
+say
+
+1117
+00:38:36,880 --> 00:38:40,630
+go with 1.5 i'll take the consequences
+
+1118
+00:38:40,640 --> 00:38:43,109
+usually yes these are referred to
+
+1119
+00:38:43,119 --> 00:38:44,710
+typically the the general term that's
+
+1120
+00:38:44,720 --> 00:38:46,630
+used to refer to these is some kind of
+
+1121
+00:38:46,640 --> 00:38:49,030
+override right like i from the root of
+
+1122
+00:38:49,040 --> 00:38:51,349
+the package graph want to supersede
+
+1123
+00:38:51,359 --> 00:38:52,870
+something down
+
+1124
+00:38:52,880 --> 00:38:54,310
+i have to fix a problem so i'm going to
+
+1125
+00:38:54,320 --> 00:38:55,589
+supersede something that one of my
+
+1126
+00:38:55,599 --> 00:38:57,030
+dependencies has
+
+1127
+00:38:57,040 --> 00:38:59,990
+said the classic problem with overrides
+
+1128
+00:39:00,000 --> 00:39:01,430
+though is that
+
+1129
+00:39:01,440 --> 00:39:02,550
+it is
+
+1130
+00:39:02,560 --> 00:39:05,510
+it's really only a power that can be
+
+1131
+00:39:05,520 --> 00:39:08,069
+given to the root package in the graph
+
+1132
+00:39:08,079 --> 00:39:09,430
+it's not
+
+1133
+00:39:09,440 --> 00:39:11,829
+that there's no way to
+
+1134
+00:39:11,839 --> 00:39:12,950
+the reason we have these issues in the
+
+1135
+00:39:12,960 --> 00:39:15,270
+first place is because you know b issues
+
+1136
+00:39:15,280 --> 00:39:17,430
+a constraint on on on logging and see
+
+1137
+00:39:17,440 --> 00:39:19,430
+issues of constraint on logging and like
+
+1138
+00:39:19,440 --> 00:39:22,069
+we error out if we can't find anything
+
+1139
+00:39:22,079 --> 00:39:23,910
+where their constraints can be made to
+
+1140
+00:39:23,920 --> 00:39:25,589
+agree right the point of an override is
+
+1141
+00:39:25,599 --> 00:39:26,550
+well
+
+1142
+00:39:26,560 --> 00:39:27,990
+this has higher priority than everything
+
+1143
+00:39:28,000 --> 00:39:30,310
+else but as soon as you're down in the
+
+1144
+00:39:30,320 --> 00:39:32,069
+depth like if b had an override in c
+
+1145
+00:39:32,079 --> 00:39:33,589
+hadn't over it wouldn't matter because
+
+1146
+00:39:33,599 --> 00:39:35,109
+now we can't pick one which you know
+
+1147
+00:39:35,119 --> 00:39:37,510
+supersedes so what this creates is like
+
+1148
+00:39:37,520 --> 00:39:39,030
+if you end up having to rely on an
+
+1149
+00:39:39,040 --> 00:39:40,950
+override switch as the author of a
+
+1150
+00:39:40,960 --> 00:39:43,109
+package i refer to this as contagion
+
+1151
+00:39:43,119 --> 00:39:45,270
+failure because if you have to write
+
+1152
+00:39:45,280 --> 00:39:46,950
+down an override then anybody who
+
+1153
+00:39:46,960 --> 00:39:48,950
+depends on you has to copy that override
+
+1154
+00:39:48,960 --> 00:39:50,790
+they have to hoist it into their own
+
+1155
+00:39:50,800 --> 00:39:52,790
+metadata in order to get the graph to
+
+1156
+00:39:52,800 --> 00:39:54,950
+resolve in the same way and it's usually
+
+1157
+00:39:54,960 --> 00:39:56,790
+invisible to
+
+1158
+00:39:56,800 --> 00:39:58,390
+whoever's depending on you
+
+1159
+00:39:58,400 --> 00:40:00,470
+that they need to do so so it's this
+
+1160
+00:40:00,480 --> 00:40:03,109
+just like spread of overrides that that
+
+1161
+00:40:03,119 --> 00:40:04,710
+goes through the package graph and the
+
+1162
+00:40:04,720 --> 00:40:06,790
+deeper it gets the worse it gets sounds
+
+1163
+00:40:06,800 --> 00:40:08,630
+very fragile if
+
+1164
+00:40:08,640 --> 00:40:10,630
+then you upgrade something it probably
+
+1165
+00:40:10,640 --> 00:40:13,109
+breaks all the overrides you did
+
+1166
+00:40:13,119 --> 00:40:15,030
+plausible in fact yeah yeah depending on
+
+1167
+00:40:15,040 --> 00:40:16,950
+how overrides or phrase it's certainly
+
+1168
+00:40:16,960 --> 00:40:19,430
+phrased it certainly can like if you
+
+1169
+00:40:19,440 --> 00:40:22,309
+were saying use version
+
+1170
+00:40:22,319 --> 00:40:25,109
+one seven instead of version one eight
+
+1171
+00:40:25,119 --> 00:40:28,230
+of of logging effectively but then like
+
+1172
+00:40:28,240 --> 00:40:29,910
+the version of logging that was being
+
+1173
+00:40:29,920 --> 00:40:33,109
+used changed now you're not replacing
+
+1174
+00:40:33,119 --> 00:40:34,710
+one seven anymore because one seven
+
+1175
+00:40:34,720 --> 00:40:35,910
+wasn't the version that was there in the
+
+1176
+00:40:35,920 --> 00:40:37,750
+first place and you heard your like
+
+1177
+00:40:37,760 --> 00:40:39,430
+override statements and effective how do
+
+1178
+00:40:39,440 --> 00:40:41,270
+you even know that that happened it's
+
+1179
+00:40:41,280 --> 00:40:43,589
+yeah the problem metastasizes i think it
+
+1180
+00:40:43,599 --> 00:40:46,309
+now would be good time to delve a bit
+
+1181
+00:40:46,319 --> 00:40:49,430
+into the internals of package manager
+
+1182
+00:40:49,440 --> 00:40:51,270
+we've talked about
+
+1183
+00:40:51,280 --> 00:40:53,349
+some of the components there's the
+
+1184
+00:40:53,359 --> 00:40:56,309
+project code that has import statements
+
+1185
+00:40:56,319 --> 00:40:59,349
+some kind of a manifest file
+
+1186
+00:40:59,359 --> 00:41:01,589
+so at least two more components next one
+
+1187
+00:41:01,599 --> 00:41:03,990
+would be a lock file
+
+1188
+00:41:04,000 --> 00:41:06,950
+please talk about that sure so i mean a
+
+1189
+00:41:06,960 --> 00:41:10,230
+lock file is really the result of a
+
+1190
+00:41:10,240 --> 00:41:12,150
+version selection computation i went
+
+1191
+00:41:12,160 --> 00:41:14,630
+through and the idea is i want to record
+
+1192
+00:41:14,640 --> 00:41:17,990
+the exact set of dependencies at a given
+
+1193
+00:41:18,000 --> 00:41:19,589
+moment in
+
+1194
+00:41:19,599 --> 00:41:21,349
+time transitively so you have the entire
+
+1195
+00:41:21,359 --> 00:41:23,430
+graph written out in a file these are
+
+1196
+00:41:23,440 --> 00:41:25,190
+the these are all the dependencies these
+
+1197
+00:41:25,200 --> 00:41:27,190
+are the versions it is not
+
+1198
+00:41:27,200 --> 00:41:28,870
+strictly necessary depending on the
+
+1199
+00:41:28,880 --> 00:41:31,190
+package manager to have a lock file
+
+1200
+00:41:31,200 --> 00:41:33,109
+because it depends on the algorithm if
+
+1201
+00:41:33,119 --> 00:41:35,270
+you have a stable algorithm then you
+
+1202
+00:41:35,280 --> 00:41:37,589
+don't necessarily need to have a lock
+
+1203
+00:41:37,599 --> 00:41:40,150
+file this is why go modules doesn't have
+
+1204
+00:41:40,160 --> 00:41:42,069
+log file because the algorithm is stable
+
+1205
+00:41:42,079 --> 00:41:44,710
+stable is an imprecise word because the
+
+1206
+00:41:44,720 --> 00:41:47,030
+algorithm never
+
+1207
+00:41:47,040 --> 00:41:49,670
+picks the latest version
+
+1208
+00:41:49,680 --> 00:41:52,790
+it means that given a set of
+
+1209
+00:41:52,800 --> 00:41:54,950
+specific versioned inputs
+
+1210
+00:41:54,960 --> 00:41:56,550
+you can walk all the way down through
+
+1211
+00:41:56,560 --> 00:41:58,550
+the graph and and know that you'll
+
+1212
+00:41:58,560 --> 00:41:59,829
+always get the same set of versions
+
+1213
+00:41:59,839 --> 00:42:02,950
+modulo certain details but
+
+1214
+00:42:02,960 --> 00:42:04,950
+version selection algorithms which do
+
+1215
+00:42:04,960 --> 00:42:06,870
+like default to latest
+
+1216
+00:42:06,880 --> 00:42:08,150
+need to have a lock file because
+
+1217
+00:42:08,160 --> 00:42:09,109
+otherwise there's no way to have
+
+1218
+00:42:09,119 --> 00:42:10,790
+reproducible builds at all but
+
+1219
+00:42:10,800 --> 00:42:12,470
+ultimately the goal of the lock file is
+
+1220
+00:42:12,480 --> 00:42:14,550
+this reproducible build properly
+
+1221
+00:42:14,560 --> 00:42:17,030
+property if you had something which
+
+1222
+00:42:17,040 --> 00:42:19,589
+could pick latest then latest could
+
+1223
+00:42:19,599 --> 00:42:21,990
+change because if that package developer
+
+1224
+00:42:22,000 --> 00:42:23,829
+is pushed and update
+
+1225
+00:42:23,839 --> 00:42:25,270
+yeah and so okay so you don't have a
+
+1226
+00:42:25,280 --> 00:42:26,790
+reproducible build now because it
+
+1227
+00:42:26,800 --> 00:42:29,349
+depends on something external
+
+1228
+00:42:29,359 --> 00:42:32,069
+right this is often referred to as like
+
+1229
+00:42:32,079 --> 00:42:34,309
+people often refer to
+
+1230
+00:42:34,319 --> 00:42:36,230
+this sort of ambigu ambiguously actually
+
+1231
+00:42:36,240 --> 00:42:37,990
+but as version pinning like i want to
+
+1232
+00:42:38,000 --> 00:42:38,870
+use
+
+1233
+00:42:38,880 --> 00:42:40,950
+exactly a version the ambiguity tends to
+
+1234
+00:42:40,960 --> 00:42:41,750
+be
+
+1235
+00:42:41,760 --> 00:42:42,710
+whether
+
+1236
+00:42:42,720 --> 00:42:44,870
+you've written down whether it's pinned
+
+1237
+00:42:44,880 --> 00:42:46,390
+because it's the version that you have
+
+1238
+00:42:46,400 --> 00:42:48,390
+written down in the lock file or it's
+
+1239
+00:42:48,400 --> 00:42:50,230
+pinned because it's the version you've
+
+1240
+00:42:50,240 --> 00:42:51,990
+written on the manifest file the meaning
+
+1241
+00:42:52,000 --> 00:42:53,510
+of having it in the log file tends to be
+
+1242
+00:42:53,520 --> 00:42:55,510
+this is what i'm using right now and we
+
+1243
+00:42:55,520 --> 00:42:57,190
+want it to be reproducible but it could
+
+1244
+00:42:57,200 --> 00:42:59,349
+change whereas a manifest file says i
+
+1245
+00:42:59,359 --> 00:43:00,790
+will use this version and only this
+
+1246
+00:43:00,800 --> 00:43:02,390
+exact version it's a constraint
+
+1247
+00:43:02,400 --> 00:43:04,550
+statement right depending on the
+
+1248
+00:43:04,560 --> 00:43:07,589
+language if i have the lock file then
+
+1249
+00:43:07,599 --> 00:43:10,470
+would the build system typically support
+
+1250
+00:43:10,480 --> 00:43:12,790
+the ability to do
+
+1251
+00:43:12,800 --> 00:43:15,910
+a build and here's the lock file don't
+
+1252
+00:43:15,920 --> 00:43:18,790
+run the package dependency algorithm
+
+1253
+00:43:18,800 --> 00:43:19,910
+again
+
+1254
+00:43:19,920 --> 00:43:21,510
+we're starting in midstream because
+
+1255
+00:43:21,520 --> 00:43:23,349
+we've already run it
+
+1256
+00:43:23,359 --> 00:43:24,790
+that's really it's a good way to think
+
+1257
+00:43:24,800 --> 00:43:26,950
+about the log file is like i said it's
+
+1258
+00:43:26,960 --> 00:43:28,309
+the result of a version selection
+
+1259
+00:43:28,319 --> 00:43:31,109
+computation so the presence of the lock
+
+1260
+00:43:31,119 --> 00:43:33,990
+file is usually used as an indication
+
+1261
+00:43:34,000 --> 00:43:35,990
+that use the versions that are here we
+
+1262
+00:43:36,000 --> 00:43:37,670
+don't need to rerun version selection
+
+1263
+00:43:37,680 --> 00:43:39,510
+we've done it and this is the version
+
+1264
+00:43:39,520 --> 00:43:41,109
+that we committed to so you know
+
+1265
+00:43:41,119 --> 00:43:43,190
+continue forward in your in your build
+
+1266
+00:43:43,200 --> 00:43:45,510
+system i do think there are interesting
+
+1267
+00:43:45,520 --> 00:43:47,829
+possible universes where
+
+1268
+00:43:47,839 --> 00:43:50,710
+we could do a lot more like version
+
+1269
+00:43:50,720 --> 00:43:52,230
+selection
+
+1270
+00:43:52,240 --> 00:43:54,790
+further down in our
+
+1271
+00:43:54,800 --> 00:43:56,390
+pipelines in our ci pipelines our
+
+1272
+00:43:56,400 --> 00:43:58,710
+delivery pipelines but it it requires
+
+1273
+00:43:58,720 --> 00:44:00,309
+some some new
+
+1274
+00:44:00,319 --> 00:44:02,630
+algorithm and and it's some new thinking
+
+1275
+00:44:02,640 --> 00:44:04,470
+about how we about how we encode this
+
+1276
+00:44:04,480 --> 00:44:06,550
+information what would be the advantage
+
+1277
+00:44:06,560 --> 00:44:09,349
+of doing that so it would be
+
+1278
+00:44:09,359 --> 00:44:10,230
+that
+
+1279
+00:44:10,240 --> 00:44:12,069
+instead of having to
+
+1280
+00:44:12,079 --> 00:44:13,430
+like you could imagine the context of
+
+1281
+00:44:13,440 --> 00:44:15,829
+perhaps a b testing or
+
+1282
+00:44:15,839 --> 00:44:17,109
+well
+
+1283
+00:44:17,119 --> 00:44:20,069
+if you had the ability to
+
+1284
+00:44:20,079 --> 00:44:21,190
+change
+
+1285
+00:44:21,200 --> 00:44:24,309
+the set of dependencies being used
+
+1286
+00:44:24,319 --> 00:44:26,630
+for a given piece of software perhaps
+
+1287
+00:44:26,640 --> 00:44:28,550
+not on the fly but that you could change
+
+1288
+00:44:28,560 --> 00:44:29,910
+it somewhere later in your in your build
+
+1289
+00:44:29,920 --> 00:44:32,150
+pipeline instead of having to like have
+
+1290
+00:44:32,160 --> 00:44:33,990
+multiple build pipelines where you
+
+1291
+00:44:34,000 --> 00:44:36,710
+expressly commit a particular version to
+
+1292
+00:44:36,720 --> 00:44:38,790
+be tested and now you're like back in
+
+1293
+00:44:38,800 --> 00:44:40,870
+get land trying to think about this way
+
+1294
+00:44:40,880 --> 00:44:42,390
+this maze of branches that you've
+
+1295
+00:44:42,400 --> 00:44:45,430
+created you can express
+
+1296
+00:44:45,440 --> 00:44:48,230
+a combinatorial set of build variations
+
+1297
+00:44:48,240 --> 00:44:50,550
+that you might want to test that are
+
+1298
+00:44:50,560 --> 00:44:53,750
+like a a logical consequence of
+
+1299
+00:44:53,760 --> 00:44:55,750
+like a matrix of versions or matrix of
+
+1300
+00:44:55,760 --> 00:44:57,109
+constraints that you pass to the
+
+1301
+00:44:57,119 --> 00:44:59,910
+algorithm and have some knowledge of of
+
+1302
+00:44:59,920 --> 00:45:02,069
+which versions will actually be
+
+1303
+00:45:02,079 --> 00:45:04,390
+tested that's one thing anyway this is a
+
+1304
+00:45:04,400 --> 00:45:06,230
+it's a relatively distant concept so i'm
+
+1305
+00:45:06,240 --> 00:45:08,470
+not sure how it would end up being used
+
+1306
+00:45:08,480 --> 00:45:11,109
+could there be an example of this where
+
+1307
+00:45:11,119 --> 00:45:13,510
+there's some library that's
+
+1308
+00:45:13,520 --> 00:45:15,190
+very low level
+
+1309
+00:45:15,200 --> 00:45:17,510
+that has tremendous throughput like
+
+1310
+00:45:17,520 --> 00:45:18,950
+networking
+
+1311
+00:45:18,960 --> 00:45:21,190
+and i want to see if i bump a version if
+
+1312
+00:45:21,200 --> 00:45:23,109
+i either have a performance regression
+
+1313
+00:45:23,119 --> 00:45:25,670
+or performance improvement
+
+1314
+00:45:25,680 --> 00:45:27,990
+and so yeah i i could do that by
+
+1315
+00:45:28,000 --> 00:45:29,910
+changing the version in
+
+1316
+00:45:29,920 --> 00:45:32,230
+the manifest or the lock file and
+
+1317
+00:45:32,240 --> 00:45:34,150
+putting it on a branch and building that
+
+1318
+00:45:34,160 --> 00:45:35,750
+branch but
+
+1319
+00:45:35,760 --> 00:45:37,750
+yep you're saying yeah i think
+
+1320
+00:45:37,760 --> 00:45:39,030
+yeah that you could basically you could
+
+1321
+00:45:39,040 --> 00:45:41,990
+design you can imagine designing sort of
+
+1322
+00:45:42,000 --> 00:45:44,069
+you can imagine designing checks
+
+1323
+00:45:44,079 --> 00:45:46,470
+which want to continuously
+
+1324
+00:45:46,480 --> 00:45:48,470
+check against some
+
+1325
+00:45:48,480 --> 00:45:50,150
+some range of of
+
+1326
+00:45:50,160 --> 00:45:52,309
+versions for some library some
+
+1327
+00:45:52,319 --> 00:45:53,750
+particular property yeah like the
+
+1328
+00:45:53,760 --> 00:45:56,069
+performance of some some networking
+
+1329
+00:45:56,079 --> 00:45:58,230
+throughput library the advantage of of
+
+1330
+00:45:58,240 --> 00:45:59,349
+this
+
+1331
+00:45:59,359 --> 00:46:00,470
+it's it's hard to talk about because
+
+1332
+00:46:00,480 --> 00:46:01,990
+there's a few this this is something
+
+1333
+00:46:02,000 --> 00:46:03,589
+that i'm working on but
+
+1334
+00:46:03,599 --> 00:46:04,870
+it's hard to talk about because there's
+
+1335
+00:46:04,880 --> 00:46:06,790
+a few concepts that you need to have
+
+1336
+00:46:06,800 --> 00:46:10,230
+kind of before you can get to the value
+
+1337
+00:46:10,240 --> 00:46:12,309
+of it and like explaining the the
+
+1338
+00:46:12,319 --> 00:46:14,390
+concepts that get there is is kind of
+
+1339
+00:46:14,400 --> 00:46:15,589
+out of scope
+
+1340
+00:46:15,599 --> 00:46:17,670
+the simple way of saying it is that you
+
+1341
+00:46:17,680 --> 00:46:19,430
+need a language that you can use to
+
+1342
+00:46:19,440 --> 00:46:20,550
+express
+
+1343
+00:46:20,560 --> 00:46:22,950
+which versions are acceptable to select
+
+1344
+00:46:22,960 --> 00:46:25,109
+which are which is then sort of usable
+
+1345
+00:46:25,119 --> 00:46:27,270
+on the other side to talk about which
+
+1346
+00:46:27,280 --> 00:46:29,750
+versions have been selected relative to
+
+1347
+00:46:29,760 --> 00:46:32,390
+what is like committed to in in a log
+
+1348
+00:46:32,400 --> 00:46:34,950
+file and that can then be used to like
+
+1349
+00:46:34,960 --> 00:46:36,950
+parameterize your concept of what your
+
+1350
+00:46:36,960 --> 00:46:40,150
+build actually looks like but that's i
+
+1351
+00:46:40,160 --> 00:46:41,190
+think it's probably the most
+
+1352
+00:46:41,200 --> 00:46:42,470
+comprehensible
+
+1353
+00:46:42,480 --> 00:46:43,670
+way to say it and i don't think it's
+
+1354
+00:46:43,680 --> 00:46:46,150
+very comprehensible the last component
+
+1355
+00:46:46,160 --> 00:46:49,270
+would be the dependencies themselves
+
+1356
+00:46:49,280 --> 00:46:51,270
+where does the
+
+1357
+00:46:51,280 --> 00:46:54,470
+dependency manager put them after it
+
+1358
+00:46:54,480 --> 00:46:56,470
+grabs them off the internet
+
+1359
+00:46:56,480 --> 00:46:58,470
+yeah so i mean again of course this this
+
+1360
+00:46:58,480 --> 00:47:00,550
+varies significantly from package from
+
+1361
+00:47:00,560 --> 00:47:03,190
+package manager to package manager and
+
+1362
+00:47:03,200 --> 00:47:05,910
+the question there is really tied
+
+1363
+00:47:05,920 --> 00:47:06,870
+to
+
+1364
+00:47:06,880 --> 00:47:08,550
+the behavior of
+
+1365
+00:47:08,560 --> 00:47:09,589
+the
+
+1366
+00:47:09,599 --> 00:47:11,510
+so given given that packages are tied to
+
+1367
+00:47:11,520 --> 00:47:13,430
+a particular ecosystem and there is an
+
+1368
+00:47:13,440 --> 00:47:15,990
+intent of using packages in a particular
+
+1369
+00:47:16,000 --> 00:47:17,750
+way whether it's an interpreter or a
+
+1370
+00:47:17,760 --> 00:47:19,430
+compiler or
+
+1371
+00:47:19,440 --> 00:47:22,150
+as an intermediate stage like a to a
+
+1372
+00:47:22,160 --> 00:47:25,589
+larger um to something larger
+
+1373
+00:47:25,599 --> 00:47:27,750
+there has there is some program that is
+
+1374
+00:47:27,760 --> 00:47:29,349
+going to
+
+1375
+00:47:29,359 --> 00:47:30,790
+tie together all these dependencies and
+
+1376
+00:47:30,800 --> 00:47:32,069
+it has to know how to locate them so
+
+1377
+00:47:32,079 --> 00:47:33,829
+this is really sort of a how do i locate
+
+1378
+00:47:33,839 --> 00:47:35,430
+things problem
+
+1379
+00:47:35,440 --> 00:47:37,750
+the like the
+
+1380
+00:47:37,760 --> 00:47:40,790
+the og package manager is really
+
+1381
+00:47:40,800 --> 00:47:42,069
+i mean we think about system package
+
+1382
+00:47:42,079 --> 00:47:43,670
+managers those are actually c package
+
+1383
+00:47:43,680 --> 00:47:44,870
+managers because we didn't really make
+
+1384
+00:47:44,880 --> 00:47:47,670
+this the distinction between all of all
+
+1385
+00:47:47,680 --> 00:47:50,870
+of the code in our live directory which
+
+1386
+00:47:50,880 --> 00:47:53,349
+was going to be used by c and i am
+
+1387
+00:47:53,359 --> 00:47:55,190
+a package config which would you know
+
+1388
+00:47:55,200 --> 00:47:56,870
+actually go and like locate packages for
+
+1389
+00:47:56,880 --> 00:47:57,589
+you
+
+1390
+00:47:57,599 --> 00:47:59,750
+on disk for most of the languages though
+
+1391
+00:47:59,760 --> 00:48:01,589
+this is a more
+
+1392
+00:48:01,599 --> 00:48:04,309
+self-contained problem and
+
+1393
+00:48:04,319 --> 00:48:07,510
+the way that packages get arranged is
+
+1394
+00:48:07,520 --> 00:48:09,030
+mostly a question of sort of look up
+
+1395
+00:48:09,040 --> 00:48:11,190
+convenience for the language the main
+
+1396
+00:48:11,200 --> 00:48:13,349
+thing to say about it is kind of an and
+
+1397
+00:48:13,359 --> 00:48:15,670
+a note that like what gets weird about
+
+1398
+00:48:15,680 --> 00:48:18,150
+package lookups is this is where you
+
+1399
+00:48:18,160 --> 00:48:19,750
+tend to want to do something like
+
+1400
+00:48:19,760 --> 00:48:21,750
+aliasing or
+
+1401
+00:48:21,760 --> 00:48:24,950
+some sort of of override methods and
+
+1402
+00:48:24,960 --> 00:48:27,990
+some of it is important but they're
+
+1403
+00:48:28,000 --> 00:48:30,230
+if you give too much flexibility to the
+
+1404
+00:48:30,240 --> 00:48:31,589
+user to be able to just sort of rename
+
+1405
+00:48:31,599 --> 00:48:34,390
+packages all over the place they will
+
+1406
+00:48:34,400 --> 00:48:36,630
+consistently people will will use it for
+
+1407
+00:48:36,640 --> 00:48:38,390
+things that end up getting them getting
+
+1408
+00:48:38,400 --> 00:48:39,589
+their program into just an
+
+1409
+00:48:39,599 --> 00:48:41,190
+incomprehensible state because we're
+
+1410
+00:48:41,200 --> 00:48:42,790
+effectively overwriting names upon
+
+1411
+00:48:42,800 --> 00:48:44,710
+overwriting names or messing with things
+
+1412
+00:48:44,720 --> 00:48:46,710
+with where they are on the file system
+
+1413
+00:48:46,720 --> 00:48:49,430
+in general where the packages
+
+1414
+00:48:49,440 --> 00:48:52,710
+live should be the most boring question
+
+1415
+00:48:52,720 --> 00:48:55,030
+that you can possibly ask of a package
+
+1416
+00:48:55,040 --> 00:48:57,670
+manager it should be rote and simple and
+
+1417
+00:48:57,680 --> 00:48:59,670
+dumb because doing anything else makes
+
+1418
+00:48:59,680 --> 00:49:01,349
+things really confusing
+
+1419
+00:49:01,359 --> 00:49:02,790
+i was going to ask you this question
+
+1420
+00:49:02,800 --> 00:49:04,390
+about the lock file
+
+1421
+00:49:04,400 --> 00:49:05,910
+which i forgot so i'm going to combine
+
+1422
+00:49:05,920 --> 00:49:07,190
+this with the question about dependency
+
+1423
+00:49:07,200 --> 00:49:09,430
+should the lock file be committed to
+
+1424
+00:49:09,440 --> 00:49:10,470
+your
+
+1425
+00:49:10,480 --> 00:49:12,829
+yes that's cm and what about the
+
+1426
+00:49:12,839 --> 00:49:15,109
+dependencies when they're downloaded
+
+1427
+00:49:15,119 --> 00:49:16,950
+should those be committed
+
+1428
+00:49:16,960 --> 00:49:18,309
+i'm agnostic
+
+1429
+00:49:18,319 --> 00:49:21,270
+the there there are reasons to do it
+
+1430
+00:49:21,280 --> 00:49:22,549
+you know it's it's easy to point to
+
+1431
+00:49:22,559 --> 00:49:25,510
+things like left pad which is god
+
+1432
+00:49:25,520 --> 00:49:27,109
+a decade old no i don't even know how
+
+1433
+00:49:27,119 --> 00:49:29,349
+old it is you know where where people
+
+1434
+00:49:29,359 --> 00:49:30,390
+have pulled
+
+1435
+00:49:30,400 --> 00:49:32,150
+packages from from public repositories
+
+1436
+00:49:32,160 --> 00:49:33,349
+and you're trying to like guard against
+
+1437
+00:49:33,359 --> 00:49:34,230
+that
+
+1438
+00:49:34,240 --> 00:49:35,829
+sure
+
+1439
+00:49:35,839 --> 00:49:37,030
+but
+
+1440
+00:49:37,040 --> 00:49:38,470
+most of the strategies for trying to
+
+1441
+00:49:38,480 --> 00:49:40,470
+defend yourself against like
+
+1442
+00:49:40,480 --> 00:49:43,109
+the the world changing
+
+1443
+00:49:43,119 --> 00:49:44,549
+tend to
+
+1444
+00:49:44,559 --> 00:49:46,710
+have a limited shelf life i'm not saying
+
+1445
+00:49:46,720 --> 00:49:48,790
+that they're wrong and everybody has a
+
+1446
+00:49:48,800 --> 00:49:49,829
+different way of sort of thinking about
+
+1447
+00:49:49,839 --> 00:49:50,630
+the
+
+1448
+00:49:50,640 --> 00:49:54,069
+the risk profile here in general i tend
+
+1449
+00:49:54,079 --> 00:49:55,270
+not to
+
+1450
+00:49:55,280 --> 00:49:58,549
+commit my dependencies but there is i
+
+1451
+00:49:58,559 --> 00:49:59,990
+view it as mostly like a sort of risk
+
+1452
+00:50:00,000 --> 00:50:02,069
+assessment argument that that people
+
+1453
+00:50:02,079 --> 00:50:03,589
+reasonable people can disagree on
+
+1454
+00:50:03,599 --> 00:50:06,390
+language like go or the c
+
+1455
+00:50:06,400 --> 00:50:09,270
+languages the end of the build systems
+
+1456
+00:50:09,280 --> 00:50:11,670
+it produces a binary which
+
+1457
+00:50:11,680 --> 00:50:15,270
+may incorporate all of the libraries
+
+1458
+00:50:15,280 --> 00:50:17,589
+to the point where you don't need them i
+
+1459
+00:50:17,599 --> 00:50:19,750
+understand there are some things have
+
+1460
+00:50:19,760 --> 00:50:22,470
+dynamically loaded libraries compared to
+
+1461
+00:50:22,480 --> 00:50:25,030
+ruby or python where you need the
+
+1462
+00:50:25,040 --> 00:50:27,589
+packages because it's
+
+1463
+00:50:27,599 --> 00:50:29,829
+interpreting them at runtime and so that
+
+1464
+00:50:29,839 --> 00:50:32,950
+would be a stronger case why you should
+
+1465
+00:50:32,960 --> 00:50:35,109
+possibly check them in because you can't
+
+1466
+00:50:35,119 --> 00:50:36,390
+deploy
+
+1467
+00:50:36,400 --> 00:50:38,870
+without them i mean you know the
+
+1468
+00:50:38,880 --> 00:50:40,710
+question there is whether
+
+1469
+00:50:40,720 --> 00:50:42,150
+you want
+
+1470
+00:50:42,160 --> 00:50:44,309
+failure to happen at deployment or like
+
+1471
+00:50:44,319 --> 00:50:46,630
+failure to happen with your developers
+
+1472
+00:50:46,640 --> 00:50:48,230
+failure's still happening
+
+1473
+00:50:48,240 --> 00:50:50,150
+i'm not sure how meaningfully different
+
+1474
+00:50:50,160 --> 00:50:51,910
+those things are and that may depend on
+
+1475
+00:50:51,920 --> 00:50:53,190
+your context
+
+1476
+00:50:53,200 --> 00:50:56,870
+so we have a bit of time left you had a
+
+1477
+00:50:56,880 --> 00:50:58,870
+discussion in your article and if you
+
+1478
+00:50:58,880 --> 00:50:59,670
+can
+
+1479
+00:50:59,680 --> 00:51:02,710
+condense this in the remaining time the
+
+1480
+00:51:02,720 --> 00:51:04,790
+steps that happen we've we've talked
+
+1481
+00:51:04,800 --> 00:51:07,750
+about the components broadly what does
+
+1482
+00:51:07,760 --> 00:51:10,069
+the thing do what are the steps that
+
+1483
+00:51:10,079 --> 00:51:13,750
+happen when the package manager runs
+
+1484
+00:51:13,760 --> 00:51:15,510
+referencing the
+
+1485
+00:51:15,520 --> 00:51:18,230
+manifest lock file dependencies and
+
+1486
+00:51:18,240 --> 00:51:19,750
+other state
+
+1487
+00:51:19,760 --> 00:51:22,309
+the steps so when it runs referring to
+
+1488
+00:51:22,319 --> 00:51:23,190
+our
+
+1489
+00:51:23,200 --> 00:51:27,270
+get or add remove or or change
+
+1490
+00:51:27,280 --> 00:51:28,470
+which one
+
+1491
+00:51:28,480 --> 00:51:30,870
+let's start with let's do add that's
+
+1492
+00:51:30,880 --> 00:51:32,950
+probably what we have time for
+
+1493
+00:51:32,960 --> 00:51:35,190
+sure yeah so most really what's
+
+1494
+00:51:35,200 --> 00:51:36,309
+happening here is we're trying to
+
+1495
+00:51:36,319 --> 00:51:38,309
+reconcile a few different states right
+
+1496
+00:51:38,319 --> 00:51:39,589
+we are
+
+1497
+00:51:39,599 --> 00:51:41,109
+depending on the language
+
+1498
+00:51:41,119 --> 00:51:43,109
+possibly trying to
+
+1499
+00:51:43,119 --> 00:51:45,349
+scan over source code like you can do
+
+1500
+00:51:45,359 --> 00:51:47,030
+this in go scan over the source code to
+
+1501
+00:51:47,040 --> 00:51:49,270
+look at import statements and try to
+
+1502
+00:51:49,280 --> 00:51:51,270
+ensure that all of those are satisfied
+
+1503
+00:51:51,280 --> 00:51:53,349
+that's that's something you may be doing
+
+1504
+00:51:53,359 --> 00:51:54,549
+and you may be doing that independent of
+
+1505
+00:51:54,559 --> 00:51:56,549
+which command you're running but with an
+
+1506
+00:51:56,559 --> 00:51:59,349
+ad command the basic validation that you
+
+1507
+00:51:59,359 --> 00:52:00,710
+have to do in the command initially is
+
+1508
+00:52:00,720 --> 00:52:02,069
+like well is there actually a thing to
+
+1509
+00:52:02,079 --> 00:52:04,950
+add here like if you try to add food and
+
+1510
+00:52:04,960 --> 00:52:06,870
+food's already in your manifest then
+
+1511
+00:52:06,880 --> 00:52:08,790
+what are we doing it doesn't make any
+
+1512
+00:52:08,800 --> 00:52:10,870
+sense but once we've established that
+
+1513
+00:52:10,880 --> 00:52:13,589
+like it's a sort of valid request then
+
+1514
+00:52:13,599 --> 00:52:14,390
+you
+
+1515
+00:52:14,400 --> 00:52:16,309
+have to resolve the name how do i know
+
+1516
+00:52:16,319 --> 00:52:17,589
+what foo is
+
+1517
+00:52:17,599 --> 00:52:18,950
+and that's going to depend on the
+
+1518
+00:52:18,960 --> 00:52:20,069
+choices we were talking about earlier
+
+1519
+00:52:20,079 --> 00:52:22,390
+for the package manager about what thing
+
+1520
+00:52:22,400 --> 00:52:24,309
+you use to resolve names
+
+1521
+00:52:24,319 --> 00:52:25,510
+and
+
+1522
+00:52:25,520 --> 00:52:26,710
+if
+
+1523
+00:52:26,720 --> 00:52:27,829
+if the thing resolves you're going to
+
+1524
+00:52:27,839 --> 00:52:29,030
+fetch it down
+
+1525
+00:52:29,040 --> 00:52:31,270
+and at that point you have to
+
+1526
+00:52:31,280 --> 00:52:32,630
+then kick off
+
+1527
+00:52:32,640 --> 00:52:33,910
+well what you really have to do at that
+
+1528
+00:52:33,920 --> 00:52:35,030
+point is you have to kick off version
+
+1529
+00:52:35,040 --> 00:52:37,190
+selection because there's there's no way
+
+1530
+00:52:37,200 --> 00:52:38,470
+to
+
+1531
+00:52:38,480 --> 00:52:39,430
+there's the thing about version
+
+1532
+00:52:39,440 --> 00:52:41,349
+selection because it's all a graph you
+
+1533
+00:52:41,359 --> 00:52:43,829
+have no way of knowing a priori which
+
+1534
+00:52:43,839 --> 00:52:45,030
+packages might depend on which other
+
+1535
+00:52:45,040 --> 00:52:47,829
+packages in order to add a you have to
+
+1536
+00:52:47,839 --> 00:52:49,750
+reconsider the entire graph so you run
+
+1537
+00:52:49,760 --> 00:52:51,109
+through a version selection process to
+
+1538
+00:52:51,119 --> 00:52:53,349
+basically pick a new version for all of
+
+1539
+00:52:53,359 --> 00:52:54,790
+your dependencies
+
+1540
+00:52:54,800 --> 00:52:55,990
+and
+
+1541
+00:52:56,000 --> 00:52:59,270
+including including a with that then you
+
+1542
+00:52:59,280 --> 00:53:00,870
+assuming that that was successful you
+
+1543
+00:53:00,880 --> 00:53:02,950
+get a return out and that ends up
+
+1544
+00:53:02,960 --> 00:53:04,790
+getting piped back to the user ideally
+
+1545
+00:53:04,800 --> 00:53:07,589
+that manifest file gets updated and the
+
+1546
+00:53:07,599 --> 00:53:09,589
+log file gets updated as well
+
+1547
+00:53:09,599 --> 00:53:11,190
+and you get a successful return to the
+
+1548
+00:53:11,200 --> 00:53:13,589
+user i think that's a good place to stop
+
+1549
+00:53:13,599 --> 00:53:15,990
+sam we've covered a lot of ground here i
+
+1550
+00:53:16,000 --> 00:53:17,990
+hope those centers have a better
+
+1551
+00:53:18,000 --> 00:53:20,549
+understanding of this somewhat murky
+
+1552
+00:53:20,559 --> 00:53:23,829
+area than they did an hour ago
+
+1553
+00:53:23,839 --> 00:53:24,950
+before we
+
+1554
+00:53:24,960 --> 00:53:27,270
+wrap up is there any place listeners
+
+1555
+00:53:27,280 --> 00:53:29,190
+could find or follow you that you'd like
+
+1556
+00:53:29,200 --> 00:53:33,349
+to point them at i'm on twitter at sd
+
+1557
+00:53:33,359 --> 00:53:35,190
+boyer
+
+1558
+00:53:35,200 --> 00:53:38,069
+any open resources nowadays but yeah
+
+1559
+00:53:38,079 --> 00:53:40,470
+any open source projects
+
+1560
+00:53:40,480 --> 00:53:42,870
+so i have a uh
+
+1561
+00:53:42,880 --> 00:53:44,150
+i have a new thing that i'm working on
+
+1562
+00:53:44,160 --> 00:53:45,910
+which is not unrelated to
+
+1563
+00:53:45,920 --> 00:53:48,950
+package management and the repository is
+
+1564
+00:53:48,960 --> 00:53:51,030
+well in a week it it should be much more
+
+1565
+00:53:51,040 --> 00:53:54,230
+consumable but i'm calling it scumada
+
+1566
+00:53:54,240 --> 00:53:56,630
+it's written in the new language queue
+
+1567
+00:53:56,640 --> 00:53:58,790
+it's a system for writing schema
+
+1568
+00:53:58,800 --> 00:54:00,870
+but it's a system for writing schema
+
+1569
+00:54:00,880 --> 00:54:01,750
+that
+
+1570
+00:54:01,760 --> 00:54:03,589
+lets you evolve the schema over time
+
+1571
+00:54:03,599 --> 00:54:05,990
+including across breaking changes and
+
+1572
+00:54:06,000 --> 00:54:07,510
+encapsulate all the logic for writing
+
+1573
+00:54:07,520 --> 00:54:08,790
+the schema
+
+1574
+00:54:08,800 --> 00:54:10,470
+and the dealing with breaking changes
+
+1575
+00:54:10,480 --> 00:54:13,589
+into one place and that's it github
+
+1576
+00:54:13,599 --> 00:54:15,990
+slash grafana slash schumada and i
+
+1577
+00:54:16,000 --> 00:54:17,589
+assume that we can put
+
+1578
+00:54:17,599 --> 00:54:19,750
+well should i spell it out how should i
+
+1579
+00:54:19,760 --> 00:54:21,430
+put it i'll get it from your own put
+
+1580
+00:54:21,440 --> 00:54:23,349
+i'll put it in the show notes cool i
+
+1581
+00:54:23,359 --> 00:54:24,309
+think that's probably the most
+
+1582
+00:54:24,319 --> 00:54:26,230
+interesting thing it's like i said not
+
+1583
+00:54:26,240 --> 00:54:28,630
+unrelated to package management but has
+
+1584
+00:54:28,640 --> 00:54:30,710
+much more to do with the way that you
+
+1585
+00:54:30,720 --> 00:54:32,390
+the way you deal with breakage which is
+
+1586
+00:54:32,400 --> 00:54:35,750
+certainly a major topic in pakistan
+
+1587
+00:54:35,760 --> 00:54:37,670
+sam boyer thank you very much for
+
+1588
+00:54:37,680 --> 00:54:40,950
+speaking to software engineering radio
+
+1589
+00:54:40,960 --> 00:54:42,630
+thank you it's been great
+
+1590
+00:54:42,640 --> 00:54:44,950
+this has been robert blumen thank you
+
+1591
+00:54:44,960 --> 00:54:47,109
+for listening
+
+1592
+00:54:47,119 --> 00:54:48,630
+thanks for listening to sc radio an
+
+1593
+00:54:48,640 --> 00:54:50,230
+educational program brought to you by
+
+1594
+00:54:50,240 --> 00:54:52,630
+ieee software magazine for more about
+
+1595
+00:54:52,640 --> 00:54:54,390
+the podcast including other episodes
+
+1596
+00:54:54,400 --> 00:54:57,990
+visit our website at se radio.net
+
+1597
+00:54:58,000 --> 00:54:59,750
+to provide feedback you can comment on
+
+1598
+00:54:59,760 --> 00:55:01,750
+each episode on the website or reach us
+
+1599
+00:55:01,760 --> 00:55:04,549
+on linkedin facebook twitter or through
+
+1600
+00:55:04,559 --> 00:55:08,710
+our slack channel at scradio.slack.com
+
+1601
+00:55:10,710 --> 00:55:10,720
+you can also email us at team
+
+1602
+00:55:10,720 --> 00:55:13,349
+sc-radio.net
+
+1603
+00:55:13,359 --> 00:55:15,349
+this and all other episodes of se radio
+
+1604
+00:55:15,359 --> 00:55:16,870
+is licensed under creative commons
+
+1605
+00:55:16,880 --> 00:55:18,870
+license 2.5
+
+1606
+00:55:18,880 --> 00:55:20,180
+thanks for listening
+
+1607
+00:55:20,190 --> 00:55:23,280
+[Music]

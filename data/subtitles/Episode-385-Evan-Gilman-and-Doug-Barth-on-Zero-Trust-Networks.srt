@@ -1,0 +1,6015 @@
+1
+00:00:02,789 --> 00:00:02,799
+this is software engineering radio the
+
+2
+00:00:02,799 --> 00:00:04,830
+podcast for professional developers on
+
+3
+00:00:04,840 --> 00:00:08,580
+the web at SC Radio dotnet SC radio is
+
+4
+00:00:08,590 --> 00:00:09,690
+brought to you by the I Triple E
+
+5
+00:00:09,700 --> 00:00:11,879
+Computer Society I Triple E software
+
+6
+00:00:11,889 --> 00:00:14,790
+magazine online at computer org slash
+
+7
+00:00:14,800 --> 00:00:22,979
+software for software engineering radio
+
+8
+00:00:22,989 --> 00:00:25,979
+this is Robert bloomin and with me today
+
+9
+00:00:25,989 --> 00:00:29,669
+Evan Gillman and Doug Barth evan is an
+
+10
+00:00:29,679 --> 00:00:31,919
+engineer and sre with a background in
+
+11
+00:00:31,929 --> 00:00:34,380
+computer networks he's been building and
+
+12
+00:00:34,390 --> 00:00:36,150
+operating systems in hostile
+
+13
+00:00:36,160 --> 00:00:37,500
+environments for his entire professional
+
+14
+00:00:37,510 --> 00:00:41,010
+career he was formerly an SRE a pager
+
+15
+00:00:41,020 --> 00:00:43,890
+duty Doug is a software engineer who has
+
+16
+00:00:43,900 --> 00:00:46,590
+worked on systems of various sizes at
+
+17
+00:00:46,600 --> 00:00:48,570
+companies such as Orbitz and pager duty
+
+18
+00:00:48,580 --> 00:00:51,480
+he's currently an SRE it's strike he
+
+19
+00:00:51,490 --> 00:00:54,030
+speaks frequently about monitoring mesh
+
+20
+00:00:54,040 --> 00:00:57,150
+networks and failure injection Doug and
+
+21
+00:00:57,160 --> 00:00:59,069
+Evan welcome to software engineering
+
+22
+00:00:59,079 --> 00:01:01,710
+radio and thanks for having us thank you
+
+23
+00:01:01,720 --> 00:01:03,900
+Evan and Doug are co-authors of the book
+
+24
+00:01:03,910 --> 00:01:06,599
+zero trust networks building secure
+
+25
+00:01:06,609 --> 00:01:09,239
+systems in untrusted networks published
+
+26
+00:01:09,249 --> 00:01:12,779
+in 2017 and that will be the subject of
+
+27
+00:01:12,789 --> 00:01:15,989
+our conversation Evan would you like to
+
+28
+00:01:15,999 --> 00:01:18,289
+add anything to your bio that I left out
+
+29
+00:01:18,299 --> 00:01:20,940
+not particularly I'm currently working
+
+30
+00:01:20,950 --> 00:01:23,700
+on a software project called spiffy
+
+31
+00:01:23,710 --> 00:01:26,279
+inspire which are geared towards solving
+
+32
+00:01:26,289 --> 00:01:28,200
+some of the problems that we talked
+
+33
+00:01:28,210 --> 00:01:32,730
+about in the book that's fairly accurate
+
+34
+00:01:32,740 --> 00:01:35,849
+yeah ok let's come back to that because
+
+35
+00:01:35,859 --> 00:01:39,149
+I I'm gonna ask about tooling sure Doug
+
+36
+00:01:39,159 --> 00:01:41,699
+would you like to add to your bio still
+
+37
+00:01:41,709 --> 00:01:43,410
+at stripe doing a sorry work I work on a
+
+38
+00:01:43,420 --> 00:01:45,449
+team called cloud which does like
+
+39
+00:01:45,459 --> 00:01:49,260
+workflows and like low-level systems for
+
+40
+00:01:49,270 --> 00:01:52,230
+all those stripes so for me like I tend
+
+41
+00:01:52,240 --> 00:01:54,239
+to be in the space of like thinking
+
+42
+00:01:54,249 --> 00:01:55,620
+about how do you implement some of these
+
+43
+00:01:55,630 --> 00:01:59,120
+concepts as opposed to like you know
+
+44
+00:01:59,130 --> 00:02:01,289
+abstractly thinking about the problem
+
+45
+00:02:01,299 --> 00:02:02,849
+and its entirety if that makes sense
+
+46
+00:02:02,859 --> 00:02:06,599
+it does we will be talking about zero
+
+47
+00:02:06,609 --> 00:02:09,450
+trust networks but to get to the point
+
+48
+00:02:09,460 --> 00:02:11,460
+where we can have that conversation I'm
+
+49
+00:02:11,470 --> 00:02:13,230
+going to spend some time on some
+
+50
+00:02:13,240 --> 00:02:13,950
+building
+
+51
+00:02:13,960 --> 00:02:16,860
+concept so we can understand the problem
+
+52
+00:02:16,870 --> 00:02:19,830
+domain and what problem does it solve I
+
+53
+00:02:19,840 --> 00:02:22,560
+would like to start out with can you
+
+54
+00:02:22,570 --> 00:02:25,200
+describe the traditional network
+
+55
+00:02:25,210 --> 00:02:26,910
+architecture which is known as the
+
+56
+00:02:26,920 --> 00:02:29,700
+perimeter architecture yeah you know
+
+57
+00:02:29,710 --> 00:02:32,250
+this is kind of the the I mean even
+
+58
+00:02:32,260 --> 00:02:35,370
+people who are not in tech have some
+
+59
+00:02:35,380 --> 00:02:37,080
+familiarity with this architecture
+
+60
+00:02:37,090 --> 00:02:39,060
+because it's so pervasive and has been
+
+61
+00:02:39,070 --> 00:02:41,430
+around for so long and this this the
+
+62
+00:02:41,440 --> 00:02:43,110
+concept of the perimeter model or
+
+63
+00:02:43,120 --> 00:02:45,020
+perimeter architecture is essentially
+
+64
+00:02:45,030 --> 00:02:48,780
+it's it's often times like compared to a
+
+65
+00:02:48,790 --> 00:02:51,270
+castle and a moat where you know you
+
+66
+00:02:51,280 --> 00:02:54,120
+have this thing that surrounds you that
+
+67
+00:02:54,130 --> 00:02:55,680
+acts kind of as this protection Airy
+
+68
+00:02:55,690 --> 00:02:59,460
+cord and ER protection area layer and as
+
+69
+00:02:59,470 --> 00:03:01,320
+things pass through that layer you know
+
+70
+00:03:01,330 --> 00:03:03,660
+they're kind of inspected and they're
+
+71
+00:03:03,670 --> 00:03:05,340
+they're understood to be allowed or not
+
+72
+00:03:05,350 --> 00:03:06,900
+allowed or you know it acts as a
+
+73
+00:03:06,910 --> 00:03:09,270
+security barrier but once you get past
+
+74
+00:03:09,280 --> 00:03:11,580
+that security barrier there's what kind
+
+75
+00:03:11,590 --> 00:03:12,690
+of where all the sensitive things are
+
+76
+00:03:12,700 --> 00:03:14,130
+and those sensitive things themselves
+
+77
+00:03:14,140 --> 00:03:15,750
+that they tend to not have any like
+
+78
+00:03:15,760 --> 00:03:18,330
+direct protection so a lot of people
+
+79
+00:03:18,340 --> 00:03:19,980
+kind of call it this this kind of castle
+
+80
+00:03:19,990 --> 00:03:23,040
+and moat approach where the perimeter
+
+81
+00:03:23,050 --> 00:03:25,350
+access the moat and it is this thing
+
+82
+00:03:25,360 --> 00:03:26,910
+that protects the sensitive stuff on the
+
+83
+00:03:26,920 --> 00:03:30,000
+inside I'm another common way that folks
+
+84
+00:03:30,010 --> 00:03:31,680
+describe it is crunchy on the outside
+
+85
+00:03:31,690 --> 00:03:34,440
+and chewy on the inside I'm and we've
+
+86
+00:03:34,450 --> 00:03:35,910
+been doing this for a very long time
+
+87
+00:03:35,920 --> 00:03:38,610
+you know if it's even before the
+
+88
+00:03:38,620 --> 00:03:40,860
+internet was around and you know people
+
+89
+00:03:40,870 --> 00:03:43,380
+people have have become very familiar
+
+90
+00:03:43,390 --> 00:03:45,990
+with the term firewall as a result you
+
+91
+00:03:46,000 --> 00:03:47,700
+know it's behind the firewall or
+
+92
+00:03:47,710 --> 00:03:50,010
+something like this and I me even to go
+
+93
+00:03:50,020 --> 00:03:52,890
+so far as and not to not to drop for but
+
+94
+00:03:52,900 --> 00:03:54,390
+even ago so far as you know if you look
+
+95
+00:03:54,400 --> 00:03:57,300
+at some physical firewalls from you know
+
+96
+00:03:57,310 --> 00:03:59,280
+large vendors they even have a port that
+
+97
+00:03:59,290 --> 00:04:02,670
+says like untrust and Trust indicating
+
+98
+00:04:02,680 --> 00:04:04,770
+that you know the left side the SunTrust
+
+99
+00:04:04,780 --> 00:04:06,840
+side is kind of going out to the wild
+
+100
+00:04:06,850 --> 00:04:08,610
+west and then the trust side is kind of
+
+101
+00:04:08,620 --> 00:04:11,090
+in this protected area is that that's
+
+102
+00:04:11,100 --> 00:04:12,900
+you know kind of like a high-level
+
+103
+00:04:12,910 --> 00:04:15,240
+description of what the perimeter model
+
+104
+00:04:15,250 --> 00:04:17,130
+is or represents it's not to say that
+
+105
+00:04:17,140 --> 00:04:19,470
+that there is always one perimeter some
+
+106
+00:04:19,480 --> 00:04:20,700
+architectures may have multiple
+
+107
+00:04:20,710 --> 00:04:22,770
+parameters as you kind of get closer and
+
+108
+00:04:22,780 --> 00:04:25,620
+closer towards more sensitive assets but
+
+109
+00:04:25,630 --> 00:04:27,189
+this concept of
+
+110
+00:04:27,199 --> 00:04:29,260
+you know crunchy on the outside chewy on
+
+111
+00:04:29,270 --> 00:04:32,050
+the inside or like castle and what kind
+
+112
+00:04:32,060 --> 00:04:35,080
+of thing is the the overarching theme of
+
+113
+00:04:35,090 --> 00:04:37,450
+the perimeter model how does the concept
+
+114
+00:04:37,460 --> 00:04:40,839
+of trust apply in the perimeter monel
+
+115
+00:04:40,849 --> 00:04:42,850
+the concept of trust of the perimeter
+
+116
+00:04:42,860 --> 00:04:45,730
+model is essentially if you were in on
+
+117
+00:04:45,740 --> 00:04:47,890
+the inside you know I alluded earlier to
+
+118
+00:04:47,900 --> 00:04:49,899
+these firewalls they're sometimes even
+
+119
+00:04:49,909 --> 00:04:51,429
+labeled trusting on trust you know if
+
+120
+00:04:51,439 --> 00:04:52,989
+you are on the trust side of this
+
+121
+00:04:52,999 --> 00:04:54,670
+firewall then the assumption is that
+
+122
+00:04:54,680 --> 00:04:56,350
+you're supposed to be thinner and the
+
+123
+00:04:56,360 --> 00:04:57,730
+assumption is that you're authorized to
+
+124
+00:04:57,740 --> 00:05:00,519
+be there so the trust model is very much
+
+125
+00:05:00,529 --> 00:05:03,070
+based on your position within the
+
+126
+00:05:03,080 --> 00:05:05,499
+network you know if you are if you have
+
+127
+00:05:05,509 --> 00:05:07,029
+access to this privileged position
+
+128
+00:05:07,039 --> 00:05:08,740
+within the network we trust you
+
+129
+00:05:08,750 --> 00:05:10,749
+unequivocally and that of course has
+
+130
+00:05:10,759 --> 00:05:12,909
+caused problems in the past and you know
+
+131
+00:05:12,919 --> 00:05:15,010
+we see a lot of headlines about why and
+
+132
+00:05:15,020 --> 00:05:16,990
+how that poses problems I'm sure we'll
+
+133
+00:05:17,000 --> 00:05:18,429
+kind of get under the Nitty Gritty of
+
+134
+00:05:18,439 --> 00:05:20,079
+those things but that trust model is
+
+135
+00:05:20,089 --> 00:05:21,640
+essentially that's kind of why the book
+
+136
+00:05:21,650 --> 00:05:24,040
+is called zero trust networks and kind
+
+137
+00:05:24,050 --> 00:05:25,390
+of take a different approach and a
+
+138
+00:05:25,400 --> 00:05:27,820
+different idea and say well you know
+
+139
+00:05:27,830 --> 00:05:30,159
+perhaps perhaps we actually don't trust
+
+140
+00:05:30,169 --> 00:05:31,659
+you just because you're on the special
+
+141
+00:05:31,669 --> 00:05:33,670
+side of this device or you're on the
+
+142
+00:05:33,680 --> 00:05:35,769
+special part of the network just be
+
+143
+00:05:35,779 --> 00:05:38,649
+analogous to in my place of work I badge
+
+144
+00:05:38,659 --> 00:05:41,469
+myself into the office but once I'm in
+
+145
+00:05:41,479 --> 00:05:43,179
+the office if I could go up and start
+
+146
+00:05:43,189 --> 00:05:46,659
+using any computer yeah exactly and you
+
+147
+00:05:46,669 --> 00:05:48,429
+know actually like there's a lot of
+
+148
+00:05:48,439 --> 00:05:50,170
+interesting history here around how we
+
+149
+00:05:50,180 --> 00:05:52,570
+arrived at you know the current state
+
+150
+00:05:52,580 --> 00:05:54,820
+and why and you know badging into a
+
+151
+00:05:54,830 --> 00:05:57,010
+building is very much part of that story
+
+152
+00:05:57,020 --> 00:05:59,499
+when computers are big it didn't really
+
+153
+00:05:59,509 --> 00:06:01,659
+move you know we relied very heavily on
+
+154
+00:06:01,669 --> 00:06:03,550
+physical security you know you have to
+
+155
+00:06:03,560 --> 00:06:04,869
+get access into the building with a
+
+156
+00:06:04,879 --> 00:06:06,429
+badge and got to be seen and you have to
+
+157
+00:06:06,439 --> 00:06:08,679
+check in and this and that in order to
+
+158
+00:06:08,689 --> 00:06:10,869
+get into that quote perimeter of course
+
+159
+00:06:10,879 --> 00:06:12,369
+all of this has changed with the modern
+
+160
+00:06:12,379 --> 00:06:14,800
+workforce or computers or mobile people
+
+161
+00:06:14,810 --> 00:06:16,510
+are bringing their own devices phones
+
+162
+00:06:16,520 --> 00:06:18,100
+are coming in and out and all this kind
+
+163
+00:06:18,110 --> 00:06:19,959
+of stuff that whole idea and concept
+
+164
+00:06:19,969 --> 00:06:21,610
+kind of breaks on it in fact it was
+
+165
+00:06:21,620 --> 00:06:22,990
+literally in the past the secure
+
+166
+00:06:23,000 --> 00:06:25,570
+computers are in this building and we
+
+167
+00:06:25,580 --> 00:06:27,159
+have one fiber that comes out of this
+
+168
+00:06:27,169 --> 00:06:28,589
+building when we put the firewall there
+
+169
+00:06:28,599 --> 00:06:30,909
+and we know that anyone that's on the
+
+170
+00:06:30,919 --> 00:06:32,769
+inside had to have badged in or
+
+171
+00:06:32,779 --> 00:06:34,959
+something like that you know obviously a
+
+172
+00:06:34,969 --> 00:06:36,999
+you know maybe not so obviously that's
+
+173
+00:06:37,009 --> 00:06:38,970
+that's not really the case anymore
+
+174
+00:06:38,980 --> 00:06:41,760
+and this kind of evolving usage pattern
+
+175
+00:06:41,770 --> 00:06:44,610
+is you know something that your trust
+
+176
+00:06:44,620 --> 00:06:47,550
+model tries to address what does traffic
+
+177
+00:06:47,560 --> 00:06:49,950
+have to do to get through the perimeter
+
+178
+00:06:49,960 --> 00:06:53,070
+into the trusted area look think this
+
+179
+00:06:53,080 --> 00:06:55,140
+second jump in this kind of varies a bit
+
+180
+00:06:55,150 --> 00:06:56,760
+but you know usually you end up saying
+
+181
+00:06:56,770 --> 00:06:58,260
+that someone pokes a hole in your
+
+182
+00:06:58,270 --> 00:07:00,120
+perimeter right you forward a port into
+
+183
+00:07:00,130 --> 00:07:01,980
+some internal system or maybe you like
+
+184
+00:07:01,990 --> 00:07:03,570
+formalize it a bit more and you have a
+
+185
+00:07:03,580 --> 00:07:05,520
+DMZ subnet where you put all your
+
+186
+00:07:05,530 --> 00:07:07,470
+internet facing systems and then private
+
+187
+00:07:07,480 --> 00:07:10,590
+subnets that are you know presumably
+
+188
+00:07:10,600 --> 00:07:14,010
+proxy to from proxies living in the DMZ
+
+189
+00:07:14,020 --> 00:07:18,470
+one example of perimeter model is a VPN
+
+190
+00:07:18,480 --> 00:07:21,600
+explain what that is and how it fits
+
+191
+00:07:21,610 --> 00:07:22,860
+into the perimeter model
+
+192
+00:07:22,870 --> 00:07:25,680
+sure I can keep going there so VPNs like
+
+193
+00:07:25,690 --> 00:07:27,030
+pretty common for how people get access
+
+194
+00:07:27,040 --> 00:07:30,270
+to private systems you run some software
+
+195
+00:07:30,280 --> 00:07:31,620
+on your computer that makes a tunnel
+
+196
+00:07:31,630 --> 00:07:34,080
+over to another network and it's kind of
+
+197
+00:07:34,090 --> 00:07:35,730
+like you basically there are sending
+
+198
+00:07:35,740 --> 00:07:37,500
+packets through a you know encrypted
+
+199
+00:07:37,510 --> 00:07:39,210
+tunnel to be emitted out on the other
+
+200
+00:07:39,220 --> 00:07:41,310
+side inside that network as if it
+
+201
+00:07:41,320 --> 00:07:44,310
+originated as a device and that like
+
+202
+00:07:44,320 --> 00:07:46,710
+physical network presumably ignore cloud
+
+203
+00:07:46,720 --> 00:07:47,280
+for a bit
+
+204
+00:07:47,290 --> 00:07:50,180
+and so again kind of like this whole
+
+205
+00:07:50,190 --> 00:07:52,890
+physical access implies authorization
+
+206
+00:07:52,900 --> 00:07:54,780
+you would say that on a VPN and the fact
+
+207
+00:07:54,790 --> 00:07:56,070
+that you are able to negotiate that
+
+208
+00:07:56,080 --> 00:07:57,720
+tunnel meant that you should be able to
+
+209
+00:07:57,730 --> 00:07:59,760
+communicate widely inside the network
+
+210
+00:07:59,770 --> 00:08:03,870
+with no with no real like checks on
+
+211
+00:08:03,880 --> 00:08:05,700
+whether or not that's allowed what is
+
+212
+00:08:05,710 --> 00:08:07,830
+the threat model the modern networks
+
+213
+00:08:07,840 --> 00:08:10,560
+face this it's highly varied and of
+
+214
+00:08:10,570 --> 00:08:13,410
+course it depends on the company and it
+
+215
+00:08:13,420 --> 00:08:14,790
+depends on what you're trying to protect
+
+216
+00:08:14,800 --> 00:08:16,710
+and it depends on the kinds of attackers
+
+217
+00:08:16,720 --> 00:08:19,020
+that that you're going to see but you
+
+218
+00:08:19,030 --> 00:08:21,510
+know largely the big kind of
+
+219
+00:08:21,520 --> 00:08:23,790
+understanding and takeaway here is you
+
+220
+00:08:23,800 --> 00:08:25,830
+know the threats that we see now don't
+
+221
+00:08:25,840 --> 00:08:27,840
+have to be sitting next to you they can
+
+222
+00:08:27,850 --> 00:08:29,550
+be on the other side of the world people
+
+223
+00:08:29,560 --> 00:08:32,520
+carry devices around devices move a lot
+
+224
+00:08:32,530 --> 00:08:35,030
+around and so this concept of having
+
+225
+00:08:35,040 --> 00:08:38,850
+this kind of like stable perimeter that
+
+226
+00:08:38,860 --> 00:08:42,930
+is impenetrable is very very difficult
+
+227
+00:08:42,940 --> 00:08:45,570
+to do effectively today as a result
+
+228
+00:08:45,580 --> 00:08:48,540
+because it's not really that impermeable
+
+229
+00:08:48,550 --> 00:08:50,490
+right people are bringing things inside
+
+230
+00:08:50,500 --> 00:08:52,350
+and outside physically
+
+231
+00:08:52,360 --> 00:08:53,910
+people are poking holes in it through
+
+232
+00:08:53,920 --> 00:08:56,639
+this VPN stuff you know and VPN even
+
+233
+00:08:56,649 --> 00:08:58,320
+arose kind of from like these changing
+
+234
+00:08:58,330 --> 00:09:00,840
+access patterns where you know hey you
+
+235
+00:09:00,850 --> 00:09:02,370
+had to be in the building to use the
+
+236
+00:09:02,380 --> 00:09:04,079
+secure thing because that's behind the
+
+237
+00:09:04,089 --> 00:09:05,190
+firewall but then all of a sudden
+
+238
+00:09:05,200 --> 00:09:07,560
+someone's working remote and they you
+
+239
+00:09:07,570 --> 00:09:08,940
+know we want them to be able to continue
+
+240
+00:09:08,950 --> 00:09:10,980
+working so how do we emulate them being
+
+241
+00:09:10,990 --> 00:09:13,500
+behind this physical thing and then all
+
+242
+00:09:13,510 --> 00:09:15,329
+of these are kind of like half steps and
+
+243
+00:09:15,339 --> 00:09:17,310
+towards the direction okay
+
+244
+00:09:17,320 --> 00:09:18,990
+acknowledging that hey you know maybe
+
+245
+00:09:19,000 --> 00:09:21,180
+maybe everything is not behind this
+
+246
+00:09:21,190 --> 00:09:24,030
+thing or in front of this thing so in
+
+247
+00:09:24,040 --> 00:09:25,259
+terms of threats I mean it can be
+
+248
+00:09:25,269 --> 00:09:27,449
+literally anything from you know
+
+249
+00:09:27,459 --> 00:09:30,030
+extremely well financed attackers if you
+
+250
+00:09:30,040 --> 00:09:31,139
+have up if you're a high-value target
+
+251
+00:09:31,149 --> 00:09:33,810
+for whatever reason it it should be even
+
+252
+00:09:33,820 --> 00:09:36,810
+as low as what we used to call script
+
+253
+00:09:36,820 --> 00:09:38,610
+kiddies or you know people who are just
+
+254
+00:09:38,620 --> 00:09:40,590
+kind of playing around and don't even
+
+255
+00:09:40,600 --> 00:09:42,509
+have access to the highest technology
+
+256
+00:09:42,519 --> 00:09:44,870
+you know bypassing these kinds of
+
+257
+00:09:44,880 --> 00:09:47,670
+traditional perimeter Security's are
+
+258
+00:09:47,680 --> 00:09:50,940
+fairly trivial and I mean the average
+
+259
+00:09:50,950 --> 00:09:53,069
+teenager is is likely to understand
+
+260
+00:09:53,079 --> 00:09:54,810
+techniques and methods through by which
+
+261
+00:09:54,820 --> 00:09:56,490
+it could be bypassed so what you're
+
+262
+00:09:56,500 --> 00:09:59,579
+saying is that you can't rely on the
+
+263
+00:09:59,589 --> 00:10:03,690
+perimeter to filter out attacks and that
+
+264
+00:10:03,700 --> 00:10:06,269
+there can easily be things inside the
+
+265
+00:10:06,279 --> 00:10:08,280
+perimeter it could do damage to your
+
+266
+00:10:08,290 --> 00:10:11,430
+systems absolutely you know that it's
+
+267
+00:10:11,440 --> 00:10:13,019
+not to say that the perimeter has no
+
+268
+00:10:13,029 --> 00:10:16,170
+value but it is to say that you can only
+
+269
+00:10:16,180 --> 00:10:18,990
+go so far and the kinds of attacks that
+
+270
+00:10:19,000 --> 00:10:20,400
+you see today and the kinds of threats
+
+271
+00:10:20,410 --> 00:10:23,010
+we see today are able to bypass all of
+
+272
+00:10:23,020 --> 00:10:25,819
+these controls fairly trivially so
+
+273
+00:10:25,829 --> 00:10:27,900
+certainly you should there should not be
+
+274
+00:10:27,910 --> 00:10:30,780
+an assumption that everything inside is
+
+275
+00:10:30,790 --> 00:10:33,360
+vetted and trusted that's kind of the
+
+276
+00:10:33,370 --> 00:10:35,970
+premise of this whole kind of model I
+
+277
+00:10:35,980 --> 00:10:38,430
+have a quote from a Google program
+
+278
+00:10:38,440 --> 00:10:41,460
+engineer that I found I was reading
+
+279
+00:10:41,470 --> 00:10:42,960
+about this he said do not trust your
+
+280
+00:10:42,970 --> 00:10:45,660
+network it is probably already owned do
+
+281
+00:10:45,670 --> 00:10:47,639
+you guys agree with that yep
+
+282
+00:10:47,649 --> 00:10:49,199
+wait first week said what did he mean by
+
+283
+00:10:49,209 --> 00:10:52,319
+that I think like the thing I take from
+
+284
+00:10:52,329 --> 00:10:54,840
+that is if you aren't like introspecting
+
+285
+00:10:54,850 --> 00:10:56,360
+what's going on in your ternal network
+
+286
+00:10:56,370 --> 00:10:58,980
+you don't know what bad is already
+
+287
+00:10:58,990 --> 00:11:01,520
+lurking there all right and so
+
+288
+00:11:01,530 --> 00:11:03,650
+that's kind of why you never should
+
+289
+00:11:03,660 --> 00:11:05,720
+trust it is because it's it's like this
+
+290
+00:11:05,730 --> 00:11:08,210
+constant toil of cleaning up some sort
+
+291
+00:11:08,220 --> 00:11:10,070
+of compromise that you then remediate
+
+292
+00:11:10,080 --> 00:11:13,100
+there's your answer to this change or
+
+293
+00:11:13,110 --> 00:11:16,250
+hasn't changed for so much networking
+
+294
+00:11:16,260 --> 00:11:18,440
+which is now in public cloud as compared
+
+295
+00:11:18,450 --> 00:11:21,950
+to on Prem think so you know the the the
+
+296
+00:11:21,960 --> 00:11:24,320
+the the threats are very different
+
+297
+00:11:24,330 --> 00:11:27,680
+they're you know an on-prem it could be
+
+298
+00:11:27,690 --> 00:11:29,990
+someone walked up and plugged into the
+
+299
+00:11:30,000 --> 00:11:31,280
+side of the building you know some
+
+300
+00:11:31,290 --> 00:11:33,200
+exposure could be anything right you
+
+301
+00:11:33,210 --> 00:11:35,000
+don't really have those kinds of
+
+302
+00:11:35,010 --> 00:11:38,180
+problems in cloud but depending on your
+
+303
+00:11:38,190 --> 00:11:39,700
+provider you may have other problems
+
+304
+00:11:39,710 --> 00:11:42,920
+particularly when you're sending traffic
+
+305
+00:11:42,930 --> 00:11:45,080
+between regions perhaps across the
+
+306
+00:11:45,090 --> 00:11:48,110
+country or over oceans and who controls
+
+307
+00:11:48,120 --> 00:11:50,150
+those links and who has access to that
+
+308
+00:11:50,160 --> 00:11:52,730
+information the cloud platforms provide
+
+309
+00:11:52,740 --> 00:11:54,980
+a lot of kind of primitives security
+
+310
+00:11:54,990 --> 00:11:56,930
+primitives that can be leaned upon and
+
+311
+00:11:56,940 --> 00:11:58,130
+so the way that you go about solving
+
+312
+00:11:58,140 --> 00:12:00,410
+this thing is a little bit different but
+
+313
+00:12:00,420 --> 00:12:02,630
+I think that certainly certainly the
+
+314
+00:12:02,640 --> 00:12:04,670
+belief should be that it's not to say
+
+315
+00:12:04,680 --> 00:12:06,230
+that you're that every network out there
+
+316
+00:12:06,240 --> 00:12:07,970
+is probably owned right but that should
+
+317
+00:12:07,980 --> 00:12:09,950
+be the attitude certainly a Google scale
+
+318
+00:12:09,960 --> 00:12:11,360
+that is almost certainly the case right
+
+319
+00:12:11,370 --> 00:12:13,310
+but that should be the that should be
+
+320
+00:12:13,320 --> 00:12:15,380
+the general attitude because you know at
+
+321
+00:12:15,390 --> 00:12:16,760
+the end of the day even if it's not
+
+322
+00:12:16,770 --> 00:12:18,650
+owned today it might be tomorrow so you
+
+323
+00:12:18,660 --> 00:12:20,570
+should build with this in mind right and
+
+324
+00:12:20,580 --> 00:12:23,420
+it's not just that hey so it's not like
+
+325
+00:12:23,430 --> 00:12:25,700
+only hey somebody's plugged into my
+
+326
+00:12:25,710 --> 00:12:27,590
+patch panel or something something like
+
+327
+00:12:27,600 --> 00:12:30,170
+that it could simply be oh we have the
+
+328
+00:12:30,180 --> 00:12:32,870
+server over here that serves up you know
+
+329
+00:12:32,880 --> 00:12:34,550
+a Status page or something silly and we
+
+330
+00:12:34,560 --> 00:12:36,320
+forgot to update it and it's exposed to
+
+331
+00:12:36,330 --> 00:12:37,730
+the Internet and someone was able to get
+
+332
+00:12:37,740 --> 00:12:40,100
+in and the fact that they were able to
+
+333
+00:12:40,110 --> 00:12:42,320
+get into that one server which is you
+
+334
+00:12:42,330 --> 00:12:44,180
+know behind the perimeter in this
+
+335
+00:12:44,190 --> 00:12:46,220
+trusted area essentially means that they
+
+336
+00:12:46,230 --> 00:12:49,910
+are in your network so even if even if
+
+337
+00:12:49,920 --> 00:12:51,829
+you are not on today you should
+
+338
+00:12:51,839 --> 00:12:53,210
+certainly take the stamps that you are
+
+339
+00:12:53,220 --> 00:12:55,670
+because I mean any system online long
+
+340
+00:12:55,680 --> 00:12:57,500
+enough will eventually suffer one of
+
+341
+00:12:57,510 --> 00:12:59,840
+these problems we've been talking about
+
+342
+00:12:59,850 --> 00:13:02,480
+up to this point about the traditional
+
+343
+00:13:02,490 --> 00:13:05,120
+network architecture which you believe
+
+344
+00:13:05,130 --> 00:13:08,360
+is fatally flawed I'd like to now
+
+345
+00:13:08,370 --> 00:13:11,120
+introduce the concept of zero trust
+
+346
+00:13:11,130 --> 00:13:13,040
+model what does that mean
+
+347
+00:13:13,050 --> 00:13:15,510
+to place a zero trust in your network
+
+348
+00:13:15,520 --> 00:13:17,610
+and so we um when we were at the book I
+
+349
+00:13:17,620 --> 00:13:19,050
+think we had like five points which I've
+
+350
+00:13:19,060 --> 00:13:20,639
+at this point forgotten a lot of them
+
+351
+00:13:20,649 --> 00:13:22,170
+but we tried to lay out what exactly
+
+352
+00:13:22,180 --> 00:13:24,000
+zero trust networks would mean so it's
+
+353
+00:13:24,010 --> 00:13:26,190
+things like all network traffic is
+
+354
+00:13:26,200 --> 00:13:28,800
+encrypted you have like some pre
+
+355
+00:13:28,810 --> 00:13:30,690
+knowledge of what types of flows should
+
+356
+00:13:30,700 --> 00:13:34,440
+exist inside that network you have to
+
+357
+00:13:34,450 --> 00:13:36,389
+authenticate devices and users and
+
+358
+00:13:36,399 --> 00:13:39,660
+applications individually but I think
+
+359
+00:13:39,670 --> 00:13:41,040
+like the way you should really think
+
+360
+00:13:41,050 --> 00:13:42,930
+about it when you zoom out is you start
+
+361
+00:13:42,940 --> 00:13:46,260
+from this standpoint of if you believe
+
+362
+00:13:46,270 --> 00:13:47,940
+that your network is probably already
+
+363
+00:13:47,950 --> 00:13:50,880
+owned what do you actually want that
+
+364
+00:13:50,890 --> 00:13:52,769
+network to be responsible for and you
+
+365
+00:13:52,779 --> 00:13:54,150
+almost certainly do not want it to be
+
+366
+00:13:54,160 --> 00:13:56,760
+responsible for ensuring that your
+
+367
+00:13:56,770 --> 00:14:00,180
+traffic is secure and authorized you
+
+368
+00:14:00,190 --> 00:14:02,190
+probably just want to like task it with
+
+369
+00:14:02,200 --> 00:14:04,410
+shipping bits around and then you layer
+
+370
+00:14:04,420 --> 00:14:07,290
+on the like identity and authorization
+
+371
+00:14:07,300 --> 00:14:10,620
+like at the endpoints Evan do you have
+
+372
+00:14:10,630 --> 00:14:14,940
+anything to add yeah you know it took us
+
+373
+00:14:14,950 --> 00:14:16,500
+a while to come up with a name for the
+
+374
+00:14:16,510 --> 00:14:19,110
+book you know at the end of the day we
+
+375
+00:14:19,120 --> 00:14:20,670
+wanted to describe this kind of
+
+376
+00:14:20,680 --> 00:14:22,680
+different way of thinking the way of
+
+377
+00:14:22,690 --> 00:14:24,030
+thinking that was different than what
+
+378
+00:14:24,040 --> 00:14:25,740
+people have been doing in the last few
+
+379
+00:14:25,750 --> 00:14:28,170
+decades them you know we ended up on
+
+380
+00:14:28,180 --> 00:14:31,800
+zero trust networks because it was the
+
+381
+00:14:31,810 --> 00:14:34,199
+moat it was the most descriptive name
+
+382
+00:14:34,209 --> 00:14:36,030
+that we could think of believe it or not
+
+383
+00:14:36,040 --> 00:14:39,090
+like it and and I believe the subtitle
+
+384
+00:14:39,100 --> 00:14:42,510
+of the book is building building secure
+
+385
+00:14:42,520 --> 00:14:44,250
+systems and untrusted networks and
+
+386
+00:14:44,260 --> 00:14:45,240
+that's kind of exactly what we're
+
+387
+00:14:45,250 --> 00:14:46,560
+talking about right we're talking about
+
+388
+00:14:46,570 --> 00:14:50,340
+how do you how you go from having a few
+
+389
+00:14:50,350 --> 00:14:52,500
+hosts that need to communicate with each
+
+390
+00:14:52,510 --> 00:14:55,500
+other in such a way that it doesn't
+
+391
+00:14:55,510 --> 00:14:56,819
+really matter what happens in the middle
+
+392
+00:14:56,829 --> 00:14:59,130
+you know an attacker can be positioned
+
+393
+00:14:59,140 --> 00:15:00,720
+anywhere between those two hosts and the
+
+394
+00:15:00,730 --> 00:15:03,329
+security primitives will still stand so
+
+395
+00:15:03,339 --> 00:15:05,250
+we call a zero trust networks because it
+
+396
+00:15:05,260 --> 00:15:08,130
+is to say we don't place any trust into
+
+397
+00:15:08,140 --> 00:15:09,720
+the network we don't trust the network
+
+398
+00:15:09,730 --> 00:15:12,420
+to perform to properly perform any kind
+
+399
+00:15:12,430 --> 00:15:13,860
+of enforcement or confidentiality
+
+400
+00:15:13,870 --> 00:15:16,199
+functions instead we kind of push all
+
+401
+00:15:16,209 --> 00:15:17,670
+that as Douglas saying push all that out
+
+402
+00:15:17,680 --> 00:15:20,370
+to the endpoint this is a principle
+
+403
+00:15:20,380 --> 00:15:22,680
+called the end-to-end principle which
+
+404
+00:15:22,690 --> 00:15:24,780
+basically says the network should do
+
+405
+00:15:24,790 --> 00:15:26,340
+what is good for it should ship packets
+
+406
+00:15:26,350 --> 00:15:27,810
+from one place to another place
+
+407
+00:15:27,820 --> 00:15:30,240
+it shouldn't be necessarily so involved
+
+408
+00:15:30,250 --> 00:15:32,910
+in inspecting and scrubbing and securing
+
+409
+00:15:32,920 --> 00:15:35,430
+and providing you know assurances that
+
+410
+00:15:35,440 --> 00:15:37,620
+the source IP is accurate and so on and
+
+411
+00:15:37,630 --> 00:15:40,680
+so forth I mean that perimeter model to
+
+412
+00:15:40,690 --> 00:15:43,890
+give an example a database gets a
+
+413
+00:15:43,900 --> 00:15:45,840
+connection request from an app server
+
+414
+00:15:45,850 --> 00:15:48,780
+and say well the app server it's behind
+
+415
+00:15:48,790 --> 00:15:50,880
+the firewall so I'll accept the incoming
+
+416
+00:15:50,890 --> 00:15:54,740
+request but in their trust network the
+
+417
+00:15:54,750 --> 00:15:57,120
+criteria are gonna be much tougher than
+
+418
+00:15:57,130 --> 00:15:59,910
+that as whether it should accept the
+
+419
+00:15:59,920 --> 00:16:01,770
+request or not is that correct yeah
+
+420
+00:16:01,780 --> 00:16:05,610
+absolutely you know if you're saying if
+
+421
+00:16:05,620 --> 00:16:07,200
+the database is saying hey you're behind
+
+422
+00:16:07,210 --> 00:16:09,420
+this perimeter so I will accept the
+
+423
+00:16:09,430 --> 00:16:11,640
+request you know it's kind of going back
+
+424
+00:16:11,650 --> 00:16:14,070
+to say well what else is behind that
+
+425
+00:16:14,080 --> 00:16:15,570
+perimeter there's probably more than
+
+426
+00:16:15,580 --> 00:16:17,820
+just a web server it's not unlikely that
+
+427
+00:16:17,830 --> 00:16:19,460
+there's an attacker back there also
+
+428
+00:16:19,470 --> 00:16:21,840
+should you really be allowing requests
+
+429
+00:16:21,850 --> 00:16:23,400
+from anything and if you take if you
+
+430
+00:16:23,410 --> 00:16:25,380
+think of there's like a long you know
+
+431
+00:16:25,390 --> 00:16:27,270
+established principle called lease
+
+432
+00:16:27,280 --> 00:16:29,400
+privilege the system should be
+
+433
+00:16:29,410 --> 00:16:32,400
+implemented to be authorized to do only
+
+434
+00:16:32,410 --> 00:16:34,020
+the things that they must absolutely
+
+435
+00:16:34,030 --> 00:16:35,460
+need to do in order to get their job
+
+436
+00:16:35,470 --> 00:16:38,550
+done and so if you think about that an
+
+437
+00:16:38,560 --> 00:16:40,770
+extended towards the network you know
+
+438
+00:16:40,780 --> 00:16:43,200
+it's very similar like probably only the
+
+439
+00:16:43,210 --> 00:16:44,670
+application server should be essence
+
+440
+00:16:44,680 --> 00:16:47,160
+accessing the database server so you
+
+441
+00:16:47,170 --> 00:16:48,720
+know we put policies in place and we put
+
+442
+00:16:48,730 --> 00:16:50,790
+security controls in place that you know
+
+443
+00:16:50,800 --> 00:16:52,620
+go as far as is reasonable to ensure
+
+444
+00:16:52,630 --> 00:16:54,750
+that that's the case and the fact that
+
+445
+00:16:54,760 --> 00:16:57,270
+is behind the perimeter is not of any
+
+446
+00:16:57,280 --> 00:17:00,270
+significant bearing in terms of deciding
+
+447
+00:17:00,280 --> 00:17:02,580
+whether it should be accepted or not in
+
+448
+00:17:02,590 --> 00:17:05,819
+your book you present design of the zero
+
+449
+00:17:05,829 --> 00:17:10,230
+trust Network consisting of three I have
+
+450
+00:17:10,240 --> 00:17:13,020
+it broken down into three components
+
+451
+00:17:13,030 --> 00:17:16,579
+maybe this is for OB user authentication
+
+452
+00:17:16,589 --> 00:17:19,010
+application authentication device
+
+453
+00:17:19,020 --> 00:17:23,310
+authentication and Trust scoring let's
+
+454
+00:17:23,320 --> 00:17:25,829
+group all of these types of
+
+455
+00:17:25,839 --> 00:17:27,230
+authentication
+
+456
+00:17:27,240 --> 00:17:31,250
+together what do you mean by
+
+457
+00:17:31,260 --> 00:17:34,200
+authentication of these different
+
+458
+00:17:34,210 --> 00:17:36,960
+entities that live on the network sure
+
+459
+00:17:36,970 --> 00:17:38,910
+so the you know we talk about a
+
+460
+00:17:38,920 --> 00:17:40,230
+syndication we're trying to basically
+
+461
+00:17:40,240 --> 00:17:41,460
+answer the question are
+
+462
+00:17:41,470 --> 00:17:44,130
+you who you say you are so users pretty
+
+463
+00:17:44,140 --> 00:17:45,810
+straightforward because we kind of deal
+
+464
+00:17:45,820 --> 00:17:47,010
+with that every day right it's like
+
+465
+00:17:47,020 --> 00:17:49,380
+commonly a username and password maybe
+
+466
+00:17:49,390 --> 00:17:51,090
+you get a little fancy and you start
+
+467
+00:17:51,100 --> 00:17:52,830
+bringing like security keys into
+
+468
+00:17:52,840 --> 00:17:55,409
+consideration here or you do like what
+
+469
+00:17:55,419 --> 00:17:57,810
+is it like time-based one-time the top
+
+470
+00:17:57,820 --> 00:17:59,190
+thing that I can't remember what the
+
+471
+00:17:59,200 --> 00:18:02,370
+acronym is top P hot B yeah you bring in
+
+472
+00:18:02,380 --> 00:18:04,260
+like a second factor code right but like
+
+473
+00:18:04,270 --> 00:18:05,970
+the whole point of authentication is
+
+474
+00:18:05,980 --> 00:18:08,520
+simply saying like can we positively
+
+475
+00:18:08,530 --> 00:18:10,080
+assert that you are who you say you are
+
+476
+00:18:10,090 --> 00:18:11,880
+we split them out into three different
+
+477
+00:18:11,890 --> 00:18:14,190
+taxis because I think they all kind of
+
+478
+00:18:14,200 --> 00:18:15,659
+get authenticated in subtly different
+
+479
+00:18:15,669 --> 00:18:16,250
+ways
+
+480
+00:18:16,260 --> 00:18:19,140
+like I said users username password
+
+481
+00:18:19,150 --> 00:18:20,549
+maybe a second factor but once you start
+
+482
+00:18:20,559 --> 00:18:22,140
+talking about like devices then you're
+
+483
+00:18:22,150 --> 00:18:23,640
+doing usually like some sort of
+
+484
+00:18:23,650 --> 00:18:25,289
+certificate that someone's provisioned
+
+485
+00:18:25,299 --> 00:18:27,210
+onto your instance or if you want to get
+
+486
+00:18:27,220 --> 00:18:29,070
+really fancy maybe your computer has
+
+487
+00:18:29,080 --> 00:18:31,649
+like a TPM chip in it and you have some
+
+488
+00:18:31,659 --> 00:18:33,149
+sort of secure boot system so you've
+
+489
+00:18:33,159 --> 00:18:36,149
+routed it in hardware as opposed to like
+
+490
+00:18:36,159 --> 00:18:37,950
+some credentials that could be
+
+491
+00:18:37,960 --> 00:18:41,850
+exfiltrated off that box it's trust when
+
+492
+00:18:41,860 --> 00:18:45,720
+it's granted it's time limited yeah so
+
+493
+00:18:45,730 --> 00:18:47,159
+that was one of the things that we
+
+494
+00:18:47,169 --> 00:18:49,529
+wanted to really call it is that in a
+
+495
+00:18:49,539 --> 00:18:52,080
+zero trust network like that there's
+
+496
+00:18:52,090 --> 00:18:53,940
+like a time component to all of this
+
+497
+00:18:53,950 --> 00:18:56,580
+like authorization decision that needs
+
+498
+00:18:56,590 --> 00:18:59,940
+to be considered in your designs and not
+
+499
+00:18:59,950 --> 00:19:01,529
+even just like time base but also like
+
+500
+00:19:01,539 --> 00:19:04,649
+action based like how do you like the
+
+501
+00:19:04,659 --> 00:19:05,880
+big question is how do you build a
+
+502
+00:19:05,890 --> 00:19:08,820
+network that can provide some measure
+
+503
+00:19:08,830 --> 00:19:11,340
+protection against novel attacks and so
+
+504
+00:19:11,350 --> 00:19:12,960
+one way you might do that is you might
+
+505
+00:19:12,970 --> 00:19:15,890
+like kind of fuzzy the like
+
+506
+00:19:15,900 --> 00:19:18,659
+authorization line to say like well we
+
+507
+00:19:18,669 --> 00:19:21,360
+have this this concept of a score which
+
+508
+00:19:21,370 --> 00:19:23,549
+is a magical number that tells us how
+
+509
+00:19:23,559 --> 00:19:25,110
+much we should trust you and we might
+
+510
+00:19:25,120 --> 00:19:27,600
+just like set you know if you are
+
+511
+00:19:27,610 --> 00:19:30,000
+falling in your trust score we might ask
+
+512
+00:19:30,010 --> 00:19:31,740
+for extra authorization just to make
+
+513
+00:19:31,750 --> 00:19:33,000
+sure that you're not some malicious
+
+514
+00:19:33,010 --> 00:19:36,270
+actor trying to like leverage your
+
+515
+00:19:36,280 --> 00:19:38,789
+position on an endpoint to to do
+
+516
+00:19:38,799 --> 00:19:41,159
+malicious things essentially so how is a
+
+517
+00:19:41,169 --> 00:19:44,039
+trust score calculated and by who and
+
+518
+00:19:44,049 --> 00:19:46,890
+what does it goes into it yeah that's a
+
+519
+00:19:46,900 --> 00:19:48,870
+great question so um so to be like
+
+520
+00:19:48,880 --> 00:19:51,690
+totally upfront like trust scoring and
+
+521
+00:19:51,700 --> 00:19:53,159
+engines I feel like it's a very
+
+522
+00:19:53,169 --> 00:19:54,930
+forward-thinking concept that
+
+523
+00:19:54,940 --> 00:19:56,490
+there's not a whole lot of detailed
+
+524
+00:19:56,500 --> 00:19:59,190
+implementations for like broadly
+
+525
+00:19:59,200 --> 00:20:01,170
+speaking you'd probably want a system
+
+526
+00:20:01,180 --> 00:20:03,750
+that is receiving events of activities
+
+527
+00:20:03,760 --> 00:20:07,110
+and then using that to derive a score
+
+528
+00:20:07,120 --> 00:20:09,030
+like if we want to get fancy maybe you
+
+529
+00:20:09,040 --> 00:20:11,220
+could say like something machine
+
+530
+00:20:11,230 --> 00:20:13,170
+learning is going and throwing a thrill
+
+531
+00:20:13,180 --> 00:20:15,150
+model and dumping out a score in the end
+
+532
+00:20:15,160 --> 00:20:16,860
+that's you know it's kind of like what
+
+533
+00:20:16,870 --> 00:20:18,180
+your credit card does very where it's
+
+534
+00:20:18,190 --> 00:20:20,220
+looking at transactional activities to
+
+535
+00:20:20,230 --> 00:20:21,660
+decide whether or not you look
+
+536
+00:20:21,670 --> 00:20:23,760
+fraudulent but that's all very hand wavy
+
+537
+00:20:23,770 --> 00:20:25,020
+right because we're just saying like
+
+538
+00:20:25,030 --> 00:20:26,610
+some magic model somewhere gives us a
+
+539
+00:20:26,620 --> 00:20:28,970
+number that we have decided we trust
+
+540
+00:20:28,980 --> 00:20:32,010
+yeah I would like to just maybe kind of
+
+541
+00:20:32,020 --> 00:20:34,170
+color that in a little bit more you know
+
+542
+00:20:34,180 --> 00:20:36,090
+their varying kind of levels of
+
+543
+00:20:36,100 --> 00:20:38,700
+intensity of this stuff you know it can
+
+544
+00:20:38,710 --> 00:20:40,500
+a lot of it comes down to the probably
+
+545
+00:20:40,510 --> 00:20:42,870
+behavior based and what things look like
+
+546
+00:20:42,880 --> 00:20:44,790
+in the past and baselines and things
+
+547
+00:20:44,800 --> 00:20:47,490
+along those lines but to kind of pull it
+
+548
+00:20:47,500 --> 00:20:48,630
+back and make things a little more real
+
+549
+00:20:48,640 --> 00:20:51,150
+like most people see this on a day to
+
+550
+00:20:51,160 --> 00:20:54,030
+day basis most people see this regularly
+
+551
+00:20:54,040 --> 00:20:57,030
+with kind of anomaly detection based on
+
+552
+00:20:57,040 --> 00:21:01,050
+like logins for online services so you
+
+553
+00:21:01,060 --> 00:21:03,180
+know if you've ever like maybe you know
+
+554
+00:21:03,190 --> 00:21:04,620
+you always look at Twitter from
+
+555
+00:21:04,630 --> 00:21:07,020
+California or something and then you
+
+556
+00:21:07,030 --> 00:21:08,460
+know one day you got on a plane I went
+
+557
+00:21:08,470 --> 00:21:11,520
+to try and an or I guess if that example
+
+558
+00:21:11,530 --> 00:21:13,200
+whether you got on the plane went
+
+559
+00:21:13,210 --> 00:21:14,730
+somewhere to some other country and then
+
+560
+00:21:14,740 --> 00:21:15,930
+you tried to log into Twitter and
+
+561
+00:21:15,940 --> 00:21:17,840
+Twitter says hold on this looks weird
+
+562
+00:21:17,850 --> 00:21:19,560
+you know we sent you an email
+
+563
+00:21:19,570 --> 00:21:21,330
+verification we want to make sure that
+
+564
+00:21:21,340 --> 00:21:23,520
+this is actually you that's a great
+
+565
+00:21:23,530 --> 00:21:26,220
+example of this thing in action where
+
+566
+00:21:26,230 --> 00:21:27,990
+they've looked at past behavior and
+
+567
+00:21:28,000 --> 00:21:29,790
+they've said this particular event is
+
+568
+00:21:29,800 --> 00:21:31,860
+kind of fishy and you want to some extra
+
+569
+00:21:31,870 --> 00:21:33,990
+assurance you know we call it trust
+
+570
+00:21:34,000 --> 00:21:36,150
+score in the book but you know the
+
+571
+00:21:36,160 --> 00:21:39,660
+flipside to trust is risk and so you
+
+572
+00:21:39,670 --> 00:21:41,160
+know you could you know I still kind of
+
+573
+00:21:41,170 --> 00:21:42,750
+alluded to you can call it like a risk
+
+574
+00:21:42,760 --> 00:21:45,330
+risk score as well fraud detection
+
+575
+00:21:45,340 --> 00:21:47,310
+systems often implement these kinds of
+
+576
+00:21:47,320 --> 00:21:50,610
+algorithms so it's it's maybe a you know
+
+577
+00:21:50,620 --> 00:21:52,350
+we have some practice doing this and
+
+578
+00:21:52,360 --> 00:21:53,610
+there are some companies out there who
+
+579
+00:21:53,620 --> 00:21:55,230
+have pioneered applying this principle
+
+580
+00:21:55,240 --> 00:21:57,390
+to computer access and computer
+
+581
+00:21:57,400 --> 00:22:01,160
+authorization systems but perhaps it's a
+
+582
+00:22:01,170 --> 00:22:04,110
+well understood idea with a novel
+
+583
+00:22:04,120 --> 00:22:07,830
+application so to try to put an example
+
+584
+00:22:07,840 --> 00:22:08,880
+on this
+
+585
+00:22:08,890 --> 00:22:11,159
+in the more rigid policy based framework
+
+586
+00:22:11,169 --> 00:22:13,769
+I'm logging in a prison username
+
+587
+00:22:13,779 --> 00:22:18,360
+password maybe an RSA key okay I'm good
+
+588
+00:22:18,370 --> 00:22:20,970
+it's all correct but this trust scoring
+
+589
+00:22:20,980 --> 00:22:22,799
+you might look at well I've now logged
+
+590
+00:22:22,809 --> 00:22:24,600
+in a hundred times in the last three
+
+591
+00:22:24,610 --> 00:22:27,240
+minutes from IP addresses in Hungary
+
+592
+00:22:27,250 --> 00:22:30,960
+China and California that's a little
+
+593
+00:22:30,970 --> 00:22:31,980
+weird and it's hard to explain how
+
+594
+00:22:31,990 --> 00:22:33,930
+Robert could have gotten from Hungary to
+
+595
+00:22:33,940 --> 00:22:35,720
+China in three minutes or less so that's
+
+596
+00:22:35,730 --> 00:22:38,220
+gonna impact my trust score negatively
+
+597
+00:22:38,230 --> 00:22:41,940
+and maybe I need a 500 to get into the
+
+598
+00:22:41,950 --> 00:22:44,430
+system I want to get into and I got
+
+599
+00:22:44,440 --> 00:22:46,590
+docked 200 points for these weird
+
+600
+00:22:46,600 --> 00:22:48,690
+anomalies so that's I'm not going to get
+
+601
+00:22:48,700 --> 00:22:51,509
+in to the system am I getting the story
+
+602
+00:22:51,519 --> 00:22:54,210
+yeah that's exactly what it is you know
+
+603
+00:22:54,220 --> 00:22:55,919
+and and and it's taking that and it's
+
+604
+00:22:55,929 --> 00:22:57,779
+saying even further like you know we can
+
+605
+00:22:57,789 --> 00:23:01,019
+apply the same principles to like access
+
+606
+00:23:01,029 --> 00:23:03,120
+patterns inside the data center you know
+
+607
+00:23:03,130 --> 00:23:05,310
+from workload or workload or service to
+
+608
+00:23:05,320 --> 00:23:06,600
+service as well it doesn't just have to
+
+609
+00:23:06,610 --> 00:23:10,139
+be user logins so going back to then the
+
+610
+00:23:10,149 --> 00:23:11,850
+database it's getting a connection from
+
+611
+00:23:11,860 --> 00:23:14,190
+the app server you would apply this same
+
+612
+00:23:14,200 --> 00:23:18,149
+philosophy of scoring what is normal
+
+613
+00:23:18,159 --> 00:23:21,060
+usage for an app server versus some kind
+
+614
+00:23:21,070 --> 00:23:23,610
+of anomalies that maybe it's not an app
+
+615
+00:23:23,620 --> 00:23:26,129
+server it's some malicious actor that's
+
+616
+00:23:26,139 --> 00:23:28,250
+trying to attack the database and it's
+
+617
+00:23:28,260 --> 00:23:30,600
+managed to obtain the credentials
+
+618
+00:23:30,610 --> 00:23:32,789
+belonging to an AB server yeah
+
+619
+00:23:32,799 --> 00:23:35,840
+absolutely and you know it transcends
+
+620
+00:23:35,850 --> 00:23:38,909
+just like access patterns there's a lot
+
+621
+00:23:38,919 --> 00:23:41,009
+more to it you know and and briefly
+
+622
+00:23:41,019 --> 00:23:42,840
+touched upon earlier about
+
+623
+00:23:42,850 --> 00:23:44,789
+authenticating devices and users or
+
+624
+00:23:44,799 --> 00:23:46,230
+devices and apps you know these things
+
+625
+00:23:46,240 --> 00:23:49,980
+are done kind of in tandem so it's not
+
+626
+00:23:49,990 --> 00:23:52,169
+just knowing that it's the app server
+
+627
+00:23:52,179 --> 00:23:55,019
+but it's about knowing hey it was an app
+
+628
+00:23:55,029 --> 00:23:56,220
+server that connected to me
+
+629
+00:23:56,230 --> 00:23:58,649
+and I know that it was the Apache web
+
+630
+00:23:58,659 --> 00:24:01,529
+server in particular on that portray or
+
+631
+00:24:01,539 --> 00:24:03,570
+that is connecting to me and those two
+
+632
+00:24:03,580 --> 00:24:05,399
+things together give a much higher
+
+633
+00:24:05,409 --> 00:24:08,759
+degree of assurance and it can be you
+
+634
+00:24:08,769 --> 00:24:10,529
+know in terms of calculating the score
+
+635
+00:24:10,539 --> 00:24:13,379
+it may not just be you know the
+
+636
+00:24:13,389 --> 00:24:14,940
+historical access patterns of this
+
+637
+00:24:14,950 --> 00:24:16,649
+Apache web server but it could also be
+
+638
+00:24:16,659 --> 00:24:19,889
+hey we know we know the identity of the
+
+639
+00:24:19,899 --> 00:24:21,060
+apps are rebirthing
+
+640
+00:24:21,070 --> 00:24:22,230
+running on and we know it hasn't been
+
+641
+00:24:22,240 --> 00:24:24,450
+patched in six months and so perhaps
+
+642
+00:24:24,460 --> 00:24:27,539
+that dings the score trust score or risk
+
+643
+00:24:27,549 --> 00:24:29,850
+score right because it is now more risky
+
+644
+00:24:29,860 --> 00:24:31,320
+to accept connections from this machine
+
+645
+00:24:31,330 --> 00:24:33,779
+that hasn't been patched what I think
+
+646
+00:24:33,789 --> 00:24:36,330
+you're saying Urban's is there's almost
+
+647
+00:24:36,340 --> 00:24:39,060
+unlimited range of things you could take
+
+648
+00:24:39,070 --> 00:24:40,860
+into account in the score and it's not
+
+649
+00:24:40,870 --> 00:24:42,889
+just you get scored on each thing
+
+650
+00:24:42,899 --> 00:24:46,159
+independently but multiple things
+
+651
+00:24:46,169 --> 00:24:47,999
+independent variables which might be
+
+652
+00:24:48,009 --> 00:24:50,549
+each one okay on their own but together
+
+653
+00:24:50,559 --> 00:24:53,759
+don't make sense or sort of vector
+
+654
+00:24:53,769 --> 00:24:56,039
+combinations of things could go into the
+
+655
+00:24:56,049 --> 00:24:58,200
+score yeah exactly that yep
+
+656
+00:24:58,210 --> 00:25:01,350
+okay want to move on to another concept
+
+657
+00:25:01,360 --> 00:25:03,180
+in his ear twist network the idea of the
+
+658
+00:25:03,190 --> 00:25:06,840
+control plane and the data plane explain
+
+659
+00:25:06,850 --> 00:25:08,659
+what those are and how do they interact
+
+660
+00:25:08,669 --> 00:25:11,190
+sure you want to take this Duggar slide
+
+661
+00:25:11,200 --> 00:25:13,680
+sure I can take it so I think basically
+
+662
+00:25:13,690 --> 00:25:15,419
+what we were trying to tease out there
+
+663
+00:25:15,429 --> 00:25:17,820
+is when you think about the architecture
+
+664
+00:25:17,830 --> 00:25:19,529
+of this system you should be very
+
+665
+00:25:19,539 --> 00:25:22,950
+cognizant of the control plane being
+
+666
+00:25:22,960 --> 00:25:25,080
+like the set of systems that ultimately
+
+667
+00:25:25,090 --> 00:25:26,460
+make the decision of whether or not
+
+668
+00:25:26,470 --> 00:25:30,180
+something should be trusted and have the
+
+669
+00:25:30,190 --> 00:25:32,190
+access to manage the rest of the network
+
+670
+00:25:32,200 --> 00:25:35,009
+and the data plane is like the bits of
+
+671
+00:25:35,019 --> 00:25:38,399
+like control software that you sprinkle
+
+672
+00:25:38,409 --> 00:25:40,019
+throughout the network that the control
+
+673
+00:25:40,029 --> 00:25:43,169
+plane is like reconfiguring so maybe to
+
+674
+00:25:43,179 --> 00:25:45,360
+put this in terms of like something
+
+675
+00:25:45,370 --> 00:25:47,909
+that's very hot and buzz wordy right now
+
+676
+00:25:47,919 --> 00:25:50,730
+would be like envoy and service meshes
+
+677
+00:25:50,740 --> 00:25:52,680
+they generally have like a proxy that
+
+678
+00:25:52,690 --> 00:25:54,299
+runs on every instance and you route
+
+679
+00:25:54,309 --> 00:25:56,039
+network traffic through it but you
+
+680
+00:25:56,049 --> 00:25:57,779
+usually have this suite of applications
+
+681
+00:25:57,789 --> 00:26:00,210
+that sit off the instance that are like
+
+682
+00:26:00,220 --> 00:26:02,310
+configuring each proxy is like a big
+
+683
+00:26:02,320 --> 00:26:05,039
+distributed system and so those like
+
+684
+00:26:05,049 --> 00:26:06,899
+separate systems are the control plane
+
+685
+00:26:06,909 --> 00:26:08,249
+and the data plane is like each
+
+686
+00:26:08,259 --> 00:26:12,090
+individual envoy proxy right and the the
+
+687
+00:26:12,100 --> 00:26:14,940
+most common kind of component that you
+
+688
+00:26:14,950 --> 00:26:17,129
+put in the data plane we usually call
+
+689
+00:26:17,139 --> 00:26:19,320
+like an enforcement point so you know
+
+690
+00:26:19,330 --> 00:26:20,580
+you have this control plane which is
+
+691
+00:26:20,590 --> 00:26:22,259
+making all these decisions and enforcing
+
+692
+00:26:22,269 --> 00:26:24,330
+all this policy but at some point you
+
+693
+00:26:24,340 --> 00:26:26,310
+have to have the traffic cop sort of
+
+694
+00:26:26,320 --> 00:26:28,590
+speak which comes in and actually blocks
+
+695
+00:26:28,600 --> 00:26:31,259
+or disallows or allows and it's these
+
+696
+00:26:31,269 --> 00:26:33,210
+kind of traffic cops that sit inside the
+
+697
+00:26:33,220 --> 00:26:33,850
+data plane
+
+698
+00:26:33,860 --> 00:26:36,910
+so one analogy here could be you know
+
+699
+00:26:36,920 --> 00:26:38,740
+like traffic control systems on roads
+
+700
+00:26:38,750 --> 00:26:41,320
+and cities there's oftentimes
+
+701
+00:26:41,330 --> 00:26:44,070
+centralized computer systems which can
+
+702
+00:26:44,080 --> 00:26:47,049
+coordinate you know traffic lights and
+
+703
+00:26:47,059 --> 00:26:49,030
+things like this across a across a town
+
+704
+00:26:49,040 --> 00:26:50,980
+or a city and then you have the traffic
+
+705
+00:26:50,990 --> 00:26:53,470
+lights themselves that in this case the
+
+706
+00:26:53,480 --> 00:26:55,870
+data plane are the roads and the traffic
+
+707
+00:26:55,880 --> 00:26:57,690
+lights are sitting in the data plane
+
+708
+00:26:57,700 --> 00:26:59,710
+actually making the enforcement and
+
+709
+00:26:59,720 --> 00:27:01,419
+controlling the traffic in the flow and
+
+710
+00:27:01,429 --> 00:27:03,430
+then you have this control plane which
+
+711
+00:27:03,440 --> 00:27:05,200
+is the separate computer system which is
+
+712
+00:27:05,210 --> 00:27:07,840
+instructing the traffic lights on what
+
+713
+00:27:07,850 --> 00:27:10,210
+they should do if the app server wants
+
+714
+00:27:10,220 --> 00:27:14,100
+to talk to the database server then does
+
+715
+00:27:14,110 --> 00:27:17,200
+traffic have to get permitted by the
+
+716
+00:27:17,210 --> 00:27:20,350
+control plane in order for that
+
+717
+00:27:20,360 --> 00:27:22,659
+connection to be made it depends on the
+
+718
+00:27:22,669 --> 00:27:25,000
+implementation the control plan can play
+
+719
+00:27:25,010 --> 00:27:27,580
+a very active role in this but in
+
+720
+00:27:27,590 --> 00:27:29,260
+practice that can be hard to scale them
+
+721
+00:27:29,270 --> 00:27:31,510
+in terms of like performance overhead
+
+722
+00:27:31,520 --> 00:27:34,419
+unavailability impact of requiring these
+
+723
+00:27:34,429 --> 00:27:36,039
+services to be there all the time in
+
+724
+00:27:36,049 --> 00:27:38,380
+order for anything to function usually
+
+725
+00:27:38,390 --> 00:27:39,580
+what we see is kind of like a
+
+726
+00:27:39,590 --> 00:27:41,770
+half-and-half approach where maybe we
+
+727
+00:27:41,780 --> 00:27:43,870
+cache some decisions inside the data
+
+728
+00:27:43,880 --> 00:27:46,600
+plane or we use the control plane to
+
+729
+00:27:46,610 --> 00:27:48,760
+push down configuration or state into
+
+730
+00:27:48,770 --> 00:27:50,530
+the data plane that can kind of survive
+
+731
+00:27:50,540 --> 00:27:52,299
+on its own for some time in case it's
+
+732
+00:27:52,309 --> 00:27:55,510
+severed from the control plane so you
+
+733
+00:27:55,520 --> 00:27:57,010
+know some people may some people may
+
+734
+00:27:57,020 --> 00:27:58,539
+prefer to not do that because they want
+
+735
+00:27:58,549 --> 00:28:00,669
+more active control when it comes to the
+
+736
+00:28:00,679 --> 00:28:03,760
+cost so at an example be something like
+
+737
+00:28:03,770 --> 00:28:08,380
+single sign-on where you obtain a token
+
+738
+00:28:08,390 --> 00:28:12,010
+from an authentication server with a
+
+739
+00:28:12,020 --> 00:28:13,870
+time limit and then you can present that
+
+740
+00:28:13,880 --> 00:28:16,060
+to a number of resources in the network
+
+741
+00:28:16,070 --> 00:28:18,880
+yeah it could be another example might
+
+742
+00:28:18,890 --> 00:28:22,600
+be hey you know my control plane has
+
+743
+00:28:22,610 --> 00:28:24,970
+configured the firewalls inbound and how
+
+744
+00:28:24,980 --> 00:28:26,289
+about firewalls on both of these
+
+745
+00:28:26,299 --> 00:28:28,000
+instances because it knows the IP
+
+746
+00:28:28,010 --> 00:28:30,159
+addresses you know maybe those changed
+
+747
+00:28:30,169 --> 00:28:32,440
+over time but the control plane has to
+
+748
+00:28:32,450 --> 00:28:33,940
+be up to do that but if the control
+
+749
+00:28:33,950 --> 00:28:35,380
+plane goes down and the steady state
+
+750
+00:28:35,390 --> 00:28:37,930
+remains maybe additionally the control
+
+751
+00:28:37,940 --> 00:28:39,940
+plane has pushed down and dropped
+
+752
+00:28:39,950 --> 00:28:41,680
+certificates on to these machines that
+
+753
+00:28:41,690 --> 00:28:43,330
+they use for authenticating each other
+
+754
+00:28:43,340 --> 00:28:45,190
+and those certificates similar to the
+
+755
+00:28:45,200 --> 00:28:45,720
+token
+
+756
+00:28:45,730 --> 00:28:48,630
+good for some period of time so you know
+
+757
+00:28:48,640 --> 00:28:50,070
+the control plate has kind of informed
+
+758
+00:28:50,080 --> 00:28:51,690
+the data plan of its position and what
+
+759
+00:28:51,700 --> 00:28:53,100
+should be allowed and not allowed and
+
+760
+00:28:53,110 --> 00:28:55,200
+and in some configurations I would say
+
+761
+00:28:55,210 --> 00:28:56,850
+that most configurations the data thing
+
+762
+00:28:56,860 --> 00:28:58,560
+kind of sail along for some period of
+
+763
+00:28:58,570 --> 00:29:00,090
+time without control plate and
+
+764
+00:29:00,100 --> 00:29:03,120
+involvement I want to move on and talk
+
+765
+00:29:03,130 --> 00:29:05,430
+about encryption you mentioned that
+
+766
+00:29:05,440 --> 00:29:07,380
+earlier if you don't trust the network
+
+767
+00:29:07,390 --> 00:29:10,770
+then you need to encrypt all the traffic
+
+768
+00:29:10,780 --> 00:29:13,500
+that goes across the network then are
+
+769
+00:29:13,510 --> 00:29:17,700
+all conversations between servers or
+
+770
+00:29:17,710 --> 00:29:20,790
+services on the network encrypted using
+
+771
+00:29:20,800 --> 00:29:24,300
+em TLS yep pretty much and one of the
+
+772
+00:29:24,310 --> 00:29:25,380
+things I find fascinating about this is
+
+773
+00:29:25,390 --> 00:29:27,450
+it's not just about like you're not
+
+774
+00:29:27,460 --> 00:29:30,840
+trusting the network to to like divulge
+
+775
+00:29:30,850 --> 00:29:32,640
+the traffic but also sometimes you just
+
+776
+00:29:32,650 --> 00:29:34,380
+don't trust the network to deliver that
+
+777
+00:29:34,390 --> 00:29:36,420
+traffic faithfully like I've literally
+
+778
+00:29:36,430 --> 00:29:37,920
+had this happen in my job where we've
+
+779
+00:29:37,930 --> 00:29:40,010
+had bit flips that caused problems in
+
+780
+00:29:40,020 --> 00:29:43,080
+like transit and so it's not just a
+
+781
+00:29:43,090 --> 00:29:44,550
+mythical thing that could happen it's a
+
+782
+00:29:44,560 --> 00:29:46,440
+thing that like causes you problems if
+
+783
+00:29:46,450 --> 00:29:49,500
+you don't have that kind of like guard
+
+784
+00:29:49,510 --> 00:29:52,260
+against just malicious activity or
+
+785
+00:29:52,270 --> 00:29:54,390
+accidental like rewriting of traffic
+
+786
+00:29:54,400 --> 00:29:57,720
+yeah the the encryption is not strictly
+
+787
+00:29:57,730 --> 00:30:00,300
+but practically always provides a degree
+
+788
+00:30:00,310 --> 00:30:02,700
+of authenticity to the traffic so you'll
+
+789
+00:30:02,710 --> 00:30:04,620
+get to know if it was modified because
+
+790
+00:30:04,630 --> 00:30:07,620
+those things will be invalidated so you
+
+791
+00:30:07,630 --> 00:30:08,940
+know that that's a really important
+
+792
+00:30:08,950 --> 00:30:11,310
+aspect and you know it doesn't have to
+
+793
+00:30:11,320 --> 00:30:13,590
+be mutually authenticated TLS that is
+
+794
+00:30:13,600 --> 00:30:16,130
+one of the more popular options today
+
+795
+00:30:16,140 --> 00:30:18,360
+but you know in the book we wrote about
+
+796
+00:30:18,370 --> 00:30:21,150
+doing this with IPSec and there's new
+
+797
+00:30:21,160 --> 00:30:22,890
+protocols out there one that comes to
+
+798
+00:30:22,900 --> 00:30:24,720
+mind is wire guard certainly there are a
+
+799
+00:30:24,730 --> 00:30:26,850
+lot of different options to accomplish
+
+800
+00:30:26,860 --> 00:30:29,850
+this kind of encryption and you know
+
+801
+00:30:29,860 --> 00:30:33,330
+which of those you choose is is a little
+
+802
+00:30:33,340 --> 00:30:35,310
+bit new Austin's aware and the staff do
+
+803
+00:30:35,320 --> 00:30:36,380
+you want it to lie
+
+804
+00:30:36,390 --> 00:30:38,730
+what kind of keys and types of
+
+805
+00:30:38,740 --> 00:30:40,350
+authentication do you want it to be able
+
+806
+00:30:40,360 --> 00:30:43,200
+to be capable of things along those
+
+807
+00:30:43,210 --> 00:30:45,390
+lines but but but mutually authenticated
+
+808
+00:30:45,400 --> 00:30:48,450
+TLS has taken a front seat and in the
+
+809
+00:30:48,460 --> 00:30:50,250
+last couple years certainly we have a
+
+810
+00:30:50,260 --> 00:30:52,980
+show which is going to be published
+
+811
+00:30:52,990 --> 00:30:56,820
+before this one on TLS and PKR which is
+
+812
+00:30:56,830 --> 00:30:59,380
+the public key infrastructure
+
+813
+00:30:59,390 --> 00:31:01,960
+and that so we went a lot of detail into
+
+814
+00:31:01,970 --> 00:31:05,110
+the public certificate authorities if
+
+815
+00:31:05,120 --> 00:31:07,840
+you're running TLS on your own network
+
+816
+00:31:07,850 --> 00:31:09,730
+do you run your own certificate
+
+817
+00:31:09,740 --> 00:31:12,520
+authority within your organization yeah
+
+818
+00:31:12,530 --> 00:31:13,990
+that's definitely what we recommend I
+
+819
+00:31:14,000 --> 00:31:16,030
+think it makes the most sense so yeah
+
+820
+00:31:16,040 --> 00:31:18,730
+it's it's they can be difficult to
+
+821
+00:31:18,740 --> 00:31:21,340
+manage and in the last couple of years
+
+822
+00:31:21,350 --> 00:31:23,200
+there's been quite a bit of effort in
+
+823
+00:31:23,210 --> 00:31:25,600
+the open source world to to make those
+
+824
+00:31:25,610 --> 00:31:28,480
+privately managed PK eyes a little bit
+
+825
+00:31:28,490 --> 00:31:31,419
+easier to wrangle and reason about and
+
+826
+00:31:31,429 --> 00:31:34,120
+they're certainly the the advised path
+
+827
+00:31:34,130 --> 00:31:37,600
+simply because the flexibility of public
+
+828
+00:31:37,610 --> 00:31:41,289
+CA is as public CAS or you know really
+
+829
+00:31:41,299 --> 00:31:43,210
+their bread and butter is like web
+
+830
+00:31:43,220 --> 00:31:46,060
+systems where you have you know not
+
+831
+00:31:46,070 --> 00:31:48,130
+necessarily anonymous users but you have
+
+832
+00:31:48,140 --> 00:31:49,990
+users coming in from perhaps anywhere
+
+833
+00:31:50,000 --> 00:31:51,659
+that are not part of that organization
+
+834
+00:31:51,669 --> 00:31:55,030
+you can think of like you know securing
+
+835
+00:31:55,040 --> 00:31:56,770
+the connection to your banking website
+
+836
+00:31:56,780 --> 00:31:58,690
+or something when we talk about zero
+
+837
+00:31:58,700 --> 00:32:01,990
+trust networks we don't it is very very
+
+838
+00:32:02,000 --> 00:32:04,630
+difficult perhaps impossible to apply
+
+839
+00:32:04,640 --> 00:32:06,330
+that concept to the open Internet
+
+840
+00:32:06,340 --> 00:32:08,950
+consumers at large it's way more geared
+
+841
+00:32:08,960 --> 00:32:12,010
+towards enterprises and companies which
+
+842
+00:32:12,020 --> 00:32:14,710
+can control the systems and know exactly
+
+843
+00:32:14,720 --> 00:32:16,150
+what is supposed to be happening and
+
+844
+00:32:16,160 --> 00:32:19,060
+when and where and so you know the goal
+
+845
+00:32:19,070 --> 00:32:20,830
+in life and the purpose of the public CA
+
+846
+00:32:20,840 --> 00:32:24,039
+system even though they give they
+
+847
+00:32:24,049 --> 00:32:25,950
+provide PKI and give certificates
+
+848
+00:32:25,960 --> 00:32:28,659
+there's not really built with these
+
+849
+00:32:28,669 --> 00:32:31,419
+kinds of usages in mind and so now the
+
+850
+00:32:31,429 --> 00:32:34,360
+flexibility can can be problematic where
+
+851
+00:32:34,370 --> 00:32:36,640
+are some of the challenges in running
+
+852
+00:32:36,650 --> 00:32:40,360
+your own internal CA key management is
+
+853
+00:32:40,370 --> 00:32:42,940
+certainly one when you run an internal
+
+854
+00:32:42,950 --> 00:32:45,760
+CA the an internal PKI
+
+855
+00:32:45,770 --> 00:32:48,010
+you know there's a nation that you're
+
+856
+00:32:48,020 --> 00:32:50,049
+holding a very powerful keys and and
+
+857
+00:32:50,059 --> 00:32:52,960
+there's this kind of idea of a route and
+
+858
+00:32:52,970 --> 00:32:56,020
+that's that like the CA and if that key
+
+859
+00:32:56,030 --> 00:32:57,460
+is compromised that all else is
+
+860
+00:32:57,470 --> 00:33:00,159
+cauterized so managing that key of
+
+861
+00:33:00,169 --> 00:33:02,080
+securing it appropriately can be very
+
+862
+00:33:02,090 --> 00:33:03,940
+difficult that's the first problem their
+
+863
+00:33:03,950 --> 00:33:06,010
+first challenge the second challenge is
+
+864
+00:33:06,020 --> 00:33:07,570
+that these certificates that are
+
+865
+00:33:07,580 --> 00:33:10,659
+generated by the PKI that represent the
+
+866
+00:33:10,669 --> 00:33:12,290
+identities
+
+867
+00:33:12,300 --> 00:33:15,500
+they're time-limited and renewing them
+
+868
+00:33:15,510 --> 00:33:17,330
+can be very difficult that they're very
+
+869
+00:33:17,340 --> 00:33:19,250
+you know this is one of the projects
+
+870
+00:33:19,260 --> 00:33:20,840
+that I'm working on is automating this
+
+871
+00:33:20,850 --> 00:33:23,000
+you know a lot of the issue as today is
+
+872
+00:33:23,010 --> 00:33:25,400
+pretty this fairly manual and pushing
+
+873
+00:33:25,410 --> 00:33:27,230
+those certificates out and updating them
+
+874
+00:33:27,240 --> 00:33:28,790
+can be extremely painful and extremely
+
+875
+00:33:28,800 --> 00:33:31,419
+expensive so what people tend to do is
+
+876
+00:33:31,429 --> 00:33:34,100
+make them last a very long time which is
+
+877
+00:33:34,110 --> 00:33:37,669
+also not a great solution so and then
+
+878
+00:33:37,679 --> 00:33:39,049
+when they come to expire maybe you
+
+879
+00:33:39,059 --> 00:33:41,150
+forget and the thing falls over or or
+
+880
+00:33:41,160 --> 00:33:43,100
+maybe you have to dig out some playbook
+
+881
+00:33:43,110 --> 00:33:45,590
+that dust it off of the shelf you know
+
+882
+00:33:45,600 --> 00:33:48,020
+and figure out how to do this thing once
+
+883
+00:33:48,030 --> 00:33:50,180
+every year or two years or however often
+
+884
+00:33:50,190 --> 00:33:52,549
+you have to do it and because these
+
+885
+00:33:52,559 --> 00:33:54,380
+these processes can be expensive you
+
+886
+00:33:54,390 --> 00:33:57,200
+tend to use them limited fashion so you
+
+887
+00:33:57,210 --> 00:33:59,450
+might pick and choose where where you
+
+888
+00:33:59,460 --> 00:34:01,070
+install them or maybe there's only one
+
+889
+00:34:01,080 --> 00:34:02,570
+or something you start to cut corners
+
+890
+00:34:02,580 --> 00:34:05,180
+because they're expensive to issue and
+
+891
+00:34:05,190 --> 00:34:07,910
+manage so that limited lifetime and the
+
+892
+00:34:07,920 --> 00:34:10,010
+issuance the secure and automated
+
+893
+00:34:10,020 --> 00:34:11,750
+issuance of those certificates is the
+
+894
+00:34:11,760 --> 00:34:14,720
+second very large challenge with that if
+
+895
+00:34:14,730 --> 00:34:17,720
+you're routing requests through your
+
+896
+00:34:17,730 --> 00:34:22,070
+network over HTTPS and it's encrypted
+
+897
+00:34:22,080 --> 00:34:24,580
+does that make life more difficult for
+
+898
+00:34:24,590 --> 00:34:28,849
+proxies or load balancers like nginx so
+
+899
+00:34:28,859 --> 00:34:31,099
+I think maybe this depends on what the
+
+900
+00:34:31,109 --> 00:34:33,590
+purpose of the proxy is if we're talking
+
+901
+00:34:33,600 --> 00:34:36,230
+about like are you imagining a proxy
+
+902
+00:34:36,240 --> 00:34:38,480
+which intersects encrypted traffic to
+
+903
+00:34:38,490 --> 00:34:40,180
+the side whether or not it's suspicious
+
+904
+00:34:40,190 --> 00:34:42,740
+yeah that would make it harder I mean
+
+905
+00:34:42,750 --> 00:34:44,889
+some organizations do like TLS enter
+
+906
+00:34:44,899 --> 00:34:47,450
+interception where they like give the
+
+907
+00:34:47,460 --> 00:34:49,399
+keys to the proxy tier in order for it
+
+908
+00:34:49,409 --> 00:34:51,500
+to unwrap and inspect the traffic but I
+
+909
+00:34:51,510 --> 00:34:53,180
+think that's quite honestly kind of
+
+910
+00:34:53,190 --> 00:34:55,430
+falling out of favor and in preference
+
+911
+00:34:55,440 --> 00:34:58,940
+of asking a proxy very explicitly to
+
+912
+00:34:58,950 --> 00:35:00,859
+route traffic out to say the Internet
+
+913
+00:35:00,869 --> 00:35:03,260
+and you just get it kind of like the
+
+914
+00:35:03,270 --> 00:35:05,990
+domain level coming into your network I
+
+915
+00:35:06,000 --> 00:35:07,490
+don't really see too many problems
+
+916
+00:35:07,500 --> 00:35:09,590
+personally curious what you think of it
+
+917
+00:35:09,600 --> 00:35:13,070
+yeah I mean it there is like a fairly
+
+918
+00:35:13,080 --> 00:35:16,340
+large installed user base of you know
+
+919
+00:35:16,350 --> 00:35:20,270
+what we call middle boxes these are
+
+920
+00:35:20,280 --> 00:35:22,040
+things put in the network that argument
+
+921
+00:35:22,050 --> 00:35:25,220
+to intercept traffic perhaps for passive
+
+922
+00:35:25,230 --> 00:35:25,890
+inspection
+
+923
+00:35:25,900 --> 00:35:28,830
+for a prep for active manipulation this
+
+924
+00:35:28,840 --> 00:35:30,120
+has been a pretty common pattern
+
+925
+00:35:30,130 --> 00:35:31,530
+particularly in enterprise for
+
+926
+00:35:31,540 --> 00:35:33,180
+exfiltration detection and things along
+
+927
+00:35:33,190 --> 00:35:35,970
+these lines as Doug said though you know
+
+928
+00:35:35,980 --> 00:35:37,980
+I think it might from my perspective the
+
+929
+00:35:37,990 --> 00:35:39,870
+trend in the industry is very much we
+
+930
+00:35:39,880 --> 00:35:43,290
+probably shouldn't be doing that and you
+
+931
+00:35:43,300 --> 00:35:44,760
+know maybe it was a great idea when we
+
+932
+00:35:44,770 --> 00:35:46,530
+started but now that you know what we
+
+933
+00:35:46,540 --> 00:35:49,410
+are ended up seeing is that and I'll
+
+934
+00:35:49,420 --> 00:35:51,690
+give you an example of you know TLS
+
+935
+00:35:51,700 --> 00:35:54,890
+which is the same as SSL or HTTPS
+
+936
+00:35:54,900 --> 00:35:57,360
+one-point-three is designed as a busser
+
+937
+00:35:57,370 --> 00:35:59,580
+boosted security features and now we're
+
+938
+00:35:59,590 --> 00:36:01,500
+seeing as we're seeing an effort by a
+
+939
+00:36:01,510 --> 00:36:03,840
+lot of the manufacturers and users of
+
+940
+00:36:03,850 --> 00:36:07,290
+these middleboxes to kind of weaken and
+
+941
+00:36:07,300 --> 00:36:09,960
+water down the protocol such that it can
+
+942
+00:36:09,970 --> 00:36:12,570
+permit the interception and inspection
+
+943
+00:36:12,580 --> 00:36:14,220
+of this traffic by these middle boxes
+
+944
+00:36:14,230 --> 00:36:16,140
+and that's certainly in tension with
+
+945
+00:36:16,150 --> 00:36:18,570
+what we're trying to do is in direct
+
+946
+00:36:18,580 --> 00:36:21,840
+tension you know these encryption these
+
+947
+00:36:21,850 --> 00:36:23,520
+encryption protocols are exactly
+
+948
+00:36:23,530 --> 00:36:25,440
+designed to prevent this kind of
+
+949
+00:36:25,450 --> 00:36:27,420
+interception and inspection of
+
+950
+00:36:27,430 --> 00:36:30,780
+manipulation so the caught the very
+
+951
+00:36:30,790 --> 00:36:32,820
+concept that perhaps we want to permit
+
+952
+00:36:32,830 --> 00:36:35,550
+it but only in certain limited use cases
+
+953
+00:36:35,560 --> 00:36:38,430
+feels a lot to me like you know the
+
+954
+00:36:38,440 --> 00:36:39,840
+government should have a backdoor to the
+
+955
+00:36:39,850 --> 00:36:42,630
+encryption argument you know so that is
+
+956
+00:36:42,640 --> 00:36:44,700
+kind of the battle that is continues to
+
+957
+00:36:44,710 --> 00:36:47,370
+be waged but you know I think in general
+
+958
+00:36:47,380 --> 00:36:48,840
+is particularly unlike them were
+
+959
+00:36:48,850 --> 00:36:50,760
+forward-looking tech companies in
+
+960
+00:36:50,770 --> 00:36:53,010
+particular definitely kind of trying
+
+961
+00:36:53,020 --> 00:36:54,150
+their best to move away from that
+
+962
+00:36:54,160 --> 00:36:55,530
+pattern and install end-to-end
+
+963
+00:36:55,540 --> 00:36:58,020
+encryption instead in your book you have
+
+964
+00:36:58,030 --> 00:37:01,250
+entire chapter on trusting devices
+
+965
+00:37:01,260 --> 00:37:03,690
+chapter on trusting users and one on
+
+966
+00:37:03,700 --> 00:37:06,240
+trusting apps we're not gonna have time
+
+967
+00:37:06,250 --> 00:37:08,070
+to delve into all those I want to talk a
+
+968
+00:37:08,080 --> 00:37:10,680
+little bit about trusting apps a couple
+
+969
+00:37:10,690 --> 00:37:13,890
+of interesting issues there one is the
+
+970
+00:37:13,900 --> 00:37:16,650
+idea of doing security scans on apps can
+
+971
+00:37:16,660 --> 00:37:18,510
+you explain what what that is what are
+
+972
+00:37:18,520 --> 00:37:21,540
+you scanning for how do you scan sure so
+
+973
+00:37:21,550 --> 00:37:23,040
+like at the basic level you might
+
+974
+00:37:23,050 --> 00:37:25,860
+imagine something like what in Ruby land
+
+975
+00:37:25,870 --> 00:37:28,080
+you have bundler audit which goes
+
+976
+00:37:28,090 --> 00:37:30,000
+through your gem file list and make sure
+
+977
+00:37:30,010 --> 00:37:32,730
+you're not running dependencies that
+
+978
+00:37:32,740 --> 00:37:34,500
+have known CVEs on them it's pretty
+
+979
+00:37:34,510 --> 00:37:36,540
+basic maybe you like step it up a notch
+
+980
+00:37:36,550 --> 00:37:38,160
+and start doing like fuzzing of
+
+981
+00:37:38,170 --> 00:37:39,630
+applications automatically
+
+982
+00:37:39,640 --> 00:37:42,720
+or you have some sort of like linting
+
+983
+00:37:42,730 --> 00:37:44,400
+system which is you know it's a web
+
+984
+00:37:44,410 --> 00:37:46,230
+application is it taking user data and
+
+985
+00:37:46,240 --> 00:37:48,120
+jamming it into a sequel query things
+
+986
+00:37:48,130 --> 00:37:49,560
+like that it's really just essentially
+
+987
+00:37:49,570 --> 00:37:52,880
+like in a lot of ways automating the
+
+988
+00:37:52,890 --> 00:37:55,500
+auditing practices that like a security
+
+989
+00:37:55,510 --> 00:37:57,120
+engineer would do for your applications
+
+990
+00:37:57,130 --> 00:37:58,920
+and making sure that that's like
+
+991
+00:37:58,930 --> 00:38:00,600
+continuously being checked and giving
+
+992
+00:38:00,610 --> 00:38:02,970
+people early feedback I mean it could be
+
+993
+00:38:02,980 --> 00:38:05,760
+anything from from static analysis like
+
+994
+00:38:05,770 --> 00:38:08,250
+this Douglas thing to active analysis
+
+995
+00:38:08,260 --> 00:38:11,190
+like fuzzing and you know the goal of
+
+996
+00:38:11,200 --> 00:38:12,750
+which to automate and build all this
+
+997
+00:38:12,760 --> 00:38:14,760
+until I like to release pipelines and
+
+998
+00:38:14,770 --> 00:38:16,770
+stuff like that there's kind of a
+
+999
+00:38:16,780 --> 00:38:19,500
+practice that is a buzzword that has
+
+1000
+00:38:19,510 --> 00:38:22,020
+kind of come come to fruition called dev
+
+1001
+00:38:22,030 --> 00:38:24,810
+sac ops which is a lot of it is focused
+
+1002
+00:38:24,820 --> 00:38:26,910
+on this kind of concept of securing the
+
+1003
+00:38:26,920 --> 00:38:29,850
+pipeline and ensuring that we understand
+
+1004
+00:38:29,860 --> 00:38:31,710
+when vulnerabilities are introduced we
+
+1005
+00:38:31,720 --> 00:38:33,360
+can catch them before they're released
+
+1006
+00:38:33,370 --> 00:38:34,710
+or very very quickly after they're
+
+1007
+00:38:34,720 --> 00:38:37,890
+released in the worst case we we didn't
+
+1008
+00:38:37,900 --> 00:38:40,290
+have a whole show on dev suck-ups and I
+
+1009
+00:38:40,300 --> 00:38:43,620
+may come back to that bit later could
+
+1010
+00:38:43,630 --> 00:38:44,100
+you
+
+1011
+00:38:44,110 --> 00:38:46,410
+you mentioned fuzzing what do you what
+
+1012
+00:38:46,420 --> 00:38:48,660
+do you mean by fuzzing in this context I
+
+1013
+00:38:48,670 --> 00:38:51,120
+said in this context it could be you
+
+1014
+00:38:51,130 --> 00:38:55,800
+know my my CI pipeline compiles the app
+
+1015
+00:38:55,810 --> 00:38:58,860
+and starts it and then we have fuzzers
+
+1016
+00:38:58,870 --> 00:39:00,840
+that run against the API endpoints at
+
+1017
+00:39:00,850 --> 00:39:02,760
+that hop exposes and we run them for
+
+1018
+00:39:02,770 --> 00:39:04,620
+some time before we release it or after
+
+1019
+00:39:04,630 --> 00:39:06,360
+we merge things in the master or stuff
+
+1020
+00:39:06,370 --> 00:39:08,430
+like that but to ensure that we haven't
+
+1021
+00:39:08,440 --> 00:39:10,770
+introduced anything funny yep and so
+
+1022
+00:39:10,780 --> 00:39:12,600
+like if people don't know fuzzers right
+
+1023
+00:39:12,610 --> 00:39:14,490
+are like sending essentially random data
+
+1024
+00:39:14,500 --> 00:39:16,830
+to endpoints to see if it crashes is the
+
+1025
+00:39:16,840 --> 00:39:18,780
+usual like pattern here mm-hmm
+
+1026
+00:39:18,790 --> 00:39:22,170
+or the return code changes or some some
+
+1027
+00:39:22,180 --> 00:39:23,910
+signal that the input was meaningful in
+
+1028
+00:39:23,920 --> 00:39:27,120
+some way okay another discussion in the
+
+1029
+00:39:27,130 --> 00:39:30,090
+chapter on apps was this build pipeline
+
+1030
+00:39:30,100 --> 00:39:32,340
+we've so far been assuming that app
+
+1031
+00:39:32,350 --> 00:39:34,920
+server that if I could verify it is
+
+1032
+00:39:34,930 --> 00:39:37,620
+really the app server that I the
+
+1033
+00:39:37,630 --> 00:39:39,120
+database should accept the connection
+
+1034
+00:39:39,130 --> 00:39:41,690
+from it but you you point out that
+
+1035
+00:39:41,700 --> 00:39:44,250
+different kinds of attacks could get
+
+1036
+00:39:44,260 --> 00:39:47,340
+into the build chain how do we build a
+
+1037
+00:39:47,350 --> 00:39:50,430
+trusted solid executable yeah that's
+
+1038
+00:39:50,440 --> 00:39:52,790
+it's it's a difficult question
+
+1039
+00:39:52,800 --> 00:39:55,880
+you know frankly very few projects have
+
+1040
+00:39:55,890 --> 00:39:57,500
+been able to kind of reach that level of
+
+1041
+00:39:57,510 --> 00:40:00,620
+maturity that there are we do know of
+
+1042
+00:40:00,630 --> 00:40:02,390
+techniques we wrote about some of them
+
+1043
+00:40:02,400 --> 00:40:05,030
+in the book some of them I can't work I
+
+1044
+00:40:05,040 --> 00:40:06,410
+can't remember the technical term of it
+
+1045
+00:40:06,420 --> 00:40:08,660
+but the reproducible builds is one right
+
+1046
+00:40:08,670 --> 00:40:10,640
+that's the term and this is a
+
+1047
+00:40:10,650 --> 00:40:12,620
+reproducible build is to say from this
+
+1048
+00:40:12,630 --> 00:40:15,290
+commit in the source code every single
+
+1049
+00:40:15,300 --> 00:40:17,270
+time I build it I will end up with a
+
+1050
+00:40:17,280 --> 00:40:19,310
+binary with the exact same saw stone the
+
+1051
+00:40:19,320 --> 00:40:21,350
+exact same binary that forbid this is a
+
+1052
+00:40:21,360 --> 00:40:23,330
+very very powerful concept because it
+
+1053
+00:40:23,340 --> 00:40:26,950
+means that I can go from source code to
+
+1054
+00:40:26,960 --> 00:40:29,360
+verified output without necessarily
+
+1055
+00:40:29,370 --> 00:40:31,550
+having to trust the thing that that
+
+1056
+00:40:31,560 --> 00:40:34,400
+brought the source code to the output so
+
+1057
+00:40:34,410 --> 00:40:36,980
+for instance if I had a CI CD pipeline
+
+1058
+00:40:36,990 --> 00:40:38,480
+that was delivering applications or
+
+1059
+00:40:38,490 --> 00:40:40,940
+delivering artifacts if that pipeline
+
+1060
+00:40:40,950 --> 00:40:42,650
+was owned and compromised and something
+
+1061
+00:40:42,660 --> 00:40:44,870
+was injected into this process to open
+
+1062
+00:40:44,880 --> 00:40:46,240
+up a back door or something like that
+
+1063
+00:40:46,250 --> 00:40:48,740
+its detectable with a reproducible bill
+
+1064
+00:40:48,750 --> 00:40:50,090
+because I could simply run the build on
+
+1065
+00:40:50,100 --> 00:40:51,770
+my laptop and see that I got a different
+
+1066
+00:40:51,780 --> 00:40:53,180
+shot for that thing from that particular
+
+1067
+00:40:53,190 --> 00:40:55,280
+commit and I can know that it was
+
+1068
+00:40:55,290 --> 00:40:57,560
+influenced along the way you may have
+
+1069
+00:40:57,570 --> 00:40:59,300
+you may have observer machines which are
+
+1070
+00:40:59,310 --> 00:41:01,220
+watching the artifacts of doing their
+
+1071
+00:41:01,230 --> 00:41:04,430
+own builds and verifying that this build
+
+1072
+00:41:04,440 --> 00:41:07,040
+is accurate and correct and you know
+
+1073
+00:41:07,050 --> 00:41:08,690
+it's a timely question because I think
+
+1074
+00:41:08,700 --> 00:41:10,630
+just earlier this week there was a
+
+1075
+00:41:10,640 --> 00:41:13,550
+fairly popular and old software project
+
+1076
+00:41:13,560 --> 00:41:14,990
+that was discovered to have a
+
+1077
+00:41:15,000 --> 00:41:17,120
+compromised CI CD system and had been
+
+1078
+00:41:17,130 --> 00:41:20,090
+compromised for many months and the
+
+1079
+00:41:20,100 --> 00:41:21,920
+attackers were able to inject a backdoor
+
+1080
+00:41:21,930 --> 00:41:24,770
+into that binary and the developers had
+
+1081
+00:41:24,780 --> 00:41:26,480
+no idea because that backdoor was not in
+
+1082
+00:41:26,490 --> 00:41:28,430
+the source code and when there seems the
+
+1083
+00:41:28,440 --> 00:41:31,220
+when they received the notification from
+
+1084
+00:41:31,230 --> 00:41:32,630
+the researcher that something was up
+
+1085
+00:41:32,640 --> 00:41:34,490
+there was very confusing so this is a
+
+1086
+00:41:34,500 --> 00:41:37,400
+very very powerful attack vector that is
+
+1087
+00:41:37,410 --> 00:41:38,930
+becoming more and more common with
+
+1088
+00:41:38,940 --> 00:41:41,480
+people in the know and as related
+
+1089
+00:41:41,490 --> 00:41:43,610
+perhaps all statists of software supply
+
+1090
+00:41:43,620 --> 00:41:45,050
+chain attacks which is also becoming
+
+1091
+00:41:45,060 --> 00:41:47,330
+very common unfortunately so all of
+
+1092
+00:41:47,340 --> 00:41:49,060
+these things are kind of related to
+
+1093
+00:41:49,070 --> 00:41:52,130
+having confidence in the build we've got
+
+1094
+00:41:52,140 --> 00:41:54,200
+an example of supply chain attack be if
+
+1095
+00:41:54,210 --> 00:41:56,300
+someone's able to gain control of a git
+
+1096
+00:41:56,310 --> 00:41:59,300
+repo and inject something malicious into
+
+1097
+00:41:59,310 --> 00:42:02,450
+an open source library that happens to
+
+1098
+00:42:02,460 --> 00:42:05,150
+be a dependency of something that you're
+
+1099
+00:42:05,160 --> 00:42:06,320
+using and so
+
+1100
+00:42:06,330 --> 00:42:08,900
+pull it in with maven or one lorry yep
+
+1101
+00:42:08,910 --> 00:42:11,510
+exactly and one of the more common ones
+
+1102
+00:42:11,520 --> 00:42:13,850
+that we're seeing now is with Ruby you
+
+1103
+00:42:13,860 --> 00:42:15,830
+know the the ruby gems website which
+
+1104
+00:42:15,840 --> 00:42:17,870
+distributes gems people will you know
+
+1105
+00:42:17,880 --> 00:42:20,180
+take over accounts and on push new gen
+
+1106
+00:42:20,190 --> 00:42:21,890
+releases up with your backdoored and
+
+1107
+00:42:21,900 --> 00:42:23,810
+then your project pulls it in and all of
+
+1108
+00:42:23,820 --> 00:42:27,080
+a sudden oh nice I won't move on to
+
+1109
+00:42:27,090 --> 00:42:30,580
+discussion about the role of DevOps and
+
+1110
+00:42:30,590 --> 00:42:34,370
+infrastructure as code in Xero networks
+
+1111
+00:42:34,380 --> 00:42:37,150
+I believe from the book that this
+
+1112
+00:42:37,160 --> 00:42:38,270
+concept
+
+1113
+00:42:38,280 --> 00:42:40,850
+the infrastructure is code influenced
+
+1114
+00:42:40,860 --> 00:42:43,160
+your approach to zero choice networks is
+
+1115
+00:42:43,170 --> 00:42:46,970
+that correct and how so yeah so I think
+
+1116
+00:42:46,980 --> 00:42:49,250
+the way that we kind of approached our
+
+1117
+00:42:49,260 --> 00:42:51,460
+own personal networks as we used
+
+1118
+00:42:51,470 --> 00:42:53,930
+infrastructure as code systems like chef
+
+1119
+00:42:53,940 --> 00:42:59,210
+as like the like the spot where we grew
+
+1120
+00:42:59,220 --> 00:43:01,400
+up a system before we actually took it
+
+1121
+00:43:01,410 --> 00:43:02,930
+out and extract it and do a different
+
+1122
+00:43:02,940 --> 00:43:05,110
+system I know Evan did some work with
+
+1123
+00:43:05,120 --> 00:43:08,240
+like pulling out the firewall management
+
+1124
+00:43:08,250 --> 00:43:09,830
+control plane essentially into a
+
+1125
+00:43:09,840 --> 00:43:11,630
+dedicated system but it initially
+
+1126
+00:43:11,640 --> 00:43:13,910
+started it's just like chef cookbooks
+
+1127
+00:43:13,920 --> 00:43:16,610
+that were a lot smarter than average and
+
+1128
+00:43:16,620 --> 00:43:19,010
+I think like the the kind of broad
+
+1129
+00:43:19,020 --> 00:43:20,510
+lesson here is that when you start
+
+1130
+00:43:20,520 --> 00:43:21,710
+looking at these zero trust networks a
+
+1131
+00:43:21,720 --> 00:43:23,930
+lot of the the configuration is
+
+1132
+00:43:23,940 --> 00:43:26,480
+automated and reacting to like changing
+
+1133
+00:43:26,490 --> 00:43:29,570
+membership in the network and so you
+
+1134
+00:43:29,580 --> 00:43:31,250
+just have to automate the process you
+
+1135
+00:43:31,260 --> 00:43:32,900
+can't like task people with setting this
+
+1136
+00:43:32,910 --> 00:43:36,880
+up there's also you know an angle where
+
+1137
+00:43:36,890 --> 00:43:39,050
+infrastructure is coded as similar
+
+1138
+00:43:39,060 --> 00:43:41,810
+patterns have enabled this kind of
+
+1139
+00:43:41,820 --> 00:43:44,690
+approach to security being so tight and
+
+1140
+00:43:44,700 --> 00:43:46,490
+being rape highly reactive of being able
+
+1141
+00:43:46,500 --> 00:43:49,670
+to very finely control these attributes
+
+1142
+00:43:49,680 --> 00:43:51,410
+over a large number of systems and the
+
+1143
+00:43:51,420 --> 00:43:53,960
+passes then completely cumbersome and
+
+1144
+00:43:53,970 --> 00:43:56,360
+you know I think you know we talked a
+
+1145
+00:43:56,370 --> 00:43:57,940
+little bit in the book about how
+
+1146
+00:43:57,950 --> 00:44:01,820
+automation in general has made this kind
+
+1147
+00:44:01,830 --> 00:44:05,320
+of pervasive security posture possible
+
+1148
+00:44:05,330 --> 00:44:08,600
+where in the past you know we want to in
+
+1149
+00:44:08,610 --> 00:44:10,280
+the past it was well we want to reduce
+
+1150
+00:44:10,290 --> 00:44:12,980
+the number of systems that are exposed
+
+1151
+00:44:12,990 --> 00:44:15,080
+to the absolute bare minimum so that we
+
+1152
+00:44:15,090 --> 00:44:17,720
+can control them tightly and put a lot
+
+1153
+00:44:17,730 --> 00:44:19,130
+of focus on them and well
+
+1154
+00:44:19,140 --> 00:44:21,920
+still true you know the the reason some
+
+1155
+00:44:21,930 --> 00:44:23,120
+but perhaps some of the reasoning for
+
+1156
+00:44:23,130 --> 00:44:25,279
+doing so no longer holes because hey now
+
+1157
+00:44:25,289 --> 00:44:28,249
+like we can actually ensure that the
+
+1158
+00:44:28,259 --> 00:44:29,900
+same posture is applied across so much
+
+1159
+00:44:29,910 --> 00:44:31,309
+larger fleet we could do it an automated
+
+1160
+00:44:31,319 --> 00:44:32,509
+fashion or we could do it in a way that
+
+1161
+00:44:32,519 --> 00:44:34,579
+is audible and observable I think the
+
+1162
+00:44:34,589 --> 00:44:37,549
+concept of preventing drift would figure
+
+1163
+00:44:37,559 --> 00:44:41,900
+in because if some malware just a person
+
+1164
+00:44:41,910 --> 00:44:43,609
+didn't know any better has gone and
+
+1165
+00:44:43,619 --> 00:44:45,529
+changed something in broken security
+
+1166
+00:44:45,539 --> 00:44:48,289
+that you can always revert to known good
+
+1167
+00:44:48,299 --> 00:44:51,589
+state by running your configuration
+
+1168
+00:44:51,599 --> 00:44:53,799
+management or provisioning systems
+
+1169
+00:44:53,809 --> 00:44:56,749
+absolutely so say I wanted to get
+
+1170
+00:44:56,759 --> 00:45:01,009
+started on this is do have to burn it
+
+1171
+00:45:01,019 --> 00:45:03,470
+all down and build it from scratch or
+
+1172
+00:45:03,480 --> 00:45:07,190
+can perimeter Network evolve in this
+
+1173
+00:45:07,200 --> 00:45:09,680
+direction by making some incremental
+
+1174
+00:45:09,690 --> 00:45:11,809
+changes yeah I don't think you have to
+
+1175
+00:45:11,819 --> 00:45:13,069
+burn it all down I would not recommend
+
+1176
+00:45:13,079 --> 00:45:16,460
+you do that I think like my perspective
+
+1177
+00:45:16,470 --> 00:45:19,400
+is you if you have a perimeter network
+
+1178
+00:45:19,410 --> 00:45:22,789
+you basically start like downplaying the
+
+1179
+00:45:22,799 --> 00:45:23,809
+amount of trust that you have inside
+
+1180
+00:45:23,819 --> 00:45:25,039
+that network and start building up
+
+1181
+00:45:25,049 --> 00:45:26,930
+systems that are much more like
+
+1182
+00:45:26,940 --> 00:45:29,120
+pervasive right so let's take an example
+
+1183
+00:45:29,130 --> 00:45:30,650
+let's say you got a perimeter where you
+
+1184
+00:45:30,660 --> 00:45:33,739
+had no on host firewall system that went
+
+1185
+00:45:33,749 --> 00:45:36,410
+up if all your network is being shipped
+
+1186
+00:45:36,420 --> 00:45:38,120
+over the network unencrypted figure out
+
+1187
+00:45:38,130 --> 00:45:40,009
+some path to like encrypting that
+
+1188
+00:45:40,019 --> 00:45:42,140
+Network maybe it's mutual TLS and a
+
+1189
+00:45:42,150 --> 00:45:44,900
+service mesh or maybe it's IPSec and and
+
+1190
+00:45:44,910 --> 00:45:46,759
+fanciness there but just kind of like
+
+1191
+00:45:46,769 --> 00:45:48,620
+start somewhere probably start at the
+
+1192
+00:45:48,630 --> 00:45:50,150
+systems that have the sensitive data
+
+1193
+00:45:50,160 --> 00:45:51,289
+because that's what people are
+
+1194
+00:45:51,299 --> 00:45:53,329
+ultimately trying to get access to and
+
+1195
+00:45:53,339 --> 00:45:55,309
+like radiate outward from that point
+
+1196
+00:45:55,319 --> 00:45:58,789
+yeah exactly that's not a really like an
+
+1197
+00:45:58,799 --> 00:46:00,380
+interesting thing is that you know you
+
+1198
+00:46:00,390 --> 00:46:02,839
+build the security outwards you know
+
+1199
+00:46:02,849 --> 00:46:06,499
+rather than inwards previously with the
+
+1200
+00:46:06,509 --> 00:46:09,349
+perimeter model you say hey here's the
+
+1201
+00:46:09,359 --> 00:46:10,970
+pipe that comes out of the building and
+
+1202
+00:46:10,980 --> 00:46:12,680
+I'm going to start there and put my
+
+1203
+00:46:12,690 --> 00:46:16,069
+firewall and then as I as things go and
+
+1204
+00:46:16,079 --> 00:46:17,839
+I'm going to kind of build inwards
+
+1205
+00:46:17,849 --> 00:46:19,309
+towards them put more maybe more
+
+1206
+00:46:19,319 --> 00:46:21,259
+firewalls or controls but closer that
+
+1207
+00:46:21,269 --> 00:46:22,489
+you get towards your more sensitive
+
+1208
+00:46:22,499 --> 00:46:25,489
+systems this kind of like takes that in
+
+1209
+00:46:25,499 --> 00:46:27,289
+terms of owner's heavens as well you
+
+1210
+00:46:27,299 --> 00:46:28,400
+should be starting from the most
+
+1211
+00:46:28,410 --> 00:46:29,989
+sensitive systems and kind of like
+
+1212
+00:46:29,999 --> 00:46:31,790
+building and pushing that security
+
+1213
+00:46:31,800 --> 00:46:36,020
+words it is not mutually exclusive with
+
+1214
+00:46:36,030 --> 00:46:38,720
+perimeter firewalls and we probably
+
+1215
+00:46:38,730 --> 00:46:41,360
+recommend that you keep those around but
+
+1216
+00:46:41,370 --> 00:46:43,400
+perhaps they are not the primary line of
+
+1217
+00:46:43,410 --> 00:46:46,250
+defense or the first line of defense or
+
+1218
+00:46:46,260 --> 00:46:48,620
+anything along that we've talked some
+
+1219
+00:46:48,630 --> 00:46:52,010
+about this component of the network the
+
+1220
+00:46:52,020 --> 00:46:53,890
+trust engine and it could be doing
+
+1221
+00:46:53,900 --> 00:46:56,950
+fairly sophisticated machine learning
+
+1222
+00:46:56,960 --> 00:46:59,690
+behavioral scoring are there any open
+
+1223
+00:46:59,700 --> 00:47:04,490
+source projects that I could use to -
+
+1224
+00:47:04,500 --> 00:47:09,260
+for that component I have not seen any I
+
+1225
+00:47:09,270 --> 00:47:11,750
+know of some commercial implementations
+
+1226
+00:47:11,760 --> 00:47:13,310
+and I know of some in-house
+
+1227
+00:47:13,320 --> 00:47:16,250
+implementations I don't I'm not aware of
+
+1228
+00:47:16,260 --> 00:47:18,980
+any open source projects focusing on the
+
+1229
+00:47:18,990 --> 00:47:21,260
+closest thing that we have our open
+
+1230
+00:47:21,270 --> 00:47:22,960
+source projects focusing on
+
+1231
+00:47:22,970 --> 00:47:26,720
+authorization and policy there's one
+
+1232
+00:47:26,730 --> 00:47:28,280
+project in particular called the open
+
+1233
+00:47:28,290 --> 00:47:32,480
+policy agent or OPA and this project is
+
+1234
+00:47:32,490 --> 00:47:35,720
+geared towards that enforcement layer
+
+1235
+00:47:35,730 --> 00:47:38,330
+give it a policy give it some input and
+
+1236
+00:47:38,340 --> 00:47:41,630
+it can make a decision but as far as the
+
+1237
+00:47:41,640 --> 00:47:45,110
+scoring goes I'm not aware of any and if
+
+1238
+00:47:45,120 --> 00:47:46,610
+you wanted to use open in conjunction
+
+1239
+00:47:46,620 --> 00:47:48,140
+with such a system you would have to
+
+1240
+00:47:48,150 --> 00:47:50,270
+provide it with this score what do you
+
+1241
+00:47:50,280 --> 00:47:52,730
+like to talk about some of the tools or
+
+1242
+00:47:52,740 --> 00:47:54,860
+projects that you're contributing to in
+
+1243
+00:47:54,870 --> 00:47:58,190
+this area and what they do sure you know
+
+1244
+00:47:58,200 --> 00:48:00,080
+I've been spending my topper we wrote
+
+1245
+00:48:00,090 --> 00:48:02,710
+the book you know it was kind of a weird
+
+1246
+00:48:02,720 --> 00:48:05,030
+weird feeling because you know the
+
+1247
+00:48:05,040 --> 00:48:07,850
+motivation for writing it was show folks
+
+1248
+00:48:07,860 --> 00:48:09,740
+a different way to think about this
+
+1249
+00:48:09,750 --> 00:48:11,630
+problem maybe show like a different
+
+1250
+00:48:11,640 --> 00:48:14,780
+paradigm right and get them thinking in
+
+1251
+00:48:14,790 --> 00:48:16,850
+a way that that is perhaps a lot
+
+1252
+00:48:16,860 --> 00:48:18,680
+different or a little or a lot different
+
+1253
+00:48:18,690 --> 00:48:19,850
+than the way that they had been thinking
+
+1254
+00:48:19,860 --> 00:48:22,970
+before and perhaps light a path forward
+
+1255
+00:48:22,980 --> 00:48:26,270
+right but you know having published it
+
+1256
+00:48:26,280 --> 00:48:28,700
+and looking back it was I don't want to
+
+1257
+00:48:28,710 --> 00:48:31,520
+say a failure but it was certainly you
+
+1258
+00:48:31,530 --> 00:48:33,590
+know we began to realize hey you know
+
+1259
+00:48:33,600 --> 00:48:36,200
+we've just told them that there's this
+
+1260
+00:48:36,210 --> 00:48:37,520
+totally different way of thinking about
+
+1261
+00:48:37,530 --> 00:48:39,650
+things and oh by the way like there's
+
+1262
+00:48:39,660 --> 00:48:42,320
+very few options out there you know good
+
+1263
+00:48:42,330 --> 00:48:43,930
+luck have fun building at
+
+1264
+00:48:43,940 --> 00:48:47,300
+so I kind of been on personal vendetta
+
+1265
+00:48:47,310 --> 00:48:49,970
+of trying trying to trying to provide
+
+1266
+00:48:49,980 --> 00:48:51,860
+some building blocks that are useful to
+
+1267
+00:48:51,870 --> 00:48:54,890
+building these kinds of networks so the
+
+1268
+00:48:54,900 --> 00:48:56,300
+project I've been working on for the
+
+1269
+00:48:56,310 --> 00:48:59,120
+past couple years it's called spiffy and
+
+1270
+00:48:59,130 --> 00:49:01,010
+there's a related project called spire
+
+1271
+00:49:01,020 --> 00:49:04,780
+and those two projects are aimed at
+
+1272
+00:49:04,790 --> 00:49:08,780
+getting identity into work loads so you
+
+1273
+00:49:08,790 --> 00:49:10,220
+know when we say everything else we
+
+1274
+00:49:10,230 --> 00:49:12,890
+authenticated and encrypted you know in
+
+1275
+00:49:12,900 --> 00:49:14,240
+order to authenticate something you have
+
+1276
+00:49:14,250 --> 00:49:16,610
+to have some notion of identity and in
+
+1277
+00:49:16,620 --> 00:49:18,110
+order to encrypt you have to have some
+
+1278
+00:49:18,120 --> 00:49:19,700
+keys or credentials that go along with
+
+1279
+00:49:19,710 --> 00:49:22,970
+that so the software project I work on
+
+1280
+00:49:22,980 --> 00:49:26,240
+is related to standardizing this notion
+
+1281
+00:49:26,250 --> 00:49:28,370
+of identity and providing automated
+
+1282
+00:49:28,380 --> 00:49:31,310
+issuance of certificates and an
+
+1283
+00:49:31,320 --> 00:49:33,380
+automated PKI deployment I know we
+
+1284
+00:49:33,390 --> 00:49:34,730
+discussed previously some of those
+
+1285
+00:49:34,740 --> 00:49:37,250
+challenges of key management and
+
+1286
+00:49:37,260 --> 00:49:38,990
+challenges around automated issuance of
+
+1287
+00:49:39,000 --> 00:49:41,960
+certificates this is the focus of the
+
+1288
+00:49:41,970 --> 00:49:44,870
+project yes I don't have to do quite as
+
+1289
+00:49:44,880 --> 00:49:47,120
+much I'm generally a consumer of these
+
+1290
+00:49:47,130 --> 00:49:49,730
+technologies so for me day in day out
+
+1291
+00:49:49,740 --> 00:49:52,910
+I'm working on things like console does
+
+1292
+00:49:52,920 --> 00:49:54,770
+some of this type of concept where they
+
+1293
+00:49:54,780 --> 00:49:57,130
+have like console Connect and they'll do
+
+1294
+00:49:57,140 --> 00:49:59,690
+they will essentially spit up like envoy
+
+1295
+00:49:59,700 --> 00:50:01,700
+proxies for you and make it relatively
+
+1296
+00:50:01,710 --> 00:50:03,860
+easy for you to have mutual TLS inside
+
+1297
+00:50:03,870 --> 00:50:05,210
+your network although I haven't used
+
+1298
+00:50:05,220 --> 00:50:07,670
+that particular product yet also you
+
+1299
+00:50:07,680 --> 00:50:09,350
+know terraform a lot of the hashey Corp
+
+1300
+00:50:09,360 --> 00:50:11,210
+stuff I tend to deal with day-in day-out
+
+1301
+00:50:11,220 --> 00:50:13,670
+but again similar opportunities for
+
+1302
+00:50:13,680 --> 00:50:15,380
+improving the stay of the world like at
+
+1303
+00:50:15,390 --> 00:50:17,960
+some point I want to get to a state
+
+1304
+00:50:17,970 --> 00:50:19,700
+where say like our terraform
+
+1305
+00:50:19,710 --> 00:50:21,020
+configuration runs through a policy
+
+1306
+00:50:21,030 --> 00:50:23,300
+agent to check to make sure that people
+
+1307
+00:50:23,310 --> 00:50:26,210
+are you know telling us when they're
+
+1308
+00:50:26,220 --> 00:50:27,620
+spending money is like a you know
+
+1309
+00:50:27,630 --> 00:50:30,290
+somewhat tangential zero trust thing but
+
+1310
+00:50:30,300 --> 00:50:33,170
+it's you know still related you know we
+
+1311
+00:50:33,180 --> 00:50:35,600
+went from when the book was published to
+
+1312
+00:50:35,610 --> 00:50:38,200
+having very few projects if any
+
+1313
+00:50:38,210 --> 00:50:41,210
+available in the open realm open source
+
+1314
+00:50:41,220 --> 00:50:44,360
+wrote a few years later that story has
+
+1315
+00:50:44,370 --> 00:50:45,830
+changed about sure there are quite a few
+
+1316
+00:50:45,840 --> 00:50:47,390
+projects which are aimed towards
+
+1317
+00:50:47,400 --> 00:50:49,400
+building blocks and providing some
+
+1318
+00:50:49,410 --> 00:50:51,860
+foundation that you can kind of build on
+
+1319
+00:50:51,870 --> 00:50:54,050
+top of but there's still quite a ways to
+
+1320
+00:50:54,060 --> 00:50:55,910
+go and a lot of room for new
+
+1321
+00:50:55,920 --> 00:50:58,040
+some improvement and I'm always looking
+
+1322
+00:50:58,050 --> 00:50:59,710
+for collaborators if anyone's interested
+
+1323
+00:50:59,720 --> 00:51:01,970
+where do you think we are in the
+
+1324
+00:51:01,980 --> 00:51:05,140
+adoption curve of this philosophy
+
+1325
+00:51:05,150 --> 00:51:07,460
+unfortunately is after the book was
+
+1326
+00:51:07,470 --> 00:51:09,500
+published this whole concept of your
+
+1327
+00:51:09,510 --> 00:51:11,540
+trust has become very buzz wording
+
+1328
+00:51:11,550 --> 00:51:13,310
+different people that it's kind of
+
+1329
+00:51:13,320 --> 00:51:14,900
+similar to how DevOps used to be like
+
+1330
+00:51:14,910 --> 00:51:16,100
+different people think of it in
+
+1331
+00:51:16,110 --> 00:51:17,240
+different ways and have different
+
+1332
+00:51:17,250 --> 00:51:19,060
+definitions of what it is and isn't
+
+1333
+00:51:19,070 --> 00:51:21,350
+different people have said well my
+
+1334
+00:51:21,360 --> 00:51:23,000
+product does that or my product does
+
+1335
+00:51:23,010 --> 00:51:25,010
+this and that's your trust and sometimes
+
+1336
+00:51:25,020 --> 00:51:27,080
+it is sometimes it isn't in terms of
+
+1337
+00:51:27,090 --> 00:51:29,540
+adoption I what I'm seeing in the field
+
+1338
+00:51:29,550 --> 00:51:32,180
+is folks who are beginning to kind of
+
+1339
+00:51:32,190 --> 00:51:34,430
+take this task off we've gotten to the
+
+1340
+00:51:34,440 --> 00:51:37,010
+point where people have said yeah this
+
+1341
+00:51:37,020 --> 00:51:39,200
+sounds about right this sounds like the
+
+1342
+00:51:39,210 --> 00:51:41,540
+direction we should be going and some
+
+1343
+00:51:41,550 --> 00:51:43,490
+people are saying well how do I do that
+
+1344
+00:51:43,500 --> 00:51:44,900
+some people are biting the bullet and
+
+1345
+00:51:44,910 --> 00:51:46,490
+saying okay we're gonna start some
+
+1346
+00:51:46,500 --> 00:51:48,290
+people are kind of in the middle of the
+
+1347
+00:51:48,300 --> 00:51:50,840
+journey very few people have actually
+
+1348
+00:51:50,850 --> 00:51:52,700
+reached the end of that journey or have
+
+1349
+00:51:52,710 --> 00:51:54,200
+reached a state that we would call
+
+1350
+00:51:54,210 --> 00:51:56,300
+something that is close to zero trust so
+
+1351
+00:51:56,310 --> 00:51:58,730
+you know perhaps were and kind of like
+
+1352
+00:51:58,740 --> 00:52:01,040
+the hype phase and maybe just a little
+
+1353
+00:52:01,050 --> 00:52:03,440
+bit past it would be my guess yeah I was
+
+1354
+00:52:03,450 --> 00:52:05,180
+gonna say like are we talking adopt we
+
+1355
+00:52:05,190 --> 00:52:06,770
+talking hype because if I were to like
+
+1356
+00:52:06,780 --> 00:52:09,230
+peg hype I would say where we're still
+
+1357
+00:52:09,240 --> 00:52:10,670
+going up so we haven't gotten to any
+
+1358
+00:52:10,680 --> 00:52:13,220
+sort of inflated expectations too too
+
+1359
+00:52:13,230 --> 00:52:16,070
+far yet DVD your book do you have a case
+
+1360
+00:52:16,080 --> 00:52:18,470
+study of something called the beyond
+
+1361
+00:52:18,480 --> 00:52:21,500
+Corp Network which Google published was
+
+1362
+00:52:21,510 --> 00:52:24,440
+that a reference architecture and then
+
+1363
+00:52:24,450 --> 00:52:26,840
+you could try to build something along
+
+1364
+00:52:26,850 --> 00:52:30,020
+the same lines or was it more like an
+
+1365
+00:52:30,030 --> 00:52:32,720
+open source project that they distribute
+
+1366
+00:52:32,730 --> 00:52:34,880
+and you can download and start using
+
+1367
+00:52:34,890 --> 00:52:37,940
+pieces of it so Google's beyond Corp is
+
+1368
+00:52:37,950 --> 00:52:39,560
+definitely more on the reference
+
+1369
+00:52:39,570 --> 00:52:41,870
+architecture side they don't as far as I
+
+1370
+00:52:41,880 --> 00:52:43,670
+know they don't open source any of their
+
+1371
+00:52:43,680 --> 00:52:46,940
+their systems but like it's a I think if
+
+1372
+00:52:46,950 --> 00:52:48,770
+you were to say Google is like an early
+
+1373
+00:52:48,780 --> 00:52:50,840
+innovator here you know there you are
+
+1374
+00:52:50,850 --> 00:52:52,340
+saying that their network got to a point
+
+1375
+00:52:52,350 --> 00:52:54,170
+where they would not trust it and what's
+
+1376
+00:52:54,180 --> 00:52:55,730
+the point even of having that perimeter
+
+1377
+00:52:55,740 --> 00:52:58,010
+we should just expose it to the Internet
+
+1378
+00:52:58,020 --> 00:53:00,980
+yeah and they I know they've productized
+
+1379
+00:53:00,990 --> 00:53:03,290
+some of it in Google cloud but they have
+
+1380
+00:53:03,300 --> 00:53:05,030
+not released it as any kind of
+
+1381
+00:53:05,040 --> 00:53:07,280
+comprehensive project or so anything
+
+1382
+00:53:07,290 --> 00:53:08,749
+that you can really down-low
+
+1383
+00:53:08,759 --> 00:53:11,390
+it was certain they were certainly
+
+1384
+00:53:11,400 --> 00:53:15,269
+pioneers in this area frankly you know
+
+1385
+00:53:15,279 --> 00:53:18,209
+Doug and I were working on working on
+
+1386
+00:53:18,219 --> 00:53:20,819
+systems that that threw away the same
+
+1387
+00:53:20,829 --> 00:53:22,410
+assumptions and we're working on systems
+
+1388
+00:53:22,420 --> 00:53:25,259
+that have very similar property ISM to
+
+1389
+00:53:25,269 --> 00:53:27,029
+be honest it wasn't until we read the
+
+1390
+00:53:27,039 --> 00:53:28,709
+beyond court papers that we realized
+
+1391
+00:53:28,719 --> 00:53:31,079
+that there was kind of a larger story
+
+1392
+00:53:31,089 --> 00:53:31,679
+here
+
+1393
+00:53:31,689 --> 00:53:33,599
+you know we've read what they were doing
+
+1394
+00:53:33,609 --> 00:53:35,549
+and we thought hey you know we're we're
+
+1395
+00:53:35,559 --> 00:53:36,779
+doing stuff that sounds a lot like that
+
+1396
+00:53:36,789 --> 00:53:38,900
+but it's applied in a different way and
+
+1397
+00:53:38,910 --> 00:53:42,089
+you know there's something more here
+
+1398
+00:53:42,099 --> 00:53:43,890
+than just beyond corporate just what we
+
+1399
+00:53:43,900 --> 00:53:46,019
+built and so that was kind of the
+
+1400
+00:53:46,029 --> 00:53:48,809
+impetus to you know do some more
+
+1401
+00:53:48,819 --> 00:53:50,519
+research talk to some more people we
+
+1402
+00:53:50,529 --> 00:53:52,019
+delivered a few conference talks on
+
+1403
+00:53:52,029 --> 00:53:54,029
+those lives and ultimately wrote the
+
+1404
+00:53:54,039 --> 00:53:56,160
+book with a lot of the insights that we
+
+1405
+00:53:56,170 --> 00:53:57,509
+gained from you know our own
+
+1406
+00:53:57,519 --> 00:53:59,130
+implementations and experience as well
+
+1407
+00:53:59,140 --> 00:54:00,920
+as talking to some of the folks who run
+
+1408
+00:54:00,930 --> 00:54:04,729
+beyond court one final question I have I
+
+1409
+00:54:04,739 --> 00:54:07,289
+couldn't really figure this out myself
+
+1410
+00:54:07,299 --> 00:54:11,429
+so in Amazon Amazon's Cloud they have a
+
+1411
+00:54:11,439 --> 00:54:14,549
+concept of security groups I can set up
+
+1412
+00:54:14,559 --> 00:54:16,579
+a security group and add certain
+
+1413
+00:54:16,589 --> 00:54:19,789
+instances which are virtual machines to
+
+1414
+00:54:19,799 --> 00:54:22,979
+security group a then I can explicitly
+
+1415
+00:54:22,989 --> 00:54:26,489
+allow traffic from security group a over
+
+1416
+00:54:26,499 --> 00:54:30,599
+port safe port 443 to security Group B
+
+1417
+00:54:30,609 --> 00:54:34,259
+is that more of a perimeter network with
+
+1418
+00:54:34,269 --> 00:54:38,189
+these zones or is that really more of a
+
+1419
+00:54:38,199 --> 00:54:40,859
+zero trust concept or somewhere in
+
+1420
+00:54:40,869 --> 00:54:43,049
+between I think if we were to pick like
+
+1421
+00:54:43,059 --> 00:54:45,359
+terms that the Evans that it's kind of
+
+1422
+00:54:45,369 --> 00:54:47,279
+like micro segmentation would be the
+
+1423
+00:54:47,289 --> 00:54:48,959
+term you might consider where you say
+
+1424
+00:54:48,969 --> 00:54:50,099
+that you have these like very small
+
+1425
+00:54:50,109 --> 00:54:51,929
+firewalls that are just doing packet
+
+1426
+00:54:51,939 --> 00:54:54,269
+filtering and so it's definitely a
+
+1427
+00:54:54,279 --> 00:54:57,059
+better step than simply saying at the
+
+1428
+00:54:57,069 --> 00:54:59,549
+perimeter we allow Internet access from
+
+1429
+00:54:59,559 --> 00:55:01,140
+these ports and then everything inside
+
+1430
+00:55:01,150 --> 00:55:03,479
+is wide open but I don't know that it
+
+1431
+00:55:03,489 --> 00:55:05,309
+gets you down to like that a true
+
+1432
+00:55:05,319 --> 00:55:07,949
+identity of the you know the originator
+
+1433
+00:55:07,959 --> 00:55:11,699
+of traffic inside your network yeah and
+
+1434
+00:55:11,709 --> 00:55:13,679
+there can be there can be kind of
+
+1435
+00:55:13,689 --> 00:55:15,809
+disconnects if you know you're talking
+
+1436
+00:55:15,819 --> 00:55:18,059
+across different regions you know we're
+
+1437
+00:55:18,069 --> 00:55:20,099
+talking to different clouds or those two
+
+1438
+00:55:20,109 --> 00:55:21,630
+things don't plug into each
+
+1439
+00:55:21,640 --> 00:55:24,900
+there and certainly security groups
+
+1440
+00:55:24,910 --> 00:55:26,970
+don't provide any kind of encryption or
+
+1441
+00:55:26,980 --> 00:55:29,700
+wire confidentiality so you know if
+
+1442
+00:55:29,710 --> 00:55:32,130
+you're talking across long weeks into
+
+1443
+00:55:32,140 --> 00:55:34,380
+region or across continents you know
+
+1444
+00:55:34,390 --> 00:55:37,049
+that's there's fairly wide exposure that
+
+1445
+00:55:37,059 --> 00:55:39,630
+you're having and so you know I think
+
+1446
+00:55:39,640 --> 00:55:43,259
+like bit it security groups take a step
+
+1447
+00:55:43,269 --> 00:55:45,650
+in the right direction you know they
+
+1448
+00:55:45,660 --> 00:55:47,789
+bring you out of the world of thinking
+
+1449
+00:55:47,799 --> 00:55:50,130
+about IP addresses and into the world of
+
+1450
+00:55:50,140 --> 00:55:51,989
+thinking about what is my intent and how
+
+1451
+00:55:51,999 --> 00:55:53,609
+do I want I connect these things and
+
+1452
+00:55:53,619 --> 00:55:55,529
+having an automated system under the
+
+1453
+00:55:55,539 --> 00:55:57,539
+covers that is enacting those policies
+
+1454
+00:55:57,549 --> 00:55:59,819
+and enforcing those things as the system
+
+1455
+00:55:59,829 --> 00:56:02,819
+changes so certainly a step in the right
+
+1456
+00:56:02,829 --> 00:56:05,970
+direction I did and you know but a code
+
+1457
+00:56:05,980 --> 00:56:07,799
+it doesn't it doesn't quite go all the
+
+1458
+00:56:07,809 --> 00:56:09,539
+way there but it's certainly better than
+
+1459
+00:56:09,549 --> 00:56:11,609
+than what we have been doing and just
+
+1460
+00:56:11,619 --> 00:56:13,859
+like be very clear right like security
+
+1461
+00:56:13,869 --> 00:56:15,930
+groups when applied using best practices
+
+1462
+00:56:15,940 --> 00:56:18,029
+go you bring it a step in our direction
+
+1463
+00:56:18,039 --> 00:56:20,640
+right like if you just made the security
+
+1464
+00:56:20,650 --> 00:56:23,249
+group and jammed it on everyone didn't
+
+1465
+00:56:23,259 --> 00:56:24,749
+really help anything but if you do like
+
+1466
+00:56:24,759 --> 00:56:27,450
+each you know machine-type gets its own
+
+1467
+00:56:27,460 --> 00:56:29,009
+security group and you're actually like
+
+1468
+00:56:29,019 --> 00:56:30,900
+encoding who should be talking to whom
+
+1469
+00:56:30,910 --> 00:56:33,779
+then you get some benefit okay let's
+
+1470
+00:56:33,789 --> 00:56:36,509
+wrap things up Evan I will link to
+
+1471
+00:56:36,519 --> 00:56:40,920
+spiffy and spire in the show notes Evan
+
+1472
+00:56:40,930 --> 00:56:42,569
+would you like to give out any other
+
+1473
+00:56:42,579 --> 00:56:44,430
+places on the internet where people
+
+1474
+00:56:44,440 --> 00:56:47,880
+could follow or find you even my handle
+
+1475
+00:56:47,890 --> 00:56:52,829
+is Evan UVA and two six four five I'm
+
+1476
+00:56:52,839 --> 00:56:55,950
+pretty findable on Twitter I also hang
+
+1477
+00:56:55,960 --> 00:56:57,660
+out and if you're linking to a spiffy
+
+1478
+00:56:57,670 --> 00:56:59,130
+inspired projects I hang out in that
+
+1479
+00:56:59,140 --> 00:57:00,930
+slack channel and feel free to reach out
+
+1480
+00:57:00,940 --> 00:57:03,210
+to me there and I'm on LinkedIn and all
+
+1481
+00:57:03,220 --> 00:57:04,979
+the other things that you would normally
+
+1482
+00:57:04,989 --> 00:57:07,289
+expect I love hearing from people so
+
+1483
+00:57:07,299 --> 00:57:10,319
+please don't feel shy Doug yeah for me
+
+1484
+00:57:10,329 --> 00:57:12,569
+Twitter Doug Barth kept it simple
+
+1485
+00:57:12,579 --> 00:57:14,670
+usually you'll get out either random
+
+1486
+00:57:14,680 --> 00:57:16,249
+security stuff or a lot of dad jokes
+
+1487
+00:57:16,259 --> 00:57:19,109
+great thank you both very much for
+
+1488
+00:57:19,119 --> 00:57:21,779
+speaking to software engineering radio
+
+1489
+00:57:21,789 --> 00:57:24,180
+this has been Robert blumen thank you
+
+1490
+00:57:24,190 --> 00:57:27,120
+for listening thank you thank you Robert
+
+1491
+00:57:27,130 --> 00:57:28,979
+thanks for listening to se Radio an
+
+1492
+00:57:28,989 --> 00:57:30,719
+educational program brought to you by at
+
+1493
+00:57:30,729 --> 00:57:32,849
+your police software magazine for more
+
+1494
+00:57:32,859 --> 00:57:34,170
+about the podcast including other
+
+1495
+00:57:34,180 --> 00:57:37,049
+episodes visit our website at SE - radio
+
+1496
+00:57:37,059 --> 00:57:39,870
+net to provide feedback you can comment
+
+1497
+00:57:39,880 --> 00:57:41,849
+on each episode on the website or reach
+
+1498
+00:57:41,859 --> 00:57:44,579
+us on LinkedIn Facebook Twitter or
+
+1499
+00:57:44,589 --> 00:57:46,319
+through our slack channel at SC
+
+1500
+00:57:46,329 --> 00:57:50,640
+radio.com you can also email us at team
+
+1501
+00:57:50,650 --> 00:57:54,299
+@ SC - radio net this and all other
+
+1502
+00:57:54,309 --> 00:57:56,339
+episodes of se Radio is licensed under
+
+1503
+00:57:56,349 --> 00:57:59,670
+Creative Commons license 2.5 thanks for
+
+1504
+00:57:59,680 --> 00:58:01,979
+listening

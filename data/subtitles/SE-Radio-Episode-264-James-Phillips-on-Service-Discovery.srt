@@ -1,0 +1,5587 @@
+1
+00:00:02,860 --> 00:00:02,870
+[Music]
+
+2
+00:00:02,870 --> 00:00:05,930
+[Applause]
+
+3
+00:00:05,940 --> 00:00:13,029
+[Music]
+
+4
+00:00:13,039 --> 00:00:15,470
+this is software engineering radio the
+
+5
+00:00:15,480 --> 00:00:17,450
+podcast for professional developers on
+
+6
+00:00:17,460 --> 00:00:23,150
+the web at se - radio dotnet SC radio
+
+7
+00:00:23,160 --> 00:00:24,470
+brings to relevant and detailed
+
+8
+00:00:24,480 --> 00:00:25,909
+discussions of software engineering
+
+9
+00:00:25,919 --> 00:00:27,470
+topics at least once a month
+
+10
+00:00:27,480 --> 00:00:29,780
+su radio was brought to you by I Triple
+
+11
+00:00:29,790 --> 00:00:32,179
+E software magazine online at computer
+
+12
+00:00:32,189 --> 00:00:39,440
+org slash software engineering today we
+
+13
+00:00:39,450 --> 00:00:41,240
+are talking to James Phillips from Hashi
+
+14
+00:00:41,250 --> 00:00:43,819
+Corp at Hashi Corp James works on
+
+15
+00:00:43,829 --> 00:00:46,670
+console and surf he also developed fault
+
+16
+00:00:46,680 --> 00:00:49,670
+tolerant avionics for spacex and called
+
+17
+00:00:49,680 --> 00:00:52,400
+out flight software is go during the
+
+18
+00:00:52,410 --> 00:00:56,450
+first SpaceX missions to the ISS he has
+
+19
+00:00:56,460 --> 00:00:58,130
+also worked on web applications and
+
+20
+00:00:58,140 --> 00:00:59,990
+embedded systems today we will be
+
+21
+00:01:00,000 --> 00:01:02,290
+talking to him about service discovery
+
+22
+00:01:02,300 --> 00:01:04,549
+welcome to software engineering radio
+
+23
+00:01:04,559 --> 00:01:06,380
+change thanks for having me on the
+
+24
+00:01:06,390 --> 00:01:08,959
+podcast it's good to be here I do have a
+
+25
+00:01:08,969 --> 00:01:11,480
+bit of an odd mix in my background of
+
+26
+00:01:11,490 --> 00:01:13,490
+sort of embedded things and web
+
+27
+00:01:13,500 --> 00:01:15,830
+applications but I think it was good
+
+28
+00:01:15,840 --> 00:01:17,270
+training for what I do at Hoshi core
+
+29
+00:01:17,280 --> 00:01:20,059
+with real time mixed with distributed
+
+30
+00:01:20,069 --> 00:01:22,849
+systems great so why don't we dive in
+
+31
+00:01:22,859 --> 00:01:25,489
+then so can you tell us at a very high
+
+32
+00:01:25,499 --> 00:01:28,370
+level what is service discovery so at
+
+33
+00:01:28,380 --> 00:01:30,289
+the highest level it's basically a
+
+34
+00:01:30,299 --> 00:01:32,510
+system that lets you say where is
+
+35
+00:01:32,520 --> 00:01:34,849
+service foo and that answer is usually
+
+36
+00:01:34,859 --> 00:01:36,469
+something in the form of an IP address
+
+37
+00:01:36,479 --> 00:01:39,260
+and a port number and a service can be
+
+38
+00:01:39,270 --> 00:01:41,300
+kind of a logical entity within your
+
+39
+00:01:41,310 --> 00:01:43,190
+architecture so you might have you know
+
+40
+00:01:43,200 --> 00:01:45,679
+a database or you might have a pool of
+
+41
+00:01:45,689 --> 00:01:48,230
+application servers things like that so
+
+42
+00:01:48,240 --> 00:01:49,999
+usually there's a set of processes that
+
+43
+00:01:50,009 --> 00:01:52,940
+back a given service and usually for
+
+44
+00:01:52,950 --> 00:01:55,129
+most highly available things or scalable
+
+45
+00:01:55,139 --> 00:01:56,209
+things there's there's more than one
+
+46
+00:01:56,219 --> 00:01:58,929
+process that makes up a service and
+
+47
+00:01:58,939 --> 00:02:01,519
+service discovery lets you find those
+
+48
+00:02:01,529 --> 00:02:04,730
+things on kind of a spectrum of maybe if
+
+49
+00:02:04,740 --> 00:02:06,230
+you could have a fully statically
+
+50
+00:02:06,240 --> 00:02:08,240
+configured service discovery system or a
+
+51
+00:02:08,250 --> 00:02:09,919
+very very dynamic service discovery
+
+52
+00:02:09,929 --> 00:02:12,020
+system so the the techniques you use to
+
+53
+00:02:12,030 --> 00:02:13,610
+do service discovery vary a lot
+
+54
+00:02:13,620 --> 00:02:16,130
+depending mostly on sort of how fresh
+
+55
+00:02:16,140 --> 00:02:18,050
+the information is and how changes get
+
+56
+00:02:18,060 --> 00:02:20,300
+put into your service discovery catalog
+
+57
+00:02:20,310 --> 00:02:22,640
+so when you say a very static
+
+58
+00:02:22,650 --> 00:02:24,230
+configuration that makes
+
+59
+00:02:24,240 --> 00:02:27,170
+we think of just using configuration
+
+60
+00:02:27,180 --> 00:02:30,040
+files where I might update them
+
+61
+00:02:30,050 --> 00:02:31,640
+occasionally and I could use a
+
+62
+00:02:31,650 --> 00:02:33,680
+configuration management tool like
+
+63
+00:02:33,690 --> 00:02:35,540
+puppet or chef what's wrong with that
+
+64
+00:02:35,550 --> 00:02:37,790
+approach that approach can work okay
+
+65
+00:02:37,800 --> 00:02:39,710
+when you have a small handful of things
+
+66
+00:02:39,720 --> 00:02:41,630
+you manage but as soon as you get even
+
+67
+00:02:41,640 --> 00:02:44,600
+sort of a large ish medium largest to
+
+68
+00:02:44,610 --> 00:02:47,120
+very large infrastructure it becomes
+
+69
+00:02:47,130 --> 00:02:49,190
+very very hard to keep that catalog
+
+70
+00:02:49,200 --> 00:02:52,910
+up-to-date by hand the times involved to
+
+71
+00:02:52,920 --> 00:02:55,220
+do a convergence run can you know run in
+
+72
+00:02:55,230 --> 00:02:56,030
+two minutes
+
+73
+00:02:56,040 --> 00:02:58,010
+and that's often not fast enough to
+
+74
+00:02:58,020 --> 00:03:00,770
+propagate a change and also just the
+
+75
+00:03:00,780 --> 00:03:02,720
+having a human in the loop to sort of
+
+76
+00:03:02,730 --> 00:03:04,790
+check in changes to that catalog manage
+
+77
+00:03:04,800 --> 00:03:06,650
+a list of IPs and then Avis's to push
+
+78
+00:03:06,660 --> 00:03:09,050
+that out becomes a burden in a system
+
+79
+00:03:09,060 --> 00:03:10,970
+that you know you want to run as
+
+80
+00:03:10,980 --> 00:03:12,950
+automatically as possible so it becomes
+
+81
+00:03:12,960 --> 00:03:15,370
+kind of a maintenance burden and a
+
+82
+00:03:15,380 --> 00:03:17,540
+response time problem for an
+
+83
+00:03:17,550 --> 00:03:19,640
+infrastructure once it gets beyond any
+
+84
+00:03:19,650 --> 00:03:21,560
+you know once it's beyond sort of a
+
+85
+00:03:21,570 --> 00:03:22,850
+trivial scale that gets really really
+
+86
+00:03:22,860 --> 00:03:25,610
+hard to manage right I can imagine even
+
+87
+00:03:25,620 --> 00:03:27,830
+at a small scale you mention response
+
+88
+00:03:27,840 --> 00:03:29,840
+time if you need response time it's
+
+89
+00:03:29,850 --> 00:03:31,850
+still gonna take a while yeah if your
+
+90
+00:03:31,860 --> 00:03:33,620
+database you know if you do a master
+
+91
+00:03:33,630 --> 00:03:36,050
+failover and you want to point all your
+
+92
+00:03:36,060 --> 00:03:37,610
+clients is somewhere else you know you
+
+93
+00:03:37,620 --> 00:03:39,290
+want that change to go out quickly you
+
+94
+00:03:39,300 --> 00:03:40,940
+don't want that to take you know ten two
+
+95
+00:03:40,950 --> 00:03:42,980
+minutes to propagate to your system so
+
+96
+00:03:42,990 --> 00:03:44,990
+the configuration management tools have
+
+97
+00:03:45,000 --> 00:03:47,870
+definitely have a role even even if
+
+98
+00:03:47,880 --> 00:03:49,250
+you're using a service discovery system
+
+99
+00:03:49,260 --> 00:03:51,380
+for bootstrapping new nodes or kind of
+
+100
+00:03:51,390 --> 00:03:52,940
+getting the service discovery system
+
+101
+00:03:52,950 --> 00:03:57,020
+kicked off but in terms of managing sort
+
+102
+00:03:57,030 --> 00:03:58,130
+of the ongoing state of your
+
+103
+00:03:58,140 --> 00:04:00,020
+infrastructure yeah it becomes very very
+
+104
+00:04:00,030 --> 00:04:02,480
+difficult to do with a sort of a static
+
+105
+00:04:02,490 --> 00:04:05,000
+set up oK we've been talking about scale
+
+106
+00:04:05,010 --> 00:04:07,610
+that kind of hints to kind of larger
+
+107
+00:04:07,620 --> 00:04:09,560
+networks what what network scope is
+
+108
+00:04:09,570 --> 00:04:12,080
+appropriate for service discovery sort
+
+109
+00:04:12,090 --> 00:04:15,310
+of land datacenter and cross datacenters
+
+110
+00:04:15,320 --> 00:04:20,060
+my short answer to that is yes it's it
+
+111
+00:04:20,070 --> 00:04:23,390
+can have a place basically at all those
+
+112
+00:04:23,400 --> 00:04:26,120
+those different sort of levels so you
+
+113
+00:04:26,130 --> 00:04:29,360
+know within an application you you
+
+114
+00:04:29,370 --> 00:04:30,560
+wouldn't necessarily have it you know
+
+115
+00:04:30,570 --> 00:04:32,240
+within a process isn't you're not gonna
+
+116
+00:04:32,250 --> 00:04:33,950
+find like components or plug-ins with a
+
+117
+00:04:33,960 --> 00:04:35,810
+service discovery mechanism but once you
+
+118
+00:04:35,820 --> 00:04:37,430
+have a process trying to find out where
+
+119
+00:04:37,440 --> 00:04:37,670
+enough
+
+120
+00:04:37,680 --> 00:04:39,710
+processes it's appropriate there and
+
+121
+00:04:39,720 --> 00:04:42,590
+then when you get into highly available
+
+122
+00:04:42,600 --> 00:04:44,960
+or globally distributed infrastructures
+
+123
+00:04:44,970 --> 00:04:48,230
+it definitely makes sense for you know
+
+124
+00:04:48,240 --> 00:04:51,740
+some service in data center a to reach
+
+125
+00:04:51,750 --> 00:04:54,080
+out and find an instance of another
+
+126
+00:04:54,090 --> 00:04:56,180
+service in data center B so it makes
+
+127
+00:04:56,190 --> 00:04:56,600
+sense
+
+128
+00:04:56,610 --> 00:04:58,760
+usually there's sort of a preferential
+
+129
+00:04:58,770 --> 00:05:00,560
+scope you want to use things that are
+
+130
+00:05:00,570 --> 00:05:03,710
+close and nearby and then as you know
+
+131
+00:05:03,720 --> 00:05:05,990
+sometimes it's part of normal operations
+
+132
+00:05:06,000 --> 00:05:08,270
+to find things remotely or you know in a
+
+133
+00:05:08,280 --> 00:05:10,760
+much larger tier across the internet and
+
+134
+00:05:10,770 --> 00:05:12,080
+it definitely makes sense when you're
+
+135
+00:05:12,090 --> 00:05:14,270
+talking about you know geo redundancy
+
+136
+00:05:14,280 --> 00:05:15,950
+and failover and things like that so you
+
+137
+00:05:15,960 --> 00:05:17,900
+want ideally your service discovery
+
+138
+00:05:17,910 --> 00:05:19,879
+system would let you cross those
+
+139
+00:05:19,889 --> 00:05:21,950
+boundaries without having to have like a
+
+140
+00:05:21,960 --> 00:05:24,409
+totally separate instance that's totally
+
+141
+00:05:24,419 --> 00:05:26,060
+disconnected and your application has to
+
+142
+00:05:26,070 --> 00:05:27,620
+know about how to go reach out to all
+
+143
+00:05:27,630 --> 00:05:30,409
+these different things okay you know a
+
+144
+00:05:30,419 --> 00:05:33,140
+local network would service discovery be
+
+145
+00:05:33,150 --> 00:05:34,820
+comparable to the zero configuration
+
+146
+00:05:34,830 --> 00:05:37,219
+networking something like the Apple
+
+147
+00:05:37,229 --> 00:05:39,740
+Bonjour is that a form of service
+
+148
+00:05:39,750 --> 00:05:42,649
+discovery it definitely is in terms of
+
+149
+00:05:42,659 --> 00:05:44,659
+sort of the most basic you know where
+
+150
+00:05:44,669 --> 00:05:46,580
+what's the IP or port of an instance of
+
+151
+00:05:46,590 --> 00:05:48,560
+this type of service we'll see later
+
+152
+00:05:48,570 --> 00:05:50,149
+there's other facets of service
+
+153
+00:05:50,159 --> 00:05:52,250
+discovery like managing other types of
+
+154
+00:05:52,260 --> 00:05:54,800
+configuration or orchestration where
+
+155
+00:05:54,810 --> 00:05:57,279
+something like that probably isn't ideal
+
+156
+00:05:57,289 --> 00:06:00,649
+and it's also a system that often
+
+157
+00:06:00,659 --> 00:06:02,629
+requires dependence on things like
+
+158
+00:06:02,639 --> 00:06:04,399
+multicast and features like that so it's
+
+159
+00:06:04,409 --> 00:06:06,740
+I that's like sort of a low-level piece
+
+160
+00:06:06,750 --> 00:06:08,719
+that might be part of a bigger service
+
+161
+00:06:08,729 --> 00:06:11,629
+discovery solution after you if you look
+
+162
+00:06:11,639 --> 00:06:12,980
+at sort of a full spectrum of what you
+
+163
+00:06:12,990 --> 00:06:15,830
+need in a complete solution but it's
+
+164
+00:06:15,840 --> 00:06:17,870
+it'd be a very limited form of service
+
+165
+00:06:17,880 --> 00:06:21,740
+discovery so you mentioned processes
+
+166
+00:06:21,750 --> 00:06:25,189
+finding one another can you tell us some
+
+167
+00:06:25,199 --> 00:06:27,499
+more about some scenarios where service
+
+168
+00:06:27,509 --> 00:06:30,620
+discovery would be appropriate when you
+
+169
+00:06:30,630 --> 00:06:32,420
+talk about processes finding each other
+
+170
+00:06:32,430 --> 00:06:33,320
+I think of something like a
+
+171
+00:06:33,330 --> 00:06:35,689
+service-oriented architecture possibly
+
+172
+00:06:35,699 --> 00:06:39,140
+micro service is definitely a service
+
+173
+00:06:39,150 --> 00:06:41,089
+discovery I think even for a monolithic
+
+174
+00:06:41,099 --> 00:06:43,730
+application your basic configuration
+
+175
+00:06:43,740 --> 00:06:45,620
+like where's the database how do I
+
+176
+00:06:45,630 --> 00:06:47,600
+connect to it that even makes sense in
+
+177
+00:06:47,610 --> 00:06:48,950
+that type of architecture but as you
+
+178
+00:06:48,960 --> 00:06:51,080
+move to service-oriented or micro
+
+179
+00:06:51,090 --> 00:06:52,159
+services
+
+180
+00:06:52,169 --> 00:06:54,890
+you're gonna have sort of a much more
+
+181
+00:06:54,900 --> 00:06:56,960
+distributed set of pieces that need to
+
+182
+00:06:56,970 --> 00:06:58,430
+find each other you'll have much more
+
+183
+00:06:58,440 --> 00:07:01,040
+sort of dynamic environment in terms of
+
+184
+00:07:01,050 --> 00:07:02,689
+different pieces of your architecture
+
+185
+00:07:02,699 --> 00:07:05,330
+coming going over time in general you'll
+
+186
+00:07:05,340 --> 00:07:07,700
+have more than one instance to choose
+
+187
+00:07:07,710 --> 00:07:09,320
+from so you'll want to choose a healthy
+
+188
+00:07:09,330 --> 00:07:12,020
+one to talk to so the things get a lot
+
+189
+00:07:12,030 --> 00:07:13,939
+more dynamic as you have a an
+
+190
+00:07:13,949 --> 00:07:15,620
+architecture that's distributed across
+
+191
+00:07:15,630 --> 00:07:18,020
+more sort of functional pieces the
+
+192
+00:07:18,030 --> 00:07:19,460
+service discovery really shines there
+
+193
+00:07:19,470 --> 00:07:21,589
+and then in the extreme if you're
+
+194
+00:07:21,599 --> 00:07:24,020
+running under a resource scheduler like
+
+195
+00:07:24,030 --> 00:07:27,110
+kubernetes or meso sort of nomads you'll
+
+196
+00:07:27,120 --> 00:07:30,020
+have your your pieces are placed onto
+
+197
+00:07:30,030 --> 00:07:32,510
+machines and your cluster basically by a
+
+198
+00:07:32,520 --> 00:07:34,520
+an automated infrastructure so at that
+
+199
+00:07:34,530 --> 00:07:36,529
+point there's basically no chance to
+
+200
+00:07:36,539 --> 00:07:38,960
+have you know humans editing config
+
+201
+00:07:38,970 --> 00:07:40,640
+files and pushing out changes you need
+
+202
+00:07:40,650 --> 00:07:43,100
+something that in real time can manage
+
+203
+00:07:43,110 --> 00:07:45,469
+where all your resources are and which
+
+204
+00:07:45,479 --> 00:07:47,390
+ones are healthy and and where to find
+
+205
+00:07:47,400 --> 00:07:47,810
+them
+
+206
+00:07:47,820 --> 00:07:52,159
+okay are there applications or scenarios
+
+207
+00:07:52,169 --> 00:07:54,499
+where I wouldn't want to use service
+
+208
+00:07:54,509 --> 00:08:00,620
+discovery I don't think so I think the
+
+209
+00:08:00,630 --> 00:08:03,710
+basic sort of hygiene of separating the
+
+210
+00:08:03,720 --> 00:08:07,070
+configuration out of your application is
+
+211
+00:08:07,080 --> 00:08:10,219
+a good thing to start with early on you
+
+212
+00:08:10,229 --> 00:08:11,149
+know it's you don't want to be hard
+
+213
+00:08:11,159 --> 00:08:13,189
+coding IP addresses you know in your
+
+214
+00:08:13,199 --> 00:08:14,899
+source code whatever in the extreme so
+
+215
+00:08:14,909 --> 00:08:16,700
+you you're gonna want some separation
+
+216
+00:08:16,710 --> 00:08:18,529
+there from the beginning and I think
+
+217
+00:08:18,539 --> 00:08:22,790
+it's also easy to sort of progressively
+
+218
+00:08:22,800 --> 00:08:24,589
+use different features of service
+
+219
+00:08:24,599 --> 00:08:26,959
+discovery mechanisms as your application
+
+220
+00:08:26,969 --> 00:08:29,920
+gets more sophisticated so they with a
+
+221
+00:08:29,930 --> 00:08:31,969
+service discovery system that supports a
+
+222
+00:08:31,979 --> 00:08:35,240
+DNS interface you can use service
+
+223
+00:08:35,250 --> 00:08:37,010
+discovery by just you know having your
+
+224
+00:08:37,020 --> 00:08:39,680
+application look up a host name so you
+
+225
+00:08:39,690 --> 00:08:41,240
+can have like essentially a zero-touch
+
+226
+00:08:41,250 --> 00:08:44,180
+integration even very early on and then
+
+227
+00:08:44,190 --> 00:08:47,030
+in overtime you might need to use
+
+228
+00:08:47,040 --> 00:08:49,130
+orchestration features to elect a leader
+
+229
+00:08:49,140 --> 00:08:51,829
+among many potential leaders and your
+
+230
+00:08:51,839 --> 00:08:53,329
+pool services and things like that so
+
+231
+00:08:53,339 --> 00:08:55,550
+it's possible to sort of start simple
+
+232
+00:08:55,560 --> 00:08:57,910
+within an integration that's very very
+
+233
+00:08:57,920 --> 00:09:00,530
+lightweight or essentially even zero
+
+234
+00:09:00,540 --> 00:09:03,140
+impact your application code and then
+
+235
+00:09:03,150 --> 00:09:05,449
+expand from there but to start that way
+
+236
+00:09:05,459 --> 00:09:07,549
+versus hard-coding or maintaining these
+
+237
+00:09:07,559 --> 00:09:11,689
+things is a good way to go and also in a
+
+238
+00:09:11,699 --> 00:09:13,280
+world where you might be building a Mis
+
+239
+00:09:13,290 --> 00:09:14,749
+and you know machine images and things
+
+240
+00:09:14,759 --> 00:09:15,230
+like that
+
+241
+00:09:15,240 --> 00:09:18,410
+it's a nice like separating out the
+
+242
+00:09:18,420 --> 00:09:20,600
+service discovery piece into a separate
+
+243
+00:09:20,610 --> 00:09:23,720
+layer is handy for not having to you
+
+244
+00:09:23,730 --> 00:09:25,340
+know make a new ami when some
+
+245
+00:09:25,350 --> 00:09:26,840
+configuration changes so having that
+
+246
+00:09:26,850 --> 00:09:28,999
+layer in there can even have practical
+
+247
+00:09:29,009 --> 00:09:30,679
+implications for your deployment
+
+248
+00:09:30,689 --> 00:09:32,299
+pipeline and and just how you manage
+
+249
+00:09:32,309 --> 00:09:34,359
+your your your images for deployment
+
+250
+00:09:34,369 --> 00:09:37,939
+okay so yeah that's you said something
+
+251
+00:09:37,949 --> 00:09:40,220
+there that I was that made me think
+
+252
+00:09:40,230 --> 00:09:42,259
+about immutable infrastructure and
+
+253
+00:09:42,269 --> 00:09:43,999
+certainly if you're talking about baked
+
+254
+00:09:44,009 --> 00:09:47,359
+in am eyes and actually extracting out
+
+255
+00:09:47,369 --> 00:09:49,720
+this variable configuration information
+
+256
+00:09:49,730 --> 00:09:52,730
+that would make sense right yeah and
+
+257
+00:09:52,740 --> 00:09:54,739
+yeah having that layer there and then
+
+258
+00:09:54,749 --> 00:09:56,600
+being able to dynamically push changes
+
+259
+00:09:56,610 --> 00:09:59,329
+out after something's deployed without
+
+260
+00:09:59,339 --> 00:10:00,889
+having to actually you know and
+
+261
+00:10:00,899 --> 00:10:03,230
+basically get into that image and change
+
+262
+00:10:03,240 --> 00:10:05,449
+its configuration is is a super big plus
+
+263
+00:10:05,459 --> 00:10:08,059
+and that same ami can connect to any
+
+264
+00:10:08,069 --> 00:10:09,949
+database or connect to any instance of
+
+265
+00:10:09,959 --> 00:10:12,259
+your API server or whatnot because it's
+
+266
+00:10:12,269 --> 00:10:14,030
+getting all that configuration on the
+
+267
+00:10:14,040 --> 00:10:15,829
+fly from the service discovery system
+
+268
+00:10:15,839 --> 00:10:19,720
+okay so yeah move at least the
+
+269
+00:10:19,730 --> 00:10:23,179
+configuration related variability out of
+
+270
+00:10:23,189 --> 00:10:26,059
+your infrastructure all right that makes
+
+271
+00:10:26,069 --> 00:10:29,840
+sense let's move into some more kind of
+
+272
+00:10:29,850 --> 00:10:32,569
+technical details what data are
+
+273
+00:10:32,579 --> 00:10:35,119
+typically stored in service discovery
+
+274
+00:10:35,129 --> 00:10:38,239
+repositories you mentioned host names or
+
+275
+00:10:38,249 --> 00:10:41,929
+IPs and port numbers is that kind of the
+
+276
+00:10:41,939 --> 00:10:44,030
+extent of it or is there more that's
+
+277
+00:10:44,040 --> 00:10:46,369
+sort of the most fundamental data but
+
+278
+00:10:46,379 --> 00:10:50,090
+when you get into managing services
+
+279
+00:10:50,100 --> 00:10:52,549
+there and their configuration you
+
+280
+00:10:52,559 --> 00:10:54,079
+generally need a little bit more
+
+281
+00:10:54,089 --> 00:10:57,340
+information so you'll typically have
+
+282
+00:10:57,350 --> 00:11:00,019
+things like you know database username
+
+283
+00:11:00,029 --> 00:11:02,509
+potentially credentials tokens like
+
+284
+00:11:02,519 --> 00:11:04,939
+other configuration type information
+
+285
+00:11:04,949 --> 00:11:07,309
+that goes along with the basic IP import
+
+286
+00:11:07,319 --> 00:11:09,230
+information that that's already stored
+
+287
+00:11:09,240 --> 00:11:11,689
+in the surface coverage system it's also
+
+288
+00:11:11,699 --> 00:11:14,389
+a good place to put things like feature
+
+289
+00:11:14,399 --> 00:11:15,590
+flags
+
+290
+00:11:15,600 --> 00:11:18,710
+there's kind of a general bucket of key
+
+291
+00:11:18,720 --> 00:11:19,310
+value for
+
+292
+00:11:19,320 --> 00:11:21,410
+that nearly every service discovery
+
+293
+00:11:21,420 --> 00:11:23,990
+system supports which is useful for
+
+294
+00:11:24,000 --> 00:11:26,480
+capturing basically the whole set of
+
+295
+00:11:26,490 --> 00:11:28,009
+configuration data that you might need
+
+296
+00:11:28,019 --> 00:11:30,980
+for interacting with other services okay
+
+297
+00:11:30,990 --> 00:11:33,370
+yeah I was gonna ask about something as
+
+298
+00:11:33,380 --> 00:11:35,900
+something like database credentials or
+
+299
+00:11:35,910 --> 00:11:37,790
+something so those could be in service
+
+300
+00:11:37,800 --> 00:11:39,800
+discovery and then I hadn't even thought
+
+301
+00:11:39,810 --> 00:11:43,550
+of feature flags so what are the you
+
+302
+00:11:43,560 --> 00:11:45,470
+mentioned kind of a key value storage
+
+303
+00:11:45,480 --> 00:11:48,189
+thing what are typical components of
+
+304
+00:11:48,199 --> 00:11:52,639
+service discovery tool so the sort of if
+
+305
+00:11:52,649 --> 00:11:55,400
+you want to take a complete solution for
+
+306
+00:11:55,410 --> 00:11:57,740
+service discovery it really comes down
+
+307
+00:11:57,750 --> 00:12:01,910
+to four different pieces so there's the
+
+308
+00:12:01,920 --> 00:12:04,189
+core service discovery so you know where
+
+309
+00:12:04,199 --> 00:12:04,850
+is this thing
+
+310
+00:12:04,860 --> 00:12:06,740
+what's its IP and port how do I kind of
+
+311
+00:12:06,750 --> 00:12:08,780
+connect to it any complete solution
+
+312
+00:12:08,790 --> 00:12:10,249
+generally needs a health monitoring
+
+313
+00:12:10,259 --> 00:12:12,559
+piece it's not really interesting to get
+
+314
+00:12:12,569 --> 00:12:14,540
+you know an instance that's no longer
+
+315
+00:12:14,550 --> 00:12:16,460
+functioning when you're looking for
+
+316
+00:12:16,470 --> 00:12:18,019
+something to connect to so having a
+
+317
+00:12:18,029 --> 00:12:20,420
+health monitoring component creates a
+
+318
+00:12:20,430 --> 00:12:22,999
+really sort of fresh and live set of
+
+319
+00:12:23,009 --> 00:12:25,309
+data that's gonna be very easy to manage
+
+320
+00:12:25,319 --> 00:12:28,280
+with you in your infrastructure you need
+
+321
+00:12:28,290 --> 00:12:30,290
+some configuration storage so that's
+
+322
+00:12:30,300 --> 00:12:33,439
+generally in the form of a kv store key
+
+323
+00:12:33,449 --> 00:12:35,180
+value store and that can also be used
+
+324
+00:12:35,190 --> 00:12:36,829
+for coordination so we can talk about
+
+325
+00:12:36,839 --> 00:12:38,629
+some applications around that and then
+
+326
+00:12:38,639 --> 00:12:40,519
+an orchestration piece so it's often
+
+327
+00:12:40,529 --> 00:12:45,470
+useful to be able to to say among many
+
+328
+00:12:45,480 --> 00:12:47,720
+possible instances help have tools to
+
+329
+00:12:47,730 --> 00:12:49,519
+elect a leader or make sure that a
+
+330
+00:12:49,529 --> 00:12:51,410
+certain operation is done in a way that
+
+331
+00:12:51,420 --> 00:12:54,350
+doesn't have any race conditions or even
+
+332
+00:12:54,360 --> 00:12:56,689
+some systems even lets you do things
+
+333
+00:12:56,699 --> 00:12:59,030
+like send events out or you know run
+
+334
+00:12:59,040 --> 00:13:00,829
+commands dude like certain more dynamic
+
+335
+00:13:00,839 --> 00:13:03,530
+things if you want to have a an event go
+
+336
+00:13:03,540 --> 00:13:05,240
+out across your fleet and cause some
+
+337
+00:13:05,250 --> 00:13:06,920
+action to happen things like that
+
+338
+00:13:06,930 --> 00:13:10,910
+okay would load-balancing be a function
+
+339
+00:13:10,920 --> 00:13:15,319
+of service discovery or is that gonna be
+
+340
+00:13:15,329 --> 00:13:19,660
+something separate it can be and many
+
+341
+00:13:19,670 --> 00:13:22,429
+it's sort of an architectural choice
+
+342
+00:13:22,439 --> 00:13:24,379
+with different service discovery systems
+
+343
+00:13:24,389 --> 00:13:27,460
+so some sort of make load-balancing
+
+344
+00:13:27,470 --> 00:13:31,360
+first-class part of of the architecture
+
+345
+00:13:31,370 --> 00:13:33,199
+so Yool Yool
+
+346
+00:13:33,209 --> 00:13:35,540
+all your traffic get some kind of load
+
+347
+00:13:35,550 --> 00:13:38,030
+balancer and the novel man is talking to
+
+348
+00:13:38,040 --> 00:13:40,429
+different healthy instances it's often
+
+349
+00:13:40,439 --> 00:13:42,910
+the case though where you can actually
+
+350
+00:13:42,920 --> 00:13:45,919
+avoid load balancing with the service
+
+351
+00:13:45,929 --> 00:13:47,749
+discovery system and avoid that whole
+
+352
+00:13:47,759 --> 00:13:50,119
+tier and potential point of failure so
+
+353
+00:13:50,129 --> 00:13:52,040
+if you can if you can talk directly to a
+
+354
+00:13:52,050 --> 00:13:54,499
+healthy instance by virtue of how your
+
+355
+00:13:54,509 --> 00:13:56,780
+service discovery system works it's
+
+356
+00:13:56,790 --> 00:13:58,069
+actually kind of nice to avoid load
+
+357
+00:13:58,079 --> 00:13:59,359
+balancing if you can like there's
+
+358
+00:13:59,369 --> 00:14:01,999
+different trade-offs and there's
+
+359
+00:14:02,009 --> 00:14:04,489
+different choices one common thing is
+
+360
+00:14:04,499 --> 00:14:06,710
+sort of within your data center you
+
+361
+00:14:06,720 --> 00:14:08,629
+might not use load balancers at all and
+
+362
+00:14:08,639 --> 00:14:10,400
+you use your service discovery system to
+
+363
+00:14:10,410 --> 00:14:12,769
+manage handing out healthy here's a
+
+364
+00:14:12,779 --> 00:14:14,179
+healthy instance of this service talk to
+
+365
+00:14:14,189 --> 00:14:15,499
+this guy and if it fails you can get a
+
+366
+00:14:15,509 --> 00:14:17,239
+new one but then you'll use your service
+
+367
+00:14:17,249 --> 00:14:19,730
+discovery system to configure an
+
+368
+00:14:19,740 --> 00:14:22,129
+external load balancer that your
+
+369
+00:14:22,139 --> 00:14:23,929
+customers are using say like that your
+
+370
+00:14:23,939 --> 00:14:25,730
+website you know IP addresses are
+
+371
+00:14:25,740 --> 00:14:27,049
+pointed to so that you can have
+
+372
+00:14:27,059 --> 00:14:28,759
+combinations of things and some systems
+
+373
+00:14:28,769 --> 00:14:30,919
+run load balancers internally that you
+
+374
+00:14:30,929 --> 00:14:32,600
+know route traffic over overlay networks
+
+375
+00:14:32,610 --> 00:14:33,769
+and things like that so there's there's
+
+376
+00:14:33,779 --> 00:14:34,879
+quite a range of different solutions
+
+377
+00:14:34,889 --> 00:14:36,499
+there okay
+
+378
+00:14:36,509 --> 00:14:40,730
+so how do servers that they want to
+
+379
+00:14:40,740 --> 00:14:43,039
+offer a service how do they know where
+
+380
+00:14:43,049 --> 00:14:46,129
+they're gonna register to and on the
+
+381
+00:14:46,139 --> 00:14:47,989
+flip side of that the clients that are
+
+382
+00:14:47,999 --> 00:14:49,850
+looking for a service work how do they
+
+383
+00:14:49,860 --> 00:14:52,129
+know I mean you know do we need another
+
+384
+00:14:52,139 --> 00:14:55,160
+layer of service discovery yeah I think
+
+385
+00:14:55,170 --> 00:14:57,019
+it'd be Turtles yeah it sort of Turtles
+
+386
+00:14:57,029 --> 00:14:59,900
+all the way down for services Gary you
+
+387
+00:14:59,910 --> 00:15:02,929
+generally need some kind of seed or some
+
+388
+00:15:02,939 --> 00:15:06,230
+way to introduce a new entity into the
+
+389
+00:15:06,240 --> 00:15:08,989
+service discovery system some systems do
+
+390
+00:15:08,999 --> 00:15:12,259
+that with you know some well-known DNS
+
+391
+00:15:12,269 --> 00:15:13,879
+some serve records for some you know
+
+392
+00:15:13,889 --> 00:15:16,309
+route service to talk to Hoshi groups
+
+393
+00:15:16,319 --> 00:15:18,559
+console has a Atlas join feature so we
+
+394
+00:15:18,569 --> 00:15:20,600
+actually have a free sort of hosted
+
+395
+00:15:20,610 --> 00:15:22,759
+joining service that'll help you find
+
+396
+00:15:22,769 --> 00:15:24,650
+other nodes to talk to initially and
+
+397
+00:15:24,660 --> 00:15:26,720
+there's also different architectures in
+
+398
+00:15:26,730 --> 00:15:29,179
+terms of how you access the service
+
+399
+00:15:29,189 --> 00:15:31,639
+discovery system console for example
+
+400
+00:15:31,649 --> 00:15:33,619
+runs an agent on every node so your
+
+401
+00:15:33,629 --> 00:15:35,359
+applications only ever talk to their
+
+402
+00:15:35,369 --> 00:15:37,579
+local agent and the console kind of
+
+403
+00:15:37,589 --> 00:15:39,410
+manages how to talk to servers and how
+
+404
+00:15:39,420 --> 00:15:41,629
+to route your requests around other
+
+405
+00:15:41,639 --> 00:15:44,059
+systems you might have to locate sort of
+
+406
+00:15:44,069 --> 00:15:45,439
+a central server and make requests
+
+407
+00:15:45,449 --> 00:15:46,500
+against that
+
+408
+00:15:46,510 --> 00:15:48,990
+there's different strategies but there
+
+409
+00:15:49,000 --> 00:15:50,370
+usually is some sort of bootstrapping
+
+410
+00:15:50,380 --> 00:15:53,130
+process or service that you need to kick
+
+411
+00:15:53,140 --> 00:15:56,220
+things off okay yeah that makes sense
+
+412
+00:15:56,230 --> 00:16:00,510
+you said the said seed and yeah at some
+
+413
+00:16:00,520 --> 00:16:02,040
+point in time all the way down to the
+
+414
+00:16:02,050 --> 00:16:04,320
+following all the turtles down we get an
+
+415
+00:16:04,330 --> 00:16:06,570
+egg or a scene there yeah there's a
+
+416
+00:16:06,580 --> 00:16:08,880
+there's maybe a hard-coded IP address or
+
+417
+00:16:08,890 --> 00:16:11,880
+something similar somewhere but there's
+
+418
+00:16:11,890 --> 00:16:13,500
+yeah things like a let's join make that
+
+419
+00:16:13,510 --> 00:16:15,120
+pretty easy like you can have a well
+
+420
+00:16:15,130 --> 00:16:16,440
+known thing to reach out to and it will
+
+421
+00:16:16,450 --> 00:16:19,700
+manage finding you a server to join with
+
+422
+00:16:19,710 --> 00:16:22,740
+okay yeah I want to touch on Atlas
+
+423
+00:16:22,750 --> 00:16:26,270
+towards the end here but in the meantime
+
+424
+00:16:26,280 --> 00:16:29,160
+given that service discovery the way
+
+425
+00:16:29,170 --> 00:16:31,320
+we've been talking about it it's gonna
+
+426
+00:16:31,330 --> 00:16:34,050
+be used possibly by pretty much the
+
+427
+00:16:34,060 --> 00:16:35,640
+whole app you know even trying to find
+
+428
+00:16:35,650 --> 00:16:38,340
+the database and things like that it's
+
+429
+00:16:38,350 --> 00:16:41,550
+gonna need to be fairly reliable what
+
+430
+00:16:41,560 --> 00:16:43,860
+are some features or characteristics of
+
+431
+00:16:43,870 --> 00:16:46,670
+service discovery tools that provide the
+
+432
+00:16:46,680 --> 00:16:49,140
+reliability yeah that's that's
+
+433
+00:16:49,150 --> 00:16:50,970
+definitely a prime concern for a system
+
+434
+00:16:50,980 --> 00:16:52,410
+like this which could potentially be a
+
+435
+00:16:52,420 --> 00:16:54,900
+it'd be sort of like a nuclear single
+
+436
+00:16:54,910 --> 00:16:56,610
+point of failure if it wasn't if it
+
+437
+00:16:56,620 --> 00:16:59,160
+wasn't done properly so a key component
+
+438
+00:16:59,170 --> 00:17:02,670
+of nearly any district or any service
+
+439
+00:17:02,680 --> 00:17:05,550
+discovery system is to be distributed
+
+440
+00:17:05,560 --> 00:17:08,340
+and replicated so you need to be able to
+
+441
+00:17:08,350 --> 00:17:11,490
+basically build out redundancy to
+
+442
+00:17:11,500 --> 00:17:13,710
+whatever level of failure tolerance you
+
+443
+00:17:13,720 --> 00:17:16,890
+want and that may mean having redundancy
+
+444
+00:17:16,900 --> 00:17:20,280
+within your say kind of a local area
+
+445
+00:17:20,290 --> 00:17:21,720
+network kind of scope so you might have
+
+446
+00:17:21,730 --> 00:17:24,449
+multiple servers and then you may also
+
+447
+00:17:24,459 --> 00:17:26,490
+want redundancy by having sort of
+
+448
+00:17:26,500 --> 00:17:28,199
+different Federation's of servers that
+
+449
+00:17:28,209 --> 00:17:30,390
+can talk to each other it might be in
+
+450
+00:17:30,400 --> 00:17:32,040
+different geographic locations and
+
+451
+00:17:32,050 --> 00:17:34,110
+things like that so having a distributed
+
+452
+00:17:34,120 --> 00:17:36,750
+system with replication that can handle
+
+453
+00:17:36,760 --> 00:17:38,490
+you know if server going completely
+
+454
+00:17:38,500 --> 00:17:41,160
+offline or two servers or whatever level
+
+455
+00:17:41,170 --> 00:17:42,570
+you want to proficient to is very
+
+456
+00:17:42,580 --> 00:17:44,970
+important and then there's also the
+
+457
+00:17:44,980 --> 00:17:48,330
+concerns of dealing with you know what
+
+458
+00:17:48,340 --> 00:17:50,430
+happens when the system is down
+
+459
+00:17:50,440 --> 00:17:52,170
+altogether so in the event of a
+
+460
+00:17:52,180 --> 00:17:55,350
+partition or something like that there's
+
+461
+00:17:55,360 --> 00:17:59,670
+different strategies for say say like if
+
+462
+00:17:59,680 --> 00:18:00,090
+you had
+
+463
+00:18:00,100 --> 00:18:02,729
+a system that has a consensus algorithm
+
+464
+00:18:02,739 --> 00:18:04,349
+and requires a certain number of servers
+
+465
+00:18:04,359 --> 00:18:06,570
+for a quorum and if you get below that
+
+466
+00:18:06,580 --> 00:18:08,009
+number of servers so maybe you can't
+
+467
+00:18:08,019 --> 00:18:10,529
+make rights to your system anymore you
+
+468
+00:18:10,539 --> 00:18:12,359
+can't make any changes you still want
+
+469
+00:18:12,369 --> 00:18:15,629
+the reads to work well so there's tools
+
+470
+00:18:15,639 --> 00:18:17,879
+that are exposed to the clients to say
+
+471
+00:18:17,889 --> 00:18:19,680
+hey I'm I'm willing to take some stale
+
+472
+00:18:19,690 --> 00:18:21,359
+information I just want to you know
+
+473
+00:18:21,369 --> 00:18:23,009
+what's your best information that you
+
+474
+00:18:23,019 --> 00:18:25,320
+had as a you know this long ago or what
+
+475
+00:18:25,330 --> 00:18:27,539
+not so you want it to operate even in
+
+476
+00:18:27,549 --> 00:18:29,340
+sort of degraded modes and fail
+
+477
+00:18:29,350 --> 00:18:32,759
+gracefully and and kind of at a very
+
+478
+00:18:32,769 --> 00:18:35,339
+practical level there's a lot of sort of
+
+479
+00:18:35,349 --> 00:18:37,639
+techniques that good service discovery
+
+480
+00:18:37,649 --> 00:18:40,830
+solutions have in terms of you know
+
+481
+00:18:40,840 --> 00:18:43,169
+managing how they deal with retries and
+
+482
+00:18:43,179 --> 00:18:45,570
+how they avoid thundering herd's when
+
+483
+00:18:45,580 --> 00:18:47,999
+things come back online you know how do
+
+484
+00:18:48,009 --> 00:18:50,460
+they randomize traffic to spread load of
+
+485
+00:18:50,470 --> 00:18:52,889
+Mon different components how do you
+
+486
+00:18:52,899 --> 00:18:55,859
+scale certain events based on the size
+
+487
+00:18:55,869 --> 00:18:57,060
+of the clusters and things like that so
+
+488
+00:18:57,070 --> 00:18:59,549
+there's quite a bit of layers that go
+
+489
+00:18:59,559 --> 00:19:01,440
+into making a robust service discovery
+
+490
+00:19:01,450 --> 00:19:03,539
+system that's gonna keep working no
+
+491
+00:19:03,549 --> 00:19:06,539
+matter what ok and and when you say
+
+492
+00:19:06,549 --> 00:19:09,599
+distributed system we mean sort of in
+
+493
+00:19:09,609 --> 00:19:12,960
+the classic sense of three or five or
+
+494
+00:19:12,970 --> 00:19:15,479
+seven servers and you mentioned a
+
+495
+00:19:15,489 --> 00:19:18,509
+consensus algorithm possibly and so then
+
+496
+00:19:18,519 --> 00:19:21,749
+that kind of gets would get us into the
+
+497
+00:19:21,759 --> 00:19:24,509
+cap theorem for example right in terms
+
+498
+00:19:24,519 --> 00:19:27,419
+of making some decisions or trade-offs
+
+499
+00:19:27,429 --> 00:19:30,989
+there yes and there's definitely the
+
+500
+00:19:30,999 --> 00:19:32,639
+different tools have different
+
+501
+00:19:32,649 --> 00:19:34,349
+strategies and different trade-offs and
+
+502
+00:19:34,359 --> 00:19:39,869
+there's there are AP type systems and
+
+503
+00:19:39,879 --> 00:19:42,450
+they had like you know that we can give
+
+504
+00:19:42,460 --> 00:19:44,129
+some examples of specifics but there are
+
+505
+00:19:44,139 --> 00:19:45,839
+systems that make sort of more of an AP
+
+506
+00:19:45,849 --> 00:19:51,049
+sort of bent that will have better
+
+507
+00:19:51,059 --> 00:19:54,269
+availability but potentially much harder
+
+508
+00:19:54,279 --> 00:19:55,919
+to reason about failure modes where you
+
+509
+00:19:55,929 --> 00:19:57,479
+might end up with you know two different
+
+510
+00:19:57,489 --> 00:19:59,700
+sides of your cluster working in two
+
+511
+00:19:59,710 --> 00:20:01,589
+different ways and then there are
+
+512
+00:20:01,599 --> 00:20:04,859
+systems that go more the CPU route so
+
+513
+00:20:04,869 --> 00:20:07,320
+those are often easier to reason about I
+
+514
+00:20:07,330 --> 00:20:10,499
+think for operators and provide they
+
+515
+00:20:10,509 --> 00:20:12,060
+have a consensus algorithm to let you
+
+516
+00:20:12,070 --> 00:20:14,790
+kind of know the state of your cluster
+
+517
+00:20:14,800 --> 00:20:17,430
+and have a known behavior in the event
+
+518
+00:20:17,440 --> 00:20:19,380
+that things go wrong that's fairly easy
+
+519
+00:20:19,390 --> 00:20:21,030
+to reason about so there's different you
+
+520
+00:20:21,040 --> 00:20:22,350
+know kinda pending on your application
+
+521
+00:20:22,360 --> 00:20:23,400
+that there's there's different
+
+522
+00:20:23,410 --> 00:20:25,080
+considerations but I would say most
+
+523
+00:20:25,090 --> 00:20:27,600
+systems tend towards a CP type
+
+524
+00:20:27,610 --> 00:20:31,650
+architecture so for frying consistency
+
+525
+00:20:31,660 --> 00:20:33,740
+and and partition tolerance over
+
+526
+00:20:33,750 --> 00:20:36,270
+availability yeah but with the caveat
+
+527
+00:20:36,280 --> 00:20:39,450
+that you have sort of a read level of
+
+528
+00:20:39,460 --> 00:20:42,630
+veil ability even in the loss of a you
+
+529
+00:20:42,640 --> 00:20:44,940
+know a loss of quorum say so you know
+
+530
+00:20:44,950 --> 00:20:46,050
+you need to think about that case and
+
+531
+00:20:46,060 --> 00:20:48,690
+not have it just knock out but you know
+
+532
+00:20:48,700 --> 00:20:50,970
+the minority that can't make progress in
+
+533
+00:20:50,980 --> 00:20:52,380
+terms of making rights can still read
+
+534
+00:20:52,390 --> 00:20:54,780
+the current state as it was at the time
+
+535
+00:20:54,790 --> 00:20:57,390
+the partition happened for example okay
+
+536
+00:20:57,400 --> 00:20:58,470
+yeah that makes sense
+
+537
+00:20:58,480 --> 00:21:00,920
+we've mentioned a couple of times about
+
+538
+00:21:00,930 --> 00:21:04,440
+databases suppose you know rather than
+
+539
+00:21:04,450 --> 00:21:06,350
+running my own database server I'm
+
+540
+00:21:06,360 --> 00:21:09,540
+hosting in Amazon AWS and I'm using
+
+541
+00:21:09,550 --> 00:21:15,810
+their service for RDS to provide my my
+
+542
+00:21:15,820 --> 00:21:18,450
+sequel or Postgres server would I still
+
+543
+00:21:18,460 --> 00:21:21,150
+be using service discovery to discover
+
+544
+00:21:21,160 --> 00:21:23,580
+the database even though in theory
+
+545
+00:21:23,590 --> 00:21:25,500
+Amazon's gonna keep it pretty stable for
+
+546
+00:21:25,510 --> 00:21:29,430
+me I think so because we tools like
+
+547
+00:21:29,440 --> 00:21:31,710
+console have support for what we call
+
+548
+00:21:31,720 --> 00:21:34,500
+external services so those are those are
+
+549
+00:21:34,510 --> 00:21:36,780
+static registrations but they are served
+
+550
+00:21:36,790 --> 00:21:39,540
+in the same manner in terms of consoles
+
+551
+00:21:39,550 --> 00:21:43,100
+api's as any other service okay so yeah
+
+552
+00:21:43,110 --> 00:21:46,230
+consistency so you're not special casing
+
+553
+00:21:46,240 --> 00:21:48,690
+Amazon that's right so you can manage it
+
+554
+00:21:48,700 --> 00:21:50,190
+sort of in the same place you could
+
+555
+00:21:50,200 --> 00:21:52,170
+retrieve it in the same way and then as
+
+556
+00:21:52,180 --> 00:21:54,450
+you if you were gonna you know manage
+
+557
+00:21:54,460 --> 00:21:55,590
+some portion of your database
+
+558
+00:21:55,600 --> 00:21:57,390
+infrastructure yourself it'll sort of
+
+559
+00:21:57,400 --> 00:21:59,160
+nicely ramp into being supported by
+
+560
+00:21:59,170 --> 00:22:01,230
+console without changing your clients so
+
+561
+00:22:01,240 --> 00:22:03,150
+it's it's like getting that sort of
+
+562
+00:22:03,160 --> 00:22:04,470
+basic hygiene of having all your
+
+563
+00:22:04,480 --> 00:22:06,690
+configuration in one place you can you
+
+564
+00:22:06,700 --> 00:22:07,980
+can definitely do that with external
+
+565
+00:22:07,990 --> 00:22:11,090
+services right and it also gives you the
+
+566
+00:22:11,100 --> 00:22:13,320
+flexibility than if everyone's using the
+
+567
+00:22:13,330 --> 00:22:15,510
+same pattern to make different decisions
+
+568
+00:22:15,520 --> 00:22:18,180
+in the future that's right it and the
+
+569
+00:22:18,190 --> 00:22:20,130
+overhead is pretty low I mean it's you
+
+570
+00:22:20,140 --> 00:22:21,510
+know it's it's it's one level of
+
+571
+00:22:21,520 --> 00:22:23,850
+indirection which software engineers are
+
+572
+00:22:23,860 --> 00:22:25,800
+always ok with just one more level of
+
+573
+00:22:25,810 --> 00:22:27,360
+indirection
+
+574
+00:22:27,370 --> 00:22:29,649
+one more level and we can solve any
+
+575
+00:22:29,659 --> 00:22:33,760
+problem that's right so how important is
+
+576
+00:22:33,770 --> 00:22:36,760
+security in a service discovery tool do
+
+577
+00:22:36,770 --> 00:22:39,340
+we need to use cryptography either to
+
+578
+00:22:39,350 --> 00:22:42,060
+encrypt the communications or
+
+579
+00:22:42,070 --> 00:22:44,310
+authenticating clients and servers
+
+580
+00:22:44,320 --> 00:22:46,779
+security is pretty huge I mean in this
+
+581
+00:22:46,789 --> 00:22:49,899
+system basically will direct your you
+
+582
+00:22:49,909 --> 00:22:51,940
+know your internal services to connect
+
+583
+00:22:51,950 --> 00:22:54,760
+to things and make requests to them it
+
+584
+00:22:54,770 --> 00:22:56,950
+could be key to finding you know where
+
+585
+00:22:56,960 --> 00:22:58,360
+the database is you could potentially
+
+586
+00:22:58,370 --> 00:23:02,110
+have credentials in there so yeah we any
+
+587
+00:23:02,120 --> 00:23:04,659
+actual production deployment of a
+
+588
+00:23:04,669 --> 00:23:06,250
+service discovery system needs to think
+
+589
+00:23:06,260 --> 00:23:09,100
+about security you know generally people
+
+590
+00:23:09,110 --> 00:23:12,399
+use TLS to secure all the traffic it's
+
+591
+00:23:12,409 --> 00:23:14,950
+usually important to verify the identity
+
+592
+00:23:14,960 --> 00:23:18,640
+of your servers so you can also use you
+
+593
+00:23:18,650 --> 00:23:21,039
+know certificate verification like you
+
+594
+00:23:21,049 --> 00:23:23,200
+don't want sort of random nodes on your
+
+595
+00:23:23,210 --> 00:23:25,120
+network joining on as servers and
+
+596
+00:23:25,130 --> 00:23:26,590
+potentially interfering with the quorum
+
+597
+00:23:26,600 --> 00:23:29,830
+or you know a rogue amount that can push
+
+598
+00:23:29,840 --> 00:23:31,690
+bad data in there things like that and
+
+599
+00:23:31,700 --> 00:23:33,430
+then on top of sort of the basic
+
+600
+00:23:33,440 --> 00:23:37,500
+transport level stuff most tools also
+
+601
+00:23:37,510 --> 00:23:40,090
+involve some layer of access control
+
+602
+00:23:40,100 --> 00:23:43,570
+type tools available within the service
+
+603
+00:23:43,580 --> 00:23:45,399
+discovery system itself so you can scope
+
+604
+00:23:45,409 --> 00:23:48,340
+who's going to be able to you know
+
+605
+00:23:48,350 --> 00:23:51,460
+create new entries who can delete things
+
+606
+00:23:51,470 --> 00:23:53,740
+who can update key values which you know
+
+607
+00:23:53,750 --> 00:23:55,539
+you can segment your paths to where
+
+608
+00:23:55,549 --> 00:23:57,580
+different parts of your organization can
+
+609
+00:23:57,590 --> 00:23:59,710
+kind of self manage different parts of
+
+610
+00:23:59,720 --> 00:24:03,220
+your service discovery system okay and
+
+611
+00:24:03,230 --> 00:24:06,100
+then I would also think it probably
+
+612
+00:24:06,110 --> 00:24:09,070
+depends or could depend on kind of the
+
+613
+00:24:09,080 --> 00:24:10,659
+scope of the network that you're being
+
+614
+00:24:10,669 --> 00:24:12,520
+that you're using if if we're just
+
+615
+00:24:12,530 --> 00:24:15,669
+talking about a local area network or a
+
+616
+00:24:15,679 --> 00:24:18,220
+rack on premises that might be different
+
+617
+00:24:18,230 --> 00:24:21,070
+than if you were talking about a number
+
+618
+00:24:21,080 --> 00:24:22,539
+of nodes trying to find each other on
+
+619
+00:24:22,549 --> 00:24:25,330
+Amazon it could be yeah I mean it
+
+620
+00:24:25,340 --> 00:24:27,909
+definitely different practices might
+
+621
+00:24:27,919 --> 00:24:30,490
+make sense in different ways that sort
+
+622
+00:24:30,500 --> 00:24:32,200
+of different levels of organization
+
+623
+00:24:32,210 --> 00:24:34,450
+things like that but it's like it's
+
+624
+00:24:34,460 --> 00:24:36,820
+generally good to start with TLS and you
+
+625
+00:24:36,830 --> 00:24:38,169
+know some of the basics in there and
+
+626
+00:24:38,179 --> 00:24:40,480
+then you might only
+
+627
+00:24:40,490 --> 00:24:43,480
+are creating Apple policies once your
+
+628
+00:24:43,490 --> 00:24:45,370
+organization gets complex or you get a
+
+629
+00:24:45,380 --> 00:24:47,260
+couple different teams using the same
+
+630
+00:24:47,270 --> 00:24:49,270
+service entry system so some of that can
+
+631
+00:24:49,280 --> 00:24:52,540
+evolve but it's good to have just sort
+
+632
+00:24:52,550 --> 00:24:54,700
+of a basic level of transport security
+
+633
+00:24:54,710 --> 00:24:56,799
+under that underneath as a sort of a I
+
+634
+00:24:56,809 --> 00:24:58,480
+just call that sort of like a baseline
+
+635
+00:24:58,490 --> 00:25:00,610
+set up okay
+
+636
+00:25:00,620 --> 00:25:03,430
+you've mentioned console as a service
+
+637
+00:25:03,440 --> 00:25:05,830
+discovery tool and obviously I mean you
+
+638
+00:25:05,840 --> 00:25:08,650
+work on it and we'll discuss that in a
+
+639
+00:25:08,660 --> 00:25:10,570
+moment but what are some of the other
+
+640
+00:25:10,580 --> 00:25:13,570
+tools that are out there in this space
+
+641
+00:25:13,580 --> 00:25:16,000
+that you know I don't expect you to be
+
+642
+00:25:16,010 --> 00:25:18,070
+an expert on any or all of them and we
+
+643
+00:25:18,080 --> 00:25:19,930
+certainly don't have time to to dive
+
+644
+00:25:19,940 --> 00:25:22,570
+into them but just for other thing other
+
+645
+00:25:22,580 --> 00:25:25,090
+tools that listeners might be interested
+
+646
+00:25:25,100 --> 00:25:28,600
+in sure and I'm definitely yeah I'm not
+
+647
+00:25:28,610 --> 00:25:30,549
+an expert in every service discovery
+
+648
+00:25:30,559 --> 00:25:32,290
+system out there now I do work on
+
+649
+00:25:32,300 --> 00:25:34,240
+console full time so that's right I know
+
+650
+00:25:34,250 --> 00:25:38,410
+the most but there's a class of tools
+
+651
+00:25:38,420 --> 00:25:40,960
+that I would roughly kind of lump into
+
+652
+00:25:40,970 --> 00:25:43,150
+sort of key value stores so like
+
+653
+00:25:43,160 --> 00:25:47,290
+zookeeper @cd Doozer and console
+
+654
+00:25:47,300 --> 00:25:48,810
+actually has a key value store as well
+
+655
+00:25:48,820 --> 00:25:52,780
+and these sort of generally provide kind
+
+656
+00:25:52,790 --> 00:25:55,090
+of a highly available key value store
+
+657
+00:25:55,100 --> 00:25:57,669
+that can be accessed by clients and they
+
+658
+00:25:57,679 --> 00:26:00,280
+often include mechanisms like
+
+659
+00:26:00,290 --> 00:26:03,490
+coordination so locking type features so
+
+660
+00:26:03,500 --> 00:26:04,630
+you can have it you can actually
+
+661
+00:26:04,640 --> 00:26:06,730
+coordinator round a key and make sure
+
+662
+00:26:06,740 --> 00:26:08,710
+that the updates are atomic they
+
+663
+00:26:08,720 --> 00:26:11,290
+generally include some kind of help
+
+664
+00:26:11,300 --> 00:26:15,220
+checking notion to where a client will
+
+665
+00:26:15,230 --> 00:26:17,049
+maintain a connection and if the
+
+666
+00:26:17,059 --> 00:26:19,840
+connection closes something can happen
+
+667
+00:26:19,850 --> 00:26:21,460
+in the key value store so you can kind
+
+668
+00:26:21,470 --> 00:26:23,290
+of know that you know this is this guy
+
+669
+00:26:23,300 --> 00:26:25,660
+there's some notion of some client being
+
+670
+00:26:25,670 --> 00:26:27,669
+alive and a way to have the server's
+
+671
+00:26:27,679 --> 00:26:29,500
+help manage that and then these
+
+672
+00:26:29,510 --> 00:26:32,049
+generally couple some type of consensus
+
+673
+00:26:32,059 --> 00:26:34,840
+algorithm to provide a distributed
+
+674
+00:26:34,850 --> 00:26:39,790
+replicated key store so the main thing
+
+675
+00:26:39,800 --> 00:26:41,140
+that differentiates these different
+
+676
+00:26:41,150 --> 00:26:43,060
+solutions and where console is a little
+
+677
+00:26:43,070 --> 00:26:45,940
+bit unique is these often I think of as
+
+678
+00:26:45,950 --> 00:26:48,850
+kind of like lower-level toolkits so you
+
+679
+00:26:48,860 --> 00:26:51,549
+can build service discovery systems on
+
+680
+00:26:51,559 --> 00:26:53,080
+top of these but they don't necessarily
+
+681
+00:26:53,090 --> 00:26:54,410
+have
+
+682
+00:26:54,420 --> 00:26:56,390
+maybe as deep a mapping of all the
+
+683
+00:26:56,400 --> 00:26:58,520
+service discovery concepts in a form
+
+684
+00:26:58,530 --> 00:27:00,560
+that's easy to use so they're kind of
+
+685
+00:27:00,570 --> 00:27:03,380
+like a building block piece but not
+
+686
+00:27:03,390 --> 00:27:05,990
+necessarily you know a full solution so
+
+687
+00:27:06,000 --> 00:27:07,280
+like they might have basic health
+
+688
+00:27:07,290 --> 00:27:09,500
+checking in the form of monitoring a TCP
+
+689
+00:27:09,510 --> 00:27:11,390
+connection or having like a check and
+
+690
+00:27:11,400 --> 00:27:13,370
+kind of thing with a central server but
+
+691
+00:27:13,380 --> 00:27:15,800
+you wouldn't be able to do more general
+
+692
+00:27:15,810 --> 00:27:17,450
+health checking things like you know
+
+693
+00:27:17,460 --> 00:27:19,400
+running a Nagios script or something
+
+694
+00:27:19,410 --> 00:27:20,480
+like that
+
+695
+00:27:20,490 --> 00:27:23,210
+and they also they often don't handle
+
+696
+00:27:23,220 --> 00:27:26,750
+some of the sort of more global scales
+
+697
+00:27:26,760 --> 00:27:28,160
+we talked about like going you know
+
+698
+00:27:28,170 --> 00:27:29,540
+spanning different geographic regions
+
+699
+00:27:29,550 --> 00:27:30,470
+and things like that
+
+700
+00:27:30,480 --> 00:27:33,320
+that's generally left to be sort of
+
+701
+00:27:33,330 --> 00:27:35,840
+something that a client manages so a
+
+702
+00:27:35,850 --> 00:27:38,300
+full sort of service discovery solution
+
+703
+00:27:38,310 --> 00:27:40,190
+I think would encompass more than most
+
+704
+00:27:40,200 --> 00:27:41,870
+of the sort of basic key value stores
+
+705
+00:27:41,880 --> 00:27:44,480
+have but they're as sort of a building
+
+706
+00:27:44,490 --> 00:27:46,040
+block they're capable of doing pretty
+
+707
+00:27:46,050 --> 00:27:48,290
+powerful service discovery type things
+
+708
+00:27:48,300 --> 00:27:52,520
+yeah we talked about in episode 229 of
+
+709
+00:27:52,530 --> 00:27:56,410
+the podcast we talked about zookeeper
+
+710
+00:27:56,420 --> 00:28:00,110
+and yeah it was more on the level of the
+
+711
+00:28:00,120 --> 00:28:04,490
+key value store and coordination
+
+712
+00:28:04,500 --> 00:28:06,710
+algorithms and whatnot rather than high
+
+713
+00:28:06,720 --> 00:28:09,680
+level things like service discovery yeah
+
+714
+00:28:09,690 --> 00:28:12,290
+and there's other solutions there's
+
+715
+00:28:12,300 --> 00:28:14,960
+things like Sky DNS so it is sort of a
+
+716
+00:28:14,970 --> 00:28:19,240
+DNS centric system that's backed by a
+
+717
+00:28:19,250 --> 00:28:21,950
+consistent distributed system under the
+
+718
+00:28:21,960 --> 00:28:25,010
+hood to manage the failure tolerance sky
+
+719
+00:28:25,020 --> 00:28:27,050
+DNS and console both have a DNS
+
+720
+00:28:27,060 --> 00:28:28,940
+interface which makes it really easy to
+
+721
+00:28:28,950 --> 00:28:30,350
+integrate with your existing
+
+722
+00:28:30,360 --> 00:28:32,210
+applications with essentially no
+
+723
+00:28:32,220 --> 00:28:33,950
+modification so you don't have to do a
+
+724
+00:28:33,960 --> 00:28:36,110
+deep sort of client integration you just
+
+725
+00:28:36,120 --> 00:28:38,150
+look up a host and you know get ports
+
+726
+00:28:38,160 --> 00:28:39,350
+from serve records and things like that
+
+727
+00:28:39,360 --> 00:28:43,010
+so there's different features in these
+
+728
+00:28:43,020 --> 00:28:45,950
+different products but Skynet s is one
+
+729
+00:28:45,960 --> 00:28:48,260
+and console has a DNS interface and then
+
+730
+00:28:48,270 --> 00:28:50,840
+there's more there's others that are
+
+731
+00:28:50,850 --> 00:28:52,940
+sort of more unique kind of hybrid
+
+732
+00:28:52,950 --> 00:28:55,820
+solutions like smart stack sort of
+
+733
+00:28:55,830 --> 00:28:59,030
+composes several different pieces and it
+
+734
+00:28:59,040 --> 00:29:02,180
+uses zookeeper under the hood and it
+
+735
+00:29:02,190 --> 00:29:04,430
+actually uses zookeeper first sort of
+
+736
+00:29:04,440 --> 00:29:06,560
+it's consistent database and then it
+
+737
+00:29:06,570 --> 00:29:08,360
+uses h8 proxy
+
+738
+00:29:08,370 --> 00:29:10,400
+as its load-balancing layer and kind of
+
+739
+00:29:10,410 --> 00:29:12,140
+manages all those pieces together for
+
+740
+00:29:12,150 --> 00:29:13,370
+you so it's kind of a unique
+
+741
+00:29:13,380 --> 00:29:18,830
+architecture that has I'd say it's it's
+
+742
+00:29:18,840 --> 00:29:20,180
+a little more complicated but it has
+
+743
+00:29:20,190 --> 00:29:22,160
+like a very specific opinion about you
+
+744
+00:29:22,170 --> 00:29:23,330
+know you're going to use a load balancer
+
+745
+00:29:23,340 --> 00:29:24,920
+I'm going to manage the load balancer
+
+746
+00:29:24,930 --> 00:29:27,440
+for you and then it composes several
+
+747
+00:29:27,450 --> 00:29:29,210
+pieces around that and there's things
+
+748
+00:29:29,220 --> 00:29:33,170
+like Eureka from Netflix which has it
+
+749
+00:29:33,180 --> 00:29:34,640
+actually has sort of an eight more of an
+
+750
+00:29:34,650 --> 00:29:37,910
+AP sort of style to it and it has some
+
+751
+00:29:37,920 --> 00:29:41,630
+of the pieces of the basic like find me
+
+752
+00:29:41,640 --> 00:29:43,970
+an IP import it has less of the
+
+753
+00:29:43,980 --> 00:29:46,730
+coordination sort of general KB store
+
+754
+00:29:46,740 --> 00:29:48,620
+type features so it's a different mix
+
+755
+00:29:48,630 --> 00:29:51,530
+and they all these have different health
+
+756
+00:29:51,540 --> 00:29:53,299
+checking strategies there's a different
+
+757
+00:29:53,309 --> 00:29:58,460
+mix of sort of basic interface type
+
+758
+00:29:58,470 --> 00:30:01,070
+things like some have thicker clients
+
+759
+00:30:01,080 --> 00:30:03,320
+some have really lightweight clients
+
+760
+00:30:03,330 --> 00:30:05,120
+some have zero clients like DNS
+
+761
+00:30:05,130 --> 00:30:08,330
+interfaces so they among all these there
+
+762
+00:30:08,340 --> 00:30:09,290
+are many different types of
+
+763
+00:30:09,300 --> 00:30:12,650
+architectures most solutions though I
+
+764
+00:30:12,660 --> 00:30:16,040
+would say cover something on the order
+
+765
+00:30:16,050 --> 00:30:20,750
+of like you know one fifth to three
+
+766
+00:30:20,760 --> 00:30:22,970
+fifths of what I would consider kind of
+
+767
+00:30:22,980 --> 00:30:25,280
+an ideal scope for a full service
+
+768
+00:30:25,290 --> 00:30:26,900
+discovery solution though so many of
+
+769
+00:30:26,910 --> 00:30:28,910
+these tools you know if I'll do one part
+
+770
+00:30:28,920 --> 00:30:30,500
+really well but they require you to
+
+771
+00:30:30,510 --> 00:30:33,110
+build to get you know better health
+
+772
+00:30:33,120 --> 00:30:34,820
+checking or you you know you might have
+
+773
+00:30:34,830 --> 00:30:37,310
+really good knowledge of where services
+
+774
+00:30:37,320 --> 00:30:38,750
+are with IP imports things like that but
+
+775
+00:30:38,760 --> 00:30:40,280
+you don't have a key KB store so you'd
+
+776
+00:30:40,290 --> 00:30:42,260
+have to use something else there so most
+
+777
+00:30:42,270 --> 00:30:43,640
+of these would require you to compose
+
+778
+00:30:43,650 --> 00:30:45,470
+several things together to get a
+
+779
+00:30:45,480 --> 00:30:48,500
+complete solution okay so speaking of
+
+780
+00:30:48,510 --> 00:30:50,200
+complete solutions
+
+781
+00:30:50,210 --> 00:30:53,660
+perhaps we can then dive into your
+
+782
+00:30:53,670 --> 00:30:55,840
+wheelhouse so to speak and talk about
+
+783
+00:30:55,850 --> 00:31:00,200
+console so console is an open source
+
+784
+00:31:00,210 --> 00:31:04,040
+service discovery tool from Hoshi Corp
+
+785
+00:31:04,050 --> 00:31:06,260
+where you work at a high level what
+
+786
+00:31:06,270 --> 00:31:09,410
+features does it provide I mean you were
+
+787
+00:31:09,420 --> 00:31:13,060
+just discussing kind of trade offs or
+
+788
+00:31:13,070 --> 00:31:16,160
+how different different applications
+
+789
+00:31:16,170 --> 00:31:17,600
+have different sets of things that
+
+790
+00:31:17,610 --> 00:31:19,910
+they're bringing what does console bring
+
+791
+00:31:19,920 --> 00:31:22,220
+I think consoles unique
+
+792
+00:31:22,230 --> 00:31:25,370
+it I think it grew out of experience but
+
+793
+00:31:25,380 --> 00:31:26,870
+we had an earlier project which we still
+
+794
+00:31:26,880 --> 00:31:30,200
+use in as sort of the one of the basic
+
+795
+00:31:30,210 --> 00:31:32,060
+layers that consoles built on called
+
+796
+00:31:32,070 --> 00:31:36,380
+surf surf was an AP system that is used
+
+797
+00:31:36,390 --> 00:31:38,539
+to maintain kind of a basic list of
+
+798
+00:31:38,549 --> 00:31:40,250
+members and a cluster with some
+
+799
+00:31:40,260 --> 00:31:41,960
+additional metadata on them and to do
+
+800
+00:31:41,970 --> 00:31:44,060
+some health checking we'll talk a little
+
+801
+00:31:44,070 --> 00:31:46,760
+bit about how that fits in but in in the
+
+802
+00:31:46,770 --> 00:31:48,230
+experience with building surf and
+
+803
+00:31:48,240 --> 00:31:50,060
+thinking about you know what do
+
+804
+00:31:50,070 --> 00:31:51,530
+operators have to reason about what
+
+805
+00:31:51,540 --> 00:31:53,210
+should a service discovery system really
+
+806
+00:31:53,220 --> 00:31:55,549
+you know integrate together to do well a
+
+807
+00:31:55,559 --> 00:31:57,919
+console grew out of that and it really
+
+808
+00:31:57,929 --> 00:32:00,400
+comes down to four different pieces so
+
+809
+00:32:00,410 --> 00:32:03,200
+the basic service discovery piece that
+
+810
+00:32:03,210 --> 00:32:05,630
+we've talked about console focuses on
+
+811
+00:32:05,640 --> 00:32:07,730
+that but ties it to things like health
+
+812
+00:32:07,740 --> 00:32:09,980
+monitoring which is our second key
+
+813
+00:32:09,990 --> 00:32:12,350
+component at a deep level so it's it's
+
+814
+00:32:12,360 --> 00:32:14,060
+it's nice to have a good catalog but if
+
+815
+00:32:14,070 --> 00:32:16,520
+the catalog is out of date then you it's
+
+816
+00:32:16,530 --> 00:32:17,330
+not that useful
+
+817
+00:32:17,340 --> 00:32:20,390
+so by coupling the service discovery
+
+818
+00:32:20,400 --> 00:32:22,400
+engine with a really rich health
+
+819
+00:32:22,410 --> 00:32:24,020
+monitoring engine you have a much more
+
+820
+00:32:24,030 --> 00:32:25,640
+powerful service discovery system and
+
+821
+00:32:25,650 --> 00:32:26,930
+that's a set of tools you just use out
+
+822
+00:32:26,940 --> 00:32:29,120
+of the box so discovery health
+
+823
+00:32:29,130 --> 00:32:31,549
+monitoring configuration we mentioned
+
+824
+00:32:31,559 --> 00:32:33,110
+before like many of the systems
+
+825
+00:32:33,120 --> 00:32:35,900
+including KB store that's a key part of
+
+826
+00:32:35,910 --> 00:32:38,060
+console as well and we can talk about
+
+827
+00:32:38,070 --> 00:32:40,220
+this and utility even our configuration
+
+828
+00:32:40,230 --> 00:32:42,020
+store is tied in with our health
+
+829
+00:32:42,030 --> 00:32:43,940
+monitoring store which means it's tied
+
+830
+00:32:43,950 --> 00:32:45,830
+in with service discovery and then the
+
+831
+00:32:45,840 --> 00:32:48,680
+final pieces of orchestration so the
+
+832
+00:32:48,690 --> 00:32:51,710
+ability to coordinate with your service
+
+833
+00:32:51,720 --> 00:32:54,409
+discovery system the ability to send
+
+834
+00:32:54,419 --> 00:32:56,780
+events and you know kind of manage your
+
+835
+00:32:56,790 --> 00:32:58,490
+cluster in real time that's another key
+
+836
+00:32:58,500 --> 00:33:00,289
+component of console so tying all those
+
+837
+00:33:00,299 --> 00:33:02,240
+four pieces together is really what
+
+838
+00:33:02,250 --> 00:33:04,370
+makes console kind of stand out from the
+
+839
+00:33:04,380 --> 00:33:06,830
+rest it's it's got all those things sort
+
+840
+00:33:06,840 --> 00:33:08,539
+of thoughtfully integrated in a way
+
+841
+00:33:08,549 --> 00:33:10,310
+that's really easy to use and that will
+
+842
+00:33:10,320 --> 00:33:12,890
+do most of what people want right out of
+
+843
+00:33:12,900 --> 00:33:16,520
+the box okay what's kind of the basic
+
+844
+00:33:16,530 --> 00:33:19,900
+architecture you mentioned agents and
+
+845
+00:33:19,910 --> 00:33:23,299
+communicating with servers sure see the
+
+846
+00:33:23,309 --> 00:33:27,200
+the basic architecture console is that
+
+847
+00:33:27,210 --> 00:33:29,600
+you've run the console agent on every
+
+848
+00:33:29,610 --> 00:33:32,120
+node in your cluster so that's a it's
+
+849
+00:33:32,130 --> 00:33:34,430
+basically a single go binary and it's
+
+850
+00:33:34,440 --> 00:33:35,880
+easy to deploy and
+
+851
+00:33:35,890 --> 00:33:38,460
+that runs everywhere and then you'll
+
+852
+00:33:38,470 --> 00:33:41,280
+have some subset of your nodes that are
+
+853
+00:33:41,290 --> 00:33:44,160
+servers so you'll usually have like
+
+854
+00:33:44,170 --> 00:33:46,050
+three or five depending on your failure
+
+855
+00:33:46,060 --> 00:33:48,270
+tolerance three can handle one server
+
+856
+00:33:48,280 --> 00:33:50,880
+failure five can handle two so they'll
+
+857
+00:33:50,890 --> 00:33:52,890
+they run the same agent but it's in a
+
+858
+00:33:52,900 --> 00:33:55,230
+different mode it's in server mode so
+
+859
+00:33:55,240 --> 00:33:58,080
+each node is running an agent service
+
+860
+00:33:58,090 --> 00:34:02,190
+registration and health checks and all
+
+861
+00:34:02,200 --> 00:34:04,680
+those basic functions about what's going
+
+862
+00:34:04,690 --> 00:34:07,230
+on on a given node actually happened
+
+863
+00:34:07,240 --> 00:34:09,830
+with the agent on the node and then that
+
+864
+00:34:09,840 --> 00:34:12,389
+agent sinks the information back to the
+
+865
+00:34:12,399 --> 00:34:15,570
+servers and the server's run the raft
+
+866
+00:34:15,580 --> 00:34:18,570
+consensus algorithm to apply changes in
+
+867
+00:34:18,580 --> 00:34:21,149
+a in a consistent way to a state store
+
+868
+00:34:21,159 --> 00:34:23,970
+so it's a it's a little unusual and it's
+
+869
+00:34:23,980 --> 00:34:25,200
+something most people don't appreciate
+
+870
+00:34:25,210 --> 00:34:25,770
+it
+
+871
+00:34:25,780 --> 00:34:27,540
+first plants but the the agents are
+
+872
+00:34:27,550 --> 00:34:29,280
+actually the source of truth for all
+
+873
+00:34:29,290 --> 00:34:31,500
+your service configuration information
+
+874
+00:34:31,510 --> 00:34:35,370
+the servers manage central copy of that
+
+875
+00:34:35,380 --> 00:34:37,530
+which is the catalog and then they also
+
+876
+00:34:37,540 --> 00:34:39,389
+manage things that are sort of
+
+877
+00:34:39,399 --> 00:34:40,680
+information that belong to the whole
+
+878
+00:34:40,690 --> 00:34:43,560
+cluster like the KB store and your ACLs
+
+879
+00:34:43,570 --> 00:34:45,330
+and things like that so if you were to
+
+880
+00:34:45,340 --> 00:34:48,389
+say swap out your servers eventually
+
+881
+00:34:48,399 --> 00:34:50,580
+once the servers come back online the
+
+882
+00:34:50,590 --> 00:34:52,139
+agent will sink their service
+
+883
+00:34:52,149 --> 00:34:54,000
+configuration back up with the catalog
+
+884
+00:34:54,010 --> 00:34:55,830
+and you'll be off and running so it's
+
+885
+00:34:55,840 --> 00:34:57,860
+kind of an interesting division of labor
+
+886
+00:34:57,870 --> 00:35:02,100
+so the eight all of the agents have the
+
+887
+00:35:02,110 --> 00:35:05,160
+full key value store they don't so then
+
+888
+00:35:05,170 --> 00:35:08,130
+the agents have their configuration for
+
+889
+00:35:08,140 --> 00:35:11,310
+their nodes services and when you
+
+890
+00:35:11,320 --> 00:35:12,990
+request or make it when you make a
+
+891
+00:35:13,000 --> 00:35:15,300
+change that key key value store requests
+
+892
+00:35:15,310 --> 00:35:17,070
+a key those actually are requests that
+
+893
+00:35:17,080 --> 00:35:19,680
+are forwarded up to the servers okay so
+
+894
+00:35:19,690 --> 00:35:23,040
+they are managing truth for their local
+
+895
+00:35:23,050 --> 00:35:24,480
+node yes
+
+896
+00:35:24,490 --> 00:35:26,700
+okay and they're sinking that truth back
+
+897
+00:35:26,710 --> 00:35:28,350
+up with the servers and then the servers
+
+898
+00:35:28,360 --> 00:35:30,750
+maintain basically a central copy of
+
+899
+00:35:30,760 --> 00:35:32,910
+that truth as well as the key value
+
+900
+00:35:32,920 --> 00:35:34,590
+store so that's managed essentially by
+
+901
+00:35:34,600 --> 00:35:38,720
+the servers okay then what protocols
+
+902
+00:35:38,730 --> 00:35:43,770
+does console support for either the
+
+903
+00:35:43,780 --> 00:35:45,750
+service that's starting up that wants to
+
+904
+00:35:45,760 --> 00:35:48,000
+say I'm available
+
+905
+00:35:48,010 --> 00:35:51,270
+or the client that says I need to find
+
+906
+00:35:51,280 --> 00:35:53,370
+this service I believe you mentioned DNS
+
+907
+00:35:53,380 --> 00:35:55,890
+is one option that is one option so yeah
+
+908
+00:35:55,900 --> 00:35:57,930
+that so once you have the agent running
+
+909
+00:35:57,940 --> 00:36:00,570
+and you can configure different you know
+
+910
+00:36:00,580 --> 00:36:02,190
+you can disable these or enable these as
+
+911
+00:36:02,200 --> 00:36:02,880
+appropriate
+
+912
+00:36:02,890 --> 00:36:05,850
+the two main interfaces for talking to
+
+913
+00:36:05,860 --> 00:36:10,080
+it are the DNS interface and an HTTP API
+
+914
+00:36:10,090 --> 00:36:13,530
+and generally you'll you'll run the
+
+915
+00:36:13,540 --> 00:36:16,020
+agent on your local node and you'll have
+
+916
+00:36:16,030 --> 00:36:18,150
+your applications always just talk to
+
+917
+00:36:18,160 --> 00:36:19,770
+you know localhost port
+
+918
+00:36:19,780 --> 00:36:22,260
+8500 so your your applications allow is
+
+919
+00:36:22,270 --> 00:36:24,570
+just talk to console using their local
+
+920
+00:36:24,580 --> 00:36:28,440
+nodes agent interfaces and then behind
+
+921
+00:36:28,450 --> 00:36:32,100
+the scenes that agent is keeping track
+
+922
+00:36:32,110 --> 00:36:35,040
+of where the console servers are if a
+
+923
+00:36:35,050 --> 00:36:37,770
+server comes and goes it'll it'll put it
+
+924
+00:36:37,780 --> 00:36:39,690
+on the list so you know it'll it'll
+
+925
+00:36:39,700 --> 00:36:41,190
+manage that list of servers that are
+
+926
+00:36:41,200 --> 00:36:45,570
+possible when if a client uses the HTTP
+
+927
+00:36:45,580 --> 00:36:49,500
+API to say read a KB entry the local
+
+928
+00:36:49,510 --> 00:36:51,360
+agent will forward a request up to the
+
+929
+00:36:51,370 --> 00:36:53,700
+server and route the information back
+
+930
+00:36:53,710 --> 00:36:55,080
+and serve it to the client so the
+
+931
+00:36:55,090 --> 00:36:56,910
+clients always just talked to localhost
+
+932
+00:36:56,920 --> 00:36:59,460
+essentially and they can do it over HTTP
+
+933
+00:36:59,470 --> 00:37:02,940
+or DNS okay but if a servers publishing
+
+934
+00:37:02,950 --> 00:37:06,080
+you know saying I'm hearing available
+
+935
+00:37:06,090 --> 00:37:09,510
+that wouldn't be over DNS right that
+
+936
+00:37:09,520 --> 00:37:13,310
+would not also the and underlying the
+
+937
+00:37:13,320 --> 00:37:15,600
+console system we mentioned Cerf is sort
+
+938
+00:37:15,610 --> 00:37:18,360
+of under the hood there so as sort of a
+
+939
+00:37:18,370 --> 00:37:21,350
+background process each consul agent
+
+940
+00:37:21,360 --> 00:37:24,750
+does a periodic ping of another random
+
+941
+00:37:24,760 --> 00:37:27,810
+agent as well as an exchange of gossip
+
+942
+00:37:27,820 --> 00:37:30,510
+information so we there's a underlying
+
+943
+00:37:30,520 --> 00:37:32,670
+technology that's based on a academic
+
+944
+00:37:32,680 --> 00:37:34,560
+paper it's called swim but there's a
+
+945
+00:37:34,570 --> 00:37:36,990
+gossip protocol that's kind of a
+
+946
+00:37:37,000 --> 00:37:40,980
+low-level part of console so for example
+
+947
+00:37:40,990 --> 00:37:43,080
+when you join a new node you need
+
+948
+00:37:43,090 --> 00:37:45,510
+basically the only the address of one
+
+949
+00:37:45,520 --> 00:37:48,000
+other node and you'll talk to that one
+
+950
+00:37:48,010 --> 00:37:49,650
+learn about the other nodes in the
+
+951
+00:37:49,660 --> 00:37:51,930
+cluster and then start participating in
+
+952
+00:37:51,940 --> 00:37:54,900
+gossip and the random probing to check
+
+953
+00:37:54,910 --> 00:37:57,900
+for the aliveness of the other nodes so
+
+954
+00:37:57,910 --> 00:38:01,410
+that's a mechanism that your agent on a
+
+955
+00:38:01,420 --> 00:38:01,860
+given
+
+956
+00:38:01,870 --> 00:38:04,290
+we'll use to learn to it'll discover
+
+957
+00:38:04,300 --> 00:38:06,540
+that another server came online for
+
+958
+00:38:06,550 --> 00:38:08,970
+example through that process and that's
+
+959
+00:38:08,980 --> 00:38:10,950
+kind of a that's like a low-level part
+
+960
+00:38:10,960 --> 00:38:13,920
+of consoles architecture that's it's
+
+961
+00:38:13,930 --> 00:38:16,290
+extremely powerful because the the casa
+
+962
+00:38:16,300 --> 00:38:19,860
+player provides a built-in distributed
+
+963
+00:38:19,870 --> 00:38:22,860
+failure detector so consoles constantly
+
+964
+00:38:22,870 --> 00:38:24,240
+checking the health of all the nodes in
+
+965
+00:38:24,250 --> 00:38:26,760
+the cluster and maintaining membership
+
+966
+00:38:26,770 --> 00:38:28,530
+information about nodes that are coming
+
+967
+00:38:28,540 --> 00:38:30,900
+and going and the nice thing about swim
+
+968
+00:38:30,910 --> 00:38:33,270
+is that's done in a way that basically
+
+969
+00:38:33,280 --> 00:38:35,610
+has kind of a low volume constant level
+
+970
+00:38:35,620 --> 00:38:38,610
+of traffic that scales nicely across the
+
+971
+00:38:38,620 --> 00:38:40,650
+cluster so it's not you know some and
+
+972
+00:38:40,660 --> 00:38:43,230
+squared kind of thing it's a it's a
+
+973
+00:38:43,240 --> 00:38:45,750
+constant level where you know each at
+
+974
+00:38:45,760 --> 00:38:48,030
+each interval each node will pick one
+
+975
+00:38:48,040 --> 00:38:50,220
+other random node to probe and then
+
+976
+00:38:50,230 --> 00:38:53,010
+there's a gossip propagation mechanism
+
+977
+00:38:53,020 --> 00:38:54,810
+to get the information around nodes
+
+978
+00:38:54,820 --> 00:38:56,520
+coming and going around the cluster so
+
+979
+00:38:56,530 --> 00:38:59,040
+there's sort of an AP underpinning to
+
+980
+00:38:59,050 --> 00:39:01,650
+console that provides this information
+
+981
+00:39:01,660 --> 00:39:03,990
+of you know where the server which
+
+982
+00:39:04,000 --> 00:39:06,210
+servers are available this node is no
+
+983
+00:39:06,220 --> 00:39:07,830
+longer functioning that's kind of a low
+
+984
+00:39:07,840 --> 00:39:10,440
+level level of traffic that console
+
+985
+00:39:10,450 --> 00:39:12,930
+maintains automatically so it's
+
+986
+00:39:12,940 --> 00:39:18,690
+maintaining CP but or you said AP but
+
+987
+00:39:18,700 --> 00:39:22,350
+then console service itself is that ap
+
+988
+00:39:22,360 --> 00:39:24,840
+or is that more CPI I think you said
+
+989
+00:39:24,850 --> 00:39:28,620
+previously the events of say a node
+
+990
+00:39:28,630 --> 00:39:30,420
+coming or a node being declared dead
+
+991
+00:39:30,430 --> 00:39:33,150
+those propagate through the gossip layer
+
+992
+00:39:33,160 --> 00:39:36,450
+in sort of an AP fashion and then as
+
+993
+00:39:36,460 --> 00:39:38,850
+those events are recognized by the
+
+994
+00:39:38,860 --> 00:39:42,420
+server's they get fed into the catalog
+
+995
+00:39:42,430 --> 00:39:46,080
+in a consistent fashion so that when you
+
+996
+00:39:46,090 --> 00:39:47,790
+when you do service discovery you say
+
+997
+00:39:47,800 --> 00:39:49,350
+give me a healthy instance of this
+
+998
+00:39:49,360 --> 00:39:51,450
+service that's actually a request that's
+
+999
+00:39:51,460 --> 00:39:53,790
+going up to the servers and being done
+
+1000
+00:39:53,800 --> 00:39:55,830
+based on the consistent view of the
+
+1001
+00:39:55,840 --> 00:39:59,310
+cluster but there's a low-level sort of
+
+1002
+00:39:59,320 --> 00:40:00,840
+ap view of the cluster that's being
+
+1003
+00:40:00,850 --> 00:40:02,880
+constantly maintained and updated by all
+
+1004
+00:40:02,890 --> 00:40:05,700
+the nodes in particular the distributed
+
+1005
+00:40:05,710 --> 00:40:07,200
+failure detector so that nodes are
+
+1006
+00:40:07,210 --> 00:40:09,420
+checking each other and then reporting
+
+1007
+00:40:09,430 --> 00:40:11,190
+that information back up and then the
+
+1008
+00:40:11,200 --> 00:40:12,990
+server's feed that into the to the
+
+1009
+00:40:13,000 --> 00:40:15,510
+catalog using the consensus on rhythm
+
+1010
+00:40:15,520 --> 00:40:18,030
+your view of the cluster is always
+
+1011
+00:40:18,040 --> 00:40:19,260
+through kind of a lens of this
+
+1012
+00:40:19,270 --> 00:40:22,230
+consistent catalog but the underlying
+
+1013
+00:40:22,240 --> 00:40:25,410
+mechanism that helps realize that view
+
+1014
+00:40:25,420 --> 00:40:27,390
+and provide the events of this node just
+
+1015
+00:40:27,400 --> 00:40:29,700
+joined this one went away is is
+
+1016
+00:40:29,710 --> 00:40:32,640
+happening by this gossip protocol under
+
+1017
+00:40:32,650 --> 00:40:36,240
+the hood okay so that explains sort of
+
+1018
+00:40:36,250 --> 00:40:38,250
+the the confusion is that there are at
+
+1019
+00:40:38,260 --> 00:40:41,100
+least two distinct layers and they are
+
+1020
+00:40:41,110 --> 00:40:43,470
+aligning themselves differently on the
+
+1021
+00:40:43,480 --> 00:40:45,870
+cap triangle so to speak yeah it's a
+
+1022
+00:40:45,880 --> 00:40:47,820
+little it's this is a really good place
+
+1023
+00:40:47,830 --> 00:40:51,270
+for a diagram but formally it's exactly
+
+1024
+00:40:51,280 --> 00:40:53,880
+it's a it's kind of a you can think of
+
+1025
+00:40:53,890 --> 00:40:56,730
+you can almost think of yeah the surf
+
+1026
+00:40:56,740 --> 00:40:59,370
+layer is kind of a yeah it's sort of a
+
+1027
+00:40:59,380 --> 00:41:01,020
+layer that informs the consistent layer
+
+1028
+00:41:01,030 --> 00:41:02,970
+but the consistent layer is what you use
+
+1029
+00:41:02,980 --> 00:41:04,920
+for actually doing the service discovery
+
+1030
+00:41:04,930 --> 00:41:06,900
+so it's kind of like a transport
+
+1031
+00:41:06,910 --> 00:41:08,250
+mechanism but I don't want to create
+
+1032
+00:41:08,260 --> 00:41:09,780
+more confusion there but it's a way to
+
+1033
+00:41:09,790 --> 00:41:11,580
+you know move events around or say like
+
+1034
+00:41:11,590 --> 00:41:13,350
+or announce that hey this server just
+
+1035
+00:41:13,360 --> 00:41:15,630
+joined or this server is no longer
+
+1036
+00:41:15,640 --> 00:41:17,640
+healthy I don't think we should be using
+
+1037
+00:41:17,650 --> 00:41:19,320
+the services that were on it anymore
+
+1038
+00:41:19,330 --> 00:41:22,680
+things like that okay if I've got an
+
+1039
+00:41:22,690 --> 00:41:26,310
+application and it wants to find
+
+1040
+00:41:26,320 --> 00:41:28,410
+services and whatnot and we talked about
+
+1041
+00:41:28,420 --> 00:41:32,520
+doing that through DNS or HTTP but if
+
+1042
+00:41:32,530 --> 00:41:35,670
+i'm using i'm i've got experience with
+
+1043
+00:41:35,680 --> 00:41:38,190
+Ruby on Rails where we've got a whole
+
+1044
+00:41:38,200 --> 00:41:41,400
+bunch of yml files do i need to rewrite
+
+1045
+00:41:41,410 --> 00:41:45,920
+my application in terms of how it's
+
+1046
+00:41:45,930 --> 00:41:49,290
+configuring itself instead of using yml
+
+1047
+00:41:49,300 --> 00:41:54,420
+files or you know to do dns or HTTP or
+
+1048
+00:41:54,430 --> 00:41:57,450
+is there another option there is and
+
+1049
+00:41:57,460 --> 00:41:59,900
+it's very common to do this so in any
+
+1050
+00:41:59,910 --> 00:42:02,550
+application that is driven by
+
+1051
+00:42:02,560 --> 00:42:05,700
+configuration files we have some tools
+
+1052
+00:42:05,710 --> 00:42:08,220
+and there are other community tools - in
+
+1053
+00:42:08,230 --> 00:42:09,390
+particular there's something called
+
+1054
+00:42:09,400 --> 00:42:11,220
+console template and there's another one
+
+1055
+00:42:11,230 --> 00:42:13,230
+called in console and those are both
+
+1056
+00:42:13,240 --> 00:42:15,570
+Hashmi Corp tools and what those do is
+
+1057
+00:42:15,580 --> 00:42:18,870
+they'll do you'll run a process on a
+
+1058
+00:42:18,880 --> 00:42:21,510
+given node it'll make a kind of a
+
+1059
+00:42:21,520 --> 00:42:24,750
+blocking long pole request up to the the
+
+1060
+00:42:24,760 --> 00:42:27,420
+console servers to watch for things to
+
+1061
+00:42:27,430 --> 00:42:28,640
+change and
+
+1062
+00:42:28,650 --> 00:42:30,170
+whenever a change is made to the
+
+1063
+00:42:30,180 --> 00:42:31,849
+configuration they'll render a new
+
+1064
+00:42:31,859 --> 00:42:33,980
+config file from a template in the case
+
+1065
+00:42:33,990 --> 00:42:36,740
+of console template or that in the case
+
+1066
+00:42:36,750 --> 00:42:38,390
+of end console they'll restart an
+
+1067
+00:42:38,400 --> 00:42:39,529
+application and set environment
+
+1068
+00:42:39,539 --> 00:42:42,470
+variables with configuration variables a
+
+1069
+00:42:42,480 --> 00:42:45,680
+typical console and then you know send a
+
+1070
+00:42:45,690 --> 00:42:48,109
+hub or restart a process so you can
+
+1071
+00:42:48,119 --> 00:42:50,630
+basically get a closed-loop washer
+
+1072
+00:42:50,640 --> 00:42:52,700
+that's looking for configuration to
+
+1073
+00:42:52,710 --> 00:42:54,289
+changing console renders out a
+
+1074
+00:42:54,299 --> 00:42:56,299
+configuration file and then restarts a
+
+1075
+00:42:56,309 --> 00:42:58,460
+service or sends it up or you know
+
+1076
+00:42:58,470 --> 00:43:00,710
+whatever sort of action you want to get
+
+1077
+00:43:00,720 --> 00:43:02,299
+your service to reload its configuration
+
+1078
+00:43:02,309 --> 00:43:05,299
+and that's a very very common glue into
+
+1079
+00:43:05,309 --> 00:43:08,240
+existing applications is to just render
+
+1080
+00:43:08,250 --> 00:43:10,430
+its config files directly from console
+
+1081
+00:43:10,440 --> 00:43:12,829
+using one of these tools and have it get
+
+1082
+00:43:12,839 --> 00:43:15,260
+restarted when things change and
+
+1083
+00:43:15,270 --> 00:43:17,539
+similarly with the initial start we need
+
+1084
+00:43:17,549 --> 00:43:20,870
+to run the template to generate the
+
+1085
+00:43:20,880 --> 00:43:23,450
+config file then it's safe for me to
+
+1086
+00:43:23,460 --> 00:43:25,849
+start my application and it'll just read
+
+1087
+00:43:25,859 --> 00:43:29,029
+the config file exactly or you can yeah
+
+1088
+00:43:29,039 --> 00:43:31,940
+you can you can use the console template
+
+1089
+00:43:31,950 --> 00:43:33,620
+process just yeah generate that initial
+
+1090
+00:43:33,630 --> 00:43:36,019
+config and then you know restart the
+
+1091
+00:43:36,029 --> 00:43:37,849
+service which or let it start the first
+
+1092
+00:43:37,859 --> 00:43:39,890
+time there's other console she has the
+
+1093
+00:43:39,900 --> 00:43:42,140
+concept of watches too so you can
+
+1094
+00:43:42,150 --> 00:43:44,510
+register a script with console and say
+
+1095
+00:43:44,520 --> 00:43:46,910
+when anything changes with this service
+
+1096
+00:43:46,920 --> 00:43:49,160
+or when a note is added or when somebody
+
+1097
+00:43:49,170 --> 00:43:51,620
+touches this key run this script and
+
+1098
+00:43:51,630 --> 00:43:54,049
+pass the information in is it basically
+
+1099
+00:43:54,059 --> 00:43:56,720
+JSON on standard and so there there's
+
+1100
+00:43:56,730 --> 00:43:58,730
+the capability to have sort of a
+
+1101
+00:43:58,740 --> 00:44:00,500
+reactive script that's another way to
+
+1102
+00:44:00,510 --> 00:44:02,329
+get at this information in an
+
+1103
+00:44:02,339 --> 00:44:04,069
+application that otherwise doesn't know
+
+1104
+00:44:04,079 --> 00:44:06,680
+much about console and there's a pretty
+
+1105
+00:44:06,690 --> 00:44:08,480
+cool Mitchell wrote a thing called
+
+1106
+00:44:08,490 --> 00:44:11,029
+console structure which is a go library
+
+1107
+00:44:11,039 --> 00:44:12,950
+that lets you you basically get a
+
+1108
+00:44:12,960 --> 00:44:16,250
+magical map that's driven by stuff and
+
+1109
+00:44:16,260 --> 00:44:18,740
+console sort of piped directly into the
+
+1110
+00:44:18,750 --> 00:44:20,450
+brain of your go application so like
+
+1111
+00:44:20,460 --> 00:44:22,339
+there's there's different levels of
+
+1112
+00:44:22,349 --> 00:44:25,010
+integration but it's super common to use
+
+1113
+00:44:25,020 --> 00:44:27,170
+DNS and something like console template
+
+1114
+00:44:27,180 --> 00:44:28,910
+to talk to an application that doesn't
+
+1115
+00:44:28,920 --> 00:44:30,760
+have any knowledge of console at all
+
+1116
+00:44:30,770 --> 00:44:33,589
+okay yeah that I can see how that would
+
+1117
+00:44:33,599 --> 00:44:35,809
+be really helpful for the record when
+
+1118
+00:44:35,819 --> 00:44:37,609
+you speak of Mitchell you're speaking of
+
+1119
+00:44:37,619 --> 00:44:39,559
+Mitchell Hashimoto and we talked to
+
+1120
+00:44:39,569 --> 00:44:42,000
+earlier on the show about
+
+1121
+00:44:42,010 --> 00:44:44,099
+vagrant if people want to go and check
+
+1122
+00:44:44,109 --> 00:44:46,140
+that out I wanted to ask another one of
+
+1123
+00:44:46,150 --> 00:44:49,320
+these Turtles questions in terms of you
+
+1124
+00:44:49,330 --> 00:44:52,380
+know so we've got a cluster of servers
+
+1125
+00:44:52,390 --> 00:44:56,130
+three or five servers how do they start
+
+1126
+00:44:56,140 --> 00:44:58,349
+out and find each other is that another
+
+1127
+00:44:58,359 --> 00:45:00,720
+example of just kind of some seed
+
+1128
+00:45:00,730 --> 00:45:03,120
+knowledge that's necessary they actually
+
+1129
+00:45:03,130 --> 00:45:06,900
+use the same underlying join cluster
+
+1130
+00:45:06,910 --> 00:45:08,550
+joint mechanism that's based on serve
+
+1131
+00:45:08,560 --> 00:45:11,280
+but the the member information for a
+
+1132
+00:45:11,290 --> 00:45:14,400
+server says it's a server and when when
+
+1133
+00:45:14,410 --> 00:45:15,690
+you have an existing server that sees a
+
+1134
+00:45:15,700 --> 00:45:19,410
+new one join it adds it to glue quorum
+
+1135
+00:45:19,420 --> 00:45:22,650
+to the raft quorum and start us off
+
+1136
+00:45:22,660 --> 00:45:24,690
+basically that there's kind of like a
+
+1137
+00:45:24,700 --> 00:45:26,640
+parallel process to start up the
+
+1138
+00:45:26,650 --> 00:45:28,230
+consensus algorithm but it's based on
+
+1139
+00:45:28,240 --> 00:45:30,480
+the same event of hey this node just
+
+1140
+00:45:30,490 --> 00:45:33,570
+joined and it's a server so you you
+
+1141
+00:45:33,580 --> 00:45:36,570
+generally have to you know you generally
+
+1142
+00:45:36,580 --> 00:45:39,390
+want to run multiple servers and consul
+
+1143
+00:45:39,400 --> 00:45:41,790
+lets you for like a completely new
+
+1144
+00:45:41,800 --> 00:45:44,280
+cluster there's a configuration called
+
+1145
+00:45:44,290 --> 00:45:46,050
+bootstrap expect and let you say hey
+
+1146
+00:45:46,060 --> 00:45:47,820
+there's going to be three so as soon as
+
+1147
+00:45:47,830 --> 00:45:50,640
+you see three you know startup rafting
+
+1148
+00:45:50,650 --> 00:45:52,530
+and start going once you have a cluster
+
+1149
+00:45:52,540 --> 00:45:54,840
+that's already running it's also easy to
+
+1150
+00:45:54,850 --> 00:45:57,180
+add more servers so if you wanted to go
+
+1151
+00:45:57,190 --> 00:45:59,010
+from like a three server to a five
+
+1152
+00:45:59,020 --> 00:46:00,630
+server configuration you can just do
+
+1153
+00:46:00,640 --> 00:46:02,609
+that on the fly and there's a process
+
+1154
+00:46:02,619 --> 00:46:05,670
+for reducing it as well so but in terms
+
+1155
+00:46:05,680 --> 00:46:08,580
+of your experiences at console user the
+
+1156
+00:46:08,590 --> 00:46:10,230
+way you join it to the cluster is very
+
+1157
+00:46:10,240 --> 00:46:12,300
+similar you're just joining an agent
+
+1158
+00:46:12,310 --> 00:46:15,230
+that's running in server mode okay
+
+1159
+00:46:15,240 --> 00:46:18,150
+something you mentioned earlier Hoshi
+
+1160
+00:46:18,160 --> 00:46:22,349
+Corp has a service called Atlas and I
+
+1161
+00:46:22,359 --> 00:46:25,170
+believe it has both a free and a paid
+
+1162
+00:46:25,180 --> 00:46:29,040
+for tier and I think of it sort of as a
+
+1163
+00:46:29,050 --> 00:46:32,490
+unification of a number of Hachiko tools
+
+1164
+00:46:32,500 --> 00:46:34,080
+can you tell us a little bit more about
+
+1165
+00:46:34,090 --> 00:46:38,700
+Alice yeah so Alice is basically high
+
+1166
+00:46:38,710 --> 00:46:41,730
+scores paid set of workflow tools that
+
+1167
+00:46:41,740 --> 00:46:44,040
+builds on on top of our open-source
+
+1168
+00:46:44,050 --> 00:46:47,370
+pieces so we've got a suite of products
+
+1169
+00:46:47,380 --> 00:46:49,859
+console enterprises one of them the
+
+1170
+00:46:49,869 --> 00:46:51,990
+other two or terraform enterprise and
+
+1171
+00:46:52,000 --> 00:46:54,440
+vault enterprise and so there's a
+
+1172
+00:46:54,450 --> 00:46:56,220
+there's a web-based
+
+1173
+00:46:56,230 --> 00:46:58,440
+opponent to those that lets you manage
+
+1174
+00:46:58,450 --> 00:47:01,349
+users like in the case of terraform you
+
+1175
+00:47:01,359 --> 00:47:03,780
+can you can see a change it's going to
+
+1176
+00:47:03,790 --> 00:47:05,430
+be made to the infrastructure have it
+
+1177
+00:47:05,440 --> 00:47:07,680
+reviewed by somebody they can apply it
+
+1178
+00:47:07,690 --> 00:47:09,570
+you know there's like kind of the the
+
+1179
+00:47:09,580 --> 00:47:11,490
+workflow layer is provided by atlas in
+
+1180
+00:47:11,500 --> 00:47:14,609
+consuls case there's a there's a free
+
+1181
+00:47:14,619 --> 00:47:16,950
+piece of it called Atlas Auto join and
+
+1182
+00:47:16,960 --> 00:47:20,760
+what this lets you do is solve that
+
+1183
+00:47:20,770 --> 00:47:24,359
+initial turtle problem you let Atlas be
+
+1184
+00:47:24,369 --> 00:47:27,450
+the turtle 0 at the base there so when
+
+1185
+00:47:27,460 --> 00:47:28,890
+you bring a new node up and your cluster
+
+1186
+00:47:28,900 --> 00:47:31,230
+you can say here's my cluster name
+
+1187
+00:47:31,240 --> 00:47:33,900
+here's my atlas token I want to join and
+
+1188
+00:47:33,910 --> 00:47:36,750
+it'll give you some addresses to join
+
+1189
+00:47:36,760 --> 00:47:38,460
+your node to the cluster so it avoids
+
+1190
+00:47:38,470 --> 00:47:41,160
+you having to manage like a fixed list
+
+1191
+00:47:41,170 --> 00:47:43,620
+of servers or fixed IP lists for that
+
+1192
+00:47:43,630 --> 00:47:46,710
+initial bootstrap and then the the paid
+
+1193
+00:47:46,720 --> 00:47:49,550
+portion of console Enterprise gets you
+
+1194
+00:47:49,560 --> 00:47:54,060
+features like a richer key value editing
+
+1195
+00:47:54,070 --> 00:47:55,740
+interface so much you have
+
+1196
+00:47:55,750 --> 00:47:57,480
+organizational permissions for different
+
+1197
+00:47:57,490 --> 00:47:58,920
+parts of your key store and an interface
+
+1198
+00:47:58,930 --> 00:48:01,470
+through Atlas to edit to view and edit
+
+1199
+00:48:01,480 --> 00:48:05,340
+those and an alerts feature so you can
+
+1200
+00:48:05,350 --> 00:48:08,340
+take consuls health checking information
+
+1201
+00:48:08,350 --> 00:48:11,250
+and have those events feed into systems
+
+1202
+00:48:11,260 --> 00:48:13,109
+like slack pager Duty HipChat
+
+1203
+00:48:13,119 --> 00:48:14,730
+so you get a hosted solution that lets
+
+1204
+00:48:14,740 --> 00:48:16,890
+you bridge onto those escalation
+
+1205
+00:48:16,900 --> 00:48:18,480
+services and notification services
+
+1206
+00:48:18,490 --> 00:48:22,620
+directly from console ok so the not to
+
+1207
+00:48:22,630 --> 00:48:25,070
+sound dismissive but sort of a typical
+
+1208
+00:48:25,080 --> 00:48:29,250
+open source strategy of most of the
+
+1209
+00:48:29,260 --> 00:48:31,560
+tooling is open source and you can run
+
+1210
+00:48:31,570 --> 00:48:33,990
+it yourself but when you get into
+
+1211
+00:48:34,000 --> 00:48:36,240
+enterprise situations where they want
+
+1212
+00:48:36,250 --> 00:48:38,130
+things like you mentioned access control
+
+1213
+00:48:38,140 --> 00:48:40,770
+lists and other complexities that's
+
+1214
+00:48:40,780 --> 00:48:43,380
+where the paid for service comes in
+
+1215
+00:48:43,390 --> 00:48:45,480
+that's right so yeah it's it's sort of
+
+1216
+00:48:45,490 --> 00:48:48,109
+like the management the workflow the
+
+1217
+00:48:48,119 --> 00:48:50,670
+auditing like those types of pieces or
+
+1218
+00:48:50,680 --> 00:48:53,609
+what Atlas provides and it's working in
+
+1219
+00:48:53,619 --> 00:48:55,620
+concert with console which has an open
+
+1220
+00:48:55,630 --> 00:48:58,080
+source you know an open source component
+
+1221
+00:48:58,090 --> 00:49:00,270
+you could you could build a page or duty
+
+1222
+00:49:00,280 --> 00:49:02,310
+escalator thing yourself or you could
+
+1223
+00:49:02,320 --> 00:49:04,020
+use Atlas you know that that type of
+
+1224
+00:49:04,030 --> 00:49:07,460
+strategy right ok makes perfect sense so
+
+1225
+00:49:07,470 --> 00:49:10,080
+as we wrap up is
+
+1226
+00:49:10,090 --> 00:49:11,310
+anything else you'd like to tell our
+
+1227
+00:49:11,320 --> 00:49:13,260
+audience about console or service
+
+1228
+00:49:13,270 --> 00:49:15,870
+discovery I mean I'm sure it's a huge
+
+1229
+00:49:15,880 --> 00:49:19,590
+topic there's one there's kind of a pair
+
+1230
+00:49:19,600 --> 00:49:21,030
+of features that I think is worth
+
+1231
+00:49:21,040 --> 00:49:22,800
+mentioning that's pretty unique to
+
+1232
+00:49:22,810 --> 00:49:25,350
+console so we mentioned that as part of
+
+1233
+00:49:25,360 --> 00:49:27,570
+sort of the underlying serf mechanism
+
+1234
+00:49:27,580 --> 00:49:29,670
+that underpins console you have knows
+
+1235
+00:49:29,680 --> 00:49:32,010
+randomly probing each other at periodic
+
+1236
+00:49:32,020 --> 00:49:34,140
+intervals to determine if the note is
+
+1237
+00:49:34,150 --> 00:49:36,210
+still healthy and that feeds into the
+
+1238
+00:49:36,220 --> 00:49:39,120
+catalog so if a node has you know if it
+
+1239
+00:49:39,130 --> 00:49:40,380
+nodes not reachable at the surf layer
+
+1240
+00:49:40,390 --> 00:49:43,350
+then it'll after a few confirmations
+
+1241
+00:49:43,360 --> 00:49:45,330
+that know it'll be declared dead and
+
+1242
+00:49:45,340 --> 00:49:47,250
+there will those services that were on
+
+1243
+00:49:47,260 --> 00:49:49,140
+that node won't be given out as healthy
+
+1244
+00:49:49,150 --> 00:49:51,360
+services to other nodes that's kind of
+
+1245
+00:49:51,370 --> 00:49:53,490
+the basic bread and butter capability of
+
+1246
+00:49:53,500 --> 00:49:55,860
+what the those those random probes are
+
+1247
+00:49:55,870 --> 00:49:58,080
+for a neat sort of side effect of that
+
+1248
+00:49:58,090 --> 00:50:01,140
+is that you're basically getting kind of
+
+1249
+00:50:01,150 --> 00:50:03,750
+a randomized sample of the round-trip
+
+1250
+00:50:03,760 --> 00:50:06,030
+time on your network between all your
+
+1251
+00:50:06,040 --> 00:50:08,820
+nodes in a basically an automated
+
+1252
+00:50:08,830 --> 00:50:11,760
+fashion all the time so in console 0 6
+
+1253
+00:50:11,770 --> 00:50:14,310
+we implemented a network coordinate
+
+1254
+00:50:14,320 --> 00:50:17,130
+subsystem which uses a set of techniques
+
+1255
+00:50:17,140 --> 00:50:19,380
+around it's basically like set of
+
+1256
+00:50:19,390 --> 00:50:21,390
+tomography techniques which is trying to
+
+1257
+00:50:21,400 --> 00:50:23,250
+measure sort of the dimensions of
+
+1258
+00:50:23,260 --> 00:50:24,810
+something by measurements from the ends
+
+1259
+00:50:24,820 --> 00:50:27,540
+but what console does is it as it's
+
+1260
+00:50:27,550 --> 00:50:29,570
+doing those probes it feeds those
+
+1261
+00:50:29,580 --> 00:50:31,920
+round-trip time measurements into a
+
+1262
+00:50:31,930 --> 00:50:34,440
+physics simulation which ends up
+
+1263
+00:50:34,450 --> 00:50:37,260
+creating a set of coordinates for all
+
+1264
+00:50:37,270 --> 00:50:40,320
+the nodes in your network and those
+
+1265
+00:50:40,330 --> 00:50:41,940
+coordinates can be used to calculate the
+
+1266
+00:50:41,950 --> 00:50:45,450
+round-trip time between any two nodes so
+
+1267
+00:50:45,460 --> 00:50:47,430
+you get sort of an automatic model of
+
+1268
+00:50:47,440 --> 00:50:48,510
+your network they'll let you make
+
+1269
+00:50:48,520 --> 00:50:50,850
+interesting decisions about it so sort
+
+1270
+00:50:50,860 --> 00:50:52,470
+of building on top of that one thing we
+
+1271
+00:50:52,480 --> 00:50:54,900
+didn't talk a lot about is the console
+
+1272
+00:50:54,910 --> 00:50:57,150
+let you also join different sets of
+
+1273
+00:50:57,160 --> 00:50:59,160
+console servers together and what we
+
+1274
+00:50:59,170 --> 00:51:02,250
+call the console LAN configuration so
+
+1275
+00:51:02,260 --> 00:51:03,360
+you can have different you can have a
+
+1276
+00:51:03,370 --> 00:51:06,030
+console in Europe and a console on the
+
+1277
+00:51:06,040 --> 00:51:07,530
+east coast of the United States and then
+
+1278
+00:51:07,540 --> 00:51:10,710
+a cluster in Asia and those server
+
+1279
+00:51:10,720 --> 00:51:12,360
+clusters can know about each other and
+
+1280
+00:51:12,370 --> 00:51:14,550
+you could discover services from one
+
+1281
+00:51:14,560 --> 00:51:16,860
+data center in another one and what's
+
+1282
+00:51:16,870 --> 00:51:19,350
+interesting is that that the network
+
+1283
+00:51:19,360 --> 00:51:21,900
+tomography model can feed into that in a
+
+1284
+00:51:21,910 --> 00:51:23,880
+very nautical a so we have
+
+1285
+00:51:23,890 --> 00:51:25,319
+the sort of second feature I want to
+
+1286
+00:51:25,329 --> 00:51:26,670
+talk about so they call prepared queries
+
+1287
+00:51:26,680 --> 00:51:28,890
+so in console you can define you know
+
+1288
+00:51:28,900 --> 00:51:30,630
+you can look up a service locally you
+
+1289
+00:51:30,640 --> 00:51:31,979
+can also define something called the
+
+1290
+00:51:31,989 --> 00:51:33,960
+prepared query which can have a policy
+
+1291
+00:51:33,970 --> 00:51:36,690
+like if there are none locally give me
+
+1292
+00:51:36,700 --> 00:51:39,809
+an instance try the next three closest
+
+1293
+00:51:39,819 --> 00:51:41,640
+data centers by round-trip time and see
+
+1294
+00:51:41,650 --> 00:51:43,079
+if you can find an instance in any of
+
+1295
+00:51:43,089 --> 00:51:45,029
+those and that can all be done
+
+1296
+00:51:45,039 --> 00:51:47,099
+automatically with network tomography so
+
+1297
+00:51:47,109 --> 00:51:49,920
+you can by defining a very very simple
+
+1298
+00:51:49,930 --> 00:51:52,739
+you know like a three line JSON thing
+
+1299
+00:51:52,749 --> 00:51:55,140
+registering uh prepare query you can
+
+1300
+00:51:55,150 --> 00:51:57,450
+basically enable something like geo
+
+1301
+00:51:57,460 --> 00:51:59,759
+failover and if your clients are using
+
+1302
+00:51:59,769 --> 00:52:02,190
+the DNS interface you won't even have to
+
+1303
+00:52:02,200 --> 00:52:03,779
+change your clients so it's pretty
+
+1304
+00:52:03,789 --> 00:52:05,789
+awesome like you can say you know here
+
+1305
+00:52:05,799 --> 00:52:07,559
+if I can't find a read grep of it here
+
+1306
+00:52:07,569 --> 00:52:10,170
+just try the next three data centers and
+
+1307
+00:52:10,180 --> 00:52:12,299
+consoled by maintaining that tomography
+
+1308
+00:52:12,309 --> 00:52:13,529
+information will be able to calculate
+
+1309
+00:52:13,539 --> 00:52:16,349
+well you know if it's failing and you
+
+1310
+00:52:16,359 --> 00:52:18,269
+know if it's in San Francisco I'm gonna
+
+1311
+00:52:18,279 --> 00:52:19,769
+try the aja one but if it's on the East
+
+1312
+00:52:19,779 --> 00:52:21,420
+Coast I'm gonna fail over to Europe and
+
+1313
+00:52:21,430 --> 00:52:24,089
+it consul will manage that architecture
+
+1314
+00:52:24,099 --> 00:52:26,039
+on its own and if I data center goes
+
+1315
+00:52:26,049 --> 00:52:27,539
+offline you'll get the next closest one
+
+1316
+00:52:27,549 --> 00:52:29,700
+after that all that could be managed and
+
+1317
+00:52:29,710 --> 00:52:31,259
+expressed in a really really simple way
+
+1318
+00:52:31,269 --> 00:52:34,140
+as a DNS query that your application
+
+1319
+00:52:34,150 --> 00:52:36,930
+does which is pretty unique when all the
+
+1320
+00:52:36,940 --> 00:52:38,400
+sort of pieces of console come together
+
+1321
+00:52:38,410 --> 00:52:40,739
+like that that really kind of drives
+
+1322
+00:52:40,749 --> 00:52:41,999
+home what you were talking about earlier
+
+1323
+00:52:42,009 --> 00:52:45,569
+about other tools and having different
+
+1324
+00:52:45,579 --> 00:52:48,239
+pieces of the puzzle and layers and
+
+1325
+00:52:48,249 --> 00:52:51,120
+whatnot I can see you know we stack up
+
+1326
+00:52:51,130 --> 00:52:54,299
+enough Turtles and we have a fairly
+
+1327
+00:52:54,309 --> 00:52:57,299
+awesome kind of functionality there yeah
+
+1328
+00:52:57,309 --> 00:52:59,099
+and my only other sort of thought was
+
+1329
+00:52:59,109 --> 00:53:01,529
+it's definitely I would encourage people
+
+1330
+00:53:01,539 --> 00:53:03,630
+to run the agent and experiment with it
+
+1331
+00:53:03,640 --> 00:53:05,220
+you know the agent on its own can do
+
+1332
+00:53:05,230 --> 00:53:07,170
+some basic health checking without you
+
+1333
+00:53:07,180 --> 00:53:09,269
+really configuring anything and that's a
+
+1334
+00:53:09,279 --> 00:53:10,799
+good way to get a little experience with
+
+1335
+00:53:10,809 --> 00:53:12,329
+how it works before you've actually tied
+
+1336
+00:53:12,339 --> 00:53:14,299
+it anything critical in your application
+
+1337
+00:53:14,309 --> 00:53:16,799
+and things like the network tomography
+
+1338
+00:53:16,809 --> 00:53:18,319
+can give you some neat information
+
+1339
+00:53:18,329 --> 00:53:20,910
+basically without doing anything without
+
+1340
+00:53:20,920 --> 00:53:22,319
+creating a bunch of network load or a
+
+1341
+00:53:22,329 --> 00:53:23,789
+lot of risk and then you can sort of
+
+1342
+00:53:23,799 --> 00:53:26,670
+build on other features over time but
+
+1343
+00:53:26,680 --> 00:53:29,400
+it's pretty easy to get started okay so
+
+1344
+00:53:29,410 --> 00:53:32,489
+how can people follow you console or the
+
+1345
+00:53:32,499 --> 00:53:34,620
+other open source projects from Hoshi
+
+1346
+00:53:34,630 --> 00:53:37,070
+core anything you give us we can put
+
+1347
+00:53:37,080 --> 00:53:38,540
+to the shownotes oh if you don't need to
+
+1348
+00:53:38,550 --> 00:53:41,360
+spell out URLs or anything but sure
+
+1349
+00:53:41,370 --> 00:53:44,060
+I'm slack bad pretty much everywhere so
+
+1350
+00:53:44,070 --> 00:53:47,390
+Twitter and github the Hoshi Corp
+
+1351
+00:53:47,400 --> 00:53:49,610
+Twitter account at S corp is good for
+
+1352
+00:53:49,620 --> 00:53:51,560
+getting our latest blog posts and
+
+1353
+00:53:51,570 --> 00:53:53,930
+announcements things like that it's also
+
+1354
+00:53:53,940 --> 00:53:56,090
+a she Corp on github all of our most of
+
+1355
+00:53:56,100 --> 00:53:57,980
+our open-source projects are there some
+
+1356
+00:53:57,990 --> 00:54:00,920
+still live under Mitchell Hashimoto we
+
+1357
+00:54:00,930 --> 00:54:02,600
+have we're trying to get a pretty
+
+1358
+00:54:02,610 --> 00:54:04,580
+regular cadence of webinars going so you
+
+1359
+00:54:04,590 --> 00:54:05,780
+can definitely watch for those or
+
+1360
+00:54:05,790 --> 00:54:07,730
+there's a lot of information on YouTube
+
+1361
+00:54:07,740 --> 00:54:09,350
+from past webinars and you know
+
+1362
+00:54:09,360 --> 00:54:11,720
+conference presentations things like
+
+1363
+00:54:11,730 --> 00:54:13,760
+that we have two conferences as well we
+
+1364
+00:54:13,770 --> 00:54:15,320
+have an upcoming Hoshi conf
+
+1365
+00:54:15,330 --> 00:54:17,750
+EU in Amsterdam and how she come for us
+
+1366
+00:54:17,760 --> 00:54:20,690
+in Napa California so there's some ways
+
+1367
+00:54:20,700 --> 00:54:22,490
+to get kind of face time with the hutch
+
+1368
+00:54:22,500 --> 00:54:25,130
+for engineers through those and we're
+
+1369
+00:54:25,140 --> 00:54:27,800
+there's a ton of you know sort of open
+
+1370
+00:54:27,810 --> 00:54:29,300
+presentations and things like that so
+
+1371
+00:54:29,310 --> 00:54:30,800
+there's lots of ways to find out about
+
+1372
+00:54:30,810 --> 00:54:32,720
+the company all right that's great
+
+1373
+00:54:32,730 --> 00:54:35,000
+thanks for your time James I've really
+
+1374
+00:54:35,010 --> 00:54:36,890
+enjoyed our discussion and I hope our
+
+1375
+00:54:36,900 --> 00:54:38,000
+listeners have too
+
+1376
+00:54:38,010 --> 00:54:40,550
+this is Charles an Anderson for software
+
+1377
+00:54:40,560 --> 00:54:48,950
+engineering radio thanks thanks for
+
+1378
+00:54:48,960 --> 00:54:50,720
+listening to SC radio an educational
+
+1379
+00:54:50,730 --> 00:54:52,340
+program brought to you by I Triple E
+
+1380
+00:54:52,350 --> 00:54:54,320
+software magazine for more information
+
+1381
+00:54:54,330 --> 00:54:55,700
+about the podcast including other
+
+1382
+00:54:55,710 --> 00:54:58,310
+episodes visit our website @ SC - radio
+
+1383
+00:54:58,320 --> 00:55:00,830
+now to provide feedback you can write
+
+1384
+00:55:00,840 --> 00:55:02,660
+comments on each episode on the website
+
+1385
+00:55:02,670 --> 00:55:04,790
+or write a review on itunes mention a
+
+1386
+00:55:04,800 --> 00:55:07,310
+message us on twitter at SC radio or
+
+1387
+00:55:07,320 --> 00:55:09,320
+search for the software engineering
+
+1388
+00:55:09,330 --> 00:55:10,609
+radio group on Lane
+
+1389
+00:55:10,619 --> 00:55:13,099
+Google+ or Facebook you can also email
+
+1390
+00:55:13,109 --> 00:55:16,999
+us at team at se - radio net this and
+
+1391
+00:55:17,009 --> 00:55:18,559
+all other episodes of SU radio is
+
+1392
+00:55:18,569 --> 00:55:20,599
+licensed under the creative commons 2.5
+
+1393
+00:55:20,609 --> 00:55:22,480
+license thanks again for your support
+
+1394
+00:55:22,490 --> 00:55:22,620
+[Music]
+
+1395
+00:55:22,630 --> 00:55:27,300
+[Applause]
+
+1396
+00:55:28,520 --> 00:55:28,530
+you
+
+1397
+00:55:28,530 --> 00:55:33,269
+[Music]

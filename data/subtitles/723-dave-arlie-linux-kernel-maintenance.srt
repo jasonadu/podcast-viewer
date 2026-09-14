@@ -1,0 +1,8772 @@
+1
+00:00:02,750 --> 00:00:02,760
+This is Software Engineering Radio, the
+
+2
+00:00:02,760 --> 00:00:04,790
+podcast for professional developers on
+
+3
+00:00:04,800 --> 00:00:07,830
+the web at se-radio.net.
+
+4
+00:00:07,840 --> 00:00:09,670
+SE Radio is brought to you by the IEEE
+
+5
+00:00:09,680 --> 00:00:11,830
+Computer Society and by IEEE Software
+
+6
+00:00:11,840 --> 00:00:13,590
+Magazine, online at
+
+7
+00:00:13,600 --> 00:00:16,365
+computer.org/software.
+
+8
+00:00:16,375 --> 00:00:19,190
+&gt;&gt; [music]
+
+9
+00:00:21,910 --> 00:00:21,920
+&gt;&gt; Welcome to Software Engineering Radio.
+
+10
+00:00:21,920 --> 00:00:24,390
+I'm your host, Gregory Kaphhammer.
+
+11
+00:00:24,400 --> 00:00:27,510
+Today's guest is Dave Airlie. Dave is a
+
+12
+00:00:27,520 --> 00:00:29,830
+long-time Linux kernel maintainer and a
+
+13
+00:00:29,840 --> 00:00:33,110
+distinguished engineer at Red Hat. Dave,
+
+14
+00:00:33,120 --> 00:00:35,670
+welcome to Software Engineering Radio.
+
+15
+00:00:35,680 --> 00:00:37,630
+&gt;&gt; Hi Greg, thanks for having me on.
+
+16
+00:00:37,640 --> 00:00:39,910
+&gt;&gt; I'm delighted to talk to you today about
+
+17
+00:00:39,920 --> 00:00:42,230
+Linux kernel maintenance. Dave, you're
+
+18
+00:00:42,240 --> 00:00:45,030
+the direct rendering manager subsystem
+
+19
+00:00:45,040 --> 00:00:47,390
+maintainer in the Linux kernel and you
+
+20
+00:00:47,400 --> 00:00:49,550
+have nearly two decades of kernel
+
+21
+00:00:49,560 --> 00:00:51,670
+maintenance experience and I'm super
+
+22
+00:00:51,680 --> 00:00:53,350
+happy to learn from you throughout the
+
+23
+00:00:53,360 --> 00:00:55,550
+episode. Are you ready to dive in?
+
+24
+00:00:55,560 --> 00:00:56,750
+&gt;&gt; Yes, let's go.
+
+25
+00:00:56,760 --> 00:00:59,150
+&gt;&gt; Okay. So, at the very start, I mentioned
+
+26
+00:00:59,160 --> 00:01:01,150
+a moment ago that you're the maintainer
+
+27
+00:01:01,160 --> 00:01:03,710
+of something that's called DRM. Can you
+
+28
+00:01:03,720 --> 00:01:06,030
+just tell us quickly what is DRM so we
+
+29
+00:01:06,040 --> 00:01:07,990
+know the kind of work you do on the
+
+30
+00:01:08,000 --> 00:01:08,990
+Linux kernel?
+
+31
+00:01:09,000 --> 00:01:10,470
+&gt;&gt; Well, since DRM is a bit of an
+
+32
+00:01:10,480 --> 00:01:12,550
+overloaded term, it's not the bad one. I
+
+33
+00:01:12,560 --> 00:01:13,950
+suppose is the best way to describe it.
+
+34
+00:01:13,960 --> 00:01:15,430
+It's a thing called the direct rendering
+
+35
+00:01:15,440 --> 00:01:18,150
+manager, which is a legacy name for what
+
+36
+00:01:18,160 --> 00:01:20,550
+was really just the GPU or graphics
+
+37
+00:01:20,560 --> 00:01:22,590
+support subsystem in the Linux kernel.
+
+38
+00:01:22,600 --> 00:01:24,470
+The name was given to a small component,
+
+39
+00:01:24,480 --> 00:01:27,230
+maybe 20 years ago and we have expanded
+
+40
+00:01:27,240 --> 00:01:29,030
+on it, but we just kept the name. So, I
+
+41
+00:01:29,040 --> 00:01:30,790
+think the name is DRM. I don't think
+
+42
+00:01:30,800 --> 00:01:32,110
+direct rendering manager even really
+
+43
+00:01:32,120 --> 00:01:33,670
+makes sense for what it does anymore.
+
+44
+00:01:33,680 --> 00:01:35,950
+So, stick with the acronym, but it
+
+45
+00:01:35,960 --> 00:01:37,430
+pretty much when you hear DRM, just
+
+46
+00:01:37,440 --> 00:01:40,830
+think GPU graphics accelerators.
+
+47
+00:01:40,840 --> 00:01:43,070
+&gt;&gt; Okay. So, we're going to use DRM and
+
+48
+00:01:43,080 --> 00:01:44,830
+your experience with maintaining it
+
+49
+00:01:44,840 --> 00:01:46,830
+throughout the episode, but to get us
+
+50
+00:01:46,840 --> 00:01:48,510
+started, we want to talk a little bit
+
+51
+00:01:48,520 --> 00:01:50,870
+about some of the scale and structure
+
+52
+00:01:50,880 --> 00:01:53,710
+issues associated with the Linux kernel
+
+53
+00:01:53,720 --> 00:01:54,990
+and we're going to talk about subsystem
+
+54
+00:01:55,000 --> 00:01:56,710
+workflows and how you do release
+
+55
+00:01:56,720 --> 00:01:59,430
+engineering and we'll use DRM as
+
+56
+00:01:59,440 --> 00:02:00,950
+concrete examples throughout the
+
+57
+00:02:00,960 --> 00:02:03,430
+episode. So with that in mind, can you
+
+58
+00:02:03,440 --> 00:02:06,670
+tell us a little bit about the scope and
+
+59
+00:02:06,680 --> 00:02:09,389
+the architecture of the Linux kernel?
+
+60
+00:02:09,399 --> 00:02:11,670
+How many maintainers are there? How many
+
+61
+00:02:11,680 --> 00:02:13,910
+subsystems are there? Please give us a
+
+62
+00:02:13,920 --> 00:02:15,790
+few initial insights.
+
+63
+00:02:15,800 --> 00:02:17,550
+&gt;&gt; Yeah, the Linux kernel is well, we
+
+64
+00:02:17,560 --> 00:02:18,910
+consider it's probably the biggest
+
+65
+00:02:18,920 --> 00:02:20,310
+software engineering project in the
+
+66
+00:02:20,320 --> 00:02:22,590
+world. That's what we like to say. In
+
+67
+00:02:22,600 --> 00:02:25,150
+terms of maintainers, the number is very
+
+68
+00:02:25,160 --> 00:02:26,750
+changeable, I would say on average it's
+
+69
+00:02:26,760 --> 00:02:29,590
+between 80 and 100 and 150. The varying
+
+70
+00:02:29,600 --> 00:02:31,510
+levels of what a maintainer is and where
+
+71
+00:02:31,520 --> 00:02:33,910
+they sit in the hierarchy moves a lot.
+
+72
+00:02:33,920 --> 00:02:35,870
+We have every year maintainer summit
+
+73
+00:02:35,880 --> 00:02:37,590
+where Linus invites like the top 30
+
+74
+00:02:37,600 --> 00:02:39,350
+maintainers to that. So that's kind of a
+
+75
+00:02:39,360 --> 00:02:41,270
+number of like the top level people that
+
+76
+00:02:41,280 --> 00:02:43,470
+Linus needs to talk to, but that scales
+
+77
+00:02:43,480 --> 00:02:44,910
+out there into a hierarchy that can
+
+78
+00:02:44,920 --> 00:02:47,230
+expand to up to 100, I would say, in the
+
+79
+00:02:47,240 --> 00:02:48,750
+kernel at the moment. In terms of
+
+80
+00:02:48,760 --> 00:02:50,590
+subsystems, again, there's no strict
+
+81
+00:02:50,600 --> 00:02:52,949
+definition of what exactly a subsystem
+
+82
+00:02:52,959 --> 00:02:54,070
+is. A subsystem is something that a
+
+83
+00:02:54,080 --> 00:02:55,990
+maintainer maintains usually. So in the
+
+84
+00:02:56,000 --> 00:02:57,550
+same sense of there is the number of
+
+85
+00:02:57,560 --> 00:02:59,070
+subsystems that there are the number of
+
+86
+00:02:59,080 --> 00:03:01,150
+maintainers and some maybe not one is to
+
+87
+00:03:01,160 --> 00:03:03,070
+one, but it's pretty close. But there
+
+88
+00:03:03,080 --> 00:03:04,910
+are a number of major subsystems would
+
+89
+00:03:04,920 --> 00:03:07,190
+probably be like the graphics subsystem,
+
+90
+00:03:07,200 --> 00:03:09,790
+the networking subsystem, the CPU like
+
+91
+00:03:09,800 --> 00:03:13,670
+x86 support, arm64 support and those are
+
+92
+00:03:13,680 --> 00:03:16,790
+the major areas, storage, file systems,
+
+93
+00:03:16,800 --> 00:03:18,430
+memory management. So they're probably
+
+94
+00:03:18,440 --> 00:03:20,470
+the biggest groupings that we have.
+
+95
+00:03:20,480 --> 00:03:23,390
+&gt;&gt; Okay, so we've got DRM as one subsystem
+
+96
+00:03:23,400 --> 00:03:25,830
+and CPU scheduling or memory management
+
+97
+00:03:25,840 --> 00:03:28,270
+or file systems. Those are all examples
+
+98
+00:03:28,280 --> 00:03:31,110
+of subsystems. So if we take DRM as an
+
+99
+00:03:31,120 --> 00:03:33,670
+example, how many people are actually
+
+100
+00:03:33,680 --> 00:03:35,949
+working with you as the maintainer of
+
+101
+00:03:35,959 --> 00:03:37,790
+the DRM subsystem?
+
+102
+00:03:37,800 --> 00:03:39,030
+&gt;&gt; If you'd asked me this yesterday, I
+
+103
+00:03:39,040 --> 00:03:40,750
+would have said 100, but I actually ran
+
+104
+00:03:40,760 --> 00:03:42,710
+the numbers last night and apparently we
+
+105
+00:03:42,720 --> 00:03:45,430
+have over 300 people contributing every
+
+106
+00:03:45,440 --> 00:03:47,229
+kernel release to the DRM subsystem,
+
+107
+00:03:47,239 --> 00:03:49,030
+which actually surprised me just as
+
+108
+00:03:49,040 --> 00:03:50,830
+much. So they don't all work directly
+
+109
+00:03:50,840 --> 00:03:52,510
+with me again. We have a hierarchical
+
+110
+00:03:52,520 --> 00:03:55,670
+system. I probably work on a weekly to
+
+111
+00:03:55,680 --> 00:03:59,150
+fortnightly basis with maybe 20 people
+
+112
+00:03:59,160 --> 00:04:01,270
+in that range, 15 to 20. And then that
+
+113
+00:04:01,280 --> 00:04:02,910
+they work in the hierarchy with the
+
+114
+00:04:02,920 --> 00:04:04,750
+other grouping. But yes, I was surprised
+
+115
+00:04:04,760 --> 00:04:06,470
+that we have up to 300 contributors per
+
+116
+00:04:06,480 --> 00:04:08,510
+kernel for the DRM subsystem.
+
+117
+00:04:08,520 --> 00:04:10,870
+&gt;&gt; Okay, so there's 300 people and they're
+
+118
+00:04:10,880 --> 00:04:12,870
+somehow reporting to you and you're
+
+119
+00:04:12,880 --> 00:04:15,510
+managing their work and you're reviewing
+
+120
+00:04:15,520 --> 00:04:17,870
+their pull requests. Can you give us at
+
+121
+00:04:17,880 --> 00:04:19,949
+a high-level a rough idea, what are
+
+122
+00:04:19,959 --> 00:04:22,110
+those 300 people doing and then what are
+
+123
+00:04:22,120 --> 00:04:24,909
+you doing when it comes to managing the
+
+124
+00:04:24,919 --> 00:04:26,950
+infrastructure for DRM in the Linux
+
+125
+00:04:26,960 --> 00:04:27,670
+kernel?
+
+126
+00:04:27,680 --> 00:04:29,670
+&gt;&gt; So this is probably an area where the
+
+127
+00:04:29,680 --> 00:04:31,550
+DRM subsystem is a little bit different
+
+128
+00:04:31,560 --> 00:04:33,230
+to a lot of the other subsystems in that
+
+129
+00:04:33,240 --> 00:04:36,310
+I actually have quite a large hierarchy.
+
+130
+00:04:36,320 --> 00:04:37,950
+I would think more like a corporate
+
+131
+00:04:37,960 --> 00:04:40,270
+style of There is two co-maintainers,
+
+132
+00:04:40,280 --> 00:04:42,710
+myself and Simon Vetter. And then below
+
+133
+00:04:42,720 --> 00:04:45,150
+us we have a range of maybe six or seven
+
+134
+00:04:45,160 --> 00:04:46,990
+more feeding into us and then they have
+
+135
+00:04:47,000 --> 00:04:48,470
+a range of people feeding into them and
+
+136
+00:04:48,480 --> 00:04:49,750
+then there's all of the front-line
+
+137
+00:04:49,760 --> 00:04:51,350
+developers probably feeding into that.
+
+138
+00:04:51,360 --> 00:04:53,870
+So the hierarchy is, depending where you
+
+139
+00:04:53,880 --> 00:04:55,150
+sit on it, just like in a corporate
+
+140
+00:04:55,160 --> 00:04:57,270
+structure, is very different for what
+
+141
+00:04:57,280 --> 00:05:00,830
+your job is. So my role, a lot of it is
+
+142
+00:05:00,840 --> 00:05:03,350
+I suppose I would call facilitating and
+
+143
+00:05:03,360 --> 00:05:05,909
+creating an environment for people to be
+
+144
+00:05:05,919 --> 00:05:08,390
+able to work in and be happy to work in.
+
+145
+00:05:08,400 --> 00:05:11,070
+My main weekly task is I deal with
+
+146
+00:05:11,080 --> 00:05:13,190
+Linus. I submit the pull request to
+
+147
+00:05:13,200 --> 00:05:15,430
+Linus on a weekly basis. I gather all
+
+148
+00:05:15,440 --> 00:05:16,870
+the pull requests from the people below
+
+149
+00:05:16,880 --> 00:05:18,590
+me and I send them up to Linus. The
+
+150
+00:05:18,600 --> 00:05:20,070
+amount of review I personally do on
+
+151
+00:05:20,080 --> 00:05:21,990
+those pull requests is very limited at
+
+152
+00:05:22,000 --> 00:05:25,430
+this point because they are so large
+
+153
+00:05:25,440 --> 00:05:27,390
+already that I have to trust that the
+
+154
+00:05:27,400 --> 00:05:29,110
+maintainers below me have done
+
+155
+00:05:29,120 --> 00:05:30,590
+appropriate review and they have to
+
+156
+00:05:30,600 --> 00:05:31,990
+trust that the maintainers below them
+
+157
+00:05:32,000 --> 00:05:33,830
+have done appropriate review. The review
+
+158
+00:05:33,840 --> 00:05:35,590
+all happens in public on the mailing
+
+159
+00:05:35,600 --> 00:05:36,750
+list so we can always go back and
+
+160
+00:05:36,760 --> 00:05:38,710
+reference it, but for me personally on a
+
+161
+00:05:38,720 --> 00:05:41,790
+daily weekly basis, I don't often review
+
+162
+00:05:41,800 --> 00:05:43,830
+the pull requests that that much. I do a
+
+163
+00:05:43,840 --> 00:05:45,909
+set of standard builds on them. I make
+
+164
+00:05:45,919 --> 00:05:47,270
+sure there's no
+
+165
+00:05:47,280 --> 00:05:49,390
+they don't build. That's a big problem.
+
+166
+00:05:49,400 --> 00:05:51,870
+But mostly it's a maintenance role for
+
+167
+00:05:51,880 --> 00:05:53,630
+me is very different than a standard
+
+168
+00:05:53,640 --> 00:05:54,910
+maintainer. A lot of the standard
+
+169
+00:05:54,920 --> 00:05:56,710
+maintainers will be applying the patches
+
+170
+00:05:56,720 --> 00:05:58,990
+to our trees, checking the quality of
+
+171
+00:05:59,000 --> 00:06:00,790
+the work, and making sure that it's
+
+172
+00:06:00,800 --> 00:06:02,790
+suitable for going upstream to me.
+
+173
+00:06:02,800 --> 00:06:04,670
+&gt;&gt; Thanks, that's really helpful. So, I
+
+174
+00:06:04,680 --> 00:06:06,870
+have the understanding that people are
+
+175
+00:06:06,880 --> 00:06:09,270
+in a way working for or reporting to
+
+176
+00:06:09,280 --> 00:06:11,550
+you, and you mentioned a moment ago that
+
+177
+00:06:11,560 --> 00:06:13,550
+you're reporting to Linus Torvalds as
+
+178
+00:06:13,560 --> 00:06:15,790
+well. Can you tell us a little bit more
+
+179
+00:06:15,800 --> 00:06:18,270
+about how you report to Linus and what
+
+180
+00:06:18,280 --> 00:06:20,710
+type of work you do on behalf of this
+
+181
+00:06:20,720 --> 00:06:22,710
+core leader for the Linux kernel?
+
+182
+00:06:22,720 --> 00:06:24,270
+&gt;&gt; Yeah, so one thing with the kernel is
+
+183
+00:06:24,280 --> 00:06:27,110
+Linus is very delicate. He delegates a
+
+184
+00:06:27,120 --> 00:06:28,870
+lot of trust to the top-level
+
+185
+00:06:28,880 --> 00:06:31,190
+maintainers, and it is kind of like I
+
+186
+00:06:31,200 --> 00:06:32,990
+hate the word fiefdom, but you own your
+
+187
+00:06:33,000 --> 00:06:34,630
+garden. Like you're in charge of
+
+188
+00:06:34,640 --> 00:06:36,310
+maintaining that section of the kernel,
+
+189
+00:06:36,320 --> 00:06:38,630
+and he trusts you until you give him a
+
+190
+00:06:38,640 --> 00:06:40,590
+reason not to, I suppose. I've worked
+
+191
+00:06:40,600 --> 00:06:42,350
+with him now for 20 years. I've had a
+
+192
+00:06:42,360 --> 00:06:44,310
+few public falling out with him. They're
+
+193
+00:06:44,320 --> 00:06:45,909
+easy to find on the internet. But
+
+194
+00:06:45,919 --> 00:06:47,990
+overall, we don't have a huge amount of
+
+195
+00:06:48,000 --> 00:06:49,390
+interaction. Most of my interactions
+
+196
+00:06:49,400 --> 00:06:51,830
+with Linus are at the maintainer summit
+
+197
+00:06:51,840 --> 00:06:53,230
+once a year. We'll meet up and we'll
+
+198
+00:06:53,240 --> 00:06:54,830
+have it We'll just talk about life, but
+
+199
+00:06:54,840 --> 00:06:56,750
+mostly it's about normal things. We both
+
+200
+00:06:56,760 --> 00:06:58,310
+like scuba diving, so there's a cool you
+
+201
+00:06:58,320 --> 00:06:59,950
+know, things like that. But in terms of
+
+202
+00:06:59,960 --> 00:07:03,190
+the kernel, every week I send him an
+
+203
+00:07:03,200 --> 00:07:05,230
+official pull request with the list of
+
+204
+00:07:05,240 --> 00:07:07,390
+all of the fixes for that week from all
+
+205
+00:07:07,400 --> 00:07:09,909
+of the people in my group. And he then
+
+206
+00:07:09,919 --> 00:07:12,909
+will process that. If he processes that,
+
+207
+00:07:12,919 --> 00:07:14,750
+the system will send an automatic reply
+
+208
+00:07:14,760 --> 00:07:16,110
+telling me that Linus has taken the
+
+209
+00:07:16,120 --> 00:07:18,030
+request. If you get a reply from Linus
+
+210
+00:07:18,040 --> 00:07:19,990
+himself, that's usually only if you've
+
+211
+00:07:20,000 --> 00:07:21,830
+done something wrong. He is not really
+
+212
+00:07:21,840 --> 00:07:23,830
+good at giving positive feedback. He is
+
+213
+00:07:23,840 --> 00:07:25,870
+much better at giving something wrong
+
+214
+00:07:25,880 --> 00:07:27,909
+feedback. He's known for not giving the
+
+215
+00:07:27,919 --> 00:07:30,110
+positive side. So, you generally look
+
+216
+00:07:30,120 --> 00:07:32,030
+for the Linus on the reply and hope it
+
+217
+00:07:32,040 --> 00:07:33,909
+you don't see it, and then things go
+
+218
+00:07:33,919 --> 00:07:36,470
+along swimmingly. Once every Like we'll
+
+219
+00:07:36,480 --> 00:07:37,830
+go into the release cycle later, but
+
+220
+00:07:37,840 --> 00:07:39,070
+once every 9 or 10 weeks you have to
+
+221
+00:07:39,080 --> 00:07:41,190
+send the big pull request, which is all
+
+222
+00:07:41,200 --> 00:07:43,230
+of the work that is due for the next
+
+223
+00:07:43,240 --> 00:07:46,110
+kernel. That's the one that often upsets
+
+224
+00:07:46,120 --> 00:07:47,630
+him because that's the one where you
+
+225
+00:07:47,640 --> 00:07:49,270
+will have a lot of change, and there is
+
+226
+00:07:49,280 --> 00:07:51,110
+always regression with change, and you
+
+227
+00:07:51,120 --> 00:07:53,390
+just have to hope that he doesn't catch
+
+228
+00:07:53,400 --> 00:07:54,950
+a really bad regression, or you haven't
+
+229
+00:07:54,960 --> 00:07:56,470
+messed up some other part of the kernel.
+
+230
+00:07:56,480 --> 00:07:58,310
+But, in general, my interactions with
+
+231
+00:07:58,320 --> 00:08:00,190
+Linus are purely on the I send him a
+
+232
+00:08:00,200 --> 00:08:01,990
+weekly email. I hope he doesn't have a
+
+233
+00:08:02,000 --> 00:08:03,590
+problem with it. If he has a problem
+
+234
+00:08:03,600 --> 00:08:04,990
+with it, I delegate that down to the
+
+235
+00:08:05,000 --> 00:08:06,750
+people who caused the problem, and I
+
+236
+00:08:06,760 --> 00:08:08,950
+generally accept the I'm an umbrella, I
+
+237
+00:08:08,960 --> 00:08:10,270
+suppose, as well. You know, need to
+
+238
+00:08:10,280 --> 00:08:11,750
+protect the people under me from his
+
+239
+00:08:11,760 --> 00:08:13,590
+wrath, and he's calmed down over the
+
+240
+00:08:13,600 --> 00:08:15,310
+years, but I'm used to it at this stage,
+
+241
+00:08:15,320 --> 00:08:17,070
+so it's I sometimes have to take an hour
+
+242
+00:08:17,080 --> 00:08:19,150
+or two to breathe, and then I'm good.
+
+243
+00:08:19,160 --> 00:08:21,190
+&gt;&gt; Okay, so that's really giving us a nice
+
+244
+00:08:21,200 --> 00:08:23,710
+sense in the day of the life of a Linux
+
+245
+00:08:23,720 --> 00:08:25,390
+kernel maintainer, and we're going to do
+
+246
+00:08:25,400 --> 00:08:27,390
+a deep dive into all those topics in a
+
+247
+00:08:27,400 --> 00:08:29,750
+moment. But, before we do that, can you
+
+248
+00:08:29,760 --> 00:08:31,270
+tell us a little bit about some of the
+
+249
+00:08:31,280 --> 00:08:33,790
+specific challenges that you face when
+
+250
+00:08:33,800 --> 00:08:36,430
+it comes to maintaining DRM in the Linux
+
+251
+00:08:36,440 --> 00:08:37,390
+kernel?
+
+252
+00:08:37,400 --> 00:08:39,670
+&gt;&gt; I think the biggest challenge I've faced
+
+253
+00:08:39,680 --> 00:08:40,909
+over the years, and Simon, and my
+
+254
+00:08:40,919 --> 00:08:42,630
+co-maintainer, has been great at helping
+
+255
+00:08:42,640 --> 00:08:45,270
+with this, is that the scale of things
+
+256
+00:08:45,280 --> 00:08:47,950
+when you get to being this big is quite
+
+257
+00:08:47,960 --> 00:08:50,829
+hard to both communicate to other
+
+258
+00:08:50,839 --> 00:08:53,550
+maintainers, and to have interesting
+
+259
+00:08:53,560 --> 00:08:55,150
+topics with other co-maintainers who are
+
+260
+00:08:55,160 --> 00:08:57,190
+dealing at the 10 people level, or the
+
+261
+00:08:57,200 --> 00:08:59,790
+40 people level. They don't quite
+
+262
+00:08:59,800 --> 00:09:02,710
+understand why the scale of changes when
+
+263
+00:09:02,720 --> 00:09:04,190
+you get to our level. Like, even when I
+
+264
+00:09:04,200 --> 00:09:05,870
+was taking with 100 people going through
+
+265
+00:09:05,880 --> 00:09:07,270
+it, the scale problem is different. But,
+
+266
+00:09:07,280 --> 00:09:08,710
+now that I'm taking 300, I'm like,
+
+267
+00:09:08,720 --> 00:09:10,550
+"Okay, now our scale problems are
+
+268
+00:09:10,560 --> 00:09:12,470
+definitely valid and different than
+
+269
+00:09:12,480 --> 00:09:14,550
+theirs." So, for example, we have to
+
+270
+00:09:14,560 --> 00:09:17,110
+have a hierarchy. We have a common tree
+
+271
+00:09:17,120 --> 00:09:19,390
+where everyone has commit access for a
+
+272
+00:09:19,400 --> 00:09:21,150
+bunch of things, and we try to have a
+
+273
+00:09:21,160 --> 00:09:22,790
+group maintainership model, which isn't
+
+274
+00:09:22,800 --> 00:09:25,150
+something as standard in the kernel. X86
+
+275
+00:09:25,160 --> 00:09:26,430
+subsystem kind of did it with three
+
+276
+00:09:26,440 --> 00:09:28,630
+people. We've done it now with maybe 30
+
+277
+00:09:28,640 --> 00:09:30,070
+to 40 people. I think in our group
+
+278
+00:09:30,080 --> 00:09:30,990
+maintainers, there's probably more.
+
+279
+00:09:31,000 --> 00:09:32,230
+There's three maintainers, but there's a
+
+280
+00:09:32,240 --> 00:09:34,390
+group of committers. So, that system is
+
+281
+00:09:34,400 --> 00:09:35,750
+different than everyone else's. That's
+
+282
+00:09:35,760 --> 00:09:36,950
+probably one of the biggest challenges.
+
+283
+00:09:36,960 --> 00:09:38,830
+Like, scaling the standard kernel
+
+284
+00:09:38,840 --> 00:09:41,670
+development processes up to our size of
+
+285
+00:09:41,680 --> 00:09:43,230
+the subsystem has been the biggest
+
+286
+00:09:43,240 --> 00:09:44,790
+challenge we faced over the last years.
+
+287
+00:09:44,800 --> 00:09:47,550
+And in my world, a lot of my job has
+
+288
+00:09:47,560 --> 00:09:49,670
+been to just sort of step away and not
+
+289
+00:09:49,680 --> 00:09:53,750
+let my, I suppose, ego or my own niched
+
+290
+00:09:53,760 --> 00:09:56,630
+workflows drive everything else's. And I
+
+291
+00:09:56,640 --> 00:09:57,910
+need to accept that, "Okay, this is
+
+292
+00:09:57,920 --> 00:09:59,710
+something that makes the community
+
+293
+00:09:59,720 --> 00:10:01,670
+better, and maybe it makes my life a bit
+
+294
+00:10:01,680 --> 00:10:03,990
+harder, but I need to use these scripts
+
+295
+00:10:04,000 --> 00:10:05,710
+or just develop methods technology
+
+296
+00:10:05,720 --> 00:10:07,950
+because it makes it easier for everyone
+
+297
+00:10:07,960 --> 00:10:09,790
+else. And often we have a problem where
+
+298
+00:10:09,800 --> 00:10:11,670
+over the years we got our little niche
+
+299
+00:10:11,680 --> 00:10:13,390
+of how we develop things and we stay in
+
+300
+00:10:13,400 --> 00:10:15,150
+it. And being able to not do that has
+
+301
+00:10:15,160 --> 00:10:17,270
+been very good for me and in the helping
+
+302
+00:10:17,280 --> 00:10:19,190
+the subsystem to grow, I think, because
+
+303
+00:10:19,200 --> 00:10:20,510
+scale is hard.
+
+304
+00:10:20,520 --> 00:10:22,030
+&gt;&gt; So, you've talked about scale from the
+
+305
+00:10:22,040 --> 00:10:24,390
+perspective of the number of humans, and
+
+306
+00:10:24,400 --> 00:10:26,190
+you mentioned there are like 300 people
+
+307
+00:10:26,200 --> 00:10:27,910
+who are developing various types of
+
+308
+00:10:27,920 --> 00:10:30,550
+patches or change sets. Can you tell our
+
+309
+00:10:30,560 --> 00:10:32,950
+listeners a little bit about the size
+
+310
+00:10:32,960 --> 00:10:35,310
+and the scope and the scale of your part
+
+311
+00:10:35,320 --> 00:10:37,030
+of the Linux kernel when it comes to
+
+312
+00:10:37,040 --> 00:10:39,950
+things like lines of code or size of a
+
+313
+00:10:39,960 --> 00:10:42,310
+change set? Other details that you can
+
+314
+00:10:42,320 --> 00:10:43,310
+share there?
+
+315
+00:10:43,320 --> 00:10:45,270
+&gt;&gt; Yeah, the lines of code is a bit of an
+
+316
+00:10:45,280 --> 00:10:46,790
+outlier for us because we have a huge
+
+317
+00:10:46,800 --> 00:10:48,829
+amount of auto-generated headers, which
+
+318
+00:10:48,839 --> 00:10:50,790
+both piss people off and are very
+
+319
+00:10:50,800 --> 00:10:53,550
+valuable for us for a few drivers. But,
+
+320
+00:10:53,560 --> 00:10:54,910
+I think we're talking in the at least a
+
+321
+00:10:54,920 --> 00:10:57,350
+million lines of code under my purview
+
+322
+00:10:57,360 --> 00:10:59,030
+in that subsystem. The headers are
+
+323
+00:10:59,040 --> 00:11:00,710
+probably add another million or half a
+
+324
+00:11:00,720 --> 00:11:02,230
+million onto that. But, so yeah, you're
+
+325
+00:11:02,240 --> 00:11:03,510
+probably talking at least in the 1
+
+326
+00:11:03,520 --> 00:11:06,110
+million to 2 million lines of code. I
+
+327
+00:11:06,120 --> 00:11:08,110
+don't have accurate numbers on the
+
+328
+00:11:08,120 --> 00:11:10,190
+number of change sets I process, but I
+
+329
+00:11:10,200 --> 00:11:13,030
+would say it's in the 2,000 to 3,000
+
+330
+00:11:13,040 --> 00:11:15,150
+every kernel cycle. So, every 3 months
+
+331
+00:11:15,160 --> 00:11:17,390
+I'd say we put in about 2 to 3,000. Of
+
+332
+00:11:17,400 --> 00:11:19,630
+that, I would say I probably process
+
+333
+00:11:19,640 --> 00:11:22,310
+maybe 50 to 60 pull requests from
+
+334
+00:11:22,320 --> 00:11:24,550
+sub-maintainers in that cycle as well.
+
+335
+00:11:24,560 --> 00:11:26,470
+On average on a week, I'd say I process
+
+336
+00:11:26,480 --> 00:11:29,110
+maybe five to six pull requests from
+
+337
+00:11:29,120 --> 00:11:30,430
+sub-maintainers, and they normally at
+
+338
+00:11:30,440 --> 00:11:32,110
+this stage of the fixes stages of the
+
+339
+00:11:32,120 --> 00:11:34,230
+kernel, probably only have 10 to 15
+
+340
+00:11:34,240 --> 00:11:36,190
+patches in them. But everything in the
+
+341
+00:11:36,200 --> 00:11:38,230
+big part of the merge request, that's
+
+342
+00:11:38,240 --> 00:11:39,550
+where all the majority of things come
+
+343
+00:11:39,560 --> 00:11:40,110
+through.
+
+344
+00:11:40,120 --> 00:11:41,590
+&gt;&gt; That makes a lot of sense. Now, I know
+
+345
+00:11:41,600 --> 00:11:44,030
+many people who use Linux, they have
+
+346
+00:11:44,040 --> 00:11:46,990
+heard of this idea of an RC build or a
+
+347
+00:11:47,000 --> 00:11:49,030
+release candidate build. And so in this
+
+348
+00:11:49,040 --> 00:11:50,990
+next phase of our show, I'm hoping that
+
+349
+00:11:51,000 --> 00:11:53,150
+we can give the listeners a sense of
+
+350
+00:11:53,160 --> 00:11:56,150
+your workflow or the cadence or the
+
+351
+00:11:56,160 --> 00:11:58,470
+processes that you follow in Linux
+
+352
+00:11:58,480 --> 00:12:00,350
+kernel maintenance. So, can you tell us
+
+353
+00:12:00,360 --> 00:12:02,390
+a little bit about how many weeks you
+
+354
+00:12:02,400 --> 00:12:04,750
+work for until you get to a release
+
+355
+00:12:04,760 --> 00:12:06,870
+candidate? Can you give us a few details
+
+356
+00:12:06,880 --> 00:12:09,150
+about that process as we dive in?
+
+357
+00:12:09,160 --> 00:12:10,710
+&gt;&gt; Yeah, I'll probably give the general
+
+358
+00:12:10,720 --> 00:12:12,150
+overview of how the kernel works and
+
+359
+00:12:12,160 --> 00:12:13,870
+probably a bit more into what we do. So,
+
+360
+00:12:13,880 --> 00:12:15,790
+overall in the kernel has what we call a
+
+361
+00:12:15,800 --> 00:12:18,310
+9-to-10 week release cycle, depending on
+
+362
+00:12:18,320 --> 00:12:20,350
+how happy Linus is. It can go 9 weeks,
+
+363
+00:12:20,360 --> 00:12:21,910
+it can go 10 weeks if he feels there's
+
+364
+00:12:21,920 --> 00:12:24,070
+been a reason. Mostly, we've been doing
+
+365
+00:12:24,080 --> 00:12:25,950
+9 weeks lately. We had one 10 week last
+
+366
+00:12:25,960 --> 00:12:28,150
+time. The way that works is the first 2
+
+367
+00:12:28,160 --> 00:12:30,070
+weeks of every new kernel development
+
+368
+00:12:30,080 --> 00:12:32,030
+cycle are called the merge window.
+
+369
+00:12:32,040 --> 00:12:33,830
+That's where Linus takes all of the pull
+
+370
+00:12:33,840 --> 00:12:36,950
+requests from all of the authors, all of
+
+371
+00:12:36,960 --> 00:12:38,670
+the maintainers under him, and he puts
+
+372
+00:12:38,680 --> 00:12:41,430
+them all together and stabilizes that
+
+373
+00:12:41,440 --> 00:12:42,910
+for 2 weeks. And we're hoping in that 2
+
+374
+00:12:42,920 --> 00:12:44,710
+weeks that that's a runnable kernel. At
+
+375
+00:12:44,720 --> 00:12:46,030
+the end of that 2 weeks, he'll release
+
+376
+00:12:46,040 --> 00:12:48,350
+what's called RC1. And then on a weekly
+
+377
+00:12:48,360 --> 00:12:50,550
+basis, usually on a Sunday afternoon
+
+378
+00:12:50,560 --> 00:12:54,030
+Pacific time, he will release RC2, RC3
+
+379
+00:12:54,040 --> 00:12:56,710
+up until RC7 usually. And then from RC7,
+
+380
+00:12:56,720 --> 00:12:57,910
+he'll release the final one the
+
+381
+00:12:57,920 --> 00:12:59,310
+following week. Occasionally, it'll be
+
+382
+00:12:59,320 --> 00:13:00,790
+an RC8.
+
+383
+00:13:00,800 --> 00:13:02,750
+Maybe there's been an RC9 once. But it
+
+384
+00:13:02,760 --> 00:13:04,350
+goes through that cop that cycle. Every
+
+385
+00:13:04,360 --> 00:13:06,590
+week after the merge window is just
+
+386
+00:13:06,600 --> 00:13:08,670
+fixes. And everything should be stable.
+
+387
+00:13:08,680 --> 00:13:10,030
+There should be no new regressions.
+
+388
+00:13:10,040 --> 00:13:12,110
+Everything There should be no new code.
+
+389
+00:13:12,120 --> 00:13:13,829
+Linus comes down very heavily if you try
+
+390
+00:13:13,839 --> 00:13:15,550
+to sneak things in during those weeks.
+
+391
+00:13:15,560 --> 00:13:17,470
+He's he's very specific that the merge
+
+392
+00:13:17,480 --> 00:13:19,070
+window is where you drop new stuff and
+
+393
+00:13:19,080 --> 00:13:21,150
+all after that should just be fixes for
+
+394
+00:13:21,160 --> 00:13:22,829
+It technically should just be fixes for
+
+395
+00:13:22,839 --> 00:13:25,710
+regressions. But we often add like to
+
+396
+00:13:25,720 --> 00:13:27,350
+fixes for general things that we need to
+
+397
+00:13:27,360 --> 00:13:30,350
+back port or we need to stabilize. But,
+
+398
+00:13:30,360 --> 00:13:32,070
+in saying that, a lot of people have a
+
+399
+00:13:32,080 --> 00:13:33,630
+misconception about the merge window.
+
+400
+00:13:33,640 --> 00:13:36,230
+The merge window is for Linus to merge
+
+401
+00:13:36,240 --> 00:13:37,670
+the trees that other people have
+
+402
+00:13:37,680 --> 00:13:39,870
+prepared prior to the merge window. The
+
+403
+00:13:39,880 --> 00:13:41,150
+merge window is not when you should be
+
+404
+00:13:41,160 --> 00:13:43,030
+preparing your tree for Linus. The merge
+
+405
+00:13:43,040 --> 00:13:44,230
+window is not when you should be doing
+
+406
+00:13:44,240 --> 00:13:46,070
+development that needs to go to Linus.
+
+407
+00:13:46,080 --> 00:13:47,470
+All that stuff should generally have
+
+408
+00:13:47,480 --> 00:13:50,190
+been ready for Linus prior to the merge
+
+409
+00:13:50,200 --> 00:13:52,270
+window and it will have been in a tree
+
+410
+00:13:52,280 --> 00:13:54,350
+we call Linux next where somebody will
+
+411
+00:13:54,360 --> 00:13:56,390
+gather all those disparate trees across
+
+412
+00:13:56,400 --> 00:13:58,230
+the internet and just does merges every
+
+413
+00:13:58,240 --> 00:14:00,110
+day. That's their job just to sit there
+
+414
+00:14:00,120 --> 00:14:01,750
+merging every day and find all the
+
+415
+00:14:01,760 --> 00:14:03,990
+conflicting problems and make sure we
+
+416
+00:14:04,000 --> 00:14:05,590
+understand that building the tree is
+
+417
+00:14:05,600 --> 00:14:07,070
+hard and that merging all these
+
+418
+00:14:07,080 --> 00:14:08,870
+conflicts will happen and that we know
+
+419
+00:14:08,880 --> 00:14:10,150
+about them in advance. So, when Linus
+
+420
+00:14:10,160 --> 00:14:11,950
+gets to do all that final merges into
+
+421
+00:14:11,960 --> 00:14:14,150
+his tree, he has a history of all of the
+
+422
+00:14:14,160 --> 00:14:15,830
+conflicts and he has knows what's going
+
+423
+00:14:15,840 --> 00:14:18,030
+to cause problems. He will accept things
+
+424
+00:14:18,040 --> 00:14:19,830
+that haven't been in Linux next, but he
+
+425
+00:14:19,840 --> 00:14:22,470
+will be often very unhappy about that or
+
+426
+00:14:22,480 --> 00:14:24,550
+he will sometimes just say no. It's
+
+427
+00:14:24,560 --> 00:14:25,990
+generally preferred that we have stuff
+
+428
+00:14:26,000 --> 00:14:28,430
+ready in advance. Again, that's very
+
+429
+00:14:28,440 --> 00:14:30,470
+subsystem dependent on how that happens.
+
+430
+00:14:30,480 --> 00:14:32,150
+I'll go into how we do it in the
+
+431
+00:14:32,160 --> 00:14:34,910
+graphics subsystem. We have a hierarchy
+
+432
+00:14:34,920 --> 00:14:37,430
+of trees that come from vendors. So, we
+
+433
+00:14:37,440 --> 00:14:39,630
+like have an AMD GPU tree, a tree from
+
+434
+00:14:39,640 --> 00:14:42,670
+Intel, we have tree for Qualcomm. And
+
+435
+00:14:42,680 --> 00:14:44,990
+then we also have a misc tree for all of
+
+436
+00:14:45,000 --> 00:14:47,710
+the smaller drivers will cohabitate and
+
+437
+00:14:47,720 --> 00:14:48,870
+they will all push their changes to
+
+438
+00:14:48,880 --> 00:14:51,550
+that. We have a hierarchy called a next
+
+439
+00:14:51,560 --> 00:14:53,950
+tree that we have open all the time. And
+
+440
+00:14:53,960 --> 00:14:56,670
+when that happen, Linus releases RC6, we
+
+441
+00:14:56,680 --> 00:14:58,630
+will generally shut our next tree down.
+
+442
+00:14:58,640 --> 00:15:00,950
+If your stuff isn't in our next tree by
+
+443
+00:15:00,960 --> 00:15:03,310
+RC6, which gives us usually a two-week
+
+444
+00:15:03,320 --> 00:15:05,829
+window for us to stabilize, we will
+
+445
+00:15:05,839 --> 00:15:07,310
+leave it for the next kernel cycle. You
+
+446
+00:15:07,320 --> 00:15:08,630
+can push it into the next tree, but it
+
+447
+00:15:08,640 --> 00:15:09,990
+won't get merged till the next kernel
+
+448
+00:15:10,000 --> 00:15:11,750
+cycle. And that's how we've done that
+
+449
+00:15:11,760 --> 00:15:13,550
+over the years. We initially were a lot
+
+450
+00:15:13,560 --> 00:15:15,510
+worse at that, but we've stabilized in
+
+451
+00:15:15,520 --> 00:15:16,910
+the last four or five years onto that
+
+452
+00:15:16,920 --> 00:15:18,590
+system and it seems to be working quite
+
+453
+00:15:18,600 --> 00:15:20,870
+well for us. Pushing in stuff after RC6
+
+454
+00:15:20,880 --> 00:15:23,110
+is at my discretion usually.
+
+455
+00:15:23,120 --> 00:15:24,510
+Uh and occasionally I will do it if it's
+
+456
+00:15:24,520 --> 00:15:25,990
+something I'm personally interested in
+
+457
+00:15:26,000 --> 00:15:27,110
+or it's sort of a piece of hardware that
+
+458
+00:15:27,120 --> 00:15:29,110
+we need to get working, but we try to
+
+459
+00:15:29,120 --> 00:15:30,550
+maintain that because we found for
+
+460
+00:15:30,560 --> 00:15:32,870
+stability that allowing a free-for-all
+
+461
+00:15:32,880 --> 00:15:35,070
+after RC6 it hasn't led to quality
+
+462
+00:15:35,080 --> 00:15:36,790
+results, put it that way. So yes, so
+
+463
+00:15:36,800 --> 00:15:38,510
+generally that's how we work is that we
+
+464
+00:15:38,520 --> 00:15:41,510
+set everything up in advance by RC6,
+
+465
+00:15:41,520 --> 00:15:43,910
+Linus opens his tree two weeks later, I
+
+466
+00:15:43,920 --> 00:15:45,470
+will send the big huge pull request of
+
+467
+00:15:45,480 --> 00:15:46,550
+everything that was there at the
+
+468
+00:15:46,560 --> 00:15:48,710
+previous RC6 to Linus, he will accept
+
+469
+00:15:48,720 --> 00:15:50,510
+that, he will pull everyone else's in.
+
+470
+00:15:50,520 --> 00:15:52,790
+When he hits RC1, we will pull that into
+
+471
+00:15:52,800 --> 00:15:54,150
+our tree and then start generating the
+
+472
+00:15:54,160 --> 00:15:56,230
+fixes trees based on that and then start
+
+473
+00:15:56,240 --> 00:15:57,910
+the next bring all the work that
+
+474
+00:15:57,920 --> 00:16:00,310
+happened between RC6 and that point into
+
+475
+00:16:00,320 --> 00:16:01,990
+a next tree and go again for the next
+
+476
+00:16:02,000 --> 00:16:02,830
+window.
+
+477
+00:16:02,840 --> 00:16:04,350
+&gt;&gt; Okay, so that's really helpful and
+
+478
+00:16:04,360 --> 00:16:05,990
+you're giving us some insights into
+
+479
+00:16:06,000 --> 00:16:07,310
+release candidates and how they're
+
+480
+00:16:07,320 --> 00:16:09,230
+actually built and the cycle that you go
+
+481
+00:16:09,240 --> 00:16:11,030
+through. Just to make sure all of our
+
+482
+00:16:11,040 --> 00:16:12,990
+listeners are on the same page, you
+
+483
+00:16:13,000 --> 00:16:15,150
+mentioned the words regression and then
+
+484
+00:16:15,160 --> 00:16:17,550
+also the word tree. Can you concretely
+
+485
+00:16:17,560 --> 00:16:21,190
+define a regression and the tree and
+
+486
+00:16:21,200 --> 00:16:23,310
+give us some other insights into how
+
+487
+00:16:23,320 --> 00:16:25,190
+those work in kernel maintenance?
+
+488
+00:16:25,200 --> 00:16:26,350
+&gt;&gt; I'll start with tree because it's
+
+489
+00:16:26,360 --> 00:16:28,550
+probably easier. Now is a git tree is
+
+490
+00:16:28,560 --> 00:16:29,910
+what we call the kernel tree is really
+
+491
+00:16:29,920 --> 00:16:32,110
+just the kernel checkout, but now with
+
+492
+00:16:32,120 --> 00:16:34,230
+git it's the git tree, the git checkout,
+
+493
+00:16:34,240 --> 00:16:36,550
+the git repos. So we have like a number
+
+494
+00:16:36,560 --> 00:16:38,630
+of git repositories that we use that are
+
+495
+00:16:38,640 --> 00:16:40,670
+we then have some for DRM, we've got a
+
+496
+00:16:40,680 --> 00:16:42,390
+multiple of them for DRM and then
+
+497
+00:16:42,400 --> 00:16:44,110
+there's what we build a hierarchy from.
+
+498
+00:16:44,120 --> 00:16:45,710
+So when I say tree that's it, it's just
+
+499
+00:16:45,720 --> 00:16:48,870
+those git flows of tops into Linus to
+
+500
+00:16:48,880 --> 00:16:51,950
+me. And for regression, well, I'd love
+
+501
+00:16:51,960 --> 00:16:53,790
+to define it properly, but yeah, a
+
+502
+00:16:53,800 --> 00:16:55,910
+regression is made to be something that
+
+503
+00:16:55,920 --> 00:16:58,790
+broke in RC1. If something is merged
+
+504
+00:16:58,800 --> 00:17:02,030
+during RC1 that causes anything to go be
+
+505
+00:17:02,040 --> 00:17:04,429
+worse than it was before RC1, then it's
+
+506
+00:17:04,439 --> 00:17:06,110
+considered a regression. The standard
+
+507
+00:17:06,120 --> 00:17:08,189
+method of dealing with regressions is to
+
+508
+00:17:08,199 --> 00:17:10,309
+revert first, ask questions later, so we
+
+509
+00:17:10,319 --> 00:17:11,750
+should remove the patch that caused the
+
+510
+00:17:11,760 --> 00:17:13,670
+problem and then work out what the
+
+511
+00:17:13,680 --> 00:17:15,069
+problem was and fix it in the next
+
+512
+00:17:15,079 --> 00:17:16,910
+cycle. That doesn't always happen,
+
+513
+00:17:16,920 --> 00:17:18,829
+engineers are not brilliant at dealing
+
+514
+00:17:18,839 --> 00:17:20,590
+with regressions in that way. Often
+
+515
+00:17:20,600 --> 00:17:22,150
+their instinct is to try and fix it
+
+516
+00:17:22,160 --> 00:17:23,949
+first, and that often causes a lot of
+
+517
+00:17:23,959 --> 00:17:25,829
+discussion on what is a regression. Is
+
+518
+00:17:25,839 --> 00:17:27,550
+this considered a regression? If it's a
+
+519
+00:17:27,560 --> 00:17:29,150
+regression two kernels ago, is it
+
+520
+00:17:29,160 --> 00:17:30,630
+something that should be fixed urgently
+
+521
+00:17:30,640 --> 00:17:32,310
+now? And sometimes it should be more
+
+522
+00:17:32,320 --> 00:17:34,230
+urgent. So, there's a lot of scope for
+
+523
+00:17:34,240 --> 00:17:36,270
+what actually regression is, but Linus's
+
+524
+00:17:36,280 --> 00:17:37,710
+technical definition has always been
+
+525
+00:17:37,720 --> 00:17:39,870
+something that broke in RC1 and made
+
+526
+00:17:39,880 --> 00:17:41,830
+life worse for a user.
+
+527
+00:17:41,840 --> 00:17:43,910
+&gt;&gt; Okay, that's really helpful. So, is a
+
+528
+00:17:43,920 --> 00:17:45,790
+regression something that's connected to
+
+529
+00:17:45,800 --> 00:17:48,270
+performance or correctness? I'm guessing
+
+530
+00:17:48,280 --> 00:17:49,910
+that it could be both of those. Is that
+
+531
+00:17:49,920 --> 00:17:50,550
+right?
+
+532
+00:17:50,560 --> 00:17:52,230
+&gt;&gt; Yes, indeed. Anything, to be honest. His
+
+533
+00:17:52,240 --> 00:17:53,910
+definition is if it made something worse
+
+534
+00:17:53,920 --> 00:17:56,070
+for a user. Whether that user is having
+
+535
+00:17:56,080 --> 00:17:58,030
+a performance difference, or that user
+
+536
+00:17:58,040 --> 00:18:00,230
+is seeing a functional break in their
+
+537
+00:18:00,240 --> 00:18:02,870
+hardware. But, his thing is if nobody
+
+538
+00:18:02,880 --> 00:18:04,790
+notices, it's the old if the old tree
+
+539
+00:18:04,800 --> 00:18:06,230
+falls in the wood. If a regression
+
+540
+00:18:06,240 --> 00:18:08,070
+happens and nobody notices, it's not
+
+541
+00:18:08,080 --> 00:18:09,550
+considered a regression till someone
+
+542
+00:18:09,560 --> 00:18:11,910
+notices. We don't urgently find them,
+
+543
+00:18:11,920 --> 00:18:14,030
+but yeah, we generally have to be a user
+
+544
+00:18:14,040 --> 00:18:14,870
+driving them.
+
+545
+00:18:14,880 --> 00:18:15,510
+&gt;&gt; Cool.
+
+546
+00:18:15,520 --> 00:18:17,270
+&gt;&gt; So, in the context of the graphics
+
+547
+00:18:17,280 --> 00:18:19,670
+subsystem and accelerators, can you give
+
+548
+00:18:19,680 --> 00:18:21,670
+us a few concrete examples of what a
+
+549
+00:18:21,680 --> 00:18:23,150
+regression would look like?
+
+550
+00:18:23,160 --> 00:18:25,230
+&gt;&gt; Quite often, a regression actually looks
+
+551
+00:18:25,240 --> 00:18:27,070
+like your laptop screen not turning on
+
+552
+00:18:27,080 --> 00:18:29,110
+for us. That's the easiest one to give
+
+553
+00:18:29,120 --> 00:18:30,430
+is like, my laptop screen is now
+
+554
+00:18:30,440 --> 00:18:32,230
+flickering or not doing what it used to
+
+555
+00:18:32,240 --> 00:18:34,190
+do when I had the last kernel and I got
+
+556
+00:18:34,200 --> 00:18:36,310
+the new kernel. Often it's some of the
+
+557
+00:18:36,320 --> 00:18:37,750
+rendering on the screen might have an
+
+558
+00:18:37,760 --> 00:18:40,510
+issue. There maybe my hot plug stopped
+
+559
+00:18:40,520 --> 00:18:42,550
+working. My suspend and resume stopped
+
+560
+00:18:42,560 --> 00:18:44,190
+working. Like in the old days, the more
+
+561
+00:18:44,200 --> 00:18:46,150
+common ones were like, yeah, suspend
+
+562
+00:18:46,160 --> 00:18:48,150
+resume stopped working, or your laptop
+
+563
+00:18:48,160 --> 00:18:49,870
+just doesn't light up anymore, which are
+
+564
+00:18:49,880 --> 00:18:51,990
+fairly obvious regressions. In other
+
+565
+00:18:52,000 --> 00:18:53,710
+cases, more like on in the data center
+
+566
+00:18:53,720 --> 00:18:55,190
+and accelerators phase, it's like, yeah,
+
+567
+00:18:55,200 --> 00:18:56,990
+our workload has gotten slower. Like, I
+
+568
+00:18:57,000 --> 00:18:58,830
+have this standard workload I test for.
+
+569
+00:18:58,840 --> 00:19:00,510
+I've upgraded to a new kernel, and
+
+570
+00:19:00,520 --> 00:19:01,990
+suddenly it's not working as well. Or,
+
+571
+00:19:02,000 --> 00:19:03,470
+say you have some device like a Steam
+
+572
+00:19:03,480 --> 00:19:05,550
+Deck and you're trying to move from an
+
+573
+00:19:05,560 --> 00:19:07,470
+older kernel to a newer kernel, and all
+
+574
+00:19:07,480 --> 00:19:09,390
+of a sudden the newer kernel device
+
+575
+00:19:09,400 --> 00:19:11,030
+isn't cooling as well, or it's not
+
+576
+00:19:11,040 --> 00:19:12,630
+scheduling as well. You're not seeing
+
+577
+00:19:12,640 --> 00:19:14,630
+the same frame numbers you were. Those
+
+578
+00:19:14,640 --> 00:19:16,390
+are all considered regressions, and if
+
+579
+00:19:16,400 --> 00:19:17,950
+you are when reported the generally will
+
+580
+00:19:17,960 --> 00:19:20,630
+be tried to be hunted down and fixed.
+
+581
+00:19:20,640 --> 00:19:22,150
+&gt;&gt; And normally those regressions are
+
+582
+00:19:22,160 --> 00:19:24,950
+reported to you and your team by users,
+
+583
+00:19:24,960 --> 00:19:27,070
+that is people who are actually using
+
+584
+00:19:27,080 --> 00:19:29,150
+the Linux kernel on your devices. Is
+
+585
+00:19:29,160 --> 00:19:30,630
+that the right way to think about it?
+
+586
+00:19:30,640 --> 00:19:32,750
+&gt;&gt; Yeah, often there will be engineers who
+
+587
+00:19:32,760 --> 00:19:34,470
+are like embedded in those situations.
+
+588
+00:19:34,480 --> 00:19:36,030
+So, like for example, if the Steam Deck
+
+589
+00:19:36,040 --> 00:19:37,270
+has a regression, it will come from a
+
+590
+00:19:37,280 --> 00:19:38,910
+Valve engineer through AMD, and it will
+
+591
+00:19:38,920 --> 00:19:40,630
+be reported by that method. It won't
+
+592
+00:19:40,640 --> 00:19:42,590
+necessarily come to us, but often you
+
+593
+00:19:42,600 --> 00:19:43,910
+will just get an email on the list from
+
+594
+00:19:43,920 --> 00:19:45,790
+someone randomly testing an RC on their
+
+595
+00:19:45,800 --> 00:19:47,670
+laptop and saying, "Hey, this RC doesn't
+
+596
+00:19:47,680 --> 00:19:49,470
+work." Another layer is distributions
+
+597
+00:19:49,480 --> 00:19:51,030
+will often take the RC kernels and
+
+598
+00:19:51,040 --> 00:19:52,790
+package them, and people will be running
+
+599
+00:19:52,800 --> 00:19:54,550
+the bleeding edge distribution, and then
+
+600
+00:19:54,560 --> 00:19:55,830
+they will see it. And the distribution
+
+601
+00:19:55,840 --> 00:19:57,470
+will say, "Oh, this kernel seems to have
+
+602
+00:19:57,480 --> 00:19:59,190
+broken a bunch of workloads or a bunch
+
+603
+00:19:59,200 --> 00:20:01,350
+of laptops." And sometimes it'll just be
+
+604
+00:20:01,360 --> 00:20:02,950
+me sitting here booting it on my laptop
+
+605
+00:20:02,960 --> 00:20:04,670
+going, "Hey, my laptop's not working."
+
+606
+00:20:04,680 --> 00:20:06,630
+Those are rare. And And Linus is often
+
+607
+00:20:06,640 --> 00:20:08,710
+uh Linus will have a specific graphics
+
+608
+00:20:08,720 --> 00:20:11,110
+card from 10 years ago, and that
+
+609
+00:20:11,120 --> 00:20:13,030
+graphics card broke, and Linus is the
+
+610
+00:20:13,040 --> 00:20:14,750
+first person to find it because he just
+
+611
+00:20:14,760 --> 00:20:16,310
+happens to be the one person that's in
+
+612
+00:20:16,320 --> 00:20:18,750
+that line that has that card. So, it's
+
+613
+00:20:18,760 --> 00:20:22,550
+yeah, they come from a lot of places.
+
+614
+00:20:22,560 --> 00:20:24,070
+&gt;&gt; Looking for a way to stand out in a
+
+615
+00:20:24,080 --> 00:20:25,990
+competitive job market?
+
+616
+00:20:26,000 --> 00:20:27,310
+Whether you're trying to land your first
+
+617
+00:20:27,320 --> 00:20:28,710
+contributor role or prove you can
+
+618
+00:20:28,720 --> 00:20:30,790
+deliver, take the next step in your
+
+619
+00:20:30,800 --> 00:20:32,070
+career with the new software
+
+620
+00:20:32,080 --> 00:20:34,270
+professional certification from the IEEE
+
+621
+00:20:34,280 --> 00:20:36,590
+Computer Society.
+
+622
+00:20:36,600 --> 00:20:37,390
+Sign up today at
+
+623
+00:20:37,400 --> 00:20:43,950
+computer.org/certification.
+
+624
+00:20:45,390 --> 00:20:45,400
+&gt;&gt; So, in a minute we're going to talk
+
+625
+00:20:45,400 --> 00:20:47,630
+about many of the tools you use and a
+
+626
+00:20:47,640 --> 00:20:48,990
+few more of the development and
+
+627
+00:20:49,000 --> 00:20:50,990
+maintenance processes that you follow.
+
+628
+00:20:51,000 --> 00:20:53,110
+But before we go into that phase of our
+
+629
+00:20:53,120 --> 00:20:55,110
+conversation, I wanted to read a quote
+
+630
+00:20:55,120 --> 00:20:56,910
+from your blog that I thought was really
+
+631
+00:20:56,920 --> 00:20:59,350
+thought-provoking. So, you wrote, "A
+
+632
+00:20:59,360 --> 00:21:02,190
+warning then to anyone wishing for more
+
+633
+00:21:02,200 --> 00:21:04,230
+vendor code sharing between operating
+
+634
+00:21:04,240 --> 00:21:06,870
+systems. It generally doesn't end with
+
+635
+00:21:06,880 --> 00:21:09,390
+Linux being better off. That's really
+
+636
+00:21:09,400 --> 00:21:10,750
+thought-provoking. Can you share a
+
+637
+00:21:10,760 --> 00:21:12,190
+little bit more about what you meant by
+
+638
+00:21:12,200 --> 00:21:12,990
+that, Dave?
+
+639
+00:21:13,000 --> 00:21:14,870
+&gt;&gt; The thing about what people often don't
+
+640
+00:21:14,880 --> 00:21:16,750
+understand is the incentives for
+
+641
+00:21:16,760 --> 00:21:20,070
+companies to do things cause results
+
+642
+00:21:20,080 --> 00:21:21,910
+that are probably not what you expected.
+
+643
+00:21:21,920 --> 00:21:24,150
+So, you pushing a company to say we want
+
+644
+00:21:24,160 --> 00:21:26,470
+Linux support for this device, in your
+
+645
+00:21:26,480 --> 00:21:29,030
+mind, produces a Linux driver for this
+
+646
+00:21:29,040 --> 00:21:31,830
+device that is well-written, upstream,
+
+647
+00:21:31,840 --> 00:21:34,030
+maintained piece of code that merges
+
+648
+00:21:34,040 --> 00:21:35,710
+well with the kernel. But, when you pass
+
+649
+00:21:35,720 --> 00:21:37,230
+that into a company that is writing
+
+650
+00:21:37,240 --> 00:21:39,950
+Windows drivers, their first instinct is
+
+651
+00:21:39,960 --> 00:21:41,310
+how can we share the code between our
+
+652
+00:21:41,320 --> 00:21:42,590
+Windows driver and our Linux driver to
+
+653
+00:21:42,600 --> 00:21:44,590
+cut the cost of doing this. In their
+
+654
+00:21:44,600 --> 00:21:45,950
+mind, that's cutting the cost. In the
+
+655
+00:21:45,960 --> 00:21:47,790
+real world, it probably doesn't, but
+
+656
+00:21:47,800 --> 00:21:49,310
+companies work like companies do. So,
+
+657
+00:21:49,320 --> 00:21:50,870
+often what will happen is they will try
+
+658
+00:21:50,880 --> 00:21:53,390
+to put a hardware abstraction layer in.
+
+659
+00:21:53,400 --> 00:21:54,950
+They will try and port their Windows
+
+660
+00:21:54,960 --> 00:21:57,310
+driver to Linux. They won't start a
+
+661
+00:21:57,320 --> 00:21:59,670
+rewrite. So, the results you will get
+
+662
+00:21:59,680 --> 00:22:01,390
+will either be a very second-class
+
+663
+00:22:01,400 --> 00:22:03,030
+driver or a driver that can't go
+
+664
+00:22:03,040 --> 00:22:04,950
+upstream or a driver that needs an
+
+665
+00:22:04,960 --> 00:22:06,990
+impedance layer between the actual
+
+666
+00:22:07,000 --> 00:22:09,670
+vendor and the upstream. So, you don't
+
+667
+00:22:09,680 --> 00:22:11,710
+always get the results you envision when
+
+668
+00:22:11,720 --> 00:22:13,830
+you say I want more Linux code or I want
+
+669
+00:22:13,840 --> 00:22:16,110
+to use more Windows alignment. So, it's
+
+670
+00:22:16,120 --> 00:22:18,030
+often good to make sure you don't just
+
+671
+00:22:18,040 --> 00:22:19,910
+let the company run free with that idea
+
+672
+00:22:19,920 --> 00:22:21,750
+because the results you'll get 6 months
+
+673
+00:22:21,760 --> 00:22:23,070
+or a year later won't be what you
+
+674
+00:22:23,080 --> 00:22:24,110
+wanted.
+
+675
+00:22:24,120 --> 00:22:25,590
+&gt;&gt; So, it sounds like what you're saying is
+
+676
+00:22:25,600 --> 00:22:28,150
+that in some way the Linux kernel itself
+
+677
+00:22:28,160 --> 00:22:30,470
+might become more fragmented or even
+
+678
+00:22:30,480 --> 00:22:32,550
+harder to support when you start
+
+679
+00:22:32,560 --> 00:22:34,830
+bringing in this vendored code. Is that
+
+680
+00:22:34,840 --> 00:22:36,270
+the right way to think about it?
+
+681
+00:22:36,280 --> 00:22:39,390
+&gt;&gt; Yeah, and it just becomes harder for us
+
+682
+00:22:39,400 --> 00:22:41,430
+to extract commonality from the code. In
+
+683
+00:22:41,440 --> 00:22:43,790
+the kernel, one of the big advantages of
+
+684
+00:22:43,800 --> 00:22:45,270
+the Linux kernel is always is that
+
+685
+00:22:45,280 --> 00:22:47,190
+because everything is in the same tree,
+
+686
+00:22:47,200 --> 00:22:50,430
+we do extract commonality quite often.
+
+687
+00:22:50,440 --> 00:22:52,070
+The commonality we extract is from our
+
+688
+00:22:52,080 --> 00:22:53,510
+group of drivers, but when you're
+
+689
+00:22:53,520 --> 00:22:55,070
+working in a world where you've got your
+
+690
+00:22:55,080 --> 00:22:56,510
+commonalities between your Windows and
+
+691
+00:22:56,520 --> 00:22:58,190
+your Linux drivers, you have a different
+
+692
+00:22:58,200 --> 00:23:00,510
+vector for extracting that commonality.
+
+693
+00:23:00,520 --> 00:23:02,470
+You want to abstract the Linux stuff
+
+694
+00:23:02,480 --> 00:23:04,470
+away and keep the common stuff between
+
+695
+00:23:04,480 --> 00:23:06,070
+your Linux and Windows code. But when
+
+696
+00:23:06,080 --> 00:23:07,990
+the kernel, we want to extract the
+
+697
+00:23:08,000 --> 00:23:09,550
+common stuff out of all the drivers to
+
+698
+00:23:09,560 --> 00:23:11,910
+be in Linux and not in the drivers. And
+
+699
+00:23:11,920 --> 00:23:13,390
+there's a mismatch between your Linux
+
+700
+00:23:13,400 --> 00:23:15,070
+and Windows, that often gets very
+
+701
+00:23:15,080 --> 00:23:17,630
+difficult for companies to resolve. So,
+
+702
+00:23:17,640 --> 00:23:19,350
+yeah, we tend to try to say we want a
+
+703
+00:23:19,360 --> 00:23:21,190
+Linux driver because we want to be able
+
+704
+00:23:21,200 --> 00:23:22,710
+to have it optimal in Linux. And if we
+
+705
+00:23:22,720 --> 00:23:24,750
+see commonalities, we can extract them.
+
+706
+00:23:24,760 --> 00:23:26,070
+I think the best example I could give
+
+707
+00:23:26,080 --> 00:23:28,190
+you was wireless. Years ago, there was a
+
+708
+00:23:28,200 --> 00:23:31,030
+big thing with 802.11 layer, and every
+
+709
+00:23:31,040 --> 00:23:33,030
+driver was bringing their own 802.11
+
+710
+00:23:33,040 --> 00:23:34,190
+layers to the party. And someone said,
+
+711
+00:23:34,200 --> 00:23:35,310
+"Well, why isn't the operating system
+
+712
+00:23:35,320 --> 00:23:37,030
+providing an 802.11 layer?" And they
+
+713
+00:23:37,040 --> 00:23:38,910
+did, but still for years we got wireless
+
+714
+00:23:38,920 --> 00:23:41,070
+drivers which were written with the old
+
+715
+00:23:41,080 --> 00:23:43,670
+802.11 in mind. So, those things we see
+
+716
+00:23:43,680 --> 00:23:45,630
+different vectors for commonality than
+
+717
+00:23:45,640 --> 00:23:47,630
+Windows Linux vendors do.
+
+718
+00:23:47,640 --> 00:23:49,270
+&gt;&gt; Okay, thanks. That was a really good
+
+719
+00:23:49,280 --> 00:23:51,190
+example. Now, again, in a moment we're
+
+720
+00:23:51,200 --> 00:23:52,590
+going to talk about patching and
+
+721
+00:23:52,600 --> 00:23:54,590
+backporting and things of that nature.
+
+722
+00:23:54,600 --> 00:23:56,510
+But you also have just hinted at some of
+
+723
+00:23:56,520 --> 00:23:58,950
+the counterintuitive aspects of
+
+724
+00:23:58,960 --> 00:24:00,950
+maintaining the Linux kernel. And I know
+
+725
+00:24:00,960 --> 00:24:02,590
+that many of our listeners may know
+
+726
+00:24:02,600 --> 00:24:05,110
+mostly about open source software
+
+727
+00:24:05,120 --> 00:24:07,630
+through GitHub or GitLab or other
+
+728
+00:24:07,640 --> 00:24:09,750
+systems of that nature. Before we go
+
+729
+00:24:09,760 --> 00:24:11,390
+into the next phase of our show, can you
+
+730
+00:24:11,400 --> 00:24:13,910
+say anything about how Linux kernel
+
+731
+00:24:13,920 --> 00:24:16,350
+maintenance might not work well with the
+
+732
+00:24:16,360 --> 00:24:18,150
+existing model that you would have on
+
+733
+00:24:18,160 --> 00:24:19,110
+GitHub?
+
+734
+00:24:19,120 --> 00:24:20,470
+&gt;&gt; I think it just comes down to what I
+
+735
+00:24:20,480 --> 00:24:22,390
+said earlier, scale. I think the kernel
+
+736
+00:24:22,400 --> 00:24:24,910
+process is just so vast and has so many
+
+737
+00:24:24,920 --> 00:24:26,350
+people that scaling it up through a
+
+738
+00:24:26,360 --> 00:24:28,270
+single tree would be close to
+
+739
+00:24:28,280 --> 00:24:30,670
+impossible. So, uh the Git Forge model
+
+740
+00:24:30,680 --> 00:24:32,270
+of like there's a single central tree
+
+741
+00:24:32,280 --> 00:24:33,990
+that you send pull requests to just
+
+742
+00:24:34,000 --> 00:24:36,030
+doesn't scale well for us. And that's I
+
+743
+00:24:36,040 --> 00:24:37,430
+think what it comes down to. There is
+
+744
+00:24:37,440 --> 00:24:38,910
+also another side to it. We have a
+
+745
+00:24:38,920 --> 00:24:40,750
+strong resistance against using
+
+746
+00:24:40,760 --> 00:24:43,270
+proprietary tooling at all in the in the
+
+747
+00:24:43,280 --> 00:24:45,390
+Linux development process. That isn't a
+
+748
+00:24:45,400 --> 00:24:47,230
+top-down Linus-driven thing. Linus is
+
+749
+00:24:47,240 --> 00:24:48,790
+very flexible on this, but a lot of the
+
+750
+00:24:48,800 --> 00:24:50,590
+maintainers have personal
+
+751
+00:24:50,600 --> 00:24:52,630
+strong feelings on these things. So, we
+
+752
+00:24:52,640 --> 00:24:54,470
+tend to shy away from using anything
+
+753
+00:24:54,480 --> 00:24:56,310
+proprietary in the development process.
+
+754
+00:24:56,320 --> 00:24:58,430
+So, GitHub for example, although it uses
+
+755
+00:24:58,440 --> 00:24:59,950
+Git, is still quite a proprietary
+
+756
+00:24:59,960 --> 00:25:02,950
+system. In the DRM subsystem, we started
+
+757
+00:25:02,960 --> 00:25:04,470
+use GitLab more extensively. We use
+
+758
+00:25:04,480 --> 00:25:06,230
+GitLab for hosting a lot of our trees
+
+759
+00:25:06,240 --> 00:25:08,830
+and stuff like that. So, yeah, I think
+
+760
+00:25:08,840 --> 00:25:10,310
+the scale is generally the biggest
+
+761
+00:25:10,320 --> 00:25:12,550
+problem and the tooling like we're
+
+762
+00:25:12,560 --> 00:25:14,030
+seeing problems with our tooling as
+
+763
+00:25:14,040 --> 00:25:16,110
+well. Email and stuff doesn't work like
+
+764
+00:25:16,120 --> 00:25:18,710
+it did 20 years ago. Gmail holds all of
+
+765
+00:25:18,720 --> 00:25:19,950
+Gmail doesn't want to talk to you, your
+
+766
+00:25:19,960 --> 00:25:21,150
+email server is no use. So, there's a
+
+767
+00:25:21,160 --> 00:25:22,230
+lot of problems we have to solve
+
+768
+00:25:22,240 --> 00:25:23,590
+ourselves that just because the Git
+
+769
+00:25:23,600 --> 00:25:25,310
+forges don't solve them, doesn't mean we
+
+770
+00:25:25,320 --> 00:25:26,430
+don't have to solve them. And we're
+
+771
+00:25:26,440 --> 00:25:27,910
+working on that with a bunch of tooling
+
+772
+00:25:27,920 --> 00:25:29,710
+at the moment. So, it's a different
+
+773
+00:25:29,720 --> 00:25:30,630
+aspect to it.
+
+774
+00:25:30,640 --> 00:25:32,350
+&gt;&gt; Okay, that makes sense. Now, before you
+
+775
+00:25:32,360 --> 00:25:34,270
+mentioned the idea of a release
+
+776
+00:25:34,280 --> 00:25:36,350
+candidate and we talked about RC1
+
+777
+00:25:36,360 --> 00:25:38,710
+through RC6. I have the understanding
+
+778
+00:25:38,720 --> 00:25:39,910
+that there's also something called a
+
+779
+00:25:39,920 --> 00:25:42,710
+stable kernel. What's a stable kernel
+
+780
+00:25:42,720 --> 00:25:45,070
+and how does that connect to an RC?
+
+781
+00:25:45,080 --> 00:25:47,230
+&gt;&gt; So, the stable kernel was something Greg
+
+782
+00:25:47,240 --> 00:25:49,270
+Kroah-Hartman decided to work on. I
+
+783
+00:25:49,280 --> 00:25:50,630
+can't remember, maybe it's 10 years ago.
+
+784
+00:25:50,640 --> 00:25:51,990
+He'll he'll correct me if I'm wrong
+
+785
+00:25:52,000 --> 00:25:55,030
+someday. But, the idea was that Linux's
+
+786
+00:25:55,040 --> 00:25:57,550
+releases are all very well and good, but
+
+787
+00:25:57,560 --> 00:25:59,510
+people want to stay on an older release
+
+788
+00:25:59,520 --> 00:26:02,630
+for longer and still get security fixes
+
+789
+00:26:02,640 --> 00:26:05,270
+and regression fixes and possibly
+
+790
+00:26:05,280 --> 00:26:07,750
+hardware fixes and improvements. Maybe
+
+791
+00:26:07,760 --> 00:26:09,470
+not major functionality improvements,
+
+792
+00:26:09,480 --> 00:26:11,470
+but quite often they want like a good
+
+793
+00:26:11,480 --> 00:26:13,390
+baseline so they can build things on. It
+
+794
+00:26:13,400 --> 00:26:15,190
+all this comes from Android world and
+
+795
+00:26:15,200 --> 00:26:16,470
+devices where you don't want to be
+
+796
+00:26:16,480 --> 00:26:18,310
+upgrading the kernel for fear of being
+
+797
+00:26:18,320 --> 00:26:19,870
+sideswiped by a regression in some other
+
+798
+00:26:19,880 --> 00:26:21,310
+area. So, you just want to keep going on
+
+799
+00:26:21,320 --> 00:26:23,030
+the same kernel, but build out on it.
+
+800
+00:26:23,040 --> 00:26:24,510
+So, the idea of the stable kernel was
+
+801
+00:26:24,520 --> 00:26:26,110
+shipped. No one said it would be a great
+
+802
+00:26:26,120 --> 00:26:27,390
+idea, but Greg pushed through and
+
+803
+00:26:27,400 --> 00:26:29,430
+shipped it. It has it comes out I don't
+
+804
+00:26:29,440 --> 00:26:30,750
+know what Greg's release schedules are.
+
+805
+00:26:30,760 --> 00:26:32,390
+I think he does one every week or two as
+
+806
+00:26:32,400 --> 00:26:34,350
+well and there's a maintenance of about
+
+807
+00:26:34,360 --> 00:26:36,110
+maybe four or five different stable
+
+808
+00:26:36,120 --> 00:26:38,830
+kernels over the range of the last maybe
+
+809
+00:26:38,840 --> 00:26:40,870
+10 or 20. Every so often Greg picks a
+
+810
+00:26:40,880 --> 00:26:42,510
+kernel as the LTS, which is the
+
+811
+00:26:42,520 --> 00:26:44,470
+long-term stable release and that kernel
+
+812
+00:26:44,480 --> 00:26:46,790
+will get maintained by Greg or someone
+
+813
+00:26:46,800 --> 00:26:48,230
+else. Often some someone else gets
+
+814
+00:26:48,240 --> 00:26:50,670
+handed that job. One of the The
+
+815
+00:26:50,680 --> 00:26:52,190
+things of the stable kernel that was
+
+816
+00:26:52,200 --> 00:26:53,990
+kind of announced was that maintainers
+
+817
+00:26:54,000 --> 00:26:57,070
+should not be required to add to their
+
+818
+00:26:57,080 --> 00:26:58,750
+process to enable the stable kernel,
+
+819
+00:26:58,760 --> 00:27:01,110
+that the stable kernel should try to not
+
+820
+00:27:01,120 --> 00:27:03,030
+force maintainers to support it, so that
+
+821
+00:27:03,040 --> 00:27:05,270
+we have an option. I can't say that was
+
+822
+00:27:05,280 --> 00:27:06,790
+good or bad in the graphics subsystem.
+
+823
+00:27:06,800 --> 00:27:09,030
+We are both good and bad at helping the
+
+824
+00:27:09,040 --> 00:27:10,350
+stable kernel. Some parts of us are
+
+825
+00:27:10,360 --> 00:27:11,950
+really good and some parts are not. We
+
+826
+00:27:11,960 --> 00:27:14,470
+don't have a great system. We don't do
+
+827
+00:27:14,480 --> 00:27:17,030
+bespoke work for stable in our group
+
+828
+00:27:17,040 --> 00:27:19,070
+generally. We let the stable maintainers
+
+829
+00:27:19,080 --> 00:27:21,070
+take care of it as much as possible, and
+
+830
+00:27:21,080 --> 00:27:22,470
+occasionally if we see a patch that we
+
+831
+00:27:22,480 --> 00:27:23,950
+know should go into stable, we will tag
+
+832
+00:27:23,960 --> 00:27:25,710
+it for that, and people in the hierarchy
+
+833
+00:27:25,720 --> 00:27:27,390
+know to tag certain things for stable if
+
+834
+00:27:27,400 --> 00:27:29,390
+it's a regression from two kernels ago.
+
+835
+00:27:29,400 --> 00:27:30,830
+And often we will automatically add
+
+836
+00:27:30,840 --> 00:27:32,910
+fixes lines and tag stable on things we
+
+837
+00:27:32,920 --> 00:27:34,350
+think, and then let them decide whether
+
+838
+00:27:34,360 --> 00:27:35,590
+there's something that should go into it
+
+839
+00:27:35,600 --> 00:27:37,070
+or not. But the rules around stable
+
+840
+00:27:37,080 --> 00:27:39,190
+patches are pretty strict, but they're
+
+841
+00:27:39,200 --> 00:27:40,310
+not that flexible. They usually should
+
+842
+00:27:40,320 --> 00:27:42,950
+be less than 100 lines, and it should be
+
+843
+00:27:42,960 --> 00:27:44,710
+quite self-contained, so we don't like
+
+844
+00:27:44,720 --> 00:27:46,990
+to get series into the stable kernel.
+
+845
+00:27:47,000 --> 00:27:48,990
+&gt;&gt; So you just mentioned the next word that
+
+846
+00:27:49,000 --> 00:27:50,830
+I wanted to talk a little bit more. You
+
+847
+00:27:50,840 --> 00:27:52,870
+talked about the word patches. Can you
+
+848
+00:27:52,880 --> 00:27:55,230
+say precisely what is a patch and how do
+
+849
+00:27:55,240 --> 00:27:57,190
+you manage a patch when you're doing
+
+850
+00:27:57,200 --> 00:27:58,870
+Linux kernel maintenance?
+
+851
+00:27:58,880 --> 00:28:00,070
+&gt;&gt; Yeah, that's a good question. Years ago
+
+852
+00:28:00,080 --> 00:28:01,150
+I don't think I told what I had to
+
+853
+00:28:01,160 --> 00:28:03,030
+answer, but in the merge request world,
+
+854
+00:28:03,040 --> 00:28:05,030
+it's a different way of working as in
+
+855
+00:28:05,040 --> 00:28:07,670
+the kernel we treat a patch as the
+
+856
+00:28:07,680 --> 00:28:11,470
+smallest unit of work to make a change,
+
+857
+00:28:11,480 --> 00:28:14,350
+but be very self-contained. We put a lot
+
+858
+00:28:14,360 --> 00:28:16,390
+of effort into our patch summary Yeah,
+
+859
+00:28:16,400 --> 00:28:18,430
+got it. Text in the patch because the
+
+860
+00:28:18,440 --> 00:28:19,590
+commit message is actually very
+
+861
+00:28:19,600 --> 00:28:21,070
+important from the kernel. A lot of
+
+862
+00:28:21,080 --> 00:28:22,350
+other merge request flow people put a
+
+863
+00:28:22,360 --> 00:28:24,470
+lot of work into their merge requests.
+
+864
+00:28:24,480 --> 00:28:26,470
+We put that work as much as possible
+
+865
+00:28:26,480 --> 00:28:28,910
+into the commit messages for each patch.
+
+866
+00:28:28,920 --> 00:28:30,150
+Each patch should be very
+
+867
+00:28:30,160 --> 00:28:31,950
+self-contained. It should do a single
+
+868
+00:28:31,960 --> 00:28:33,710
+thing. We It should not be If your
+
+869
+00:28:33,720 --> 00:28:36,470
+commit message starts having and and
+
+870
+00:28:36,480 --> 00:28:38,030
+but, then you're like, "Okay, maybe this
+
+871
+00:28:38,040 --> 00:28:39,630
+should be two patches." So you get the
+
+872
+00:28:39,640 --> 00:28:41,150
+instincts for what a patch should be
+
+873
+00:28:41,160 --> 00:28:42,990
+over years of writing patches. You
+
+874
+00:28:43,000 --> 00:28:44,830
+should not drop a whole new driver in
+
+875
+00:28:44,840 --> 00:28:46,510
+one patch. You should try and drop
+
+876
+00:28:46,520 --> 00:28:48,070
+infrastructure changes needed for your
+
+877
+00:28:48,080 --> 00:28:49,630
+driver, then the core of the driver,
+
+878
+00:28:49,640 --> 00:28:50,870
+then add features to the driver, and
+
+879
+00:28:50,880 --> 00:28:52,310
+they should all be well explained. I
+
+880
+00:28:52,320 --> 00:28:53,350
+suppose the other way to think of a
+
+881
+00:28:53,360 --> 00:28:55,510
+patch is it's the unit for review. This
+
+882
+00:28:55,520 --> 00:28:57,710
+is something that should be digestible
+
+883
+00:28:57,720 --> 00:28:59,470
+by a reviewer, and they should be able
+
+884
+00:28:59,480 --> 00:29:01,230
+to make a decision on a patch-by-patch
+
+885
+00:29:01,240 --> 00:29:02,830
+basis whether there's something that we
+
+886
+00:29:02,840 --> 00:29:03,910
+should accept into the kernel or
+
+887
+00:29:03,920 --> 00:29:05,230
+something we shouldn't accept in the
+
+888
+00:29:05,240 --> 00:29:06,590
+kernel or are there some problems when
+
+889
+00:29:06,600 --> 00:29:08,390
+we need to iterate on again. And then a
+
+890
+00:29:08,400 --> 00:29:10,070
+patch series is a gathering of those
+
+891
+00:29:10,080 --> 00:29:11,710
+patches with a cover letter that
+
+892
+00:29:11,720 --> 00:29:14,110
+describes the overall idea of where
+
+893
+00:29:14,120 --> 00:29:15,870
+you're going to go with the series, and
+
+894
+00:29:15,880 --> 00:29:17,670
+then each patch then will take you on
+
+895
+00:29:17,680 --> 00:29:20,070
+the journey to the result that you want.
+
+896
+00:29:20,080 --> 00:29:22,030
+&gt;&gt; Okay, that makes sense. Can you tell us
+
+897
+00:29:22,040 --> 00:29:23,190
+are there some tools that you
+
+898
+00:29:23,200 --> 00:29:25,230
+specifically use when it comes to
+
+899
+00:29:25,240 --> 00:29:27,870
+managing a patch or a series of patches?
+
+900
+00:29:27,880 --> 00:29:30,030
+And then how do you use those tools?
+
+901
+00:29:30,040 --> 00:29:31,830
+&gt;&gt; Like everything, there's a lot of tools,
+
+902
+00:29:31,840 --> 00:29:33,190
+and they're all different ones, and
+
+903
+00:29:33,200 --> 00:29:34,670
+every kernel maintainer probably has
+
+904
+00:29:34,680 --> 00:29:37,430
+their own set. I think the current core
+
+905
+00:29:37,440 --> 00:29:39,750
+is Git. Everyone nearly has agreed, like
+
+906
+00:29:39,760 --> 00:29:41,350
+years ago we had other systems, but Git
+
+907
+00:29:41,360 --> 00:29:42,790
+is the current core. You generally will
+
+908
+00:29:42,800 --> 00:29:44,990
+develop all of your changes in a Git
+
+909
+00:29:45,000 --> 00:29:47,550
+tree on your local machine. You will
+
+910
+00:29:47,560 --> 00:29:48,470
+When you're finished out with the
+
+911
+00:29:48,480 --> 00:29:49,790
+development, you'll have to go back and
+
+912
+00:29:49,800 --> 00:29:51,470
+probably make a patch series out of that
+
+913
+00:29:51,480 --> 00:29:53,270
+development that is linear and sane,
+
+914
+00:29:53,280 --> 00:29:54,990
+because often development is not linear
+
+915
+00:29:55,000 --> 00:29:56,390
+and sane, so you have to go back and
+
+916
+00:29:56,400 --> 00:29:58,110
+distill your patch series into something
+
+917
+00:29:58,120 --> 00:29:59,550
+linear and sane, then go through the
+
+918
+00:29:59,560 --> 00:30:01,390
+process of making sure it's submittable,
+
+919
+00:30:01,400 --> 00:30:02,950
+making sure you're following the rules,
+
+920
+00:30:02,960 --> 00:30:04,310
+that it actually is patch series you
+
+921
+00:30:04,320 --> 00:30:06,150
+want to send out. And then you go
+
+922
+00:30:06,160 --> 00:30:07,310
+through the process of sending it to the
+
+923
+00:30:07,320 --> 00:30:08,870
+mailing list. That's where we use that
+
+924
+00:30:08,880 --> 00:30:10,510
+through email. We have a new tool called
+
+925
+00:30:10,520 --> 00:30:13,470
+B4. We have a set tool for sending patch
+
+926
+00:30:13,480 --> 00:30:15,910
+series out. There are also other patch
+
+927
+00:30:15,920 --> 00:30:17,910
+management systems, so Git isn't always
+
+928
+00:30:17,920 --> 00:30:20,230
+the best thing to manage patches with,
+
+929
+00:30:20,240 --> 00:30:22,030
+so there's a number of things series of
+
+930
+00:30:22,040 --> 00:30:23,510
+tools called Quilt, there's a thing
+
+931
+00:30:23,520 --> 00:30:26,630
+called StGit. So, depending on how you
+
+932
+00:30:26,640 --> 00:30:28,510
+want to manage your patches, there are
+
+933
+00:30:28,520 --> 00:30:30,790
+other alternate tools. I personally,
+
+934
+00:30:30,800 --> 00:30:31,910
+when I'm writing patch series, and I
+
+935
+00:30:31,920 --> 00:30:33,470
+don't write a lot of patch series for
+
+936
+00:30:33,480 --> 00:30:35,430
+the kernel these days, will use just Git
+
+937
+00:30:35,440 --> 00:30:37,870
+trees, and I will keep the cover letter
+
+938
+00:30:37,880 --> 00:30:39,790
+just to a side, but that's only because
+
+939
+00:30:39,800 --> 00:30:41,270
+I'm probably only ever working on one
+
+940
+00:30:41,280 --> 00:30:43,310
+major patch series at a time anymore.
+
+941
+00:30:43,320 --> 00:30:45,270
+I'm not doing a lot of streams of work
+
+942
+00:30:45,280 --> 00:30:46,190
+at that level.
+
+943
+00:30:46,200 --> 00:30:47,750
+&gt;&gt; Okay, so you have patches and you have
+
+944
+00:30:47,760 --> 00:30:49,910
+patch series and I'm glad you defined
+
+945
+00:30:49,920 --> 00:30:51,950
+each of those terms. I also quickly
+
+946
+00:30:51,960 --> 00:30:53,870
+wanted to talk about the concept of a
+
+947
+00:30:53,880 --> 00:30:56,190
+backport. What is a backport and how
+
+948
+00:30:56,200 --> 00:30:57,750
+does it connect to the topics we've
+
+949
+00:30:57,760 --> 00:30:59,510
+discussed so far?
+
+950
+00:30:59,520 --> 00:31:02,150
+&gt;&gt; So a backport is probably a many aspects
+
+951
+00:31:02,160 --> 00:31:04,270
+of what constitutes a backport. So you
+
+952
+00:31:04,280 --> 00:31:06,710
+can consider a patch going into stable
+
+953
+00:31:06,720 --> 00:31:09,030
+being a backport as in at the simplest
+
+954
+00:31:09,040 --> 00:31:11,110
+term a backport is something that you
+
+955
+00:31:11,120 --> 00:31:14,070
+have to maybe adapt to an older kernel
+
+956
+00:31:14,080 --> 00:31:16,110
+as opposed to just apply to an older
+
+957
+00:31:16,120 --> 00:31:17,630
+kernel. So if you have a patch that goes
+
+958
+00:31:17,640 --> 00:31:19,350
+into like the latest kernel and you want
+
+959
+00:31:19,360 --> 00:31:20,670
+to apply it to a kernel that's five
+
+960
+00:31:20,680 --> 00:31:22,470
+kernels old, sometimes that patch will
+
+961
+00:31:22,480 --> 00:31:24,310
+just apply and it's fine and that's a
+
+962
+00:31:24,320 --> 00:31:26,070
+technically a backport but it's not
+
+963
+00:31:26,080 --> 00:31:27,310
+really I've not done anything. But if
+
+964
+00:31:27,320 --> 00:31:29,070
+you actually have to modify that patch
+
+965
+00:31:29,080 --> 00:31:31,070
+to make it adapted to the older kernel
+
+966
+00:31:31,080 --> 00:31:32,750
+API or just the older state of the
+
+967
+00:31:32,760 --> 00:31:34,390
+driver back then, that's more getting to
+
+968
+00:31:34,400 --> 00:31:36,350
+what an actual backport is because say
+
+969
+00:31:36,360 --> 00:31:38,070
+you have a security fix or something in
+
+970
+00:31:38,080 --> 00:31:39,710
+the new kernel and it's the same
+
+971
+00:31:39,720 --> 00:31:41,110
+security problem exists in the older
+
+972
+00:31:41,120 --> 00:31:43,310
+kernel but it's in a very different
+
+973
+00:31:43,320 --> 00:31:45,270
+state. Like the code that causes has
+
+974
+00:31:45,280 --> 00:31:46,630
+been changed substantially but there's
+
+975
+00:31:46,640 --> 00:31:47,990
+still underlying security problems
+
+976
+00:31:48,000 --> 00:31:49,830
+there. Well then you need to adapt that
+
+977
+00:31:49,840 --> 00:31:51,910
+fix for that kernel and sometimes it's a
+
+978
+00:31:51,920 --> 00:31:53,430
+full rewrite. Sometimes it's just a
+
+979
+00:31:53,440 --> 00:31:54,910
+concept you're applying back but you
+
+980
+00:31:54,920 --> 00:31:56,270
+still need to do it. You then have to
+
+981
+00:31:56,280 --> 00:31:57,830
+scale that up again if you're looking
+
+982
+00:31:57,840 --> 00:31:59,550
+into and I'll talk about about Red Hat
+
+983
+00:31:59,560 --> 00:32:02,790
+works. So Red Hat has a rail kernel. We
+
+984
+00:32:02,800 --> 00:32:05,430
+backport subsystems. So like we will
+
+985
+00:32:05,440 --> 00:32:08,190
+take the full DRM subsystem which is
+
+986
+00:32:08,200 --> 00:32:10,790
+like thousands of lines of code and
+
+987
+00:32:10,800 --> 00:32:13,550
+patches and backport that whole on mass
+
+988
+00:32:13,560 --> 00:32:15,550
+to a kernel that was maybe eight kernels
+
+989
+00:32:15,560 --> 00:32:17,510
+old. That's like that's extreme
+
+990
+00:32:17,520 --> 00:32:19,190
+backporting and you see Ubuntu do the
+
+991
+00:32:19,200 --> 00:32:21,110
+same. You'll see a lot of stable kernels
+
+992
+00:32:21,120 --> 00:32:23,030
+for devices, Android do a bunch of it.
+
+993
+00:32:23,040 --> 00:32:24,990
+So backporting is kind of like I won't
+
+994
+00:32:25,000 --> 00:32:26,350
+say the dirty secret but if you're
+
+995
+00:32:26,360 --> 00:32:28,990
+actually releasing a product of
+
+996
+00:32:29,000 --> 00:32:30,390
+something using the Linux kernel, you
+
+997
+00:32:30,400 --> 00:32:32,150
+would generally be in the market for
+
+998
+00:32:32,160 --> 00:32:34,270
+having to backport things to that kernel
+
+999
+00:32:34,280 --> 00:32:36,230
+and need your engineers to do that.
+
+1000
+00:32:36,240 --> 00:32:38,470
+&gt;&gt; How does backporting connect to the idea
+
+1001
+00:32:38,480 --> 00:32:41,430
+of doing a revert? What's a revert then?
+
+1002
+00:32:41,440 --> 00:32:43,550
+&gt;&gt; So, a revert is simply just I found a
+
+1003
+00:32:43,560 --> 00:32:45,470
+regression. We need to get rid of that
+
+1004
+00:32:45,480 --> 00:32:47,710
+patch out of the tree, but Git doesn't
+
+1005
+00:32:47,720 --> 00:32:50,230
+allow you to change history, so you just
+
+1006
+00:32:50,240 --> 00:32:51,590
+revert the patch. You take the patch
+
+1007
+00:32:51,600 --> 00:32:53,070
+that's in the tree and you apply the
+
+1008
+00:32:53,080 --> 00:32:55,310
+reverse patch, and that's it gone from
+
+1009
+00:32:55,320 --> 00:32:56,710
+that tree. Then you have to make sure
+
+1010
+00:32:56,720 --> 00:32:58,310
+that the revert is also treated just
+
+1011
+00:32:58,320 --> 00:32:59,630
+like any other patch. It goes into the
+
+1012
+00:32:59,640 --> 00:33:01,110
+stable cycle that makes sure it gets
+
+1013
+00:33:01,120 --> 00:33:02,910
+removed from the older stable trees.
+
+1014
+00:33:02,920 --> 00:33:04,790
+Backports should pick up the revert. So,
+
+1015
+00:33:04,800 --> 00:33:06,470
+generally reverts have to have like will
+
+1016
+00:33:06,480 --> 00:33:07,830
+have a tagline for what they're
+
+1017
+00:33:07,840 --> 00:33:09,590
+reverting, so you know exactly this
+
+1018
+00:33:09,600 --> 00:33:11,590
+patch reverses this patch.
+
+1019
+00:33:11,600 --> 00:33:13,230
+&gt;&gt; Okay, that was awesome. So, now we've
+
+1020
+00:33:13,240 --> 00:33:15,230
+covered a lot of the key details and
+
+1021
+00:33:15,240 --> 00:33:17,070
+terms. And if listeners want to know
+
+1022
+00:33:17,080 --> 00:33:18,350
+more, they're welcome to check in the
+
+1023
+00:33:18,360 --> 00:33:20,470
+show notes and we'll provide links to
+
+1024
+00:33:20,480 --> 00:33:23,070
+kernel.org articles and handbooks and
+
+1025
+00:33:23,080 --> 00:33:24,950
+things of that nature. What I wanted to
+
+1026
+00:33:24,960 --> 00:33:26,630
+pick up on next was something that you
+
+1027
+00:33:26,640 --> 00:33:28,830
+mentioned just a moment ago, which were
+
+1028
+00:33:28,840 --> 00:33:31,270
+issues about security concerns. Can you
+
+1029
+00:33:31,280 --> 00:33:32,910
+tell us a little bit about how you do
+
+1030
+00:33:32,920 --> 00:33:35,310
+security reviews or maybe talk a little
+
+1031
+00:33:35,320 --> 00:33:36,870
+bit about how you do performance or
+
+1032
+00:33:36,880 --> 00:33:39,150
+stability reviews in the Linux kernel
+
+1033
+00:33:39,160 --> 00:33:40,510
+maintenance process?
+
+1034
+00:33:40,520 --> 00:33:42,110
+&gt;&gt; I'll deal with security first cuz it's
+
+1035
+00:33:42,120 --> 00:33:44,630
+kind of a special case in some ways. So,
+
+1036
+00:33:44,640 --> 00:33:46,150
+we have a dedicated kernel security
+
+1037
+00:33:46,160 --> 00:33:48,670
+team. I'm not on that team. It's Greg is
+
+1038
+00:33:48,680 --> 00:33:49,950
+probably one of the leaders on that. I
+
+1039
+00:33:49,960 --> 00:33:51,630
+don't know who else is involved. There's
+
+1040
+00:33:51,640 --> 00:33:53,910
+an embargo process, but it's very quick.
+
+1041
+00:33:53,920 --> 00:33:55,910
+I think 7 days is what Linus likes to
+
+1042
+00:33:55,920 --> 00:33:58,870
+give people. Linus is very vocal about
+
+1043
+00:33:58,880 --> 00:34:00,870
+security fixes just being fixes. He
+
+1044
+00:34:00,880 --> 00:34:02,190
+believes there's a lot of theater in
+
+1045
+00:34:02,200 --> 00:34:05,510
+security, so he's very pushy on just
+
+1046
+00:34:05,520 --> 00:34:07,110
+getting fixes into history as quickly as
+
+1047
+00:34:07,120 --> 00:34:08,710
+possible, and that's it's a fix for a
+
+1048
+00:34:08,720 --> 00:34:10,470
+bug. We need to get it upstream and send
+
+1049
+00:34:10,480 --> 00:34:12,190
+it out. But we've built up more like
+
+1050
+00:34:12,200 --> 00:34:14,669
+Greg is building up like a CVE sort of
+
+1051
+00:34:14,679 --> 00:34:16,669
+handling system for the kernel, where
+
+1052
+00:34:16,679 --> 00:34:20,149
+our own CVE handler, but we have a lot
+
+1053
+00:34:20,159 --> 00:34:22,389
+of potential security fixes in the
+
+1054
+00:34:22,399 --> 00:34:23,909
+kernel. And over the last year you may
+
+1055
+00:34:23,919 --> 00:34:25,430
+have seen some news articles and
+
+1056
+00:34:25,440 --> 00:34:26,990
+discussion about that, and like you
+
+1057
+00:34:27,000 --> 00:34:28,830
+know, we're we can never really say a
+
+1058
+00:34:28,840 --> 00:34:30,590
+lot of things for sure if they're a
+
+1059
+00:34:30,600 --> 00:34:32,070
+security problem. Because it's a
+
+1060
+00:34:32,080 --> 00:34:33,869
+security problem in the kernel, it may
+
+1061
+00:34:33,879 --> 00:34:35,710
+not be your security problem in your
+
+1062
+00:34:35,720 --> 00:34:37,430
+kernel, and you need to be in charge of
+
+1063
+00:34:37,440 --> 00:34:38,710
+that. So, if you're a downstream of the
+
+1064
+00:34:38,720 --> 00:34:40,550
+kernel packaging it up in in your
+
+1065
+00:34:40,560 --> 00:34:42,110
+operating system, you probably need to
+
+1066
+00:34:42,120 --> 00:34:43,909
+be more on top of this. That the The
+
+1067
+00:34:43,919 --> 00:34:45,750
+upstream kernel is used in so many
+
+1068
+00:34:45,760 --> 00:34:49,270
+different ways that every specific CVE
+
+1069
+00:34:49,280 --> 00:34:50,669
+that we issue for the kernel may not
+
+1070
+00:34:50,679 --> 00:34:52,830
+apply to your use case. But, the
+
+1071
+00:34:52,840 --> 00:34:54,470
+subtlety in the security industry isn't
+
+1072
+00:34:54,480 --> 00:34:55,990
+quite there yet in that there's a lot of
+
+1073
+00:34:56,000 --> 00:34:58,150
+CV scanners that just take blanket
+
+1074
+00:34:58,160 --> 00:34:59,510
+approaches. There's a lot of, you know,
+
+1075
+00:34:59,520 --> 00:35:01,910
+so security area is definitely a tricky
+
+1076
+00:35:01,920 --> 00:35:03,830
+one. In terms of process, generally
+
+1077
+00:35:03,840 --> 00:35:05,510
+there's a security mailing list. If it's
+
+1078
+00:35:05,520 --> 00:35:08,390
+in your area, you will get CC'd on the
+
+1079
+00:35:08,400 --> 00:35:10,510
+report. You're expected to bring in the
+
+1080
+00:35:10,520 --> 00:35:11,950
+other people in your area who are
+
+1081
+00:35:11,960 --> 00:35:13,270
+responsible. So, you know, I can get the
+
+1082
+00:35:13,280 --> 00:35:14,910
+top-level CC. If it's not something I
+
+1083
+00:35:14,920 --> 00:35:16,510
+directly could fix or know about, I'll
+
+1084
+00:35:16,520 --> 00:35:18,110
+have to bring in people from the people
+
+1085
+00:35:18,120 --> 00:35:19,510
+involved. And, you know, and then we'll
+
+1086
+00:35:19,520 --> 00:35:21,190
+keep it secret for 7 days. If we can't
+
+1087
+00:35:21,200 --> 00:35:22,710
+If we can get a patch out, we'll get a
+
+1088
+00:35:22,720 --> 00:35:24,430
+patch out. But, yeah, generally it
+
+1089
+00:35:24,440 --> 00:35:26,190
+Lately, I think AI-generated reports
+
+1090
+00:35:26,200 --> 00:35:28,310
+have sort of saturating the bandwidth as
+
+1091
+00:35:28,320 --> 00:35:29,830
+well. Some of them are good. Some of
+
+1092
+00:35:29,840 --> 00:35:31,110
+them are bad, but the problem is it's
+
+1093
+00:35:31,120 --> 00:35:32,710
+bandwidth saturation problem. You know,
+
+1094
+00:35:32,720 --> 00:35:34,590
+the bad ones will still cause you to
+
+1095
+00:35:34,600 --> 00:35:36,950
+waste time. In terms of
+
+1096
+00:35:36,960 --> 00:35:39,230
+dealing with other types of regression
+
+1097
+00:35:39,240 --> 00:35:40,990
+like performance issues or things like
+
+1098
+00:35:41,000 --> 00:35:44,590
+that, quite often they just sort of come
+
+1099
+00:35:44,600 --> 00:35:46,750
+up over time. Like, we do try to do In
+
+1100
+00:35:46,760 --> 00:35:48,310
+the last few years, we've moved into CI
+
+1101
+00:35:48,320 --> 00:35:50,870
+a lot more, but one of the biggest
+
+1102
+00:35:50,880 --> 00:35:51,790
+challenges of the Linux development
+
+1103
+00:35:51,800 --> 00:35:53,830
+process is it doesn't really integrate
+
+1104
+00:35:53,840 --> 00:35:56,070
+well with how CI works. And, it's where
+
+1105
+00:35:56,080 --> 00:35:58,670
+I quite like having I also work on some
+
+1106
+00:35:58,680 --> 00:36:01,670
+other projects where we have full GitLab
+
+1107
+00:36:01,680 --> 00:36:03,750
+CI processes where every merge request
+
+1108
+00:36:03,760 --> 00:36:06,470
+goes through a full CI run before being,
+
+1109
+00:36:06,480 --> 00:36:08,790
+you know, merged. I like that. It makes
+
+1110
+00:36:08,800 --> 00:36:11,430
+life so much easier. But, the Linux
+
+1111
+00:36:11,440 --> 00:36:14,030
+kernel is not designed for that because
+
+1112
+00:36:14,040 --> 00:36:16,510
+of our workflow. There's no like central
+
+1113
+00:36:16,520 --> 00:36:18,950
+point to pick these patches up and push
+
+1114
+00:36:18,960 --> 00:36:21,150
+them through a centralized CI system.
+
+1115
+00:36:21,160 --> 00:36:24,310
+And, everyone has built bespoke CI. And,
+
+1116
+00:36:24,320 --> 00:36:26,350
+again, a central CI wouldn't scale.
+
+1117
+00:36:26,360 --> 00:36:28,190
+Like, one of the problems with CI is it
+
+1118
+00:36:28,200 --> 00:36:30,350
+like it needs resourcing and if we had a
+
+1119
+00:36:30,360 --> 00:36:32,430
+central the scaling is going to kill it.
+
+1120
+00:36:32,440 --> 00:36:34,390
+So, having them per subsystem and having
+
+1121
+00:36:34,400 --> 00:36:35,950
+them more bespoke is probably a good
+
+1122
+00:36:35,960 --> 00:36:37,590
+thing. We have a graphics sort of CI
+
+1123
+00:36:37,600 --> 00:36:39,070
+pipeline. It's not quite there yet.
+
+1124
+00:36:39,080 --> 00:36:40,590
+We're working It's been worked on over
+
+1125
+00:36:40,600 --> 00:36:42,070
+the last year. Some of the Qualcomm
+
+1126
+00:36:42,080 --> 00:36:43,790
+being quite pushing on it. The idea is
+
+1127
+00:36:43,800 --> 00:36:45,710
+that I would love to see a pre-merge CI
+
+1128
+00:36:45,720 --> 00:36:47,230
+system that I would know that when a
+
+1129
+00:36:47,240 --> 00:36:48,950
+patch set gets to me it's gone through
+
+1130
+00:36:48,960 --> 00:36:51,590
+some sort of CI, but quite often that's
+
+1131
+00:36:51,600 --> 00:36:54,030
+not true today. A lot of Intel have done
+
+1132
+00:36:54,040 --> 00:36:55,390
+a sort of a CI integration with the
+
+1133
+00:36:55,400 --> 00:36:57,350
+mailing list, which is janky, but it
+
+1134
+00:36:57,360 --> 00:36:59,070
+works as in they get patches on the
+
+1135
+00:36:59,080 --> 00:37:00,630
+mailing list, they apply them to a tree
+
+1136
+00:37:00,640 --> 00:37:01,910
+and they push them through to CI and
+
+1137
+00:37:01,920 --> 00:37:03,270
+they report out through a tool called
+
+1138
+00:37:03,280 --> 00:37:05,470
+patchwork. I know AMD have some internal
+
+1139
+00:37:05,480 --> 00:37:06,910
+CI that they will push their next
+
+1140
+00:37:06,920 --> 00:37:09,270
+kernels through as well and it's kind of
+
+1141
+00:37:09,280 --> 00:37:11,270
+very patchy the coverage in that area,
+
+1142
+00:37:11,280 --> 00:37:13,030
+but often that's how we, you know,
+
+1143
+00:37:13,040 --> 00:37:14,550
+initially we'll find regressions and
+
+1144
+00:37:14,560 --> 00:37:16,110
+things like that are through that, but
+
+1145
+00:37:16,120 --> 00:37:18,230
+then Valve will tell us if this they
+
+1146
+00:37:18,240 --> 00:37:19,590
+updated the new Steam Deck and it's
+
+1147
+00:37:19,600 --> 00:37:21,190
+suddenly slower. You know, things like
+
+1148
+00:37:21,200 --> 00:37:23,510
+that will come through. Also, a lot of
+
+1149
+00:37:23,520 --> 00:37:25,470
+regressions in performance and stuff can
+
+1150
+00:37:25,480 --> 00:37:26,910
+be it can look like it's a graphics
+
+1151
+00:37:26,920 --> 00:37:28,110
+problem, but it's actually a power
+
+1152
+00:37:28,120 --> 00:37:30,510
+management problem because, you know,
+
+1153
+00:37:30,520 --> 00:37:32,110
+they're so tightly integrated now all
+
+1154
+00:37:32,120 --> 00:37:34,310
+the pieces of your your SOCs and your
+
+1155
+00:37:34,320 --> 00:37:36,630
+GPUs is that there's so many pieces to
+
+1156
+00:37:36,640 --> 00:37:37,950
+them. Yeah, you could suddenly have a
+
+1157
+00:37:37,960 --> 00:37:40,110
+clock change and yeah, that can cause
+
+1158
+00:37:40,120 --> 00:37:41,710
+some problems. So, it's CI it's it's
+
+1159
+00:37:41,720 --> 00:37:43,710
+also you have to know the architecture
+
+1160
+00:37:43,720 --> 00:37:46,070
+of the whole system to track those down.
+
+1161
+00:37:46,080 --> 00:37:47,550
+&gt;&gt; Thanks, that's helpful. I wanted to pick
+
+1162
+00:37:47,560 --> 00:37:49,750
+up on two phrases that you used. You
+
+1163
+00:37:49,760 --> 00:37:51,390
+mentioned CI and I know there's
+
+1164
+00:37:51,400 --> 00:37:53,590
+something called kernelci.org
+
+1165
+00:37:53,600 --> 00:37:55,830
+and before that you mentioned B4. Can
+
+1166
+00:37:55,840 --> 00:37:58,110
+you tell our listeners very specifically
+
+1167
+00:37:58,120 --> 00:38:00,630
+like what are the things you run in CI
+
+1168
+00:38:00,640 --> 00:38:02,870
+and then how do tools like B4 help you?
+
+1169
+00:38:02,880 --> 00:38:04,830
+Do you run them in CI or do you run them
+
+1170
+00:38:04,840 --> 00:38:06,870
+on your developer workstations? What's
+
+1171
+00:38:06,880 --> 00:38:08,390
+the process there, Dave?
+
+1172
+00:38:08,400 --> 00:38:11,830
+&gt;&gt; Yeah, there's no good central standard
+
+1173
+00:38:11,840 --> 00:38:13,910
+here at all. So, I'll go B4 is a tool
+
+1174
+00:38:13,920 --> 00:38:15,910
+that is replaces email for getting
+
+1175
+00:38:15,920 --> 00:38:18,630
+patches from you to the mailing lists.
+
+1176
+00:38:18,640 --> 00:38:19,510
+We've
+
+1177
+00:38:19,520 --> 00:38:21,870
+the two kernel tools group, Constantine
+
+1178
+00:38:21,880 --> 00:38:23,750
+is the main guy there. I have developed
+
+1179
+00:38:23,760 --> 00:38:25,750
+a thing called public inbox, which is a
+
+1180
+00:38:25,760 --> 00:38:28,670
+mailing list archiver holster that we
+
+1181
+00:38:28,680 --> 00:38:30,590
+use as kind of a repository of a
+
+1182
+00:38:30,600 --> 00:38:32,550
+database of all of the patches ever kind
+
+1183
+00:38:32,560 --> 00:38:34,350
+of sent to any mailing list. Everything
+
+1184
+00:38:34,360 --> 00:38:36,670
+is in this public inbox sort of
+
+1185
+00:38:36,680 --> 00:38:38,950
+hierarchy. And B4 is a tool then that
+
+1186
+00:38:38,960 --> 00:38:41,270
+lets you submit things
+
+1187
+00:38:41,280 --> 00:38:43,550
+to those inboxes. In reverse, there's a
+
+1188
+00:38:43,560 --> 00:38:45,550
+tool called LEI,
+
+1189
+00:38:45,560 --> 00:38:47,110
+which is for pulling things out and lets
+
+1190
+00:38:47,120 --> 00:38:48,990
+you query those inboxes. So, I use an
+
+1191
+00:38:49,000 --> 00:38:50,350
+example to query for all the pull
+
+1192
+00:38:50,360 --> 00:38:52,030
+requests in the last week, get them into
+
+1193
+00:38:52,040 --> 00:38:53,750
+a local mailbox, and then I process them
+
+1194
+00:38:53,760 --> 00:38:55,270
+locally. So, it's just tooling that
+
+1195
+00:38:55,280 --> 00:38:57,470
+avoids using SMTP as an
+
+1196
+00:38:57,480 --> 00:38:59,510
+email server and lets you go beyond
+
+1197
+00:38:59,520 --> 00:39:01,670
+that. But, in terms of projects like
+
+1198
+00:39:01,680 --> 00:39:04,750
+Kernel CI and we have a GitLab CI
+
+1199
+00:39:04,760 --> 00:39:06,630
+project on freedesktop.
+
+1200
+00:39:06,640 --> 00:39:08,870
+There's not much sort of coherence
+
+1201
+00:39:08,880 --> 00:39:10,310
+there, I suppose. That's why different
+
+1202
+00:39:10,320 --> 00:39:12,070
+subsystems kind of use them in vague
+
+1203
+00:39:12,080 --> 00:39:14,790
+ways. There's a little bit more like
+
+1204
+00:39:14,800 --> 00:39:16,390
+it's generally after-the-fact CI as
+
+1205
+00:39:16,400 --> 00:39:18,070
+well. It's generally stuff goes through
+
+1206
+00:39:18,080 --> 00:39:20,470
+CI after it's been merged to Linux tree,
+
+1207
+00:39:20,480 --> 00:39:22,230
+after it's been put in next. There's
+
+1208
+00:39:22,240 --> 00:39:25,150
+very rarely we have CI in advance of the
+
+1209
+00:39:25,160 --> 00:39:27,310
+patches going into someone's tree. Yeah,
+
+1210
+00:39:27,320 --> 00:39:28,790
+and that's something I'd like to change.
+
+1211
+00:39:28,800 --> 00:39:30,790
+Like I encourage people in my area to
+
+1212
+00:39:30,800 --> 00:39:32,510
+try and develop things that to help me
+
+1213
+00:39:32,520 --> 00:39:34,630
+change that. I probably ain't I'm not
+
+1214
+00:39:34,640 --> 00:39:36,430
+the person to do that, but I definitely
+
+1215
+00:39:36,440 --> 00:39:38,550
+encouraged and open to workflows that
+
+1216
+00:39:38,560 --> 00:39:40,390
+allow that to happen because I see the
+
+1217
+00:39:40,400 --> 00:39:42,030
+value in it. But, yeah, in terms of
+
+1218
+00:39:42,040 --> 00:39:43,750
+overall, like Kernel CI has has the
+
+1219
+00:39:43,760 --> 00:39:46,350
+name, but in terms of whether all of the
+
+1220
+00:39:46,360 --> 00:39:48,190
+kernel goes through it is not really
+
+1221
+00:39:48,200 --> 00:39:49,990
+that doesn't really actually happen. And
+
+1222
+00:39:50,000 --> 00:39:51,910
+again, you know, we also had a a number
+
+1223
+00:39:51,920 --> 00:39:54,350
+of robots over the year. Intel had a a
+
+1224
+00:39:54,360 --> 00:39:55,790
+tool called Zero-Day, which was
+
+1225
+00:39:55,800 --> 00:39:56,950
+something that would apply patches to
+
+1226
+00:39:56,960 --> 00:39:58,870
+it, but sometimes Zero-Day would be You
+
+1227
+00:39:58,880 --> 00:40:00,110
+never knew when Zero-Day was going to
+
+1228
+00:40:00,120 --> 00:40:01,550
+respond to you. Zero-Day could tell you
+
+1229
+00:40:01,560 --> 00:40:03,110
+about your patch a week later, it could
+
+1230
+00:40:03,120 --> 00:40:04,390
+tell you an hour later, it could tell
+
+1231
+00:40:04,400 --> 00:40:06,270
+you a month later. A lot of these again
+
+1232
+00:40:06,280 --> 00:40:07,750
+are after-the-fact things. You send
+
+1233
+00:40:07,760 --> 00:40:09,510
+something to the mailing list and maybe
+
+1234
+00:40:09,520 --> 00:40:11,430
+you get a response. Trying to bring the
+
+1235
+00:40:11,440 --> 00:40:13,150
+window of timing on those and trying to,
+
+1236
+00:40:13,160 --> 00:40:14,790
+you know, constrain those again is hard
+
+1237
+00:40:14,800 --> 00:40:16,270
+because you know, there's so many kernel
+
+1238
+00:40:16,280 --> 00:40:18,190
+patches and scaling is hard. So, the
+
+1239
+00:40:18,200 --> 00:40:20,110
+Intel CI is probably one of the has
+
+1240
+00:40:20,120 --> 00:40:21,670
+lasted quite a while in that they get
+
+1241
+00:40:21,680 --> 00:40:22,870
+patches on the mailing list. I see them
+
+1242
+00:40:22,880 --> 00:40:25,590
+apply. I see them runs. And it just it
+
+1243
+00:40:25,600 --> 00:40:27,350
+works. But, it's very strong together
+
+1244
+00:40:27,360 --> 00:40:29,230
+with your baling twine and stuff. It's
+
+1245
+00:40:29,240 --> 00:40:30,950
+not a very coherent system.
+
+1246
+00:40:30,960 --> 00:40:32,350
+&gt;&gt; Thanks for those clarifying comments
+
+1247
+00:40:32,360 --> 00:40:34,230
+about how you're using tools and how
+
+1248
+00:40:34,240 --> 00:40:36,230
+you're using CI. I did want to follow up
+
+1249
+00:40:36,240 --> 00:40:38,350
+with one final question in this area. Do
+
+1250
+00:40:38,360 --> 00:40:40,150
+you use various types of fuzzing
+
+1251
+00:40:40,160 --> 00:40:42,390
+techniques when it comes to the DRM
+
+1252
+00:40:42,400 --> 00:40:44,790
+subsystem, or is fuzzing used in any
+
+1253
+00:40:44,800 --> 00:40:46,870
+other parts of reviewing patches in the
+
+1254
+00:40:46,880 --> 00:40:48,190
+Linux kernel?
+
+1255
+00:40:48,200 --> 00:40:50,270
+&gt;&gt; Fuzzing seems to go through like like
+
+1256
+00:40:50,280 --> 00:40:52,510
+popularity phases, I suppose. It becomes
+
+1257
+00:40:52,520 --> 00:40:54,270
+popular for a while. They find all the
+
+1258
+00:40:54,280 --> 00:40:56,830
+fuzzing bugs, and then it stops. We
+
+1259
+00:40:56,840 --> 00:40:58,270
+don't have anything specific in our
+
+1260
+00:40:58,280 --> 00:41:00,510
+subsystem for it, but there's a upstream
+
+1261
+00:41:00,520 --> 00:41:03,510
+project called syzkaller. Syzkaller is
+
+1262
+00:41:03,520 --> 00:41:05,790
+notorious for finding the weirdest race
+
+1263
+00:41:05,800 --> 00:41:07,750
+conditions in the weirdest places in
+
+1264
+00:41:07,760 --> 00:41:09,270
+that and then providing you with very
+
+1265
+00:41:09,280 --> 00:41:10,910
+detailed information on how it did that.
+
+1266
+00:41:10,920 --> 00:41:12,950
+It literally intelligently spams all of
+
+1267
+00:41:12,960 --> 00:41:15,510
+the kernel APIs in various orders with
+
+1268
+00:41:15,520 --> 00:41:17,830
+various random things. Like, so it's not
+
+1269
+00:41:17,840 --> 00:41:18,990
+fuzzing in the sense of it's sending
+
+1270
+00:41:19,000 --> 00:41:21,030
+complete garbage to things. It knows the
+
+1271
+00:41:21,040 --> 00:41:23,270
+structure of the ioctl interfaces. It
+
+1272
+00:41:23,280 --> 00:41:24,550
+knows the structure of the system call
+
+1273
+00:41:24,560 --> 00:41:26,070
+interfaces. So, it knows it needs to
+
+1274
+00:41:26,080 --> 00:41:27,870
+pass in valid file descriptors to get
+
+1275
+00:41:27,880 --> 00:41:29,870
+past. Cuz otherwise, 99% of your fuzzing
+
+1276
+00:41:29,880 --> 00:41:31,550
+stops at the first block. So, it's
+
+1277
+00:41:31,560 --> 00:41:33,390
+intelligent enough to try and get down
+
+1278
+00:41:33,400 --> 00:41:35,190
+into the kernel depth. It's a quite a
+
+1279
+00:41:35,200 --> 00:41:36,830
+cool project, but yeah, we don't
+
+1280
+00:41:36,840 --> 00:41:38,470
+specifically use that, but we respond to
+
+1281
+00:41:38,480 --> 00:41:39,790
+reports of that. But again, it comes
+
+1282
+00:41:39,800 --> 00:41:41,510
+down to you can get overwhelmed with
+
+1283
+00:41:41,520 --> 00:41:43,310
+auto-generated reports of syzkaller
+
+1284
+00:41:43,320 --> 00:41:44,990
+problems because some of them are so
+
+1285
+00:41:45,000 --> 00:41:46,950
+deep and so niche that like no user is
+
+1286
+00:41:46,960 --> 00:41:48,510
+ever going to hit these. They can often
+
+1287
+00:41:48,520 --> 00:41:49,710
+get pushed to the background. They can
+
+1288
+00:41:49,720 --> 00:41:51,590
+be that one-in-a-million problem. And
+
+1289
+00:41:51,600 --> 00:41:52,990
+that's good to know, but sometimes we
+
+1290
+00:41:53,000 --> 00:41:54,670
+have to over-prioritize them, and that's
+
+1291
+00:41:54,680 --> 00:41:55,830
+often a bad thing.
+
+1292
+00:41:55,840 --> 00:41:58,990
+&gt;&gt; Okay, that was really helpful.
+
+1293
+00:41:59,000 --> 00:42:00,630
+&gt;&gt; Struggling to advance in the software
+
+1294
+00:42:00,640 --> 00:42:01,750
+industry
+
+1295
+00:42:01,760 --> 00:42:03,390
+as an experienced professional ready to
+
+1296
+00:42:03,400 --> 00:42:05,230
+lead? Pull ahead of your competition
+
+1297
+00:42:05,240 --> 00:42:06,630
+with the new Software Professional
+
+1298
+00:42:06,640 --> 00:42:08,550
+certification from IEEE Computer
+
+1299
+00:42:08,560 --> 00:42:09,990
+Society.
+
+1300
+00:42:10,000 --> 00:42:12,270
+Your expertise certified by the most
+
+1301
+00:42:12,280 --> 00:42:14,110
+trusted professional organization in
+
+1302
+00:42:14,120 --> 00:42:15,630
+computing.
+
+1303
+00:42:15,640 --> 00:42:18,110
+Take the lead in your career. Sign up at
+
+1304
+00:42:18,120 --> 00:42:20,150
+computer.org/certification
+
+1305
+00:42:20,160 --> 00:42:20,764
+today.
+
+1306
+00:42:20,774 --> 00:42:26,550
+&gt;&gt; [music]
+
+1307
+00:42:28,350 --> 00:42:28,360
+&gt;&gt; So, I wanted to talk briefly about how
+
+1308
+00:42:28,360 --> 00:42:30,470
+people get involved with the Linux
+
+1309
+00:42:30,480 --> 00:42:32,270
+kernel maintenance process. I know you
+
+1310
+00:42:32,280 --> 00:42:35,110
+have this idea of new people submitting
+
+1311
+00:42:35,120 --> 00:42:37,550
+a patch or making a suggestion for a
+
+1312
+00:42:37,560 --> 00:42:39,590
+change. How does it work if one of our
+
+1313
+00:42:39,600 --> 00:42:41,990
+listeners finds what they think is a bug
+
+1314
+00:42:42,000 --> 00:42:44,030
+or has an idea for a performance
+
+1315
+00:42:44,040 --> 00:42:45,590
+improvement? Can you give us a few
+
+1316
+00:42:45,600 --> 00:42:47,190
+insights on what that process might look
+
+1317
+00:42:47,200 --> 00:42:48,070
+like?
+
+1318
+00:42:48,080 --> 00:42:49,870
+&gt;&gt; The world has changed over the years. I
+
+1319
+00:42:49,880 --> 00:42:51,190
+think the best way to get involved now
+
+1320
+00:42:51,200 --> 00:42:52,630
+is to get a job where they tell you to
+
+1321
+00:42:52,640 --> 00:42:54,430
+get involved, but secondary to that, if
+
+1322
+00:42:54,440 --> 00:42:56,310
+you have an your personal issues are
+
+1323
+00:42:56,320 --> 00:42:58,150
+generally the best way to start on
+
+1324
+00:42:58,160 --> 00:42:59,910
+something. If it's a problem you have on
+
+1325
+00:42:59,920 --> 00:43:01,670
+your laptop or in your system that
+
+1326
+00:43:01,680 --> 00:43:03,150
+you're seeing, then yeah, you have a
+
+1327
+00:43:03,160 --> 00:43:04,870
+sort of an incentive to want to go down
+
+1328
+00:43:04,880 --> 00:43:06,670
+that road and dig into it. And it's the
+
+1329
+00:43:06,680 --> 00:43:08,270
+code's all there. I encourage people to
+
+1330
+00:43:08,280 --> 00:43:10,590
+go out look into it. Like, use your
+
+1331
+00:43:10,600 --> 00:43:12,430
+ChatGPT or whatever. Use Gemini. Use
+
+1332
+00:43:12,440 --> 00:43:14,270
+those to even interrogate what you think
+
+1333
+00:43:14,280 --> 00:43:15,590
+about the code or trying to figure it
+
+1334
+00:43:15,600 --> 00:43:17,190
+out. Work through
+
+1335
+00:43:17,200 --> 00:43:19,030
+If you find the area of the kernel the
+
+1336
+00:43:19,040 --> 00:43:20,830
+problem is in, well, then find the
+
+1337
+00:43:20,840 --> 00:43:22,470
+community attached to that area. There
+
+1338
+00:43:22,480 --> 00:43:25,710
+is no single Linux kernel community.
+
+1339
+00:43:25,720 --> 00:43:27,350
+There's the Linux kernel mailing list.
+
+1340
+00:43:27,360 --> 00:43:29,270
+That is not the place you start. The
+
+1341
+00:43:29,280 --> 00:43:30,870
+Linux kernel mailing list is where you
+
+1342
+00:43:30,880 --> 00:43:32,590
+drop patches that kind of you aren't
+
+1343
+00:43:32,600 --> 00:43:34,110
+sure what to do with. And very often it
+
+1344
+00:43:34,120 --> 00:43:35,750
+will get ignored. It's more of a It's
+
+1345
+00:43:35,760 --> 00:43:37,550
+not a central place for development. You
+
+1346
+00:43:37,560 --> 00:43:39,190
+have to find your community. So, if you
+
+1347
+00:43:39,200 --> 00:43:40,270
+want to work in the graphics, you go,
+
+1348
+00:43:40,280 --> 00:43:41,950
+"Okay, well, this is a DRM subsystem.
+
+1349
+00:43:41,960 --> 00:43:44,350
+Where are those developers? Are they on
+
+1350
+00:43:44,360 --> 00:43:45,870
+They're on their DRM GitLab or they're
+
+1351
+00:43:45,880 --> 00:43:47,590
+on You know, can I find them on IRC
+
+1352
+00:43:47,600 --> 00:43:49,510
+maybe? Can I find them on Discord? Are
+
+1353
+00:43:49,520 --> 00:43:50,950
+they Is there a community of people I
+
+1354
+00:43:50,960 --> 00:43:52,870
+can actually talk to and say, 'Is this a
+
+1355
+00:43:52,880 --> 00:43:55,030
+good idea?'" You could send a mail mail
+
+1356
+00:43:55,040 --> 00:43:57,590
+to the maintainer. Quite often, you will
+
+1357
+00:43:57,600 --> 00:43:59,270
+likely get a reply. Maintainer dependent
+
+1358
+00:43:59,280 --> 00:44:00,710
+because some of us just get so many
+
+1359
+00:44:00,720 --> 00:44:02,350
+emails that they don't all We don't get
+
+1360
+00:44:02,360 --> 00:44:03,910
+to them all. I try to get to a lot of
+
+1361
+00:44:03,920 --> 00:44:05,590
+the new one new people asking questions
+
+1362
+00:44:05,600 --> 00:44:07,030
+by diverting them to the person who
+
+1363
+00:44:07,040 --> 00:44:08,830
+could better answer that question in in
+
+1364
+00:44:08,840 --> 00:44:11,030
+the area, but not all of it is a steady
+
+1365
+00:44:11,040 --> 00:44:12,870
+thing. But yeah, find a community, find
+
+1366
+00:44:12,880 --> 00:44:14,950
+out how they work, lurk for a while,
+
+1367
+00:44:14,960 --> 00:44:17,110
+like maybe watch their workflows a bit,
+
+1368
+00:44:17,120 --> 00:44:19,030
+maybe read a few patches, maybe get an
+
+1369
+00:44:19,040 --> 00:44:20,670
+like get an idea of how the patches in
+
+1370
+00:44:20,680 --> 00:44:22,670
+that subsystem are reviewed, maybe
+
+1371
+00:44:22,680 --> 00:44:24,590
+review a few patches if you're feeling
+
+1372
+00:44:24,600 --> 00:44:25,870
+that you know enough C and you've
+
+1373
+00:44:25,880 --> 00:44:27,270
+learned enough about the area, you know.
+
+1374
+00:44:27,280 --> 00:44:29,150
+So like you can start by You can always
+
+1375
+00:44:29,160 --> 00:44:30,590
+do a drive-by patch, right? That's where
+
+1376
+00:44:30,600 --> 00:44:32,390
+you just drop the patch and hope someone
+
+1377
+00:44:32,400 --> 00:44:33,630
+applies it and never look at it again.
+
+1378
+00:44:33,640 --> 00:44:34,830
+And that's often for small things,
+
+1379
+00:44:34,840 --> 00:44:36,270
+that's probably fine. But if something
+
+1380
+00:44:36,280 --> 00:44:37,870
+you're actually interested in getting
+
+1381
+00:44:37,880 --> 00:44:39,310
+into kernel development, that's often
+
+1382
+00:44:39,320 --> 00:44:41,070
+the best way to start is find your
+
+1383
+00:44:41,080 --> 00:44:43,110
+personal itch that you want to scratch,
+
+1384
+00:44:43,120 --> 00:44:44,310
+and then work with the community to
+
+1385
+00:44:44,320 --> 00:44:46,270
+figure out how to do that. I do get off
+
+1386
+00:44:46,280 --> 00:44:48,070
+asked a lot "Can you give me a project
+
+1387
+00:44:48,080 --> 00:44:49,630
+to work on or something to start me
+
+1388
+00:44:49,640 --> 00:44:51,230
+off?" And that's a tough question
+
+1389
+00:44:51,240 --> 00:44:53,310
+because without knowing your level of
+
+1390
+00:44:53,320 --> 00:44:55,030
+ability and skill, without having
+
+1391
+00:44:55,040 --> 00:44:56,630
+mentored you on something, I can't
+
+1392
+00:44:56,640 --> 00:44:58,390
+really give you that. We've tried to
+
+1393
+00:44:58,400 --> 00:45:00,230
+construct to-do lists, and they they
+
+1394
+00:45:00,240 --> 00:45:01,430
+work in some ways. We've had some
+
+1395
+00:45:01,440 --> 00:45:03,110
+success with keeping to-do lists
+
+1396
+00:45:03,120 --> 00:45:05,190
+upstream as long as we maintain those
+
+1397
+00:45:05,200 --> 00:45:07,230
+and I give sort of levels of easy versus
+
+1398
+00:45:07,240 --> 00:45:09,470
+hard. But quite often you find like if
+
+1399
+00:45:09,480 --> 00:45:11,110
+an experienced developer hits a
+
+1400
+00:45:11,120 --> 00:45:12,670
+roadblock that is just a simple to-do
+
+1401
+00:45:12,680 --> 00:45:14,110
+list item, they're going to go straight
+
+1402
+00:45:14,120 --> 00:45:15,790
+through it. It'll be a patch 10 minutes
+
+1403
+00:45:15,800 --> 00:45:17,350
+later. So you have to have things that
+
+1404
+00:45:17,360 --> 00:45:19,110
+core developers don't want to fix right
+
+1405
+00:45:19,120 --> 00:45:20,950
+now because otherwise they would just
+
+1406
+00:45:20,960 --> 00:45:22,430
+fix them right now cuz they're
+
+1407
+00:45:22,440 --> 00:45:23,830
+important. So it's like it's hard to
+
+1408
+00:45:23,840 --> 00:45:25,910
+find that balance of tasks and you know,
+
+1409
+00:45:25,920 --> 00:45:27,510
+and we often have new projects that are
+
+1410
+00:45:27,520 --> 00:45:28,710
+up and coming where there's like a the
+
+1411
+00:45:28,720 --> 00:45:30,310
+project has started, like our Nova
+
+1412
+00:45:30,320 --> 00:45:32,470
+project, which you know, is a GPU driver
+
+1413
+00:45:32,480 --> 00:45:33,750
+that's started. It's like people want to
+
+1414
+00:45:33,760 --> 00:45:35,150
+get involved, but it's like it's kind of
+
+1415
+00:45:35,160 --> 00:45:36,750
+at a problem stage where we can't get
+
+1416
+00:45:36,760 --> 00:45:37,750
+people involved because we haven't
+
+1417
+00:45:37,760 --> 00:45:39,150
+opened up the window where it's
+
+1418
+00:45:39,160 --> 00:45:40,710
+parallelizable. Right now it's very
+
+1419
+00:45:40,720 --> 00:45:42,670
+serial. We need to get certain things
+
+1420
+00:45:42,680 --> 00:45:44,670
+done, and we need to get to a baseline,
+
+1421
+00:45:44,680 --> 00:45:45,870
+and we haven't got there yet. So it's
+
+1422
+00:45:45,880 --> 00:45:47,950
+hard to get people to join until that
+
+1423
+00:45:47,960 --> 00:45:49,510
+baseline's achieved unless they know
+
+1424
+00:45:49,520 --> 00:45:51,390
+some of the the deeper parts of it are
+
+1425
+00:45:51,400 --> 00:45:52,910
+are working on it full-time.
+
+1426
+00:45:52,920 --> 00:45:54,350
+&gt;&gt; Thanks, that's really helpful. Now, a
+
+1427
+00:45:54,360 --> 00:45:56,150
+while ago you mentioned the idea of a
+
+1428
+00:45:56,160 --> 00:45:58,190
+patch series as having like a cover
+
+1429
+00:45:58,200 --> 00:46:01,030
+letter. So what goes along with a patch
+
+1430
+00:46:01,040 --> 00:46:03,270
+series beyond the cover letter, how do
+
+1431
+00:46:03,280 --> 00:46:05,750
+you show like what its tags are, how it
+
+1432
+00:46:05,760 --> 00:46:08,310
+was tested, how it was verified, what
+
+1433
+00:46:08,320 --> 00:46:10,390
+fuzzing it went through? Can you give us
+
+1434
+00:46:10,400 --> 00:46:12,430
+a little bit more of a sense of what a
+
+1435
+00:46:12,440 --> 00:46:14,350
+patch series looks like for the Linux
+
+1436
+00:46:14,360 --> 00:46:14,870
+kernel?
+
+1437
+00:46:14,880 --> 00:46:17,150
+&gt;&gt; Honestly, essentially a patch of letter,
+
+1438
+00:46:17,160 --> 00:46:18,870
+none of that generally goes into them,
+
+1439
+00:46:18,880 --> 00:46:20,590
+unfortunately. I think we would like
+
+1440
+00:46:20,600 --> 00:46:22,910
+that to happen more, but often the cover
+
+1441
+00:46:22,920 --> 00:46:25,470
+letter is just often it has like the
+
+1442
+00:46:25,480 --> 00:46:27,430
+list of I said version. So, say you sent
+
+1443
+00:46:27,440 --> 00:46:29,350
+a patch series out once, it's been
+
+1444
+00:46:29,360 --> 00:46:31,070
+reviewed, it's probably hit a few
+
+1445
+00:46:31,080 --> 00:46:32,630
+fuzzers, somebody may have gone through
+
+1446
+00:46:32,640 --> 00:46:34,830
+a CI system. The second time you send it
+
+1447
+00:46:34,840 --> 00:46:36,470
+out, you may include some of that
+
+1448
+00:46:36,480 --> 00:46:38,150
+feedback into the cover letter. You may
+
+1449
+00:46:38,160 --> 00:46:40,230
+say changes since the previous version
+
+1450
+00:46:40,240 --> 00:46:41,790
+are because I got this feedback from a
+
+1451
+00:46:41,800 --> 00:46:44,150
+reviewer, I got this feedback from an AI
+
+1452
+00:46:44,160 --> 00:46:45,950
+reviewer, I got this feedback from a CI
+
+1453
+00:46:45,960 --> 00:46:48,150
+system, the Cisco found a problem. You
+
+1454
+00:46:48,160 --> 00:46:49,990
+know, something like that is often in
+
+1455
+00:46:50,000 --> 00:46:52,070
+there, but it's not essential. It's not
+
+1456
+00:46:52,080 --> 00:46:53,310
+we don't have to put in that it went
+
+1457
+00:46:53,320 --> 00:46:54,950
+through a CI. Often I say the CI is
+
+1458
+00:46:54,960 --> 00:46:57,070
+after the fact, so we reviewed a patch
+
+1459
+00:46:57,080 --> 00:46:59,510
+for more like aesthetic and you know,
+
+1460
+00:46:59,520 --> 00:47:01,230
+functionality, and then when it's
+
+1461
+00:47:01,240 --> 00:47:02,590
+merged, we figure out whether there's
+
+1462
+00:47:02,600 --> 00:47:04,750
+actually a major regression we didn't
+
+1463
+00:47:04,760 --> 00:47:06,830
+spot. And to honest, we get a we we
+
+1464
+00:47:06,840 --> 00:47:08,190
+don't spot them all.
+
+1465
+00:47:08,200 --> 00:47:09,510
+One of the advantages we're seeing with
+
+1466
+00:47:09,520 --> 00:47:11,190
+AI reviewers is that they find some of
+
+1467
+00:47:11,200 --> 00:47:13,110
+these things that we humans just aren't
+
+1468
+00:47:13,120 --> 00:47:14,310
+we might spot them one day and the next
+
+1469
+00:47:14,320 --> 00:47:15,510
+day we might not. And you know, we're
+
+1470
+00:47:15,520 --> 00:47:17,510
+not the consistency isn't always there.
+
+1471
+00:47:17,520 --> 00:47:19,630
+So, yeah, it just goes down to ideally
+
+1472
+00:47:19,640 --> 00:47:20,950
+yeah, we'd have all the information
+
+1473
+00:47:20,960 --> 00:47:22,750
+that's pertinent to the person applying
+
+1474
+00:47:22,760 --> 00:47:24,590
+the series to make it easier for them to
+
+1475
+00:47:24,600 --> 00:47:26,790
+apply your series. But in practice, it
+
+1476
+00:47:26,800 --> 00:47:30,590
+varies between two lines and essays.
+
+1477
+00:47:30,600 --> 00:47:32,550
+&gt;&gt; Okay, that's helpful. I remember before
+
+1478
+00:47:32,560 --> 00:47:34,390
+you mentioned the idea of long-term
+
+1479
+00:47:34,400 --> 00:47:36,990
+support or LTS, and we've already talked
+
+1480
+00:47:37,000 --> 00:47:38,670
+about things like backporting, but we
+
+1481
+00:47:38,680 --> 00:47:40,790
+haven't yet defined the word downstream
+
+1482
+00:47:40,800 --> 00:47:43,390
+kernel. What does downstream mean?
+
+1483
+00:47:43,400 --> 00:47:44,750
+&gt;&gt; So, from the kernel's point of view,
+
+1484
+00:47:44,760 --> 00:47:46,990
+downstream is any kernel that isn't
+
+1485
+00:47:47,000 --> 00:47:48,910
+Linus's, I suppose. And maybe I can pull
+
+1486
+00:47:48,920 --> 00:47:50,030
+it out to being any kernel that isn't
+
+1487
+00:47:50,040 --> 00:47:52,590
+stable. So, Linus and Greg's trees.
+
+1488
+00:47:52,600 --> 00:47:54,550
+Anything that's not theirs and isn't
+
+1489
+00:47:54,560 --> 00:47:56,630
+feeding into them. So, I wouldn't
+
+1490
+00:47:56,640 --> 00:47:58,110
+consider like the DRM tree being a
+
+1491
+00:47:58,120 --> 00:47:59,790
+downstream because we are going to feed
+
+1492
+00:47:59,800 --> 00:48:01,950
+our tree into Linus. But, if you're a
+
+1493
+00:48:01,960 --> 00:48:05,710
+consumer of Linus's tree like Red Hat is
+
+1494
+00:48:05,720 --> 00:48:09,110
+through Rail, through Fedora, or Android
+
+1495
+00:48:09,120 --> 00:48:12,230
+has like you know, a Chrome OS has,
+
+1496
+00:48:12,240 --> 00:48:14,430
+Ubuntu. So, any of those sort of kernels
+
+1497
+00:48:14,440 --> 00:48:16,550
+that are not just taking Linus's kernel
+
+1498
+00:48:16,560 --> 00:48:18,470
+and packaging them up, those are what we
+
+1499
+00:48:18,480 --> 00:48:19,790
+would consider downstream trees. Any
+
+1500
+00:48:19,800 --> 00:48:21,910
+trees that have diverged from the Linux
+
+1501
+00:48:21,920 --> 00:48:23,910
+core and added backports of their own,
+
+1502
+00:48:23,920 --> 00:48:25,630
+drivers of their own, things that
+
+1503
+00:48:25,640 --> 00:48:26,790
+haven't gone upstream of their own. So,
+
+1504
+00:48:26,800 --> 00:48:29,070
+yeah, a bespoke kernel that is for some
+
+1505
+00:48:29,080 --> 00:48:30,110
+use case.
+
+1506
+00:48:30,120 --> 00:48:31,830
+&gt;&gt; Okay, that's really helpful. Now, one of
+
+1507
+00:48:31,840 --> 00:48:33,110
+the other things that I remember you
+
+1508
+00:48:33,120 --> 00:48:35,030
+talking about before is what I might
+
+1509
+00:48:35,040 --> 00:48:38,230
+call a cross-subsystem change. So, like
+
+1510
+00:48:38,240 --> 00:48:40,310
+for example, you mentioned how power
+
+1511
+00:48:40,320 --> 00:48:42,390
+management could influence things that
+
+1512
+00:48:42,400 --> 00:48:44,630
+are related to DRM. And as a long-time
+
+1513
+00:48:44,640 --> 00:48:46,550
+Linux user myself, I have had that
+
+1514
+00:48:46,560 --> 00:48:48,510
+happen. So, can you talk a little bit
+
+1515
+00:48:48,520 --> 00:48:51,710
+about cross-subsystem changes in the
+
+1516
+00:48:51,720 --> 00:48:53,550
+Linux kernel? And how do you manage
+
+1517
+00:48:53,560 --> 00:48:55,630
+that? It seems incredibly complicated.
+
+1518
+00:48:55,640 --> 00:48:57,390
+&gt;&gt; It's one of the more difficult aspects,
+
+1519
+00:48:57,400 --> 00:48:58,870
+I suppose, in some ways to handle
+
+1520
+00:48:58,880 --> 00:49:00,710
+because you often get a bug report in
+
+1521
+00:49:00,720 --> 00:49:03,070
+through you know, through your handling
+
+1522
+00:49:03,080 --> 00:49:04,470
+system and you're then going, "Okay,
+
+1523
+00:49:04,480 --> 00:49:06,110
+well, now is this my problem?" And you
+
+1524
+00:49:06,120 --> 00:49:07,470
+go looking for it and you dig through
+
+1525
+00:49:07,480 --> 00:49:08,790
+the kernel and you decide it's not your
+
+1526
+00:49:08,800 --> 00:49:10,870
+problem, but how do you then tell the
+
+1527
+00:49:10,880 --> 00:49:12,070
+person who submitted that bug report,
+
+1528
+00:49:12,080 --> 00:49:13,230
+"You need to go annoy these other
+
+1529
+00:49:13,240 --> 00:49:14,950
+people." Subsystems will go and bring
+
+1530
+00:49:14,960 --> 00:49:16,630
+that other person other subsystem in and
+
+1531
+00:49:16,640 --> 00:49:17,870
+try and talk to them. Like, we have good
+
+1532
+00:49:17,880 --> 00:49:19,550
+relations between the power management
+
+1533
+00:49:19,560 --> 00:49:21,310
+people and the you know, the GPU people
+
+1534
+00:49:21,320 --> 00:49:22,750
+because we know we need to have those
+
+1535
+00:49:22,760 --> 00:49:24,710
+problems worked out. But, like you know,
+
+1536
+00:49:24,720 --> 00:49:26,150
+we don't If somebody comes in and says,
+
+1537
+00:49:26,160 --> 00:49:28,030
+"My network card suddenly broke my
+
+1538
+00:49:28,040 --> 00:49:29,790
+graphics card." then it's started That's
+
+1539
+00:49:29,800 --> 00:49:31,350
+another level up of how do we figure
+
+1540
+00:49:31,360 --> 00:49:32,550
+that out? Like you know, those sort of
+
+1541
+00:49:32,560 --> 00:49:34,230
+problems. Quite a lot of that though is
+
+1542
+00:49:34,240 --> 00:49:35,910
+often mitigated through the core kernel
+
+1543
+00:49:35,920 --> 00:49:37,630
+as in like you try to use standard
+
+1544
+00:49:37,640 --> 00:49:40,390
+kernel APIs. You don't try to make cross
+
+1545
+00:49:40,400 --> 00:49:42,390
+dependencies between your areas without
+
+1546
+00:49:42,400 --> 00:49:43,590
+having them go through some sort of
+
+1547
+00:49:43,600 --> 00:49:45,110
+standard core kernel piece. And often
+
+1548
+00:49:45,120 --> 00:49:47,270
+the core kernel piece is then maintained
+
+1549
+00:49:47,280 --> 00:49:48,990
+by people on both sides of that sort of
+
+1550
+00:49:49,000 --> 00:49:50,510
+divide. So, we have things like what the
+
+1551
+00:49:50,520 --> 00:49:52,910
+DMA buff subsystem, which is like a way
+
+1552
+00:49:52,920 --> 00:49:55,110
+of sharing memory between devices. We
+
+1553
+00:49:55,120 --> 00:49:56,550
+have that, so graphics people will use
+
+1554
+00:49:56,560 --> 00:49:58,310
+that, but also our DMA people will use
+
+1555
+00:49:58,320 --> 00:50:00,190
+that. And but we will talk through the
+
+1556
+00:50:00,200 --> 00:50:02,510
+DMA buff layer, and when we have issues
+
+1557
+00:50:02,520 --> 00:50:03,990
+or bugs, we resolve them around that
+
+1558
+00:50:04,000 --> 00:50:05,910
+sort of the community around DMA buff
+
+1559
+00:50:05,920 --> 00:50:07,150
+will be a slightly different community
+
+1560
+00:50:07,160 --> 00:50:08,470
+than the community around the core
+
+1561
+00:50:08,480 --> 00:50:10,230
+graphics or the mode setting team. So,
+
+1562
+00:50:10,240 --> 00:50:11,710
+it's a Yeah, we I say with power
+
+1563
+00:50:11,720 --> 00:50:12,790
+management has often got a little
+
+1564
+00:50:12,800 --> 00:50:14,190
+community around it of people who are
+
+1565
+00:50:14,200 --> 00:50:15,870
+both GPU people and power management
+
+1566
+00:50:15,880 --> 00:50:17,630
+people. So, again, it's mostly like a
+
+1567
+00:50:17,640 --> 00:50:19,550
+social aspect of trying to get the
+
+1568
+00:50:19,560 --> 00:50:20,830
+people to actually talk to each other
+
+1569
+00:50:20,840 --> 00:50:22,270
+and trust each other that when they say
+
+1570
+00:50:22,280 --> 00:50:23,350
+they have a problem, they believe each
+
+1571
+00:50:23,360 --> 00:50:24,150
+other.
+
+1572
+00:50:24,160 --> 00:50:25,750
+&gt;&gt; So, can you tell a story or give a
+
+1573
+00:50:25,760 --> 00:50:28,350
+concrete example of like a some type of
+
+1574
+00:50:28,360 --> 00:50:31,030
+cross subsystem change, and then how you
+
+1575
+00:50:31,040 --> 00:50:33,030
+as maintainers actually decided, quote
+
+1576
+00:50:33,040 --> 00:50:35,310
+unquote, whose fault it was and who
+
+1577
+00:50:35,320 --> 00:50:37,550
+actually had to make the fix?
+
+1578
+00:50:37,560 --> 00:50:39,750
+&gt;&gt; Quite often, we don't hit that many at
+
+1579
+00:50:39,760 --> 00:50:41,470
+that level. Quite often, like big
+
+1580
+00:50:41,480 --> 00:50:43,630
+subsystem cross subsystem changes are
+
+1581
+00:50:43,640 --> 00:50:45,790
+well planned out. We will talk about
+
+1582
+00:50:45,800 --> 00:50:47,710
+them for maybe could be a a year, could
+
+1583
+00:50:47,720 --> 00:50:49,310
+be 6 months out. Like, you know, we want
+
+1584
+00:50:49,320 --> 00:50:51,230
+to make a big change to a kernel API.
+
+1585
+00:50:51,240 --> 00:50:52,270
+It's either something that's very
+
+1586
+00:50:52,280 --> 00:50:54,110
+automatic, and I don't ever see it. It
+
+1587
+00:50:54,120 --> 00:50:55,710
+happens completely in someone else's
+
+1588
+00:50:55,720 --> 00:50:57,630
+tree. It goes to Linus, and I All I get
+
+1589
+00:50:57,640 --> 00:50:59,030
+is the fallout when I have to fix the
+
+1590
+00:50:59,040 --> 00:51:00,550
+conflicts and stuff, but that's just
+
+1591
+00:51:00,560 --> 00:51:02,950
+part of the job. At a more core level, a
+
+1592
+00:51:02,960 --> 00:51:04,870
+lot of the time, producing core
+
+1593
+00:51:04,880 --> 00:51:06,510
+functionality in the kernel that is
+
+1594
+00:51:06,520 --> 00:51:08,710
+cross subsystem is where it gets tricky.
+
+1595
+00:51:08,720 --> 00:51:11,390
+Getting that, like taking like DMA buff
+
+1596
+00:51:11,400 --> 00:51:12,870
+into the kernel and then making it
+
+1597
+00:51:12,880 --> 00:51:14,990
+usable for everyone, those discussions
+
+1598
+00:51:15,000 --> 00:51:17,150
+are harder because you often have a very
+
+1599
+00:51:17,160 --> 00:51:19,150
+opposing views on how these things
+
+1600
+00:51:19,160 --> 00:51:20,710
+should work, and some people will take
+
+1601
+00:51:20,720 --> 00:51:22,990
+very strident positions and not want to
+
+1602
+00:51:23,000 --> 00:51:25,630
+move. And how do you Our negotiation on
+
+1603
+00:51:25,640 --> 00:51:27,150
+those topics is actually quite a lot of
+
+1604
+00:51:27,160 --> 00:51:30,750
+my job is impedance mismatching your
+
+1605
+00:51:30,760 --> 00:51:32,430
+engineers who are very focused on how
+
+1606
+00:51:32,440 --> 00:51:34,270
+they think something should work and
+
+1607
+00:51:34,280 --> 00:51:35,390
+engineers who think other things should
+
+1608
+00:51:35,400 --> 00:51:36,710
+work. And it's like, "Yeah, you're both
+
+1609
+00:51:36,720 --> 00:51:38,230
+right, but that doesn't solve the
+
+1610
+00:51:38,240 --> 00:51:39,710
+problem." It's like, "I need you to come
+
+1611
+00:51:39,720 --> 00:51:41,110
+together and work out how it's going to
+
+1612
+00:51:41,120 --> 00:51:42,910
+work between you." And you get
+
+1613
+00:51:42,920 --> 00:51:45,350
+personality issues there. And again,
+
+1614
+00:51:45,360 --> 00:51:47,070
+what part of my job, and I think part of
+
+1615
+00:51:47,080 --> 00:51:48,630
+why I like doing a lot of maintenance
+
+1616
+00:51:48,640 --> 00:51:50,190
+work I do is is is dealing with the
+
+1617
+00:51:50,200 --> 00:51:51,870
+people and just solving those problems
+
+1618
+00:51:51,880 --> 00:51:53,230
+between them. But, that's quite a lot of
+
+1619
+00:51:53,240 --> 00:51:55,310
+it. It's just that social trust aspect
+
+1620
+00:51:55,320 --> 00:51:57,150
+is very important. And again, you find
+
+1621
+00:51:57,160 --> 00:51:59,030
+if you build One of our That's what
+
+1622
+00:51:59,040 --> 00:52:00,710
+That's come up and Simona talks about
+
+1623
+00:52:00,720 --> 00:52:02,390
+this quite often is that when we have
+
+1624
+00:52:02,400 --> 00:52:04,230
+developers build things inside companies
+
+1625
+00:52:04,240 --> 00:52:06,670
+and then upstream them, we often don't
+
+1626
+00:52:06,680 --> 00:52:08,470
+get that commonality. But, it's not even
+
+1627
+00:52:08,480 --> 00:52:10,350
+often about the commonality of the code
+
+1628
+00:52:10,360 --> 00:52:11,510
+as much as it's about having the
+
+1629
+00:52:11,520 --> 00:52:13,630
+community of the people who understand
+
+1630
+00:52:13,640 --> 00:52:15,790
+the problem talking to each other. So,
+
+1631
+00:52:15,800 --> 00:52:17,630
+we've had this problem with I suppose
+
+1632
+00:52:17,640 --> 00:52:19,190
+one of our graphics drivers went a bit
+
+1633
+00:52:19,200 --> 00:52:21,070
+rogue a few years ago and did a whole
+
+1634
+00:52:21,080 --> 00:52:22,950
+lot of development work internally in
+
+1635
+00:52:22,960 --> 00:52:24,670
+the company and then decided they were
+
+1636
+00:52:24,680 --> 00:52:26,550
+going to upstream that work. And when
+
+1637
+00:52:26,560 --> 00:52:27,910
+they started upstreaming that work, we
+
+1638
+00:52:27,920 --> 00:52:29,670
+started seeing major structural problems
+
+1639
+00:52:29,680 --> 00:52:31,350
+with some of the other work they'd been
+
+1640
+00:52:31,360 --> 00:52:33,390
+doing leading to that work. And it was a
+
+1641
+00:52:33,400 --> 00:52:35,110
+the driver had diverged maybe by a year
+
+1642
+00:52:35,120 --> 00:52:36,310
+or two. You know, we're not closely
+
+1643
+00:52:36,320 --> 00:52:37,510
+monitoring. The trust system is there
+
+1644
+00:52:37,520 --> 00:52:39,230
+for a good reason. But, the problem that
+
+1645
+00:52:39,240 --> 00:52:40,670
+came out of that is like they literally
+
+1646
+00:52:40,680 --> 00:52:43,030
+that didn't understand the problems that
+
+1647
+00:52:43,040 --> 00:52:44,630
+other people were solving. And again, we
+
+1648
+00:52:44,640 --> 00:52:45,870
+often have case where someone will go,
+
+1649
+00:52:45,880 --> 00:52:47,390
+"Okay, well, I've got this problem."
+
+1650
+00:52:47,400 --> 00:52:48,870
+"Oh, we tried that 5 years ago and we
+
+1651
+00:52:48,880 --> 00:52:50,470
+couldn't do it." It's like, "Well, where
+
+1652
+00:52:50,480 --> 00:52:51,430
+did you try it?" "Oh, we did it
+
+1653
+00:52:51,440 --> 00:52:52,750
+internally." And it's like, "Well, if
+
+1654
+00:52:52,760 --> 00:52:54,590
+you'd done that in public, we'd have
+
+1655
+00:52:54,600 --> 00:52:55,790
+that evidence that you tried it so the
+
+1656
+00:52:55,800 --> 00:52:56,910
+other person wouldn't waste their time."
+
+1657
+00:52:56,920 --> 00:52:58,110
+So, it's building up that sort of
+
+1658
+00:52:58,120 --> 00:52:59,670
+community infrastructure, especially
+
+1659
+00:52:59,680 --> 00:53:01,230
+with new technologies are coming along
+
+1660
+00:53:01,240 --> 00:53:02,710
+like memory management, things have
+
+1661
+00:53:02,720 --> 00:53:04,110
+changed on GPUs and stuff. And building
+
+1662
+00:53:04,120 --> 00:53:05,950
+up that knowledge base and that core of
+
+1663
+00:53:05,960 --> 00:53:07,790
+people that understand the problem with
+
+1664
+00:53:07,800 --> 00:53:10,110
+that in the industry is that in the each
+
+1665
+00:53:10,120 --> 00:53:11,430
+company there's like one or two of these
+
+1666
+00:53:11,440 --> 00:53:12,790
+people. But, you want all of the
+
+1667
+00:53:12,800 --> 00:53:14,470
+industry experts in the same place to
+
+1668
+00:53:14,480 --> 00:53:16,270
+solve that for Linux. And that's getting
+
+1669
+00:53:16,280 --> 00:53:17,990
+those five or 10 people to talk and
+
+1670
+00:53:18,000 --> 00:53:20,470
+trust each other is the tricky part.
+
+1671
+00:53:20,480 --> 00:53:21,750
+&gt;&gt; Yeah, thank you for saying that. You've
+
+1672
+00:53:21,760 --> 00:53:23,670
+used the word trust several times and
+
+1673
+00:53:23,680 --> 00:53:25,590
+you've talked about how this is as much
+
+1674
+00:53:25,600 --> 00:53:27,830
+a technical issue as it is a human issue
+
+1675
+00:53:27,840 --> 00:53:29,470
+as well. And that makes me think of
+
+1676
+00:53:29,480 --> 00:53:31,550
+perhaps like a bigger picture question.
+
+1677
+00:53:31,560 --> 00:53:33,750
+You know, as you're going through an RC,
+
+1678
+00:53:33,760 --> 00:53:35,830
+I'm guessing you must have some rough
+
+1679
+00:53:35,840 --> 00:53:39,150
+idea of hey, this RC is really healthy.
+
+1680
+00:53:39,160 --> 00:53:41,710
+It's going well. Or oh, this RC is
+
+1681
+00:53:41,720 --> 00:53:43,110
+really struggling. We're going to have
+
+1682
+00:53:43,120 --> 00:53:46,190
+to go to five or six or beyond. Can you
+
+1683
+00:53:46,200 --> 00:53:48,390
+take a big step back and give us a sense
+
+1684
+00:53:48,400 --> 00:53:50,750
+of how you're gauging like the overall
+
+1685
+00:53:50,760 --> 00:53:52,390
+health of a release cycle?
+
+1686
+00:53:52,400 --> 00:53:54,430
+&gt;&gt; Linus is really good at this. I'm not as
+
+1687
+00:53:54,440 --> 00:53:55,830
+good. Linus is This is one thing you'll
+
+1688
+00:53:55,840 --> 00:53:58,950
+see in all of his weekly RC emails. He
+
+1689
+00:53:58,960 --> 00:54:00,470
+will always give us sort of a feeling
+
+1690
+00:54:00,480 --> 00:54:02,310
+health warning of oh, there's a lot more
+
+1691
+00:54:02,320 --> 00:54:03,790
+patches in this than I expect. Like he
+
+1692
+00:54:03,800 --> 00:54:05,670
+does a lot of trend watching. So, he'll
+
+1693
+00:54:05,680 --> 00:54:07,190
+watch the trends in the last like five
+
+1694
+00:54:07,200 --> 00:54:08,710
+10 kernels and he'll have a innate
+
+1695
+00:54:08,720 --> 00:54:10,790
+knowledge of this feels big. This feels
+
+1696
+00:54:10,800 --> 00:54:12,550
+like there's too many patches. Some of
+
+1697
+00:54:12,560 --> 00:54:15,030
+these fixes are big fixes. Like
+
+1698
+00:54:15,040 --> 00:54:16,190
+oh, he'll often look at the trend and
+
+1699
+00:54:16,200 --> 00:54:17,870
+say oh, there's like way too many
+
+1700
+00:54:17,880 --> 00:54:19,230
+patches here. But then he'll look at
+
+1701
+00:54:19,240 --> 00:54:20,670
+sampling of those patches and say oh,
+
+1702
+00:54:20,680 --> 00:54:21,630
+they're all quite small. They're all
+
+1703
+00:54:21,640 --> 00:54:23,350
+quite self-contained. They're fixing one
+
+1704
+00:54:23,360 --> 00:54:24,870
+small bug. It just happens we're fixing
+
+1705
+00:54:24,880 --> 00:54:26,630
+a lot of small bugs. But if he does that
+
+1706
+00:54:26,640 --> 00:54:28,910
+and he sees large changes like you're
+
+1707
+00:54:28,920 --> 00:54:30,990
+modifying multiple things in a subsystem
+
+1708
+00:54:31,000 --> 00:54:32,910
+that aren't reverts. Like we generally
+
+1709
+00:54:32,920 --> 00:54:34,390
+reverts are fine. But something that's
+
+1710
+00:54:34,400 --> 00:54:36,230
+doing a you know, a pretty intricate
+
+1711
+00:54:36,240 --> 00:54:38,150
+change to fix a bug. He will get a bit
+
+1712
+00:54:38,160 --> 00:54:39,510
+antsy and he'll be like, okay, no, I'm
+
+1713
+00:54:39,520 --> 00:54:41,230
+not too comfortable releasing RC7
+
+1714
+00:54:41,240 --> 00:54:42,510
+straight to final. I might I think we
+
+1715
+00:54:42,520 --> 00:54:44,590
+should do an RC8. Quite often security
+
+1716
+00:54:44,600 --> 00:54:45,990
+issues can cause things like that. Like
+
+1717
+00:54:46,000 --> 00:54:47,590
+Spectre Meltdown, things like the big
+
+1718
+00:54:47,600 --> 00:54:49,110
+ones. Those those cause that problem.
+
+1719
+00:54:49,120 --> 00:54:51,430
+For me personally, yeah, I I keep an eye
+
+1720
+00:54:51,440 --> 00:54:53,150
+on sizing as well when I cuz I generate
+
+1721
+00:54:53,160 --> 00:54:55,110
+my weekly request to Linus. I'll keep an
+
+1722
+00:54:55,120 --> 00:54:56,990
+eye on sizing. Generally, I also keep an
+
+1723
+00:54:57,000 --> 00:54:58,630
+eye on the each so every week I
+
+1724
+00:54:58,640 --> 00:55:01,310
+generally get maybe four standard pull
+
+1725
+00:55:01,320 --> 00:55:03,430
+requests. I get our miscellaneous tree.
+
+1726
+00:55:03,440 --> 00:55:05,630
+I get the AMD folks, the Intel and two
+
+1727
+00:55:05,640 --> 00:55:07,590
+trees from different Intel teams. And
+
+1728
+00:55:07,600 --> 00:55:09,270
+those are like my baseline. If those
+
+1729
+00:55:09,280 --> 00:55:10,510
+don't come in by Friday, I'm like
+
+1730
+00:55:10,520 --> 00:55:11,830
+something's gone wrong. But then
+
+1731
+00:55:11,840 --> 00:55:13,830
+there'll always be maybe one other. Like
+
+1732
+00:55:13,840 --> 00:55:15,510
+so maybe MSM will come in with like the
+
+1733
+00:55:15,520 --> 00:55:17,270
+Qualcomm fixes for the for the They
+
+1734
+00:55:17,280 --> 00:55:18,790
+don't do weekly. So, like they might be
+
+1735
+00:55:18,800 --> 00:55:20,030
+two or three weeks I'll get a big bunch
+
+1736
+00:55:20,040 --> 00:55:21,390
+of those. And sometimes those ones are
+
+1737
+00:55:21,400 --> 00:55:22,910
+like, okay, there's a lot of changes in
+
+1738
+00:55:22,920 --> 00:55:24,790
+here. Could he have broken this up or is
+
+1739
+00:55:24,800 --> 00:55:25,910
+there some other things? And that's sort
+
+1740
+00:55:25,920 --> 00:55:27,950
+of like I I go down that gauge that. But
+
+1741
+00:55:27,960 --> 00:55:29,910
+for me, yeah, generally I find by RC4 or
+
+1742
+00:55:29,920 --> 00:55:32,150
+five, things do taper off. We do
+
+1743
+00:55:32,160 --> 00:55:33,990
+generally get a sort of a like a shorter
+
+1744
+00:55:34,000 --> 00:55:35,790
+things drop down to like the whole pull
+
+1745
+00:55:35,800 --> 00:55:37,350
+request being in less than 100 lines or
+
+1746
+00:55:37,360 --> 00:55:38,990
+200 lines. If I start seeing pull
+
+1747
+00:55:39,000 --> 00:55:40,670
+requests where I'm seeing five or 600
+
+1748
+00:55:40,680 --> 00:55:43,630
+lines changed that after RC56 I'm I will
+
+1749
+00:55:43,640 --> 00:55:45,070
+dig in a bit and look into it. But yeah,
+
+1750
+00:55:45,080 --> 00:55:46,830
+it's kind of a instinct built over time
+
+1751
+00:55:46,840 --> 00:55:48,750
+that you just your comfort levels. We
+
+1752
+00:55:48,760 --> 00:55:50,470
+usually find the really big problems
+
+1753
+00:55:50,480 --> 00:55:52,550
+early and it's then comes out to with
+
+1754
+00:55:52,560 --> 00:55:54,990
+graphics there's so many like yeah, if
+
+1755
+00:55:55,000 --> 00:55:56,310
+you break something central it's very
+
+1756
+00:55:56,320 --> 00:55:58,630
+obvious, but laptops are so diverse.
+
+1757
+00:55:58,640 --> 00:56:00,910
+There's so many different ways laptops
+
+1758
+00:56:00,920 --> 00:56:02,750
+can break and panels like it's not even
+
+1759
+00:56:02,760 --> 00:56:04,390
+one laptop it's like every model of a
+
+1760
+00:56:04,400 --> 00:56:05,710
+laptop could have different panel and
+
+1761
+00:56:05,720 --> 00:56:07,110
+the panel yeah, so it's like those
+
+1762
+00:56:07,120 --> 00:56:08,470
+things are always going to be on a bit
+
+1763
+00:56:08,480 --> 00:56:10,230
+more of a long tail, but they're not
+
+1764
+00:56:10,240 --> 00:56:12,270
+showstoppers. Like I generally treat a
+
+1765
+00:56:12,280 --> 00:56:13,670
+regression where somebody has a black
+
+1766
+00:56:13,680 --> 00:56:15,390
+screen as kind of a showstopper because
+
+1767
+00:56:15,400 --> 00:56:16,830
+it's like yeah, having a black screen
+
+1768
+00:56:16,840 --> 00:56:18,790
+means I can't install Linux. Yeah, I
+
+1769
+00:56:18,800 --> 00:56:20,150
+generally try to get those fixed as
+
+1770
+00:56:20,160 --> 00:56:21,790
+quickly as possible or by reverting or
+
+1771
+00:56:21,800 --> 00:56:23,390
+moving up you know, pushing people, but
+
+1772
+00:56:23,400 --> 00:56:24,790
+yeah, it's quite a hard to describe a
+
+1773
+00:56:24,800 --> 00:56:26,190
+showstopper when you're in the area of
+
+1774
+00:56:26,200 --> 00:56:27,870
+like yeah, every mostly works and the
+
+1775
+00:56:27,880 --> 00:56:29,790
+price of kernel as a whole the kernel
+
+1776
+00:56:29,800 --> 00:56:31,990
+even at RC1 mostly works pretty well.
+
+1777
+00:56:32,000 --> 00:56:34,270
+It's very rarely even at RC1 that it's a
+
+1778
+00:56:34,280 --> 00:56:36,150
+complete like what we call a dumpster
+
+1779
+00:56:36,160 --> 00:56:38,070
+fire, but the potential is still there,
+
+1780
+00:56:38,080 --> 00:56:39,710
+but the process is built in a quite well
+
+1781
+00:56:39,720 --> 00:56:41,870
+now that that's a lot rarer than it used
+
+1782
+00:56:41,880 --> 00:56:43,510
+to be. Like it used to be installing RC1
+
+1783
+00:56:43,520 --> 00:56:44,990
+on your laptop was like will I have a
+
+1784
+00:56:45,000 --> 00:56:46,684
+file system tomorrow, you know.
+
+1785
+00:56:46,694 --> 00:56:47,150
+&gt;&gt; [laughter]
+
+1786
+00:56:47,160 --> 00:56:48,750
+&gt;&gt; Okay, that's really helpful and I think
+
+1787
+00:56:48,760 --> 00:56:50,990
+it gives us a good intuitive sense of
+
+1788
+00:56:51,000 --> 00:56:54,110
+what we mean by the health of an RC. In
+
+1789
+00:56:54,120 --> 00:56:55,590
+a moment I want to talk a little bit
+
+1790
+00:56:55,600 --> 00:56:58,270
+about how AI is changing your landscape
+
+1791
+00:56:58,280 --> 00:56:59,870
+and I also want to talk briefly about
+
+1792
+00:56:59,880 --> 00:57:01,910
+Rust in the Linux kernel. But before we
+
+1793
+00:57:01,920 --> 00:57:04,150
+move to that phase of our show and then
+
+1794
+00:57:04,160 --> 00:57:06,190
+draw the episode to a conclusion, is
+
+1795
+00:57:06,200 --> 00:57:07,790
+there anything that we haven't covered
+
+1796
+00:57:07,800 --> 00:57:09,550
+that you thought we should cover?
+
+1797
+00:57:09,560 --> 00:57:10,790
+&gt;&gt; No, I think we've gotten sort of the
+
+1798
+00:57:10,800 --> 00:57:12,270
+basic level topics.
+
+1799
+00:57:12,280 --> 00:57:14,430
+&gt;&gt; Okay. And if listeners are curious in
+
+1800
+00:57:14,440 --> 00:57:16,470
+wanting to know more, I'll pass along
+
+1801
+00:57:16,480 --> 00:57:18,150
+some links in the show notes both to
+
+1802
+00:57:18,160 --> 00:57:19,910
+other episodes of Software Engineering
+
+1803
+00:57:19,920 --> 00:57:22,870
+Radio and in many of the resources that
+
+1804
+00:57:22,880 --> 00:57:24,750
+Dave and I have gathered. Now quickly
+
+1805
+00:57:24,760 --> 00:57:27,310
+Dave, I wanted to talk about using AI
+
+1806
+00:57:27,320 --> 00:57:28,590
+because you've mentioned that several
+
+1807
+00:57:28,600 --> 00:57:30,670
+times. You talked about how you could
+
+1808
+00:57:30,680 --> 00:57:33,710
+have a coding agent do a review of part
+
+1809
+00:57:33,720 --> 00:57:35,910
+of the Linux kernel for you, and then
+
+1810
+00:57:35,920 --> 00:57:38,070
+maybe point out a potential regression
+
+1811
+00:57:38,080 --> 00:57:40,550
+or a security concern. Can you tell our
+
+1812
+00:57:40,560 --> 00:57:41,950
+listeners a little bit more about how
+
+1813
+00:57:41,960 --> 00:57:43,510
+you're integrating AI into your
+
+1814
+00:57:43,520 --> 00:57:44,870
+maintenance workflow?
+
+1815
+00:57:44,880 --> 00:57:46,750
+&gt;&gt; Well, over the last sort of year, this
+
+1816
+00:57:46,760 --> 00:57:48,830
+has become a like a topic of both
+
+1817
+00:57:48,840 --> 00:57:50,510
+interest and contention, I suppose, in
+
+1818
+00:57:50,520 --> 00:57:53,190
+the community. But, the way I personally
+
+1819
+00:57:53,200 --> 00:57:55,350
+got involved was at the last maintainer
+
+1820
+00:57:55,360 --> 00:57:57,750
+summit, Linus said like, "Oh, I'm
+
+1821
+00:57:57,760 --> 00:57:59,630
+actually seeing good reviews coming out
+
+1822
+00:57:59,640 --> 00:58:01,190
+of some of the like he he had had access
+
+1823
+00:58:01,200 --> 00:58:03,030
+to some people at Google and some people
+
+1824
+00:58:03,040 --> 00:58:04,670
+at Meta who had been doing some of this
+
+1825
+00:58:04,680 --> 00:58:06,150
+work, and they've been showing him some
+
+1826
+00:58:06,160 --> 00:58:07,670
+of the reviews, and he was like, "I'm
+
+1827
+00:58:07,680 --> 00:58:08,990
+quite impressed." And he says, "One
+
+1828
+00:58:09,000 --> 00:58:10,310
+thing that happens every year at
+
+1829
+00:58:10,320 --> 00:58:11,710
+maintainer summit is we complain about
+
+1830
+00:58:11,720 --> 00:58:13,150
+not having enough reviewer bandwidth,
+
+1831
+00:58:13,160 --> 00:58:14,710
+not having enough reviewers." You know,
+
+1832
+00:58:14,720 --> 00:58:16,870
+it's like it's a common refrain. And
+
+1833
+00:58:16,880 --> 00:58:18,950
+he's like, "If this can help or find
+
+1834
+00:58:18,960 --> 00:58:20,710
+problems, that's a good place. You know,
+
+1835
+00:58:20,720 --> 00:58:22,350
+we we should probably start looking into
+
+1836
+00:58:22,360 --> 00:58:23,710
+this." I was like, "Okay, well, that's a
+
+1837
+00:58:23,720 --> 00:58:25,430
+pretty good that he's he's interested."
+
+1838
+00:58:25,440 --> 00:58:27,350
+I talked to I called Chris Mason at Meta
+
+1839
+00:58:27,360 --> 00:58:29,070
+who's been leading their work on this.
+
+1840
+00:58:29,080 --> 00:58:31,430
+He actually wrote framework for
+
+1841
+00:58:31,440 --> 00:58:34,150
+regression finding for using AI. So, it
+
+1842
+00:58:34,160 --> 00:58:36,150
+was very specifically focused on
+
+1843
+00:58:36,160 --> 00:58:37,470
+prompting the AI to sort of find
+
+1844
+00:58:37,480 --> 00:58:39,550
+regressions. And how he tested it was by
+
+1845
+00:58:39,560 --> 00:58:41,790
+running it on older kernel patches, and
+
+1846
+00:58:41,800 --> 00:58:43,190
+then finding fixes for those older
+
+1847
+00:58:43,200 --> 00:58:44,790
+kernel patches. And if those fixes were
+
+1848
+00:58:44,800 --> 00:58:46,790
+for a regret And if the AI identified
+
+1849
+00:58:46,800 --> 00:58:48,950
+the initial problem in the initial patch
+
+1850
+00:58:48,960 --> 00:58:50,870
+review, then, you know, obviously the
+
+1851
+00:58:50,880 --> 00:58:53,030
+system is useful. And he's found that it
+
+1852
+00:58:53,040 --> 00:58:55,110
+was catching regressions. I I can't
+
+1853
+00:58:55,120 --> 00:58:56,150
+remember what the false positive was,
+
+1854
+00:58:56,160 --> 00:58:58,110
+but it's in the 50%. So, that's
+
+1855
+00:58:58,120 --> 00:58:59,670
+interesting, because if we can avoid
+
+1856
+00:58:59,680 --> 00:59:01,590
+having to put fixes patches in by having
+
+1857
+00:59:01,600 --> 00:59:03,550
+an automated reviewer and give you
+
+1858
+00:59:03,560 --> 00:59:05,350
+feedback, then why wouldn't we? Even if
+
+1859
+00:59:05,360 --> 00:59:07,190
+there's noise in that system, it's still
+
+1860
+00:59:07,200 --> 00:59:09,750
+better like the signal is on 50% is a
+
+1861
+00:59:09,760 --> 00:59:11,230
+pretty good signal noise. Even if it's
+
+1862
+00:59:11,240 --> 00:59:13,350
+not that, finding those regressions is
+
+1863
+00:59:13,360 --> 00:59:15,590
+still a lot of work. It's expensive.
+
+1864
+00:59:15,600 --> 00:59:16,710
+Like, when a regression actually gets
+
+1865
+00:59:16,720 --> 00:59:17,950
+into the Linux kernel and gets out into
+
+1866
+00:59:17,960 --> 00:59:20,310
+the world, that costs like actual money
+
+1867
+00:59:20,320 --> 00:59:22,310
+in the world, even if you're the process
+
+1868
+00:59:22,320 --> 00:59:24,710
+isn't seeing that. And having an AI find
+
+1869
+00:59:24,720 --> 00:59:26,430
+those, yeah, that there should be value
+
+1870
+00:59:26,440 --> 00:59:27,990
+in that. We need to work on it. What I
+
+1871
+00:59:28,000 --> 00:59:29,470
+personally did and this is due to a like
+
+1872
+00:59:29,480 --> 00:59:31,430
+a we also have a lot of AI stuff dealing
+
+1873
+00:59:31,440 --> 00:59:32,910
+with in Red Hat. So, I was like, well, I
+
+1874
+00:59:32,920 --> 00:59:34,470
+I was like, I'll take that mandate I
+
+1875
+00:59:34,480 --> 00:59:35,990
+have from Red Hat and Linus and sort of
+
+1876
+00:59:36,000 --> 00:59:37,910
+put together. So, I wrote a I used
+
+1877
+00:59:37,920 --> 00:59:40,830
+Claude to write a Claude reviewer where
+
+1878
+00:59:40,840 --> 00:59:43,190
+it just passes the patch series to
+
+1879
+00:59:43,200 --> 00:59:45,590
+Claude Opus 4 6 and then gives a good
+
+1880
+00:59:45,600 --> 00:59:47,830
+like patch by patch review. I didn't
+
+1881
+00:59:47,840 --> 00:59:49,230
+concentrate on regressions as much. I
+
+1882
+00:59:49,240 --> 00:59:51,110
+just wanted more of a an overall review
+
+1883
+00:59:51,120 --> 00:59:52,750
+of the series and a patch by patch
+
+1884
+00:59:52,760 --> 00:59:54,350
+review. Gives a basic set of problems
+
+1885
+00:59:54,360 --> 00:59:56,710
+that I haven't enforced this. I haven't
+
+1886
+00:59:56,720 --> 00:59:58,590
+pushed this onto the community. I built
+
+1887
+00:59:58,600 --> 01:00:00,830
+side public inbox infrastructure that
+
+1888
+01:00:00,840 --> 01:00:02,590
+was there on free desktop. So, you could
+
+1889
+01:00:02,600 --> 01:00:04,510
+actually use the same tools to pull this
+
+1890
+01:00:04,520 --> 01:00:05,830
+the patch reviews as you could pull
+
+1891
+01:00:05,840 --> 01:00:07,510
+patches with using the an alternate
+
+1892
+01:00:07,520 --> 01:00:09,150
+server. All the training should still
+
+1893
+01:00:09,160 --> 01:00:10,830
+work. So, it's there as an option right
+
+1894
+01:00:10,840 --> 01:00:12,430
+now. I'm also kind of using it as a
+
+1895
+01:00:12,440 --> 01:00:14,110
+reference. I'm I'm running it manually
+
+1896
+01:00:14,120 --> 01:00:15,230
+at the moment and generating it every
+
+1897
+01:00:15,240 --> 01:00:17,070
+day or two, but it's like if I see
+
+1898
+01:00:17,080 --> 01:00:18,550
+regressions and then I can go back and
+
+1899
+01:00:18,560 --> 01:00:20,190
+look at this reference and say, "Look at
+
+1900
+01:00:20,200 --> 01:00:22,310
+Look, it spotted that problem and now we
+
+1901
+01:00:22,320 --> 01:00:23,630
+have this problem months later." I'll
+
+1902
+01:00:23,640 --> 01:00:26,390
+get that feeling that maybe we should be
+
+1903
+01:00:26,400 --> 01:00:28,590
+pushing on this more. But, even last
+
+1904
+01:00:28,600 --> 01:00:30,670
+week or two Google unveiled I'm going to
+
+1905
+01:00:30,680 --> 01:00:32,350
+say it Shashlik or something I think
+
+1906
+01:00:32,360 --> 01:00:34,430
+it's called a patch review system. So, I
+
+1907
+01:00:34,440 --> 01:00:36,110
+need to catch up on that and maybe get
+
+1908
+01:00:36,120 --> 01:00:37,630
+them to start reviewing the DRM patches
+
+1909
+01:00:37,640 --> 01:00:39,390
+using that system if they're interested
+
+1910
+01:00:39,400 --> 01:00:41,430
+because my one is a bit junky, but it it
+
+1911
+01:00:41,440 --> 01:00:42,950
+was doing the job for me for what I want
+
+1912
+01:00:42,960 --> 01:00:44,710
+to figure out. But, I think the value at
+
+1913
+01:00:44,720 --> 01:00:46,430
+the moment people are definitely seeing
+
+1914
+01:00:46,440 --> 01:00:48,350
+value in AI patch review. Code
+
+1915
+01:00:48,360 --> 01:00:50,750
+generation, I still there's potential
+
+1916
+01:00:50,760 --> 01:00:51,790
+and I don't think I've seen a few
+
+1917
+01:00:51,800 --> 01:00:53,230
+patches generated with the help of
+
+1918
+01:00:53,240 --> 01:00:55,070
+Claude and they haven't been horrible.
+
+1919
+01:00:55,080 --> 01:00:57,750
+So, again, I still I'm quite open to see
+
+1920
+01:00:57,760 --> 01:00:59,110
+where that goes. I definitely think
+
+1921
+01:00:59,120 --> 01:01:00,310
+there will there will be potential for
+
+1922
+01:01:00,320 --> 01:01:02,110
+doing it and will pick up I I would
+
+1923
+01:01:02,120 --> 01:01:04,110
+guess in the next year. I think Opus and
+
+1924
+01:01:04,120 --> 01:01:05,590
+Gemini are starting to get to the level
+
+1925
+01:01:05,600 --> 01:01:07,110
+where you you can actually do some
+
+1926
+01:01:07,120 --> 01:01:08,830
+actually decent stuff with them. So, I
+
+1927
+01:01:08,840 --> 01:01:10,070
+think it will develop heavily in the
+
+1928
+01:01:10,080 --> 01:01:11,110
+next year.
+
+1929
+01:01:11,120 --> 01:01:12,590
+&gt;&gt; I know that we could do an entire
+
+1930
+01:01:12,600 --> 01:01:15,150
+episode just about using AI to do code
+
+1931
+01:01:15,160 --> 01:01:17,230
+review in the Linux kernel and I hope
+
+1932
+01:01:17,240 --> 01:01:18,790
+you'll continue to write blog posts on
+
+1933
+01:01:18,800 --> 01:01:20,350
+this topic because I'm sure our
+
+1934
+01:01:20,360 --> 01:01:22,710
+listeners will be excited to learn more.
+
+1935
+01:01:22,720 --> 01:01:24,630
+Before we end the show, I did want to
+
+1936
+01:01:24,640 --> 01:01:26,110
+talk about one other thing that I
+
+1937
+01:01:26,120 --> 01:01:28,110
+remember reading on your blog, which is
+
+1938
+01:01:28,120 --> 01:01:30,630
+the integration of the Rust programming
+
+1939
+01:01:30,640 --> 01:01:32,910
+language in the Linux kernel. Once more,
+
+1940
+01:01:32,920 --> 01:01:34,510
+I know that we could do a full episode
+
+1941
+01:01:34,520 --> 01:01:36,710
+on this topic, but can you give your our
+
+1942
+01:01:36,720 --> 01:01:38,670
+listeners a little sense of how Rust is
+
+1943
+01:01:38,680 --> 01:01:40,990
+playing a role in the Linux kernel?
+
+1944
+01:01:41,000 --> 01:01:43,310
+&gt;&gt; Yeah, actually my reasoning for using
+
+1945
+01:01:43,320 --> 01:01:44,550
+getting behind the Rust effort is
+
+1946
+01:01:44,560 --> 01:01:46,510
+actually not probably what people would
+
+1947
+01:01:46,520 --> 01:01:47,710
+expect. And I think you could probably
+
+1948
+01:01:47,720 --> 01:01:49,350
+do a really good episode with two people
+
+1949
+01:01:49,360 --> 01:01:50,790
+I know about Rust in the Linux kernel
+
+1950
+01:01:50,800 --> 01:01:53,790
+from a technical standpoint. My push for
+
+1951
+01:01:53,800 --> 01:01:55,070
+getting behind the Rust effort was
+
+1952
+01:01:55,080 --> 01:01:57,390
+actually more social and community
+
+1953
+01:01:57,400 --> 01:01:59,830
+focused. I was at I think it was Linux
+
+1954
+01:01:59,840 --> 01:02:01,670
+Plumbers Conference maybe 2 years, 3
+
+1955
+01:02:01,680 --> 01:02:03,030
+years ago. Can't remember the exact
+
+1956
+01:02:03,040 --> 01:02:04,590
+timelines. So, maintainers summit the
+
+1957
+01:02:04,600 --> 01:02:06,630
+Linux 30 people summit that's co-located
+
+1958
+01:02:06,640 --> 01:02:08,110
+usually with Plumbers Conference and we
+
+1959
+01:02:08,120 --> 01:02:09,550
+have our private meeting at the pub
+
+1960
+01:02:09,560 --> 01:02:11,470
+conference. One of the big complaints in
+
+1961
+01:02:11,480 --> 01:02:13,470
+the private meeting over the years is
+
+1962
+01:02:13,480 --> 01:02:14,950
+we're all getting older. There's you
+
+1963
+01:02:14,960 --> 01:02:16,950
+know, we've got a lot more gray beards.
+
+1964
+01:02:16,960 --> 01:02:18,390
+Like people are in their 50s now that
+
+1965
+01:02:18,400 --> 01:02:19,710
+we're in their 20s when they started
+
+1966
+01:02:19,720 --> 01:02:21,510
+this journey. So, it's definitely the
+
+1967
+01:02:21,520 --> 01:02:24,270
+community's aging. And simultaneously at
+
+1968
+01:02:24,280 --> 01:02:25,750
+people complaining at that conference, I
+
+1969
+01:02:25,760 --> 01:02:27,750
+met some people from the graphics
+
+1970
+01:02:27,760 --> 01:02:29,790
+subsystem. Just starting to talk to
+
+1971
+01:02:29,800 --> 01:02:31,630
+people in the hallway tracks. And one
+
+1972
+01:02:31,640 --> 01:02:33,070
+guy came up to me and said, "Oh, I
+
+1973
+01:02:33,080 --> 01:02:34,390
+really like working in the graphics
+
+1974
+01:02:34,400 --> 01:02:36,030
+subsystem. There's loads of There's a
+
+1975
+01:02:36,040 --> 01:02:37,910
+young group of people working here.
+
+1976
+01:02:37,920 --> 01:02:39,510
+They're all very interesting, excited. I
+
+1977
+01:02:39,520 --> 01:02:40,670
+like going to conference and meeting
+
+1978
+01:02:40,680 --> 01:02:42,390
+them." And I I didn't know this existed
+
+1979
+01:02:42,400 --> 01:02:44,110
+really because I don't work down at the
+
+1980
+01:02:44,120 --> 01:02:45,670
+level, but she said there's this good
+
+1981
+01:02:45,680 --> 01:02:46,990
+community that she likes to be a part
+
+1982
+01:02:47,000 --> 01:02:48,310
+of. And I was like, "Okay, I didn't
+
+1983
+01:02:48,320 --> 01:02:49,550
+create that, but I
+
+1984
+01:02:49,560 --> 01:02:51,910
+we facilitated that in the DRM subsystem
+
+1985
+01:02:51,920 --> 01:02:53,870
+by being open to different things and
+
+1986
+01:02:53,880 --> 01:02:55,710
+not being so strict in our methods of
+
+1987
+01:02:55,720 --> 01:02:57,150
+developing the kernel." But then as
+
+1988
+01:02:57,160 --> 01:02:58,470
+well, the next time I was talking to
+
+1989
+01:02:58,480 --> 01:02:59,750
+some few of the Rust people and I was
+
+1990
+01:02:59,760 --> 01:03:01,750
+like, "These are very young people.
+
+1991
+01:03:01,760 --> 01:03:03,830
+These are again a group of people who
+
+1992
+01:03:03,840 --> 01:03:05,430
+are in their like maybe in their 20s,
+
+1993
+01:03:05,440 --> 01:03:06,550
+some in their 30s." Yeah, but they're
+
+1994
+01:03:06,560 --> 01:03:08,870
+they're a younger cohort of developers
+
+1995
+01:03:08,880 --> 01:03:10,230
+than the people I'm normally used to
+
+1996
+01:03:10,240 --> 01:03:11,750
+dealing with. And I was like, "Look, I
+
+1997
+01:03:11,760 --> 01:03:13,710
+think there is a good way we can bring
+
+1998
+01:03:13,720 --> 01:03:15,870
+these together. I think having young
+
+1999
+01:03:15,880 --> 01:03:17,630
+people coming into the kernel using Rust
+
+2000
+01:03:17,640 --> 01:03:20,270
+as a mechanism is is valuable and having
+
+2001
+01:03:20,280 --> 01:03:21,870
+it that different perspective and having
+
+2002
+01:03:21,880 --> 01:03:24,030
+it different way of doing it. And so I I
+
+2003
+01:03:24,040 --> 01:03:25,910
+was like, well, if I'm getting feedback
+
+2004
+01:03:25,920 --> 01:03:27,550
+that there's young people in the DRM sub
+
+2005
+01:03:27,560 --> 01:03:29,630
+system and it's an interesting area that
+
+2006
+01:03:29,640 --> 01:03:31,110
+to develop that in and there's young
+
+2007
+01:03:31,120 --> 01:03:32,350
+people writing well, I think I should be
+
+2008
+01:03:32,360 --> 01:03:33,710
+supportive of putting Rust in the
+
+2009
+01:03:33,720 --> 01:03:35,710
+kernel. I see it going to happen. I'll
+
+2010
+01:03:35,720 --> 01:03:37,510
+help accelerate it. I'll facilitate it.
+
+2011
+01:03:37,520 --> 01:03:38,830
+And I I I I stood up at the Rust
+
+2012
+01:03:38,840 --> 01:03:40,070
+conference mini conference and said,
+
+2013
+01:03:40,080 --> 01:03:41,590
+"Yeah, I'm open to doing this. Let's do
+
+2014
+01:03:41,600 --> 01:03:43,790
+it." Now, in terms of when I say that of
+
+2015
+01:03:43,800 --> 01:03:46,470
+me doing anything about it I didn't do
+
+2016
+01:03:46,480 --> 01:03:47,950
+anything about it. I just said I was
+
+2017
+01:03:47,960 --> 01:03:49,630
+happy to have people do something about
+
+2018
+01:03:49,640 --> 01:03:50,870
+it. And that's been my So it's my
+
+2019
+01:03:50,880 --> 01:03:52,350
+working model over the years is like
+
+2020
+01:03:52,360 --> 01:03:54,310
+just say you're open to the idea. Don't
+
+2021
+01:03:54,320 --> 01:03:56,350
+You don't have to do it. It's like I'm
+
+2022
+01:03:56,360 --> 01:03:58,190
+willing to make space for this to happen
+
+2023
+01:03:58,200 --> 01:03:59,750
+and and facilitate it. And what I
+
+2024
+01:03:59,760 --> 01:04:01,110
+actually end up doing was going back
+
+2025
+01:04:01,120 --> 01:04:03,150
+inside Red Hat, finding one of my
+
+2026
+01:04:03,160 --> 01:04:05,190
+engineers who was a a working on the
+
+2027
+01:04:05,200 --> 01:04:06,750
+stuff in New Folsom at the time and he
+
+2028
+01:04:06,760 --> 01:04:09,150
+was a really good C developer and
+
+2029
+01:04:09,160 --> 01:04:10,670
+suggesting to them like they don't work
+
+2030
+01:04:10,680 --> 01:04:12,350
+for me. They're in my one of my teams,
+
+2031
+01:04:12,360 --> 01:04:14,350
+but I I'm not a manager. I was like,
+
+2032
+01:04:14,360 --> 01:04:16,110
+"Would you be interested in Rust?" And
+
+2033
+01:04:16,120 --> 01:04:17,790
+they went through the cycle of I don't
+
+2034
+01:04:17,800 --> 01:04:19,110
+really like this. I don't really like
+
+2035
+01:04:19,120 --> 01:04:20,510
+it. And now they really love it. And now
+
+2036
+01:04:20,520 --> 01:04:21,350
+they're one of the Rust core
+
+2037
+01:04:21,360 --> 01:04:23,350
+maintainers. So it's like encouraging,
+
+2038
+01:04:23,360 --> 01:04:24,750
+building that group. Like you know, if
+
+2039
+01:04:24,760 --> 01:04:25,990
+you wanted to talk about the technical
+
+2040
+01:04:26,000 --> 01:04:27,150
+aspects of Rust in the kernel, talk to
+
+2041
+01:04:27,160 --> 01:04:28,830
+someone like Danilo or Miguel would be
+
+2042
+01:04:28,840 --> 01:04:30,550
+ideal because they really know the
+
+2043
+01:04:30,560 --> 01:04:33,190
+details of it. For me, it is just about
+
+2044
+01:04:33,200 --> 01:04:34,470
+bringing in new people into the
+
+2045
+01:04:34,480 --> 01:04:36,510
+community and expanding the Linux kernel
+
+2046
+01:04:36,520 --> 01:04:38,230
+community. And like I see the safety
+
+2047
+01:04:38,240 --> 01:04:40,070
+aspects and I see those aspects of it. I
+
+2048
+01:04:40,080 --> 01:04:42,070
+I I actually see good value in them,
+
+2049
+01:04:42,080 --> 01:04:43,790
+especially we have a graphics sub
+
+2050
+01:04:43,800 --> 01:04:46,030
+system. We have a very wide API to the
+
+2051
+01:04:46,040 --> 01:04:49,310
+user space. It's often exploited. So I
+
+2052
+01:04:49,320 --> 01:04:51,190
+would rather we don't have that. I'd
+
+2053
+01:04:51,200 --> 01:04:52,750
+rather that's a safe API as much as
+
+2054
+01:04:52,760 --> 01:04:54,070
+possible. And same with the hardware
+
+2055
+01:04:54,080 --> 01:04:55,790
+that we keep that safety concerns with
+
+2056
+01:04:55,800 --> 01:04:57,390
+the hardware interfaces as much as
+
+2057
+01:04:57,400 --> 01:04:59,310
+possible. I see Rust accelerating the
+
+2058
+01:04:59,320 --> 01:05:01,790
+ability to deliver GPU drivers. I see it
+
+2059
+01:05:01,800 --> 01:05:03,110
+being much faster that we can build a
+
+2060
+01:05:03,120 --> 01:05:04,990
+lot more common infrastructure. We can
+
+2061
+01:05:05,000 --> 01:05:06,830
+avoid making a lot of the C mistakes
+
+2062
+01:05:06,840 --> 01:05:08,550
+we've repeatedly make. You know, a long
+
+2063
+01:05:08,560 --> 01:05:10,710
+time C developers will say, "We could do
+
+2064
+01:05:10,720 --> 01:05:13,150
+that in C." And I'm like, yes, we can,
+
+2065
+01:05:13,160 --> 01:05:15,230
+but we've repeatedly not. You know,
+
+2066
+01:05:15,240 --> 01:05:17,110
+yeah, review can catch this, but we've
+
+2067
+01:05:17,120 --> 01:05:19,230
+repeatedly failed. It's like, yes, like
+
+2068
+01:05:19,240 --> 01:05:20,790
+these are all the fact that yes, if you
+
+2069
+01:05:20,800 --> 01:05:22,750
+have the best C program in the world on
+
+2070
+01:05:22,760 --> 01:05:24,430
+a bad day, we'll still make that
+
+2071
+01:05:24,440 --> 01:05:26,790
+mistake. Rust gives you a lot more you
+
+2072
+01:05:26,800 --> 01:05:28,350
+can't do that. The compiler stops you.
+
+2073
+01:05:28,360 --> 01:05:31,390
+You can build into your type system the
+
+2074
+01:05:31,400 --> 01:05:32,710
+fact that the compiler will stop you
+
+2075
+01:05:32,720 --> 01:05:34,270
+doing you know, let you do a stupid
+
+2076
+01:05:34,280 --> 01:05:36,030
+things and especially with lifetimes.
+
+2077
+01:05:36,040 --> 01:05:37,750
+Lifetimes are one of the hardest things
+
+2078
+01:05:37,760 --> 01:05:39,310
+to get right in the Linux kernel. The
+
+2079
+01:05:39,320 --> 01:05:41,270
+lifetime we made this like 20 years of
+
+2080
+01:05:41,280 --> 01:05:42,870
+lifetime mistakes that would describe a
+
+2081
+01:05:42,880 --> 01:05:44,230
+lot of the kernel development process.
+
+2082
+01:05:44,240 --> 01:05:45,870
+Like it we have made every lifetime
+
+2083
+01:05:45,880 --> 01:05:47,670
+mistake over the years, you know. In
+
+2084
+01:05:47,680 --> 01:05:49,150
+terms of, you know, from when we moved
+
+2085
+01:05:49,160 --> 01:05:51,790
+from single processor to SMP, but even
+
+2086
+01:05:51,800 --> 01:05:53,590
+moving now to threaded like interrupts
+
+2087
+01:05:53,600 --> 01:05:54,990
+and all these things all these changes
+
+2088
+01:05:55,000 --> 01:05:57,310
+over the years find new ways that we've
+
+2089
+01:05:57,320 --> 01:05:59,150
+messed up our lifetimes. Hot plugging
+
+2090
+01:05:59,160 --> 01:06:01,270
+devices, lifetimes messed up. They've
+
+2091
+01:06:01,280 --> 01:06:03,270
+all involved been designing new things
+
+2092
+01:06:03,280 --> 01:06:04,470
+and you know, getting that right and
+
+2093
+01:06:04,480 --> 01:06:05,990
+embedding that in your type system is
+
+2094
+01:06:06,000 --> 01:06:07,590
+quite valuable to stop making those
+
+2095
+01:06:07,600 --> 01:06:08,310
+mistakes.
+
+2096
+01:06:08,320 --> 01:06:09,910
+&gt;&gt; Yeah, thanks for all of these insights.
+
+2097
+01:06:09,920 --> 01:06:11,350
+It's really been a lot of fun to have
+
+2098
+01:06:11,360 --> 01:06:13,350
+this conversation as we've been focusing
+
+2099
+01:06:13,360 --> 01:06:15,150
+on Linux kernel maintenance and I
+
+2100
+01:06:15,160 --> 01:06:17,150
+recognize there's many technical details
+
+2101
+01:06:17,160 --> 01:06:19,230
+that we didn't really cover, but I'm now
+
+2102
+01:06:19,240 --> 01:06:21,830
+interested in you taking a big step back
+
+2103
+01:06:21,840 --> 01:06:23,870
+as we conclude our episode. So, you've
+
+2104
+01:06:23,880 --> 01:06:25,430
+been working on kernel maintenance for
+
+2105
+01:06:25,440 --> 01:06:27,670
+more than two decades. Can you tell us a
+
+2106
+01:06:27,680 --> 01:06:29,750
+little bit briefly what has stayed the
+
+2107
+01:06:29,760 --> 01:06:32,710
+same and what has changed? Give our
+
+2108
+01:06:32,720 --> 01:06:34,550
+listeners a little bit of a picture as
+
+2109
+01:06:34,560 --> 01:06:36,070
+we conclude the episode.
+
+2110
+01:06:36,080 --> 01:06:37,470
+&gt;&gt; Yeah, it's an interesting question. I
+
+2111
+01:06:37,480 --> 01:06:40,030
+think the essentials of it have stayed
+
+2112
+01:06:40,040 --> 01:06:41,830
+the same. I think the basic you write a
+
+2113
+01:06:41,840 --> 01:06:44,270
+patch, you fix a problem, goes through
+
+2114
+01:06:44,280 --> 01:06:46,430
+the tree. That that that has the core of
+
+2115
+01:06:46,440 --> 01:06:47,950
+it has remained the same. There's like,
+
+2116
+01:06:47,960 --> 01:06:49,670
+yeah, there's a mailing list, there was
+
+2117
+01:06:49,680 --> 01:06:51,750
+people, but the scale of it has so much
+
+2118
+01:06:51,760 --> 01:06:53,990
+changed and the level for yes, you have
+
+2119
+01:06:54,000 --> 01:06:55,990
+a patch to it has gone from like, you
+
+2120
+01:06:56,000 --> 01:06:57,430
+know, yeah, you have a a patch, but now
+
+2121
+01:06:57,440 --> 01:06:59,030
+you should probably a lot more you need
+
+2122
+01:06:59,040 --> 01:07:00,590
+to do more with that patch to get it to
+
+2123
+01:07:00,600 --> 01:07:02,190
+a quality standard that's acceptable for
+
+2124
+01:07:02,200 --> 01:07:03,870
+the kernel. I think the quality of the
+
+2125
+01:07:03,880 --> 01:07:05,550
+kernel has changed substantially in that
+
+2126
+01:07:05,560 --> 01:07:07,630
+20 years. The quality of our process for
+
+2127
+01:07:07,640 --> 01:07:09,630
+producing it has solidified into an
+
+2128
+01:07:09,640 --> 01:07:11,710
+actual process as opposed to what it was
+
+2129
+01:07:11,720 --> 01:07:13,710
+10 20 years ago where it was just like
+
+2130
+01:07:13,720 --> 01:07:15,230
+randomly just you know, there was no
+
+2131
+01:07:15,240 --> 01:07:17,110
+timelines, there was no process. It was
+
+2132
+01:07:17,120 --> 01:07:19,310
+very shoot from the hip, I suppose. So,
+
+2133
+01:07:19,320 --> 01:07:20,710
+now it's like yeah, it's very
+
+2134
+01:07:20,720 --> 01:07:23,150
+formalized, it's very structured. I
+
+2135
+01:07:23,160 --> 01:07:24,470
+would say it's like going to be less
+
+2136
+01:07:24,480 --> 01:07:27,510
+fun, but less fun is important in that
+
+2137
+01:07:27,520 --> 01:07:29,670
+like yeah, you can't make suddenly wide
+
+2138
+01:07:29,680 --> 01:07:31,710
+raging memory management changes that
+
+2139
+01:07:31,720 --> 01:07:33,790
+destabilizes half the world's computers.
+
+2140
+01:07:33,800 --> 01:07:35,110
+That's probably not a good thing to be
+
+2141
+01:07:35,120 --> 01:07:36,790
+doing anymore. So, yeah, it's like you
+
+2142
+01:07:36,800 --> 01:07:38,550
+know, you definitely have it's matured a
+
+2143
+01:07:38,560 --> 01:07:40,390
+lot, but I still think the core aspect
+
+2144
+01:07:40,400 --> 01:07:42,310
+of hacking on hardware devices and stuff
+
+2145
+01:07:42,320 --> 01:07:44,070
+is still at least for me very appealing.
+
+2146
+01:07:44,080 --> 01:07:46,390
+Like I still yesterday I was writing
+
+2147
+01:07:46,400 --> 01:07:48,590
+code for Nvidia GPU drivers even though
+
+2148
+01:07:48,600 --> 01:07:49,950
+it's you know, it's just stuff to do and
+
+2149
+01:07:49,960 --> 01:07:51,950
+it's like I still like having a hardware
+
+2150
+01:07:51,960 --> 01:07:54,110
+device. I just got an Nvidia Spark box
+
+2151
+01:07:54,120 --> 01:07:55,870
+and I just getting that lit up with open
+
+2152
+01:07:55,880 --> 01:07:57,950
+source Linux drivers is like something
+
+2153
+01:07:57,960 --> 01:07:59,790
+that still appeals to me even 20 years
+
+2154
+01:07:59,800 --> 01:08:01,630
+later like that whole aspect of it.
+
+2155
+01:08:01,640 --> 01:08:02,990
+&gt;&gt; So, thank you very much for your
+
+2156
+01:08:03,000 --> 01:08:05,190
+enthusiasm. It's really contagious. And
+
+2157
+01:08:05,200 --> 01:08:06,870
+if I could say on a personal note, for
+
+2158
+01:08:06,880 --> 01:08:08,230
+someone who's been using Linux for
+
+2159
+01:08:08,240 --> 01:08:10,750
+decades myself, thank you for all of the
+
+2160
+01:08:10,760 --> 01:08:12,230
+work you and your many colleagues have
+
+2161
+01:08:12,240 --> 01:08:15,070
+done because for me using Linux has been
+
+2162
+01:08:15,080 --> 01:08:18,230
+a genuine source of joy in the same way
+
+2163
+01:08:18,240 --> 01:08:19,870
+that this has been a joy-filled and
+
+2164
+01:08:19,880 --> 01:08:21,710
+awesome conversation. Dave, is there
+
+2165
+01:08:21,720 --> 01:08:23,110
+anything that we haven't covered that
+
+2166
+01:08:23,120 --> 01:08:25,030
+you think we should conclude on?
+
+2167
+01:08:25,040 --> 01:08:26,269
+&gt;&gt; No, I think just people if you're
+
+2168
+01:08:26,279 --> 01:08:27,670
+interested in the Linux kernel, just get
+
+2169
+01:08:27,680 --> 01:08:29,349
+out there and find a niche, scratch it,
+
+2170
+01:08:29,359 --> 01:08:30,870
+submit some patches, you know, the
+
+2171
+01:08:30,880 --> 01:08:32,190
+community's out there. We're we're
+
+2172
+01:08:32,200 --> 01:08:34,150
+always happy to have new people join it.
+
+2173
+01:08:34,160 --> 01:08:35,870
+&gt;&gt; Okay. Thanks for all these insights,
+
+2174
+01:08:35,880 --> 01:08:38,269
+Dave. This is Gregory CapHamer signing
+
+2175
+01:08:38,279 --> 01:08:41,297
+off for Software Engineering Radio.
+
+2176
+01:08:41,307 --> 01:08:42,030
+&gt;&gt; [music]
+
+2177
+01:08:42,040 --> 01:08:43,430
+&gt;&gt; Thanks for listening to SE Radio, an
+
+2178
+01:08:43,440 --> 01:08:45,030
+educational program brought to you by
+
+2179
+01:08:45,040 --> 01:08:47,470
+IEEE Software Magazine. For more about
+
+2180
+01:08:47,480 --> 01:08:49,190
+the podcast including other episodes,
+
+2181
+01:08:49,200 --> 01:08:52,990
+visit our website at SE-Radio.net.
+
+2182
+01:08:53,000 --> 01:08:54,550
+To provide feedback, you can comment on
+
+2183
+01:08:54,560 --> 01:08:56,510
+each episode on the website or reach us
+
+2184
+01:08:56,520 --> 01:08:58,982
+on LinkedIn, Facebook, Twitter,
+
+2185
+01:08:59,000 --> 01:09:00,430
+&gt;&gt; [music]
+&gt;&gt; or through our Slack channel at
+
+2186
+01:09:00,440 --> 01:09:03,630
+SE-Radio.slack.com.
+
+2187
+01:09:04,870 --> 01:09:04,880
+You can also email us at
+
+2188
+01:09:04,880 --> 01:09:08,152
+team@se-radio.net.
+
+2189
+01:09:08,309 --> 01:09:08,319
+&gt;&gt; [music]
+
+2190
+01:09:08,319 --> 01:09:10,110
+&gt;&gt; This and all other episodes of SE Radio
+
+2191
+01:09:10,120 --> 01:09:11,670
+is licensed under Creative Commons
+
+2192
+01:09:11,680 --> 01:09:13,789
+License 2.5.
+
+2193
+01:09:13,799 --> 01:09:16,520
+Thanks for listening.

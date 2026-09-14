@@ -1,0 +1,5687 @@
+1
+00:00:02,950 --> 00:00:02,960
+This is software engineering radio, the
+
+2
+00:00:02,960 --> 00:00:04,950
+podcast for professional developers on
+
+3
+00:00:04,960 --> 00:00:07,909
+the web at se-radio.net.
+
+4
+00:00:07,919 --> 00:00:09,910
+SE Radio is brought to you by the ITE
+
+5
+00:00:09,920 --> 00:00:12,070
+computer society and by it e software
+
+6
+00:00:12,080 --> 00:00:16,365
+magazine online at computer.org/software
+
+7
+00:00:16,375 --> 00:00:19,109
+[music]
+
+8
+00:00:21,590 --> 00:00:21,600
+for software engineering radio. This is
+
+9
+00:00:21,600 --> 00:00:25,109
+Robert Blumen. With me today is Sahed
+
+10
+00:00:25,119 --> 00:00:29,189
+Gar. Sahedge is a co-founder and CTO of
+
+11
+00:00:29,199 --> 00:00:30,950
+whisper.ai.
+
+12
+00:00:30,960 --> 00:00:33,750
+Prior to Whisper, he was an AI engineer
+
+13
+00:00:33,760 --> 00:00:36,790
+at Luminous Computing and is a graduate
+
+14
+00:00:36,800 --> 00:00:39,670
+of Stanford University. He has published
+
+15
+00:00:39,680 --> 00:00:42,709
+research on topics in machine learning
+
+16
+00:00:42,719 --> 00:00:44,790
+at Luminous. He was the fifth employee
+
+17
+00:00:44,800 --> 00:00:47,750
+and AI team leaded.
+
+18
+00:00:47,760 --> 00:00:50,310
+Welcome to Software Engineering Radio.
+
+19
+00:00:50,320 --> 00:00:51,670
+&gt;&gt; Thank you for having me here, Robert.
+
+20
+00:00:51,680 --> 00:00:53,590
+It's a pleasure to be on the show. Would
+
+21
+00:00:53,600 --> 00:00:55,270
+you like to say anything else about your
+
+22
+00:00:55,280 --> 00:00:57,189
+background before we dive into the
+
+23
+00:00:57,199 --> 00:00:58,389
+topic?
+
+24
+00:00:58,399 --> 00:01:00,310
+&gt;&gt; No, I think that's a great summary.
+
+25
+00:01:00,320 --> 00:01:02,709
+Maybe the only thing that I'll add is
+
+26
+00:01:02,719 --> 00:01:04,869
+right now at Whisper, we're working on
+
+27
+00:01:04,879 --> 00:01:07,510
+low latency interactive voice AI
+
+28
+00:01:07,520 --> 00:01:10,070
+applications for users. And so that will
+
+29
+00:01:10,080 --> 00:01:12,070
+shed a lot of light on how we think
+
+30
+00:01:12,080 --> 00:01:14,149
+about latency, throughput, and
+
+31
+00:01:14,159 --> 00:01:15,750
+optimization when it comes to ML
+
+32
+00:01:15,760 --> 00:01:18,070
+workloads. That's a great thing for you
+
+33
+00:01:18,080 --> 00:01:20,469
+to be working on because today we will
+
+34
+00:01:20,479 --> 00:01:22,870
+be talking about low latency AI
+
+35
+00:01:22,880 --> 00:01:27,030
+applications. Before we get into latency
+
+36
+00:01:27,040 --> 00:01:31,429
+in AI in particular, let's talk about
+
+37
+00:01:31,439 --> 00:01:33,190
+generally in applications when we're
+
+38
+00:01:33,200 --> 00:01:34,630
+talking about latency, what are we
+
+39
+00:01:34,640 --> 00:01:36,710
+talking about? So when we talk about
+
+40
+00:01:36,720 --> 00:01:38,789
+latency, what we really care about is
+
+41
+00:01:38,799 --> 00:01:41,190
+what the user experiences the moment
+
+42
+00:01:41,200 --> 00:01:43,350
+they try to do something to the moment
+
+43
+00:01:43,360 --> 00:01:45,670
+they actually experience the response.
+
+44
+00:01:45,680 --> 00:01:48,149
+So it's entirely from the side of the
+
+45
+00:01:48,159 --> 00:01:51,030
+person interacting with the system, not
+
+46
+00:01:51,040 --> 00:01:52,710
+so much from the side of like the
+
+47
+00:01:52,720 --> 00:01:54,630
+service or the background or how much
+
+48
+00:01:54,640 --> 00:01:57,270
+we're able to process all at once.
+
+49
+00:01:57,280 --> 00:02:00,149
+&gt;&gt; You could imagine a system in which a
+
+50
+00:02:00,159 --> 00:02:02,870
+another computer program is interacting
+
+51
+00:02:02,880 --> 00:02:05,030
+with the system. Does your definition
+
+52
+00:02:05,040 --> 00:02:07,510
+rule out calling it latency in those
+
+53
+00:02:07,520 --> 00:02:08,389
+cases?
+
+54
+00:02:08,399 --> 00:02:10,309
+&gt;&gt; No. You can think about latency kind of
+
+55
+00:02:10,319 --> 00:02:12,229
+in all sorts of cases where all you're
+
+56
+00:02:12,239 --> 00:02:14,070
+measuring is the time from something to
+
+57
+00:02:14,080 --> 00:02:15,430
+start to the time that something
+
+58
+00:02:15,440 --> 00:02:17,910
+finishes. And so it's basically just
+
+59
+00:02:17,920 --> 00:02:20,470
+elapsed time of some kind of operation.
+
+60
+00:02:20,480 --> 00:02:22,790
+And a lot of times I just tend to think
+
+61
+00:02:22,800 --> 00:02:24,790
+about it from what the user experiences
+
+62
+00:02:24,800 --> 00:02:27,270
+cuz that is the type of latency that a
+
+63
+00:02:27,280 --> 00:02:28,869
+lot of software applications care to
+
+64
+00:02:28,879 --> 00:02:31,750
+optimize. Maybe one example that I think
+
+65
+00:02:31,760 --> 00:02:34,309
+about is people joke about the AI pause
+
+66
+00:02:34,319 --> 00:02:36,630
+nowadays when you're having a voice call
+
+67
+00:02:36,640 --> 00:02:38,869
+with chat GBT voice where it pauses for
+
+68
+00:02:38,879 --> 00:02:41,030
+three or 4 seconds. That time span is
+
+69
+00:02:41,040 --> 00:02:42,949
+what I think of as latency in a lot of
+
+70
+00:02:42,959 --> 00:02:44,949
+user interactive applications.
+
+71
+00:02:44,959 --> 00:02:47,430
+&gt;&gt; We'll definitely talk about that in a
+
+72
+00:02:47,440 --> 00:02:49,750
+bit. I want to do some more general
+
+73
+00:02:49,760 --> 00:02:53,030
+purpose talk concepts about latency. We
+
+74
+00:02:53,040 --> 00:02:55,910
+did a podcast on this some years ago
+
+75
+00:02:55,920 --> 00:02:57,670
+that was talking about consumer
+
+76
+00:02:57,680 --> 00:02:59,430
+applications and the guest presented
+
+77
+00:02:59,440 --> 00:03:03,030
+some data about human behavior in
+
+78
+00:03:03,040 --> 00:03:04,790
+response to latency showing that people
+
+79
+00:03:04,800 --> 00:03:07,190
+are highly sensitive to both average
+
+80
+00:03:07,200 --> 00:03:10,710
+latency and tail latency even down into
+
+81
+00:03:10,720 --> 00:03:13,509
+milliseconds. Now this was years ago. Do
+
+82
+00:03:13,519 --> 00:03:15,910
+you have any updated research or your
+
+83
+00:03:15,920 --> 00:03:18,630
+own ideas about what humans experience
+
+84
+00:03:18,640 --> 00:03:21,910
+as a noticeable latency? Yeah. So, it
+
+85
+00:03:21,920 --> 00:03:24,229
+depends a lot on the application. So,
+
+86
+00:03:24,239 --> 00:03:26,550
+there are some really prominent ones
+
+87
+00:03:26,560 --> 00:03:28,710
+like superhuman mail, which is an email
+
+88
+00:03:28,720 --> 00:03:31,110
+client, where what they've optimized for
+
+89
+00:03:31,120 --> 00:03:33,110
+is the latency of every interaction. And
+
+90
+00:03:33,120 --> 00:03:35,110
+they found that when responding to
+
+91
+00:03:35,120 --> 00:03:37,350
+keystrokes, for example, you click a
+
+92
+00:03:37,360 --> 00:03:39,110
+shortcut in the application, how long
+
+93
+00:03:39,120 --> 00:03:40,869
+until the mail app updates based on
+
+94
+00:03:40,879 --> 00:03:42,949
+that, the target was under 100
+
+95
+00:03:42,959 --> 00:03:45,190
+milliseconds. Anywhere between 50 and
+
+96
+00:03:45,200 --> 00:03:47,190
+100 milliseconds would feel good and
+
+97
+00:03:47,200 --> 00:03:49,509
+anything above 100 started to feel bad
+
+98
+00:03:49,519 --> 00:03:51,270
+very quickly. It's a little bit
+
+99
+00:03:51,280 --> 00:03:52,949
+different for kind of traditional
+
+100
+00:03:52,959 --> 00:03:54,470
+software and a lot more of the AI
+
+101
+00:03:54,480 --> 00:03:55,990
+applications and what the specific
+
+102
+00:03:56,000 --> 00:03:58,630
+interaction is. So like in voice cases
+
+103
+00:03:58,640 --> 00:04:01,030
+it tends to be 500 to 600 milliseconds
+
+104
+00:04:01,040 --> 00:04:03,910
+tends to be tolerable. In UIs, if you
+
+105
+00:04:03,920 --> 00:04:06,630
+hit more than 30 to 40 milliseconds for
+
+106
+00:04:06,640 --> 00:04:08,390
+response to like a user hitting a
+
+107
+00:04:08,400 --> 00:04:10,390
+button, then that starts to feel laggy
+
+108
+00:04:10,400 --> 00:04:13,429
+very very fast. And people can perceive
+
+109
+00:04:13,439 --> 00:04:16,310
+latency down to like 5 or 10
+
+110
+00:04:16,320 --> 00:04:18,310
+milliseconds. Like if my keystrokes when
+
+111
+00:04:18,320 --> 00:04:20,949
+I input them into an app lag by 10
+
+112
+00:04:20,959 --> 00:04:23,030
+milliseconds, I tend to use those kinds
+
+113
+00:04:23,040 --> 00:04:25,110
+of notepad editors way less than other
+
+114
+00:04:25,120 --> 00:04:27,749
+ones. Do you have any thoughts on
+
+115
+00:04:27,759 --> 00:04:30,870
+whether people are responding to average
+
+116
+00:04:30,880 --> 00:04:34,310
+latency, longtail latency, worst case
+
+117
+00:04:34,320 --> 00:04:37,270
+latency or some other aggregator?
+
+118
+00:04:37,280 --> 00:04:40,070
+&gt;&gt; I think people tend to measure latency
+
+119
+00:04:40,080 --> 00:04:43,270
+based on the 95th to 99th percentile
+
+120
+00:04:43,280 --> 00:04:45,830
+experience that they have. Like whenever
+
+121
+00:04:45,840 --> 00:04:47,990
+at whisper people have mentioned that
+
+122
+00:04:48,000 --> 00:04:51,030
+things feel slow when we look at the
+
+123
+00:04:51,040 --> 00:04:52,710
+distribution of times they get it's
+
+124
+00:04:52,720 --> 00:04:54,710
+actually usually one or two outlier
+
+125
+00:04:54,720 --> 00:04:56,550
+cases where it feels slow and so people
+
+126
+00:04:56,560 --> 00:04:58,390
+tend to measure latency based on their
+
+127
+00:04:58,400 --> 00:05:00,790
+worst perceived experience not based on
+
+128
+00:05:00,800 --> 00:05:02,950
+their average perceived experience.
+
+129
+00:05:02,960 --> 00:05:05,830
+&gt;&gt; In trying to engineer the obvious cause
+
+130
+00:05:05,840 --> 00:05:08,469
+of average latency is the system has to
+
+131
+00:05:08,479 --> 00:05:10,469
+do some work for you in order to give
+
+132
+00:05:10,479 --> 00:05:13,110
+you a response and that takes time. you
+
+133
+00:05:13,120 --> 00:05:15,830
+can try to make it run faster, but
+
+134
+00:05:15,840 --> 00:05:18,323
+longtail latency may have
+
+135
+00:05:18,333 --> 00:05:20,469
+[clears throat] different causes. And do
+
+136
+00:05:20,479 --> 00:05:23,029
+you have any experience in tracking down
+
+137
+00:05:23,039 --> 00:05:26,070
+where that originates? So that's where
+
+138
+00:05:26,080 --> 00:05:28,070
+the hardest challenges in latency come
+
+139
+00:05:28,080 --> 00:05:30,950
+from? Because when you think about P99
+
+140
+00:05:30,960 --> 00:05:33,430
+latency, it's like 100 different things
+
+141
+00:05:33,440 --> 00:05:35,909
+that can cause the issue. And it's about
+
+142
+00:05:35,919 --> 00:05:37,590
+figuring out how to find those and
+
+143
+00:05:37,600 --> 00:05:40,070
+diagnose those. So for us, one of the
+
+144
+00:05:40,080 --> 00:05:42,870
+ways that we think about and analyze P99
+
+145
+00:05:42,880 --> 00:05:44,710
+latency is looking at the impact of the
+
+146
+00:05:44,720 --> 00:05:47,270
+network on the user. Networks are super
+
+147
+00:05:47,280 --> 00:05:49,510
+stochastic and so every once in a while,
+
+148
+00:05:49,520 --> 00:05:51,510
+a request just won't make it where it
+
+149
+00:05:51,520 --> 00:05:54,150
+should get to. And the way that we try
+
+150
+00:05:54,160 --> 00:05:56,469
+to track these things down is by making
+
+151
+00:05:56,479 --> 00:06:00,150
+sure that we have as much observation as
+
+152
+00:06:00,160 --> 00:06:02,629
+possible into the breakdown of the
+
+153
+00:06:02,639 --> 00:06:04,629
+different parts of the latency. So if we
+
+154
+00:06:04,639 --> 00:06:07,110
+measure the time for the work, right? As
+
+155
+00:06:07,120 --> 00:06:08,469
+you said, that's the time that every
+
+156
+00:06:08,479 --> 00:06:10,870
+request is going to have to take and the
+
+157
+00:06:10,880 --> 00:06:13,749
+time for every single sequence of steps,
+
+158
+00:06:13,759 --> 00:06:15,350
+what we can do is we can figure out,
+
+159
+00:06:15,360 --> 00:06:18,629
+okay, this hop of network latency was
+
+160
+00:06:18,639 --> 00:06:20,790
+the source of the issue and then we can
+
+161
+00:06:20,800 --> 00:06:22,950
+try and figure out how do we get that
+
+162
+00:06:22,960 --> 00:06:25,350
+99th percentile latency to go down. Do
+
+163
+00:06:25,360 --> 00:06:27,990
+you have any stories of when you looked
+
+164
+00:06:28,000 --> 00:06:30,390
+at this telemetry and you found
+
+165
+00:06:30,400 --> 00:06:32,070
+something maybe you weren't expecting
+
+166
+00:06:32,080 --> 00:06:34,629
+that was taking up an normal amount of
+
+167
+00:06:34,639 --> 00:06:35,350
+time?
+
+168
+00:06:35,360 --> 00:06:38,070
+&gt;&gt; Absolutely. So this is really common. So
+
+169
+00:06:38,080 --> 00:06:40,950
+we host models for voice dictation. So
+
+170
+00:06:40,960 --> 00:06:42,390
+basically users will press a button on
+
+171
+00:06:42,400 --> 00:06:43,749
+their computer, they're going to speak,
+
+172
+00:06:43,759 --> 00:06:45,670
+we send it to a server for transcription
+
+173
+00:06:45,680 --> 00:06:46,950
+where we host all of the models
+
+174
+00:06:46,960 --> 00:06:48,629
+ourselves and then we return a response
+
+175
+00:06:48,639 --> 00:06:51,749
+to the user. And we run both a speech
+
+176
+00:06:51,759 --> 00:06:53,270
+model and an LLM as part of that
+
+177
+00:06:53,280 --> 00:06:54,950
+pipeline. That's to kind of give context
+
+178
+00:06:54,960 --> 00:06:57,029
+on the application where we've seen it.
+
+179
+00:06:57,039 --> 00:06:59,749
+The most unexpected one that has come up
+
+180
+00:06:59,759 --> 00:07:02,550
+for us is we found that things were
+
+181
+00:07:02,560 --> 00:07:04,309
+making it to the server fast. Things
+
+182
+00:07:04,319 --> 00:07:05,749
+were getting processed by the server
+
+183
+00:07:05,759 --> 00:07:08,070
+fast, but one day all of a sudden all of
+
+184
+00:07:08,080 --> 00:07:09,909
+our response times went up by about 300
+
+185
+00:07:09,919 --> 00:07:13,430
+to 400 milliseconds. And what we found
+
+186
+00:07:13,440 --> 00:07:16,790
+in that case was the time between the
+
+187
+00:07:16,800 --> 00:07:18,870
+first model running and the second model
+
+188
+00:07:18,880 --> 00:07:21,510
+running suddenly had a spike. And the
+
+189
+00:07:21,520 --> 00:07:23,830
+reason that we eventually uncovered is
+
+190
+00:07:23,840 --> 00:07:25,990
+something in our deployment allowed one
+
+191
+00:07:26,000 --> 00:07:28,230
+GPU to be in one region and the other
+
+192
+00:07:28,240 --> 00:07:30,230
+GPU to be in a different region. So we
+
+193
+00:07:30,240 --> 00:07:32,070
+would go to California for processing
+
+194
+00:07:32,080 --> 00:07:33,990
+our audio. Then we would somehow send it
+
+195
+00:07:34,000 --> 00:07:36,629
+to the Midwest for processing the LLM
+
+196
+00:07:36,639 --> 00:07:38,710
+and all the post-processing. And this
+
+197
+00:07:38,720 --> 00:07:40,629
+was kind of opaque behindthe-scenes
+
+198
+00:07:40,639 --> 00:07:42,550
+infrastructure things where we thought
+
+199
+00:07:42,560 --> 00:07:43,990
+everything was getting deployed to the
+
+200
+00:07:44,000 --> 00:07:46,950
+same place. And then we looked under the
+
+201
+00:07:46,960 --> 00:07:48,550
+hood and we found that okay there's like
+
+202
+00:07:48,560 --> 00:07:50,790
+network responses going on here and then
+
+203
+00:07:50,800 --> 00:07:52,469
+we were able to diagnose it and bring it
+
+204
+00:07:52,479 --> 00:07:53,909
+all back into the same region.
+
+205
+00:07:53,919 --> 00:07:55,990
+&gt;&gt; What's interesting about that story, one
+
+206
+00:07:56,000 --> 00:07:57,510
+of the things you wanted to talk about
+
+207
+00:07:57,520 --> 00:08:00,309
+was latency and scale. That story
+
+208
+00:08:00,319 --> 00:08:02,550
+illustrates how as you have a larger
+
+209
+00:08:02,560 --> 00:08:05,029
+system and you either are scaling out
+
+210
+00:08:05,039 --> 00:08:07,510
+for reasons of handling more traffic or
+
+211
+00:08:07,520 --> 00:08:09,589
+other reasons, it also impacts your
+
+212
+00:08:09,599 --> 00:08:10,710
+latency.
+
+213
+00:08:10,720 --> 00:08:13,510
+&gt;&gt; Absolutely. Like every time you expand a
+
+214
+00:08:13,520 --> 00:08:15,670
+system, the kinds of places where you
+
+215
+00:08:15,680 --> 00:08:17,670
+can incur latency, where you route
+
+216
+00:08:17,680 --> 00:08:19,830
+traffic or you get it to the right place
+
+217
+00:08:19,840 --> 00:08:22,230
+or your databases have higher load on it
+
+218
+00:08:22,240 --> 00:08:25,670
+start to very quickly crop up. And often
+
+219
+00:08:25,680 --> 00:08:27,029
+what happens is they kind of hit a
+
+220
+00:08:27,039 --> 00:08:28,629
+tipping point at different parts of
+
+221
+00:08:28,639 --> 00:08:31,110
+scale. So things will look fine for a
+
+222
+00:08:31,120 --> 00:08:32,949
+really long time, then all of a sudden,
+
+223
+00:08:32,959 --> 00:08:34,790
+bam, you'll expose a new source of
+
+224
+00:08:34,800 --> 00:08:35,909
+latency and you're going to have to
+
+225
+00:08:35,919 --> 00:08:37,430
+spend a bunch of time figuring that one
+
+226
+00:08:37,440 --> 00:08:39,190
+out, optimizing it, and building the
+
+227
+00:08:39,200 --> 00:08:41,269
+system for that growing scale. Do you
+
+228
+00:08:41,279 --> 00:08:43,990
+advise or at your company do you
+
+229
+00:08:44,000 --> 00:08:47,110
+institute latency regression testing?
+
+230
+00:08:47,120 --> 00:08:50,310
+&gt;&gt; The way that we have done it is
+
+231
+00:08:50,320 --> 00:08:53,110
+primarily looking at analytics data from
+
+232
+00:08:53,120 --> 00:08:57,269
+day-to-day. And so we'll have analytics
+
+233
+00:08:57,279 --> 00:09:00,550
+on latency for every event that users
+
+234
+00:09:00,560 --> 00:09:03,430
+experience with our application. And we
+
+235
+00:09:03,440 --> 00:09:05,190
+will of course test things before we
+
+236
+00:09:05,200 --> 00:09:06,630
+promote the deployments, but we'll
+
+237
+00:09:06,640 --> 00:09:08,870
+basically do gradual rollouts of new
+
+238
+00:09:08,880 --> 00:09:11,350
+infrastructure as we roll it out. And we
+
+239
+00:09:11,360 --> 00:09:14,070
+will measure impact on latency there.
+
+240
+00:09:14,080 --> 00:09:16,710
+And so we can see on any given day, on
+
+241
+00:09:16,720 --> 00:09:18,790
+any hour of any day, did the latency
+
+242
+00:09:18,800 --> 00:09:20,949
+suddenly spike for any reason? We can
+
+243
+00:09:20,959 --> 00:09:22,790
+see when we do new rollouts and new
+
+244
+00:09:22,800 --> 00:09:24,710
+deployments, did it bring down the
+
+245
+00:09:24,720 --> 00:09:27,350
+latency as we would expect it to? But we
+
+246
+00:09:27,360 --> 00:09:28,790
+haven't done any specific kind of
+
+247
+00:09:28,800 --> 00:09:31,269
+regression testing there. Maybe these
+
+248
+00:09:31,279 --> 00:09:34,150
+systems we build now are so complex and
+
+249
+00:09:34,160 --> 00:09:37,190
+impossible to really simulate in staging
+
+250
+00:09:37,200 --> 00:09:39,430
+that you can't exactly test them before
+
+251
+00:09:39,440 --> 00:09:41,269
+you roll them out, but you can detect
+
+252
+00:09:41,279 --> 00:09:43,590
+when you have a problem quickly and
+
+253
+00:09:43,600 --> 00:09:45,990
+resolve it. That's very much the
+
+254
+00:09:46,000 --> 00:09:48,550
+approach that we take and that I think a
+
+255
+00:09:48,560 --> 00:09:50,389
+lot of fastmoving companies in the AI
+
+256
+00:09:50,399 --> 00:09:53,750
+space take right now because so many of
+
+257
+00:09:53,760 --> 00:09:55,829
+these workloads are really stochastic.
+
+258
+00:09:55,839 --> 00:09:58,230
+They're super random. different things
+
+259
+00:09:58,240 --> 00:09:59,990
+happen on GPUs that are extremely
+
+260
+00:10:00,000 --> 00:10:02,070
+non-predictable and non-deterministic
+
+261
+00:10:02,080 --> 00:10:04,710
+and so making sure that you can
+
+262
+00:10:04,720 --> 00:10:07,350
+immediately respond to any spike that's
+
+263
+00:10:07,360 --> 00:10:09,590
+the most important thing for us. So
+
+264
+00:10:09,600 --> 00:10:11,750
+hedge, we've been talking about latency
+
+265
+00:10:11,760 --> 00:10:13,590
+for a bit, converging on the
+
+266
+00:10:13,600 --> 00:10:16,310
+intersection of latency and AI. Let's
+
+267
+00:10:16,320 --> 00:10:20,949
+talk about what AI is briefly. The way I
+
+268
+00:10:20,959 --> 00:10:22,710
+observe this term, it's a bit of a
+
+269
+00:10:22,720 --> 00:10:24,310
+moving target where it tends to
+
+270
+00:10:24,320 --> 00:10:27,190
+overindex on what happened in the last 5
+
+271
+00:10:27,200 --> 00:10:30,150
+minutes, but we've had AI for decades
+
+272
+00:10:30,160 --> 00:10:32,870
+now. If we're going to be talking about
+
+273
+00:10:32,880 --> 00:10:37,670
+AI and latency, what domains of AIs are
+
+274
+00:10:37,680 --> 00:10:40,790
+we talking about? I mean latency becomes
+
+275
+00:10:40,800 --> 00:10:42,470
+important in any of these kinds of
+
+276
+00:10:42,480 --> 00:10:44,870
+applications. So whether it's more
+
+277
+00:10:44,880 --> 00:10:47,030
+classical techniques that are
+
+278
+00:10:47,040 --> 00:10:48,790
+classifiers that are trained on certain
+
+279
+00:10:48,800 --> 00:10:51,590
+kinds of data which are often used in
+
+280
+00:10:51,600 --> 00:10:54,389
+recommendation systems and ads models or
+
+281
+00:10:54,399 --> 00:10:56,470
+whether it's larger and larger ML
+
+282
+00:10:56,480 --> 00:10:59,509
+workloads like large speech models or
+
+283
+00:10:59,519 --> 00:11:01,750
+large language models, right? which are
+
+284
+00:11:01,760 --> 00:11:04,389
+models that have billions of parameters.
+
+285
+00:11:04,399 --> 00:11:06,870
+And in those kinds of cases, because
+
+286
+00:11:06,880 --> 00:11:09,190
+they're running so much computation for
+
+287
+00:11:09,200 --> 00:11:11,910
+any given request, that's the reason why
+
+288
+00:11:11,920 --> 00:11:14,550
+latency has become such a hot topic in
+
+289
+00:11:14,560 --> 00:11:17,190
+this kind of a community where before
+
+290
+00:11:17,200 --> 00:11:19,990
+maybe we're running 20,000 floatingoint
+
+291
+00:11:20,000 --> 00:11:22,470
+operations for getting one result back.
+
+292
+00:11:22,480 --> 00:11:25,030
+Now we might be running 10 billion or
+
+293
+00:11:25,040 --> 00:11:27,110
+100 billion floatingoint operations to
+
+294
+00:11:27,120 --> 00:11:29,430
+get one result back. And as soon as you
+
+295
+00:11:29,440 --> 00:11:31,350
+start to have to do that much
+
+296
+00:11:31,360 --> 00:11:34,069
+computation, that's when optimizing
+
+297
+00:11:34,079 --> 00:11:36,630
+these systems for a different type of
+
+298
+00:11:36,640 --> 00:11:38,069
+latency constraint starts to become
+
+299
+00:11:38,079 --> 00:11:38,870
+relevant.
+
+300
+00:11:38,880 --> 00:11:40,710
+&gt;&gt; Could you give an example of something
+
+301
+00:11:40,720 --> 00:11:44,630
+using AI and what the latency
+
+302
+00:11:44,640 --> 00:11:46,630
+expectations would be? Something that's
+
+303
+00:11:46,640 --> 00:11:49,590
+not a large language model. So for not a
+
+304
+00:11:49,600 --> 00:11:52,230
+large language model tools using AI
+
+305
+00:11:52,240 --> 00:11:55,190
+include basically all the recommendation
+
+306
+00:11:55,200 --> 00:11:58,470
+systems that people use for the Twitter
+
+307
+00:11:58,480 --> 00:12:00,710
+algorithm, the Facebook algorithm for
+
+308
+00:12:00,720 --> 00:12:03,030
+showing you different things. And in
+
+309
+00:12:03,040 --> 00:12:06,389
+those kinds of cases, there's actually
+
+310
+00:12:06,399 --> 00:12:08,389
+usually a cascade of different models
+
+311
+00:12:08,399 --> 00:12:09,990
+that are running. Like first you'll use
+
+312
+00:12:10,000 --> 00:12:12,550
+a model to retrieve a bunch of
+
+313
+00:12:12,560 --> 00:12:14,949
+candidates of things that you might want
+
+314
+00:12:14,959 --> 00:12:17,750
+to show the user. Then you actually rank
+
+315
+00:12:17,760 --> 00:12:21,430
+those things. And so each stage of each
+
+316
+00:12:21,440 --> 00:12:22,790
+model has a different latency
+
+317
+00:12:22,800 --> 00:12:25,110
+requirement to like retrieve them. You
+
+318
+00:12:25,120 --> 00:12:27,350
+might be operating on saying, hey, which
+
+319
+00:12:27,360 --> 00:12:29,590
+of these like 10,000 posts are even
+
+320
+00:12:29,600 --> 00:12:31,750
+potentially relevant to the user. And so
+
+321
+00:12:31,760 --> 00:12:34,230
+that model has to be super super fast to
+
+322
+00:12:34,240 --> 00:12:36,470
+be able to run on all those things. Then
+
+323
+00:12:36,480 --> 00:12:39,030
+the next model might say, hey, of these
+
+324
+00:12:39,040 --> 00:12:40,629
+10 things, what's the thing that I show
+
+325
+00:12:40,639 --> 00:12:43,509
+in the top place to the user? And with a
+
+326
+00:12:43,519 --> 00:12:45,269
+lot of these systems, the way people get
+
+327
+00:12:45,279 --> 00:12:48,310
+creative is you can show people the
+
+328
+00:12:48,320 --> 00:12:51,030
+first page of results really fast and
+
+329
+00:12:51,040 --> 00:12:53,269
+then you can have more time before the
+
+330
+00:12:53,279 --> 00:12:55,590
+user scrolls to compute things that are
+
+331
+00:12:55,600 --> 00:12:57,350
+going to show up on the second page. And
+
+332
+00:12:57,360 --> 00:12:59,430
+so that's where like people really
+
+333
+00:12:59,440 --> 00:13:01,670
+optimize for like first page load
+
+334
+00:13:01,680 --> 00:13:05,110
+latency versus what you see after and
+
+335
+00:13:05,120 --> 00:13:07,110
+can buy more time for running certain
+
+336
+00:13:07,120 --> 00:13:09,670
+computations more efficiently. This
+
+337
+00:13:09,680 --> 00:13:11,670
+reminds me of another question I had
+
+338
+00:13:11,680 --> 00:13:14,310
+about latency where you can define it as
+
+339
+00:13:14,320 --> 00:13:17,030
+the time from when you request until you
+
+340
+00:13:17,040 --> 00:13:19,590
+start getting results. Is the thinking
+
+341
+00:13:19,600 --> 00:13:22,470
+behind this last point if you can start
+
+342
+00:13:22,480 --> 00:13:24,870
+showing the reader some results whether
+
+343
+00:13:24,880 --> 00:13:28,069
+it's LLM chat or recommendations and we
+
+344
+00:13:28,079 --> 00:13:30,150
+read pretty slow. So the reader's going
+
+345
+00:13:30,160 --> 00:13:32,870
+to start reading and you have time now
+
+346
+00:13:32,880 --> 00:13:34,870
+where you're ahead of the reader and you
+
+347
+00:13:34,880 --> 00:13:37,110
+can fetch more results and the reader
+
+348
+00:13:37,120 --> 00:13:39,350
+doesn't perceive it as lag. Is it
+
+349
+00:13:39,360 --> 00:13:40,470
+something like that?
+
+350
+00:13:40,480 --> 00:13:42,870
+&gt;&gt; That's exactly right. Yeah. And it's
+
+351
+00:13:42,880 --> 00:13:44,710
+taking advantage of the fact that we're
+
+352
+00:13:44,720 --> 00:13:47,590
+engaging with the content and so we have
+
+353
+00:13:47,600 --> 00:13:49,590
+plenty more time to run computation in
+
+354
+00:13:49,600 --> 00:13:51,269
+the background while the user is
+
+355
+00:13:51,279 --> 00:13:52,790
+actively engaged.
+
+356
+00:13:52,800 --> 00:13:56,389
+&gt;&gt; We discussed these findings. I recall a
+
+357
+00:13:56,399 --> 00:13:59,030
+study that was covered in the news about
+
+358
+00:13:59,040 --> 00:14:01,350
+Google if they introduced a 100
+
+359
+00:14:01,360 --> 00:14:03,750
+milliseconds delay in search that people
+
+360
+00:14:03,760 --> 00:14:05,990
+almost stopped using Google for 3 months
+
+361
+00:14:06,000 --> 00:14:08,550
+or something and it wasn't even a
+
+362
+00:14:08,560 --> 00:14:10,870
+perceptible amount. It was something
+
+363
+00:14:10,880 --> 00:14:12,790
+subconscious where the person feels like
+
+364
+00:14:12,800 --> 00:14:15,350
+I'm having a bad experience. Yet with
+
+365
+00:14:15,360 --> 00:14:18,230
+these LLMs, people will sit there for
+
+366
+00:14:18,240 --> 00:14:21,350
+seconds waiting for an answer. Why is
+
+367
+00:14:21,360 --> 00:14:23,990
+this tolerated when people seem to have
+
+368
+00:14:24,000 --> 00:14:27,269
+such a short attention span in other
+
+369
+00:14:27,279 --> 00:14:28,629
+domains?
+
+370
+00:14:28,639 --> 00:14:30,710
+&gt;&gt; It's a great question. I think it comes
+
+371
+00:14:30,720 --> 00:14:33,829
+back to two different things. So one
+
+372
+00:14:33,839 --> 00:14:36,069
+like the immediate value that I get out
+
+373
+00:14:36,079 --> 00:14:39,670
+of a LLM query is so high in so many
+
+374
+00:14:39,680 --> 00:14:42,710
+cases like I'm immediately getting the
+
+375
+00:14:42,720 --> 00:14:44,550
+final answer that I need. If you
+
+376
+00:14:44,560 --> 00:14:46,710
+contrast it to Google, I've asked a
+
+377
+00:14:46,720 --> 00:14:49,110
+question, I got 100 milliseconds. Now I
+
+378
+00:14:49,120 --> 00:14:50,550
+have a bunch of search results that I
+
+379
+00:14:50,560 --> 00:14:52,389
+now have to go click through to even see
+
+380
+00:14:52,399 --> 00:14:54,629
+if I find the thing that I want to. And
+
+381
+00:14:54,639 --> 00:14:56,870
+so there's so many steps involved there
+
+382
+00:14:56,880 --> 00:14:58,310
+to get to the thing that I actually want
+
+383
+00:14:58,320 --> 00:15:01,189
+to. Whereas with chat GPT like if it's
+
+384
+00:15:01,199 --> 00:15:02,870
+going to take 2 seconds for me to get a
+
+385
+00:15:02,880 --> 00:15:05,829
+magical answer that answers the world's
+
+386
+00:15:05,839 --> 00:15:07,430
+most complex question that I previously
+
+387
+00:15:07,440 --> 00:15:09,030
+didn't have a way to get an answer to,
+
+388
+00:15:09,040 --> 00:15:10,790
+I'll wait. So that's like one part of
+
+389
+00:15:10,800 --> 00:15:14,069
+it. And the other part is I think the
+
+390
+00:15:14,079 --> 00:15:16,710
+user expectation that has been set. So
+
+391
+00:15:16,720 --> 00:15:18,870
+once people get used to a certain thing,
+
+392
+00:15:18,880 --> 00:15:21,269
+it becomes very easy for them to
+
+393
+00:15:21,279 --> 00:15:23,189
+continue working with that kind of
+
+394
+00:15:23,199 --> 00:15:25,189
+model. But like I mentioned this earlier
+
+395
+00:15:25,199 --> 00:15:27,670
+with the AI pause on voice mode, for
+
+396
+00:15:27,680 --> 00:15:29,829
+example, on chat GPT where it used to
+
+397
+00:15:29,839 --> 00:15:31,829
+pause for 3 or 4 seconds before it
+
+398
+00:15:31,839 --> 00:15:33,750
+starts giving you an answer and they've
+
+399
+00:15:33,760 --> 00:15:36,710
+reduced that to 500 milliseconds now.
+
+400
+00:15:36,720 --> 00:15:38,389
+After using the version where it
+
+401
+00:15:38,399 --> 00:15:40,710
+responds like an actual person
+
+402
+00:15:40,720 --> 00:15:43,509
+conversational partner, if it went back
+
+403
+00:15:43,519 --> 00:15:45,350
+to having the long pause, I would
+
+404
+00:15:45,360 --> 00:15:47,590
+probably stop using it very fast. And so
+
+405
+00:15:47,600 --> 00:15:49,110
+I think there's a bit of both going on
+
+406
+00:15:49,120 --> 00:15:49,749
+here.
+
+407
+00:15:49,759 --> 00:15:51,990
+&gt;&gt; Yeah. I think you might be used to
+
+408
+00:15:52,000 --> 00:15:53,829
+something and tolerate it, but you
+
+409
+00:15:53,839 --> 00:15:56,230
+wouldn't get used to it if you weren't
+
+410
+00:15:56,240 --> 00:15:57,990
+getting something out of it because you
+
+411
+00:15:58,000 --> 00:15:59,670
+would simply stop using it.
+
+412
+00:15:59,680 --> 00:16:02,389
+&gt;&gt; Yeah. And like these systems are so
+
+413
+00:16:02,399 --> 00:16:04,310
+magical in what they can provide a user
+
+414
+00:16:04,320 --> 00:16:07,030
+so quickly. For me, for example, even if
+
+415
+00:16:07,040 --> 00:16:08,949
+it gets half the things right in what it
+
+416
+00:16:08,959 --> 00:16:10,949
+says in an answer, I'm still happy.
+
+417
+00:16:10,959 --> 00:16:15,110
+Like, I've gotten 50% magical things
+
+418
+00:16:15,120 --> 00:16:17,110
+that I could never have had before, and
+
+419
+00:16:17,120 --> 00:16:18,870
+that's enough for me to come back to a
+
+420
+00:16:18,880 --> 00:16:20,470
+tool like Chad GPT.
+
+421
+00:16:20,480 --> 00:16:24,310
+&gt;&gt; We've done some setup on latency and AI.
+
+422
+00:16:24,320 --> 00:16:27,110
+Let's delve into our core topic here,
+
+423
+00:16:27,120 --> 00:16:31,189
+which is latency in AI applications.
+
+424
+00:16:31,199 --> 00:16:33,350
+If you start for point of comparison
+
+425
+00:16:33,360 --> 00:16:35,509
+dealing with a old school web
+
+426
+00:16:35,519 --> 00:16:38,629
+application that's not hitting any kind
+
+427
+00:16:38,639 --> 00:16:40,790
+of AI, what are some or all of the
+
+428
+00:16:40,800 --> 00:16:43,910
+things that have to happen before a user
+
+429
+00:16:43,920 --> 00:16:45,350
+gets a result?
+
+430
+00:16:45,360 --> 00:16:47,509
+&gt;&gt; Yeah. So in kind of an old school web
+
+431
+00:16:47,519 --> 00:16:49,829
+application, the user will interact with
+
+432
+00:16:49,839 --> 00:16:52,470
+a UI or passively they'll land on a
+
+433
+00:16:52,480 --> 00:16:55,030
+page. Then a request will get sent to a
+
+434
+00:16:55,040 --> 00:16:56,949
+backend. the backend will have to
+
+435
+00:16:56,959 --> 00:16:59,189
+potentially authenticate a user, query
+
+436
+00:16:59,199 --> 00:17:02,069
+some databases, generate a response and
+
+437
+00:17:02,079 --> 00:17:03,749
+then send the response back to the
+
+438
+00:17:03,759 --> 00:17:05,750
+client and then the client, their
+
+439
+00:17:05,760 --> 00:17:08,309
+browser or whatever is showing it will
+
+440
+00:17:08,319 --> 00:17:09,909
+actually have to render it. So you'll
+
+441
+00:17:09,919 --> 00:17:12,390
+see different kind of chunks of time for
+
+442
+00:17:12,400 --> 00:17:14,230
+sending the request, retrieving the
+
+443
+00:17:14,240 --> 00:17:15,909
+response on the back end, getting it
+
+444
+00:17:15,919 --> 00:17:17,590
+back to the user, and then finally
+
+445
+00:17:17,600 --> 00:17:21,029
+showing it to them. I would imagine AI
+
+446
+00:17:21,039 --> 00:17:23,350
+has to do pretty much the same things.
+
+447
+00:17:23,360 --> 00:17:26,470
+But can you say what might be different
+
+448
+00:17:26,480 --> 00:17:28,549
+for an AI application?
+
+449
+00:17:28,559 --> 00:17:30,630
+&gt;&gt; Yeah. So the difference for the AI
+
+450
+00:17:30,640 --> 00:17:35,350
+application is this idea of you can't
+
+451
+00:17:35,360 --> 00:17:37,990
+fetch the full response often all at
+
+452
+00:17:38,000 --> 00:17:40,310
+once. So in a lot of traditional
+
+453
+00:17:40,320 --> 00:17:42,390
+software, you're fetching the content
+
+454
+00:17:42,400 --> 00:17:45,270
+that you want to show on a page. And so
+
+455
+00:17:45,280 --> 00:17:47,110
+that's going to be some kind of query
+
+456
+00:17:47,120 --> 00:17:48,950
+that gets a lot of this information and
+
+457
+00:17:48,960 --> 00:17:51,270
+returns it back to the user. In a lot of
+
+458
+00:17:51,280 --> 00:17:54,230
+AI applications, what people do is
+
+459
+00:17:54,240 --> 00:17:55,909
+what's called auto reggressive
+
+460
+00:17:55,919 --> 00:17:57,590
+generation. So if you think about
+
+461
+00:17:57,600 --> 00:18:00,390
+chatgbt, it's generating one word at a
+
+462
+00:18:00,400 --> 00:18:03,350
+time as you get an output. So a request
+
+463
+00:18:03,360 --> 00:18:05,750
+gets sent for processing, then you have
+
+464
+00:18:05,760 --> 00:18:07,750
+to basically queue up all the stuff to
+
+465
+00:18:07,760 --> 00:18:09,669
+get the first word of the response. Then
+
+466
+00:18:09,679 --> 00:18:11,110
+you have to feed that back into the
+
+467
+00:18:11,120 --> 00:18:12,549
+model to get the next word. then you
+
+468
+00:18:12,559 --> 00:18:13,830
+have to feed that back in to get the
+
+469
+00:18:13,840 --> 00:18:16,310
+next word and so on. So in a lot of more
+
+470
+00:18:16,320 --> 00:18:17,909
+traditional software, there's a lot less
+
+471
+00:18:17,919 --> 00:18:20,470
+of this sequential acting. There might
+
+472
+00:18:20,480 --> 00:18:21,990
+be three or four steps. Maybe you
+
+473
+00:18:22,000 --> 00:18:23,430
+retrieve something from a database, then
+
+474
+00:18:23,440 --> 00:18:25,590
+you figure out, okay, how does that mean
+
+475
+00:18:25,600 --> 00:18:27,270
+that I should update the UI? But they're
+
+476
+00:18:27,280 --> 00:18:28,789
+not heavy computations and they're
+
+477
+00:18:28,799 --> 00:18:30,549
+usually discrete steps, right? You're
+
+478
+00:18:30,559 --> 00:18:32,950
+following a linear code path. Here
+
+479
+00:18:32,960 --> 00:18:35,590
+you're often just following a loop where
+
+480
+00:18:35,600 --> 00:18:37,350
+you're doing a loop of decoding
+
+481
+00:18:37,360 --> 00:18:39,270
+something and then eventually giving it
+
+482
+00:18:39,280 --> 00:18:41,190
+back to the user. I'd say the other
+
+483
+00:18:41,200 --> 00:18:43,830
+maybe part that I'd add there is GPU
+
+484
+00:18:43,840 --> 00:18:46,150
+computation. So in most traditional
+
+485
+00:18:46,160 --> 00:18:48,230
+software, most of the requests are
+
+486
+00:18:48,240 --> 00:18:51,029
+handled by a CPU because you have a
+
+487
+00:18:51,039 --> 00:18:52,390
+server somewhere that can do the
+
+488
+00:18:52,400 --> 00:18:54,230
+database operations and return things.
+
+489
+00:18:54,240 --> 00:18:56,789
+Whereas for a lot of machine learning
+
+490
+00:18:56,799 --> 00:18:58,470
+workloads, you're going to have to have
+
+491
+00:18:58,480 --> 00:19:00,950
+a GPU that's actually processing and
+
+492
+00:19:00,960 --> 00:19:02,470
+providing a result.
+
+493
+00:19:02,480 --> 00:19:05,110
+&gt;&gt; That opens up a lot of implications. The
+
+494
+00:19:05,120 --> 00:19:08,470
+first thing I can think of is obviously
+
+495
+00:19:08,480 --> 00:19:10,549
+you have some of the response before you
+
+496
+00:19:10,559 --> 00:19:12,150
+have all of the response. So you could
+
+497
+00:19:12,160 --> 00:19:14,950
+start sending data back to the user
+
+498
+00:19:14,960 --> 00:19:17,510
+before you have all of it which is
+
+499
+00:19:17,520 --> 00:19:20,150
+generally not the case in old school web
+
+500
+00:19:20,160 --> 00:19:20,710
+apps.
+
+501
+00:19:20,720 --> 00:19:21,830
+&gt;&gt; Exactly.
+
+502
+00:19:21,840 --> 00:19:24,070
+&gt;&gt; Now we talk a lot also in podcast about
+
+503
+00:19:24,080 --> 00:19:26,390
+streaming applications where data is
+
+504
+00:19:26,400 --> 00:19:29,669
+arriving. Does this make AI more like a
+
+505
+00:19:29,679 --> 00:19:31,350
+streaming application?
+
+506
+00:19:31,360 --> 00:19:33,590
+&gt;&gt; It does in a lot of ways. streaming
+
+507
+00:19:33,600 --> 00:19:35,590
+applications like audio chat, video
+
+508
+00:19:35,600 --> 00:19:37,029
+chat, and all of these kinds of things
+
+509
+00:19:37,039 --> 00:19:38,870
+have to handle a lot of challenges like
+
+510
+00:19:38,880 --> 00:19:40,870
+this. There's a couple differences, I
+
+511
+00:19:40,880 --> 00:19:43,430
+think. One is a lot of streaming
+
+512
+00:19:43,440 --> 00:19:45,430
+applications and traditional software
+
+513
+00:19:45,440 --> 00:19:47,830
+that stream audio and video, they're
+
+514
+00:19:47,840 --> 00:19:49,990
+handling really, really big data
+
+515
+00:19:50,000 --> 00:19:52,150
+requests when you're streaming. And
+
+516
+00:19:52,160 --> 00:19:54,310
+that's the thing that makes it super
+
+517
+00:19:54,320 --> 00:19:57,110
+intensive. Whereas in a lot of these AI
+
+518
+00:19:57,120 --> 00:19:59,510
+workloads, the streaming itself, it's
+
+519
+00:19:59,520 --> 00:20:01,110
+not much data. you send back a text
+
+520
+00:20:01,120 --> 00:20:02,630
+response. It's like there's not that
+
+521
+00:20:02,640 --> 00:20:04,950
+much there. But the computation on the
+
+522
+00:20:04,960 --> 00:20:06,789
+server is the thing that's super
+
+523
+00:20:06,799 --> 00:20:09,190
+stochastic, super random, and can take a
+
+524
+00:20:09,200 --> 00:20:11,110
+really long time. And that's what you're
+
+525
+00:20:11,120 --> 00:20:13,190
+trying to hide for the user.
+
+526
+00:20:13,200 --> 00:20:16,070
+&gt;&gt; I observe LLM apps. They seem to send me
+
+527
+00:20:16,080 --> 00:20:19,110
+back roughly paragraphs sized chunks.
+
+528
+00:20:19,120 --> 00:20:21,430
+You could send one word at a time.
+
+529
+00:20:21,440 --> 00:20:25,350
+What's the thinking? Is it n words or in
+
+530
+00:20:25,360 --> 00:20:27,350
+batches of certain number of
+
+531
+00:20:27,360 --> 00:20:28,950
+milliseconds?
+
+532
+00:20:28,960 --> 00:20:31,830
+It comes back to actually the user
+
+533
+00:20:31,840 --> 00:20:34,310
+experience. So the reason how people
+
+534
+00:20:34,320 --> 00:20:36,149
+optimize latency is so that it feels
+
+535
+00:20:36,159 --> 00:20:38,470
+good to the user. That's why people send
+
+536
+00:20:38,480 --> 00:20:41,110
+back partial responses. As a user,
+
+537
+00:20:41,120 --> 00:20:43,750
+whenever I've prototyped something for
+
+538
+00:20:43,760 --> 00:20:46,230
+myself where I stream back one word at a
+
+539
+00:20:46,240 --> 00:20:48,630
+time, it's completely impossible to read
+
+540
+00:20:48,640 --> 00:20:50,710
+the output because it's just my screen
+
+541
+00:20:50,720 --> 00:20:52,710
+is changing so fast that I'm actually
+
+542
+00:20:52,720 --> 00:20:56,070
+losing track and not having a good time.
+
+543
+00:20:56,080 --> 00:20:59,029
+And so that's part of the reason why
+
+544
+00:20:59,039 --> 00:21:01,029
+people stream it in that way. And people
+
+545
+00:21:01,039 --> 00:21:02,630
+have played around actually with a lot
+
+546
+00:21:02,640 --> 00:21:03,909
+of different streaming patterns. Like
+
+547
+00:21:03,919 --> 00:21:07,190
+Gemini used to fade in one line of text
+
+548
+00:21:07,200 --> 00:21:09,830
+at a time and like they're not coming in
+
+549
+00:21:09,840 --> 00:21:12,390
+faded in that way off the server. That's
+
+550
+00:21:12,400 --> 00:21:14,710
+primarily a how do you display it to the
+
+551
+00:21:14,720 --> 00:21:16,390
+user so they stay engaged. I do think
+
+552
+00:21:16,400 --> 00:21:17,909
+they moved away from that though.
+
+553
+00:21:17,919 --> 00:21:19,510
+&gt;&gt; I have queued up some questions more
+
+554
+00:21:19,520 --> 00:21:22,230
+about managing latency. But an obvious
+
+555
+00:21:22,240 --> 00:21:24,390
+question I have here is how much of a
+
+556
+00:21:24,400 --> 00:21:27,750
+response does the user want from an LLM?
+
+557
+00:21:27,760 --> 00:21:30,630
+I've noticed using different models that
+
+558
+00:21:30,640 --> 00:21:33,190
+they seem to have a different view on
+
+559
+00:21:33,200 --> 00:21:35,590
+how long the response are where certain
+
+560
+00:21:35,600 --> 00:21:38,230
+models are consistently giving me more
+
+561
+00:21:38,240 --> 00:21:40,710
+bigger responses. Now an obvious way to
+
+562
+00:21:40,720 --> 00:21:43,110
+control latency would be to send the
+
+563
+00:21:43,120 --> 00:21:46,710
+user a smaller response. How do you
+
+564
+00:21:46,720 --> 00:21:49,430
+approach that tradeoff? Are you curious
+
+565
+00:21:49,440 --> 00:21:52,149
+how we approach it at Whisper or how the
+
+566
+00:21:52,159 --> 00:21:53,510
+industry approaches it for different
+
+567
+00:21:53,520 --> 00:21:54,230
+things?
+
+568
+00:21:54,240 --> 00:21:55,830
+&gt;&gt; Well, actually, if it's different, yeah,
+
+569
+00:21:55,840 --> 00:21:56,470
+both.
+
+570
+00:21:56,480 --> 00:21:59,750
+&gt;&gt; So, for us, we are a voice dictation
+
+571
+00:21:59,760 --> 00:22:01,669
+application. You speak to your computer
+
+572
+00:22:01,679 --> 00:22:04,470
+and it will enter the text of what you
+
+573
+00:22:04,480 --> 00:22:06,789
+said, clean it up for you so that you
+
+574
+00:22:06,799 --> 00:22:08,230
+can actually use it for emails, Slack
+
+575
+00:22:08,240 --> 00:22:10,070
+messages, and so on. For that kind of
+
+576
+00:22:10,080 --> 00:22:12,310
+application, people don't want it to go
+
+577
+00:22:12,320 --> 00:22:14,710
+off the rails and start like expanding
+
+578
+00:22:14,720 --> 00:22:16,630
+on your behalf and deciding what you
+
+579
+00:22:16,640 --> 00:22:18,230
+want to say on your behalf. that's
+
+580
+00:22:18,240 --> 00:22:20,950
+actually very much like I want the user
+
+581
+00:22:20,960 --> 00:22:23,590
+to experience that they get to choose
+
+582
+00:22:23,600 --> 00:22:25,350
+what shows up in the system. And so
+
+583
+00:22:25,360 --> 00:22:27,669
+we're really careful to make sure that
+
+584
+00:22:27,679 --> 00:22:30,230
+the responses that we produce because we
+
+585
+00:22:30,240 --> 00:22:32,630
+run an LLM to post-process things are
+
+586
+00:22:32,640 --> 00:22:34,789
+very similar size to the input. It's
+
+587
+00:22:34,799 --> 00:22:36,390
+actually a very strict requirement that
+
+588
+00:22:36,400 --> 00:22:39,669
+we have now on other applications where
+
+589
+00:22:39,679 --> 00:22:41,430
+it's more of a question answering style
+
+590
+00:22:41,440 --> 00:22:43,510
+thing or even for us when we start going
+
+591
+00:22:43,520 --> 00:22:45,350
+voice to action and we're going to
+
+592
+00:22:45,360 --> 00:22:47,669
+generate longer and longer responses
+
+593
+00:22:47,679 --> 00:22:49,990
+that's when this comes back to user
+
+594
+00:22:50,000 --> 00:22:53,830
+preference. So the most important thing
+
+595
+00:22:53,840 --> 00:22:56,470
+is like actually all of these different
+
+596
+00:22:56,480 --> 00:22:58,630
+applications and services will adapt to
+
+597
+00:22:58,640 --> 00:23:01,029
+what people want and what people seem to
+
+598
+00:23:01,039 --> 00:23:02,870
+like. And I think the reason why they
+
+599
+00:23:02,880 --> 00:23:04,230
+all produce different responses is
+
+600
+00:23:04,240 --> 00:23:06,310
+because they've all been designed with a
+
+601
+00:23:06,320 --> 00:23:07,909
+different goal in mind. For example,
+
+602
+00:23:07,919 --> 00:23:11,430
+Chat GPT is largely like a consumer
+
+603
+00:23:11,440 --> 00:23:14,549
+application built with a lot of former
+
+604
+00:23:14,559 --> 00:23:17,190
+Meta employees and so they optimize
+
+605
+00:23:17,200 --> 00:23:19,430
+probably for engagement and time spent
+
+606
+00:23:19,440 --> 00:23:21,270
+in the application. I'm speculating
+
+607
+00:23:21,280 --> 00:23:22,630
+there, but I think that's part of the
+
+608
+00:23:22,640 --> 00:23:24,950
+reason why it tends to produce longer
+
+609
+00:23:24,960 --> 00:23:28,070
+responses. Claude and Anthropics models
+
+610
+00:23:28,080 --> 00:23:30,549
+have been optimized for coding and tasks
+
+611
+00:23:30,559 --> 00:23:31,990
+where you're generating for a very
+
+612
+00:23:32,000 --> 00:23:33,990
+precise task, which is why in my
+
+613
+00:23:34,000 --> 00:23:36,710
+experience, they've been more concise.
+
+614
+00:23:36,720 --> 00:23:40,070
+But I've noticed in my own use, if I hit
+
+615
+00:23:40,080 --> 00:23:42,549
+expand for more details on one answer,
+
+616
+00:23:42,559 --> 00:23:44,470
+then subsequent answers all start to get
+
+617
+00:23:44,480 --> 00:23:45,830
+longer and longer from that same
+
+618
+00:23:45,840 --> 00:23:47,430
+service. And so that's about adapting
+
+619
+00:23:47,440 --> 00:23:49,430
+to, hey, what does this user want in
+
+620
+00:23:49,440 --> 00:23:51,190
+this moment? How can I make sure I give
+
+621
+00:23:51,200 --> 00:23:52,950
+them what they as an individual are
+
+622
+00:23:52,960 --> 00:23:55,990
+looking for? Your response about whisper
+
+623
+00:23:56,000 --> 00:23:58,149
+makes it reminds me of a time I had a
+
+624
+00:23:58,159 --> 00:24:01,110
+job condensing interviews from this
+
+625
+00:24:01,120 --> 00:24:04,390
+podcast into written. They were called
+
+626
+00:24:04,400 --> 00:24:06,950
+transcripts but I was approaching it to
+
+627
+00:24:06,960 --> 00:24:09,590
+trying to preserve information and I
+
+628
+00:24:09,600 --> 00:24:11,669
+found that people when they speak are
+
+629
+00:24:11,679 --> 00:24:14,070
+highly verbose use about two and a half
+
+630
+00:24:14,080 --> 00:24:16,870
+times more words than written English.
+
+631
+00:24:16,880 --> 00:24:19,269
+Does your application do any
+
+632
+00:24:19,279 --> 00:24:21,269
+condensation where you're trying to
+
+633
+00:24:21,279 --> 00:24:23,669
+preserve the meaning and eliminate
+
+634
+00:24:23,679 --> 00:24:25,590
+redundancy which I also found the
+
+635
+00:24:25,600 --> 00:24:27,430
+redundancy is much more obvious when you
+
+636
+00:24:27,440 --> 00:24:28,470
+read it.
+
+637
+00:24:28,480 --> 00:24:30,950
+&gt;&gt; Yeah, for sure. What we found is there's
+
+638
+00:24:30,960 --> 00:24:33,029
+two types of things that people want. So
+
+639
+00:24:33,039 --> 00:24:34,789
+one is when people are speaking short
+
+640
+00:24:34,799 --> 00:24:36,710
+messages. Suppose I'm speaking into
+
+641
+00:24:36,720 --> 00:24:40,149
+Slack or text message. There actually a
+
+642
+00:24:40,159 --> 00:24:42,950
+lot of my filler words things like like
+
+643
+00:24:42,960 --> 00:24:45,269
+though and stuff like that are super
+
+644
+00:24:45,279 --> 00:24:47,269
+important for me to preserve my tone
+
+645
+00:24:47,279 --> 00:24:49,190
+because I want to be super soft, super
+
+646
+00:24:49,200 --> 00:24:51,110
+casual in those kinds of places. But
+
+647
+00:24:51,120 --> 00:24:52,630
+where this kind of condensing and
+
+648
+00:24:52,640 --> 00:24:54,870
+rewriting really matters is like people
+
+649
+00:24:54,880 --> 00:24:56,950
+will speak to their email for a minute.
+
+650
+00:24:56,960 --> 00:24:59,430
+Like nobody can write a precisely spoken
+
+651
+00:24:59,440 --> 00:25:01,590
+email for a whole minute. That's just a
+
+652
+00:25:01,600 --> 00:25:03,830
+really hard task to be able to do. And
+
+653
+00:25:03,840 --> 00:25:06,310
+so now we do basically some light
+
+654
+00:25:06,320 --> 00:25:07,990
+editing. We'll break it into paragraphs.
+
+655
+00:25:08,000 --> 00:25:09,830
+We'll structure it. We'll make it look a
+
+656
+00:25:09,840 --> 00:25:11,350
+little bit better for you. We're about
+
+657
+00:25:11,360 --> 00:25:13,029
+to launch a mode where it does some kind
+
+658
+00:25:13,039 --> 00:25:15,269
+of heavier rewriting for you where you
+
+659
+00:25:15,279 --> 00:25:17,190
+should still be able to scan the output
+
+660
+00:25:17,200 --> 00:25:19,350
+so you know that we haven't deleted any
+
+661
+00:25:19,360 --> 00:25:21,350
+meaning from what you said, but the
+
+662
+00:25:21,360 --> 00:25:22,950
+person receiving it can read it really,
+
+663
+00:25:22,960 --> 00:25:25,830
+really easily. And different people will
+
+664
+00:25:25,840 --> 00:25:27,669
+want different things there. Some people
+
+665
+00:25:27,679 --> 00:25:30,310
+are super precise in how they speak.
+
+666
+00:25:30,320 --> 00:25:32,149
+Some people just want to speak how they
+
+667
+00:25:32,159 --> 00:25:33,750
+would speak to a friend. and have it so
+
+668
+00:25:33,760 --> 00:25:35,269
+that the system understands them and
+
+669
+00:25:35,279 --> 00:25:37,110
+cleans up all of the extra redundancy
+
+670
+00:25:37,120 --> 00:25:39,430
+and makes it really really intelligible.
+
+671
+00:25:39,440 --> 00:25:41,990
+&gt;&gt; We may have covered this to some extent
+
+672
+00:25:42,000 --> 00:25:44,950
+but I think you would have some new
+
+673
+00:25:44,960 --> 00:25:47,510
+things to say about what are specific
+
+674
+00:25:47,520 --> 00:25:49,830
+challenges in engineering for low
+
+675
+00:25:49,840 --> 00:25:53,110
+latency around AI that we haven't
+
+676
+00:25:53,120 --> 00:25:54,710
+already covered.
+
+677
+00:25:54,720 --> 00:25:57,269
+&gt;&gt; So I think the biggest one is this
+
+678
+00:25:57,279 --> 00:25:59,590
+trade-off between latency and
+
+679
+00:25:59,600 --> 00:26:02,710
+throughput. So let's put it this way. So
+
+680
+00:26:02,720 --> 00:26:05,750
+when people submit requests to chat GPT,
+
+681
+00:26:05,760 --> 00:26:09,110
+right, they're asking a question. The
+
+682
+00:26:09,120 --> 00:26:12,390
+server can choose one of two things. It
+
+683
+00:26:12,400 --> 00:26:14,789
+can process my request immediately, or
+
+684
+00:26:14,799 --> 00:26:16,950
+it can wait for my request and your
+
+685
+00:26:16,960 --> 00:26:19,029
+request to show up and then send them to
+
+686
+00:26:19,039 --> 00:26:21,830
+the GPU at the same time. And there's
+
+687
+00:26:21,840 --> 00:26:23,590
+actually a really big trade-off here. So
+
+688
+00:26:23,600 --> 00:26:25,430
+if you process my request immediately,
+
+689
+00:26:25,440 --> 00:26:27,750
+I'll get my response really quickly. But
+
+690
+00:26:27,760 --> 00:26:31,110
+if I wait for yours, then often because
+
+691
+00:26:31,120 --> 00:26:33,750
+I'm running on a GPU, I can run those
+
+692
+00:26:33,760 --> 00:26:36,310
+requests in parallel and make really
+
+693
+00:26:36,320 --> 00:26:38,710
+good use of my hardware. And so I could
+
+694
+00:26:38,720 --> 00:26:41,830
+serve twice as many requests on the same
+
+695
+00:26:41,840 --> 00:26:44,470
+amount of compute capacity. And so there
+
+696
+00:26:44,480 --> 00:26:46,149
+becomes this really big trade-off
+
+697
+00:26:46,159 --> 00:26:47,590
+between, hey, how do we optimize the
+
+698
+00:26:47,600 --> 00:26:50,630
+latency and how do we optimize serving
+
+699
+00:26:50,640 --> 00:26:53,110
+as many users as we can with the same
+
+700
+00:26:53,120 --> 00:26:55,830
+number of GPUs? And if you've ever heard
+
+701
+00:26:55,840 --> 00:26:58,549
+about the GPU shortage or if you've ever
+
+702
+00:26:58,559 --> 00:27:01,269
+seen Nvidia stock go up, you know that
+
+703
+00:27:01,279 --> 00:27:03,830
+people are actually really clinging to
+
+704
+00:27:03,840 --> 00:27:05,990
+how much juice can they get out of every
+
+705
+00:27:06,000 --> 00:27:09,430
+GPU. How can you actually get free users
+
+706
+00:27:09,440 --> 00:27:11,190
+to be able to use more requests? And so
+
+707
+00:27:11,200 --> 00:27:14,233
+this trade-off is like very specific
+
+708
+00:27:14,243 --> 00:27:15,110
+[laughter]
+
+709
+00:27:15,120 --> 00:27:18,789
+to a lot of AI workloads and depends a
+
+710
+00:27:18,799 --> 00:27:19,990
+lot on the application that you're
+
+711
+00:27:20,000 --> 00:27:23,110
+building. Are there any other trade-offs
+
+712
+00:27:23,120 --> 00:27:26,470
+possibly involving accuracy?
+
+713
+00:27:26,480 --> 00:27:30,789
+&gt;&gt; For sure. So, in general, bigger models
+
+714
+00:27:30,799 --> 00:27:33,190
+will give you better answers. Smaller
+
+715
+00:27:33,200 --> 00:27:35,269
+models will give worse answers. It's
+
+716
+00:27:35,279 --> 00:27:37,350
+like a rough rule of thumb, and bigger
+
+717
+00:27:37,360 --> 00:27:39,110
+models are slower, smaller models are
+
+718
+00:27:39,120 --> 00:27:41,350
+really fast. You can get really tiny
+
+719
+00:27:41,360 --> 00:27:43,669
+models that run on, for example, a
+
+720
+00:27:43,679 --> 00:27:45,750
+MacBook's Apple Silicon chip. For
+
+721
+00:27:45,760 --> 00:27:47,830
+example, open source models like Llama
+
+722
+00:27:47,840 --> 00:27:50,230
+8B. you can quantize it and put it on
+
+723
+00:27:50,240 --> 00:27:53,029
+your device and it will produce super
+
+724
+00:27:53,039 --> 00:27:55,909
+fast responses but they won't be very
+
+725
+00:27:55,919 --> 00:27:59,430
+good and so the challenge is figuring
+
+726
+00:27:59,440 --> 00:28:02,070
+out for any given application for any
+
+727
+00:28:02,080 --> 00:28:04,070
+given request how do I route that
+
+728
+00:28:04,080 --> 00:28:06,950
+request to a model with the right level
+
+729
+00:28:06,960 --> 00:28:08,789
+of complexity so if you're building for
+
+730
+00:28:08,799 --> 00:28:11,590
+example an enduserfacing application
+
+731
+00:28:11,600 --> 00:28:13,350
+some things that a user might do might
+
+732
+00:28:13,360 --> 00:28:15,830
+require a really complicated model like
+
+733
+00:28:15,840 --> 00:28:17,750
+maybe you're building a medical health
+
+734
+00:28:17,760 --> 00:28:20,789
+app and for example processing certain
+
+735
+00:28:20,799 --> 00:28:22,950
+data requires the latest and greatest
+
+736
+00:28:22,960 --> 00:28:25,590
+GPT 5.1 models and that's going to be
+
+737
+00:28:25,600 --> 00:28:28,630
+really slow but then other questions or
+
+738
+00:28:28,640 --> 00:28:29,990
+other things that a user might be doing
+
+739
+00:28:30,000 --> 00:28:31,590
+where you're just trying to figure out
+
+740
+00:28:31,600 --> 00:28:33,909
+basic things like is this person happy
+
+741
+00:28:33,919 --> 00:28:37,110
+sad or what's their tone right now that
+
+742
+00:28:37,120 --> 00:28:38,710
+might be able to get by with a much
+
+743
+00:28:38,720 --> 00:28:42,630
+smaller model and so for both users and
+
+744
+00:28:42,640 --> 00:28:44,710
+developers this becomes a really
+
+745
+00:28:44,720 --> 00:28:46,710
+important consideration what size model
+
+746
+00:28:46,720 --> 00:28:48,789
+you're deploying And do you use any of
+
+747
+00:28:48,799 --> 00:28:50,870
+these kinds of new techniques to take
+
+748
+00:28:50,880 --> 00:28:52,389
+the same models and make them faster?
+
+749
+00:28:52,399 --> 00:28:53,590
+And I know you're interested in some of
+
+750
+00:28:53,600 --> 00:28:55,190
+these topics with respect to
+
+751
+00:28:55,200 --> 00:28:57,669
+distillation, quantization,
+
+752
+00:28:57,679 --> 00:28:59,430
+using certain compute efficient
+
+753
+00:28:59,440 --> 00:29:02,230
+architectures, ones that work faster for
+
+754
+00:29:02,240 --> 00:29:04,149
+training versus faster at inference
+
+755
+00:29:04,159 --> 00:29:06,230
+time. There's like all sorts of knobs
+
+756
+00:29:06,240 --> 00:29:08,389
+that you can tune that will allow you to
+
+757
+00:29:08,399 --> 00:29:12,710
+serve different quality outputs to users
+
+758
+00:29:12,720 --> 00:29:14,549
+in different ways.
+
+759
+00:29:14,559 --> 00:29:16,389
+&gt;&gt; Yeah. And we could talk about some of
+
+760
+00:29:16,399 --> 00:29:18,230
+those things.
+
+761
+00:29:18,240 --> 00:29:22,630
+Let me ask so the AI it's much more
+
+762
+00:29:22,640 --> 00:29:25,669
+expensive to run at least the larger AIs
+
+763
+00:29:25,679 --> 00:29:27,669
+compared to conventional web
+
+764
+00:29:27,679 --> 00:29:29,909
+applications. I remember seeing some
+
+765
+00:29:29,919 --> 00:29:34,630
+data that AI search compared to a Google
+
+766
+00:29:34,640 --> 00:29:36,789
+index search I don't remember 10 times
+
+767
+00:29:36,799 --> 00:29:40,470
+more expensive multiples more easily.
+
+768
+00:29:40,480 --> 00:29:41,590
+All these trade-offs you're talking
+
+769
+00:29:41,600 --> 00:29:44,549
+about are really come down to resource
+
+770
+00:29:44,559 --> 00:29:47,269
+tradeoffs which in the end you could
+
+771
+00:29:47,279 --> 00:29:49,350
+give the customer whatever they want if
+
+772
+00:29:49,360 --> 00:29:51,830
+they are willing to cover your costs.
+
+773
+00:29:51,840 --> 00:29:53,350
+How do you approach making these
+
+774
+00:29:53,360 --> 00:29:56,070
+trade-offs in a real application?
+
+775
+00:29:56,080 --> 00:29:59,190
+&gt;&gt; Well, one I would say almost if we had
+
+776
+00:29:59,200 --> 00:30:03,029
+infinite GPUs, but OpenAI and a lot of
+
+777
+00:30:03,039 --> 00:30:04,950
+the biggest language model providers
+
+778
+00:30:04,960 --> 00:30:06,950
+just don't even have enough GPUs to
+
+779
+00:30:06,960 --> 00:30:09,110
+service the requests. like if they did
+
+780
+00:30:09,120 --> 00:30:11,029
+they might actually be able to serve
+
+781
+00:30:11,039 --> 00:30:14,710
+people more large model requests. Now to
+
+782
+00:30:14,720 --> 00:30:16,710
+your kind of other question of like hey
+
+783
+00:30:16,720 --> 00:30:19,110
+suppose it is under the practical
+
+784
+00:30:19,120 --> 00:30:20,789
+resource constraint trade-off space
+
+785
+00:30:20,799 --> 00:30:22,630
+which is you know the vast majority of
+
+786
+00:30:22,640 --> 00:30:23,990
+cases where you're not running up
+
+787
+00:30:24,000 --> 00:30:25,990
+against literally somebody does not have
+
+788
+00:30:26,000 --> 00:30:27,750
+enough GPUs in a data center right now
+
+789
+00:30:27,760 --> 00:30:31,029
+to handle the requests that a user has.
+
+790
+00:30:31,039 --> 00:30:33,430
+It's very case by case. So, for example,
+
+791
+00:30:33,440 --> 00:30:35,430
+for us, we're building voice dictation
+
+792
+00:30:35,440 --> 00:30:37,669
+where the user expects a nearly
+
+793
+00:30:37,679 --> 00:30:39,750
+instantaneous response, right? It's an
+
+794
+00:30:39,760 --> 00:30:41,909
+interactive voice application, but if
+
+795
+00:30:41,919 --> 00:30:44,149
+the user has to go back and fix up their
+
+796
+00:30:44,159 --> 00:30:45,909
+transcript or clean up a bunch of stuff
+
+797
+00:30:45,919 --> 00:30:48,070
+afterwards or edit a mistake in the
+
+798
+00:30:48,080 --> 00:30:49,909
+speech recognition, that experience is
+
+799
+00:30:49,919 --> 00:30:52,870
+no longer better than typing. And so, we
+
+800
+00:30:52,880 --> 00:30:55,430
+have basically evaluated models at
+
+801
+00:30:55,440 --> 00:30:57,750
+different sizes where we say we have a
+
+802
+00:30:57,760 --> 00:31:01,350
+latency budget. Our LLM for 50 words or
+
+803
+00:31:01,360 --> 00:31:04,310
+100 words can only take 250 milliseconds
+
+804
+00:31:04,320 --> 00:31:07,029
+to process. And then we're gonna try
+
+805
+00:31:07,039 --> 00:31:09,190
+models of various classes in various
+
+806
+00:31:09,200 --> 00:31:11,510
+families to see what is the most
+
+807
+00:31:11,520 --> 00:31:13,750
+accurate one that we're able to train
+
+808
+00:31:13,760 --> 00:31:17,110
+that gets the accuracy we want at the
+
+809
+00:31:17,120 --> 00:31:19,510
+latency budget that we want. And we
+
+810
+00:31:19,520 --> 00:31:21,510
+found that going too small or quantizing
+
+811
+00:31:21,520 --> 00:31:23,750
+models will make it worse. We found that
+
+812
+00:31:23,760 --> 00:31:25,750
+going bigger and bigger at some points
+
+813
+00:31:25,760 --> 00:31:27,590
+might not even help or might exceed our
+
+814
+00:31:27,600 --> 00:31:29,269
+latency threshold. So that's how we've
+
+815
+00:31:29,279 --> 00:31:31,350
+done it for our application. A lot of
+
+816
+00:31:31,360 --> 00:31:34,630
+other places that are doing things that
+
+817
+00:31:34,640 --> 00:31:38,389
+are more like agentbased where the model
+
+818
+00:31:38,399 --> 00:31:40,470
+is deciding what tool to use. You can
+
+819
+00:31:40,480 --> 00:31:42,310
+even have a model make the decision
+
+820
+00:31:42,320 --> 00:31:44,149
+about how to route the request. So you
+
+821
+00:31:44,159 --> 00:31:46,310
+could have a request get sent somewhere.
+
+822
+00:31:46,320 --> 00:31:48,710
+Some medium or big model might decide,
+
+823
+00:31:48,720 --> 00:31:50,950
+hey, is this a easy, hard, medium
+
+824
+00:31:50,960 --> 00:31:52,789
+question? and send it off to the right
+
+825
+00:31:52,799 --> 00:31:54,549
+thing. After that,
+
+826
+00:31:54,559 --> 00:31:57,190
+&gt;&gt; you just now mentioned latency budgets,
+
+827
+00:31:57,200 --> 00:31:59,990
+which is something I have on my list to
+
+828
+00:32:00,000 --> 00:32:02,470
+talk to you about. Can you explain what
+
+829
+00:32:02,480 --> 00:32:03,509
+that is?
+
+830
+00:32:03,519 --> 00:32:06,470
+&gt;&gt; Yeah, so a latency budget is basically
+
+831
+00:32:06,480 --> 00:32:09,269
+us saying this is the maximum allowable
+
+832
+00:32:09,279 --> 00:32:11,509
+time that a user can experience for a
+
+833
+00:32:11,519 --> 00:32:14,230
+request. And we can set the budget
+
+834
+00:32:14,240 --> 00:32:17,909
+either for the average request or for
+
+835
+00:32:17,919 --> 00:32:21,029
+the extreme like 99th percentile worst
+
+836
+00:32:21,039 --> 00:32:24,070
+request. And so we do this as a kind of
+
+837
+00:32:24,080 --> 00:32:26,630
+product side design the constraint
+
+838
+00:32:26,640 --> 00:32:29,350
+around the engineering and then try all
+
+839
+00:32:29,360 --> 00:32:31,750
+possible solutions that we can to meet
+
+840
+00:32:31,760 --> 00:32:34,230
+that constraint. Is this constraint
+
+841
+00:32:34,240 --> 00:32:36,950
+enforced on each and every request as it
+
+842
+00:32:36,960 --> 00:32:39,110
+goes through the system or is it more of
+
+843
+00:32:39,120 --> 00:32:41,509
+a goal that you're trying to meet on an
+
+844
+00:32:41,519 --> 00:32:44,549
+average or P99 basis?
+
+845
+00:32:44,559 --> 00:32:46,549
+We do it as a soft target for something
+
+846
+00:32:46,559 --> 00:32:48,470
+that we want to meet on an average or a
+
+847
+00:32:48,480 --> 00:32:50,470
+P99 basis. So we'll have a different
+
+848
+00:32:50,480 --> 00:32:52,789
+target for our average latency, a
+
+849
+00:32:52,799 --> 00:32:54,870
+different target for our P99 latency.
+
+850
+00:32:54,880 --> 00:32:56,870
+And then when we evaluate new things we
+
+851
+00:32:56,880 --> 00:32:59,430
+want to build, we see, hey, is this
+
+852
+00:32:59,440 --> 00:33:02,070
+going to even be practical to meet that
+
+853
+00:33:02,080 --> 00:33:05,669
+P50, P99 latency target because in
+
+854
+00:33:05,679 --> 00:33:07,990
+practice, every request is so different
+
+855
+00:33:08,000 --> 00:33:10,470
+to these AI workloads that it's hard to
+
+856
+00:33:10,480 --> 00:33:12,389
+guarantee that every single thing will
+
+857
+00:33:12,399 --> 00:33:14,630
+complete under a very fixed threshold.
+
+858
+00:33:14,640 --> 00:33:16,310
+&gt;&gt; We talked a little while ago about all
+
+859
+00:33:16,320 --> 00:33:18,549
+the things that have to happen for the
+
+860
+00:33:18,559 --> 00:33:20,870
+user to get a completed request. You
+
+861
+00:33:20,880 --> 00:33:23,750
+look at the budget. Are you using this
+
+862
+00:33:23,760 --> 00:33:26,230
+as a planning tool where you say, "Okay,
+
+863
+00:33:26,240 --> 00:33:29,350
+DNS takes two milliseconds and database
+
+864
+00:33:29,360 --> 00:33:32,630
+takes three or how do you allocate the
+
+865
+00:33:32,640 --> 00:33:35,669
+budget among the different steps?"
+
+866
+00:33:35,679 --> 00:33:37,750
+&gt;&gt; The way that we've always approached it
+
+867
+00:33:37,760 --> 00:33:39,350
+is we've kind of started with the
+
+868
+00:33:39,360 --> 00:33:42,149
+overall target. Then we figure out, hey,
+
+869
+00:33:42,159 --> 00:33:44,310
+what's the breakdown right now? How much
+
+870
+00:33:44,320 --> 00:33:46,389
+is each step taking right now? And how
+
+871
+00:33:46,399 --> 00:33:48,149
+much could each of those be optimized?
+
+872
+00:33:48,159 --> 00:33:50,310
+So at the end of the day, all I care
+
+873
+00:33:50,320 --> 00:33:53,350
+about is the end user's experience,
+
+874
+00:33:53,360 --> 00:33:56,149
+right? And then based on how much time
+
+875
+00:33:56,159 --> 00:33:57,990
+each chunk of it taking, we can say,
+
+876
+00:33:58,000 --> 00:33:59,509
+okay, this chunk can be optimized
+
+877
+00:33:59,519 --> 00:34:01,110
+further, so we can make more time for
+
+878
+00:34:01,120 --> 00:34:03,350
+this other chunk, right? Maybe if we
+
+879
+00:34:03,360 --> 00:34:05,110
+make our network operations 100
+
+880
+00:34:05,120 --> 00:34:06,870
+milliseconds faster, now we get 100
+
+881
+00:34:06,880 --> 00:34:09,109
+milliseconds back to run a bigger LLM.
+
+882
+00:34:09,119 --> 00:34:10,790
+That would be nice, wouldn't it? And so
+
+883
+00:34:10,800 --> 00:34:12,869
+that's how we start. We always set the
+
+884
+00:34:12,879 --> 00:34:14,950
+constraint on the enduser experience.
+
+885
+00:34:14,960 --> 00:34:16,950
+And then when we're doing engineering,
+
+886
+00:34:16,960 --> 00:34:19,349
+we're trying to figure out, okay, right
+
+887
+00:34:19,359 --> 00:34:21,270
+now based on all the chunks of the
+
+888
+00:34:21,280 --> 00:34:23,589
+pipeline, we only have this much time
+
+889
+00:34:23,599 --> 00:34:25,829
+for this set of operations and then we
+
+890
+00:34:25,839 --> 00:34:26,950
+make it happen.
+
+891
+00:34:26,960 --> 00:34:29,510
+&gt;&gt; Can you tell a story about a time where
+
+892
+00:34:29,520 --> 00:34:32,550
+you said we need to get this particular
+
+893
+00:34:32,560 --> 00:34:34,869
+step to come in a 100 milliseconds
+
+894
+00:34:34,879 --> 00:34:36,710
+slower and what you had to do to make
+
+895
+00:34:36,720 --> 00:34:38,149
+that happen?
+
+896
+00:34:38,159 --> 00:34:42,149
+&gt;&gt; So a huge one for us was with respect to
+
+897
+00:34:42,159 --> 00:34:45,510
+deploying our LLMs, right? So, our LLM
+
+898
+00:34:45,520 --> 00:34:48,230
+and other LLMs for things like coding
+
+899
+00:34:48,240 --> 00:34:50,550
+agents where they're editing the output
+
+900
+00:34:50,560 --> 00:34:53,990
+of what somebody has said require
+
+901
+00:34:54,000 --> 00:34:57,190
+essentially taking in all the words and
+
+902
+00:34:57,200 --> 00:34:58,870
+outputting something that looks very
+
+903
+00:34:58,880 --> 00:35:02,150
+similar but edits the output. And so
+
+904
+00:35:02,160 --> 00:35:05,190
+that whole step was taking a really long
+
+905
+00:35:05,200 --> 00:35:07,750
+time initially. But there's kind of one
+
+906
+00:35:07,760 --> 00:35:09,829
+category of techniques that people use
+
+907
+00:35:09,839 --> 00:35:12,069
+across a lot of ML workloads called
+
+908
+00:35:12,079 --> 00:35:14,069
+speculative decoding where essentially
+
+909
+00:35:14,079 --> 00:35:15,589
+what you're doing is you're going to
+
+910
+00:35:15,599 --> 00:35:18,470
+say, "Hey, I'm going to guess a bunch of
+
+911
+00:35:18,480 --> 00:35:20,710
+things about what the output should be
+
+912
+00:35:20,720 --> 00:35:23,589
+and just verify my guess more or less."
+
+913
+00:35:23,599 --> 00:35:25,430
+So, for example, if you're in like a
+
+914
+00:35:25,440 --> 00:35:29,750
+coding tool and you're editing a line or
+
+915
+00:35:29,760 --> 00:35:31,750
+you're going to edit several lines, you
+
+916
+00:35:31,760 --> 00:35:33,349
+can actually guess that like, hey, this
+
+917
+00:35:33,359 --> 00:35:34,790
+line's going to stay the same and just
+
+918
+00:35:34,800 --> 00:35:36,470
+reoutput the same line that was already
+
+919
+00:35:36,480 --> 00:35:38,470
+there so that you only have to output
+
+920
+00:35:38,480 --> 00:35:40,390
+the lines that are going to get changed.
+
+921
+00:35:40,400 --> 00:35:42,470
+And similarly for us, right, if you're
+
+922
+00:35:42,480 --> 00:35:44,390
+dictating and we're going to remove a
+
+923
+00:35:44,400 --> 00:35:45,990
+bunch of filler words, you can guess
+
+924
+00:35:46,000 --> 00:35:48,069
+that, hey, if if the sentence is looking
+
+925
+00:35:48,079 --> 00:35:50,230
+fine, it's probably going to be the same
+
+926
+00:35:50,240 --> 00:35:51,990
+words up to a certain point before we
+
+927
+00:35:52,000 --> 00:35:53,670
+have to start changing things. And so
+
+928
+00:35:53,680 --> 00:35:55,190
+this is one of those kinds of techniques
+
+929
+00:35:55,200 --> 00:35:57,910
+where once we roll that out, we're
+
+930
+00:35:57,920 --> 00:36:00,630
+actually able to bring down the latency
+
+931
+00:36:00,640 --> 00:36:05,270
+for LLMs by over half in a lot of our
+
+932
+00:36:05,280 --> 00:36:07,829
+cases, sometimes even more. And that
+
+933
+00:36:07,839 --> 00:36:09,990
+allowed us actually budget for running
+
+934
+00:36:10,000 --> 00:36:12,390
+even more models as part of our
+
+935
+00:36:12,400 --> 00:36:15,109
+workflow. Right? By doing that, we were
+
+936
+00:36:15,119 --> 00:36:16,710
+able to say, okay, how can we make the
+
+937
+00:36:16,720 --> 00:36:18,550
+results even better by running a third
+
+938
+00:36:18,560 --> 00:36:20,390
+model and a fourth model to do things
+
+939
+00:36:20,400 --> 00:36:22,230
+that are even more useful for the user?
+
+940
+00:36:22,240 --> 00:36:24,550
+&gt;&gt; I've worked more in enterprise software
+
+941
+00:36:24,560 --> 00:36:27,589
+and I can't say that companies don't
+
+942
+00:36:27,599 --> 00:36:29,510
+care at all about latency, but the
+
+943
+00:36:29,520 --> 00:36:31,750
+approach is generally more building
+
+944
+00:36:31,760 --> 00:36:34,390
+features that create some value within
+
+945
+00:36:34,400 --> 00:36:36,230
+certain workflows. And then you'll maybe
+
+946
+00:36:36,240 --> 00:36:38,870
+look at latency and if you have certain
+
+947
+00:36:38,880 --> 00:36:41,430
+features that are way out of line, you
+
+948
+00:36:41,440 --> 00:36:42,870
+try to figure out what's going on and
+
+949
+00:36:42,880 --> 00:36:44,310
+bring them back to the maybe the
+
+950
+00:36:44,320 --> 00:36:46,390
+average. But from this conversation, it
+
+951
+00:36:46,400 --> 00:36:47,829
+sounds like there are problem domains
+
+952
+00:36:47,839 --> 00:36:50,550
+where latency is a key part of the
+
+953
+00:36:50,560 --> 00:36:52,550
+product and you just wouldn't have a
+
+954
+00:36:52,560 --> 00:36:54,630
+product that would be successful without
+
+955
+00:36:54,640 --> 00:36:57,190
+latency. So it can't be an afterthought.
+
+956
+00:36:57,200 --> 00:36:59,270
+is first is that an accurate description
+
+957
+00:36:59,280 --> 00:37:02,790
+of either your business domain or some
+
+958
+00:37:02,800 --> 00:37:05,190
+related domains
+
+959
+00:37:05,200 --> 00:37:08,470
+&gt;&gt; 100%. I think anything that's a user
+
+960
+00:37:08,480 --> 00:37:11,349
+interactive sticky habit that's being
+
+961
+00:37:11,359 --> 00:37:13,510
+used directly by individuals and not
+
+962
+00:37:13,520 --> 00:37:15,349
+bought by a company has this kind of
+
+963
+00:37:15,359 --> 00:37:16,550
+attribute to it. So that's like
+
+964
+00:37:16,560 --> 00:37:19,510
+superhuman mail, email clients, like web
+
+965
+00:37:19,520 --> 00:37:21,990
+browsers, notepads, editing
+
+966
+00:37:22,000 --> 00:37:24,790
+applications, things like Slack or
+
+967
+00:37:24,800 --> 00:37:27,190
+messaging applications, anything that's
+
+968
+00:37:27,200 --> 00:37:29,990
+individual facing, all those things have
+
+969
+00:37:30,000 --> 00:37:32,710
+extremely tight latency requirements.
+
+970
+00:37:32,720 --> 00:37:34,630
+&gt;&gt; You could say if you're the user of
+
+971
+00:37:34,640 --> 00:37:36,230
+enterprise software, you're an employee
+
+972
+00:37:36,240 --> 00:37:38,069
+of a company which has bought this
+
+973
+00:37:38,079 --> 00:37:40,870
+software for you to use as part of your
+
+974
+00:37:40,880 --> 00:37:42,550
+job. And so you're not going to say,
+
+975
+00:37:42,560 --> 00:37:44,310
+"Hey, I'm going to switch to this other
+
+976
+00:37:44,320 --> 00:37:46,470
+enterprise software." So you just have
+
+977
+00:37:46,480 --> 00:37:49,510
+to put up with it. But may also be true
+
+978
+00:37:49,520 --> 00:37:50,390
+that companies don't want their
+
+979
+00:37:50,400 --> 00:37:52,710
+employees to get bored, distracted,
+
+980
+00:37:52,720 --> 00:37:54,950
+attention wander, and they want their
+
+981
+00:37:54,960 --> 00:37:57,430
+employees to be productive. So do you
+
+982
+00:37:57,440 --> 00:37:59,270
+have any thoughts on how important
+
+983
+00:37:59,280 --> 00:38:01,750
+latency is even when you have a somewhat
+
+984
+00:38:01,760 --> 00:38:04,069
+captive user base?
+
+985
+00:38:04,079 --> 00:38:07,270
+&gt;&gt; The best consumer products often can
+
+986
+00:38:07,280 --> 00:38:09,030
+also be some of the best enterprise
+
+987
+00:38:09,040 --> 00:38:12,550
+products. like we all still use things
+
+988
+00:38:12,560 --> 00:38:15,109
+like iPhones or Android phones for our
+
+989
+00:38:15,119 --> 00:38:17,190
+work applications and they're also
+
+990
+00:38:17,200 --> 00:38:19,510
+individual products and so companies
+
+991
+00:38:19,520 --> 00:38:22,310
+that do this incredibly well can capture
+
+992
+00:38:22,320 --> 00:38:24,550
+a lot of the market on both sides. I
+
+993
+00:38:24,560 --> 00:38:27,510
+think the the real trade-off comes from
+
+994
+00:38:27,520 --> 00:38:30,069
+how many features can you ship quickly
+
+995
+00:38:30,079 --> 00:38:31,829
+if you're also trying to optimize the
+
+996
+00:38:31,839 --> 00:38:33,270
+latency and performance of every
+
+997
+00:38:33,280 --> 00:38:35,750
+feature. And so in a lot of enterprise
+
+998
+00:38:35,760 --> 00:38:39,349
+cases, there's actual value unlocked by
+
+999
+00:38:39,359 --> 00:38:41,910
+having a complex new workflow feature
+
+1000
+00:38:41,920 --> 00:38:43,910
+that integrates in five different data
+
+1001
+00:38:43,920 --> 00:38:45,430
+sources and lets you do something new
+
+1002
+00:38:45,440 --> 00:38:48,950
+with it, right? And maybe only 5% of the
+
+1003
+00:38:48,960 --> 00:38:50,310
+users at the company are going to use
+
+1004
+00:38:50,320 --> 00:38:52,710
+that specific feature. And so in those
+
+1005
+00:38:52,720 --> 00:38:55,190
+kinds of cases, the reason why a lot of
+
+1006
+00:38:55,200 --> 00:38:58,470
+enterprise software focuses less on this
+
+1007
+00:38:58,480 --> 00:39:02,069
+by default is you can't do that and also
+
+1008
+00:39:02,079 --> 00:39:04,390
+ship all the features as quickly. That's
+
+1009
+00:39:04,400 --> 00:39:05,910
+the real reason for the trade-off.
+
+1010
+00:39:05,920 --> 00:39:08,550
+&gt;&gt; Yeah, that makes sense. Now, we've
+
+1011
+00:39:08,560 --> 00:39:10,870
+covered some of the techniques for
+
+1012
+00:39:10,880 --> 00:39:13,670
+lowering low latency engineering in AI.
+
+1013
+00:39:13,680 --> 00:39:15,270
+You talked about choosing the right
+
+1014
+00:39:15,280 --> 00:39:17,910
+model. you went by pretty quickly
+
+1015
+00:39:17,920 --> 00:39:19,510
+reducing
+
+1016
+00:39:19,520 --> 00:39:23,030
+quantization, distillation, pruning. So
+
+1017
+00:39:23,040 --> 00:39:24,630
+let's maybe dive into those. We could
+
+1018
+00:39:24,640 --> 00:39:27,430
+start with quant reducing quantization.
+
+1019
+00:39:27,440 --> 00:39:29,990
+Yeah. So, one of the big techniques that
+
+1020
+00:39:30,000 --> 00:39:32,310
+people use to actually make workloads
+
+1021
+00:39:32,320 --> 00:39:35,190
+really fast is instead of running all of
+
+1022
+00:39:35,200 --> 00:39:38,150
+your operations in 32-bit floatingoint
+
+1023
+00:39:38,160 --> 00:39:40,550
+arithmetic, which is pretty slow, you
+
+1024
+00:39:40,560 --> 00:39:42,470
+could run it in 16- bit floatingoint
+
+1025
+00:39:42,480 --> 00:39:44,550
+arithmetic or even better, you could run
+
+1026
+00:39:44,560 --> 00:39:47,589
+it in 8bit integer arithmetic. Integer
+
+1027
+00:39:47,599 --> 00:39:50,150
+arithmetic is way way way faster to run
+
+1028
+00:39:50,160 --> 00:39:52,069
+on compute than floatingoint arithmetic
+
+1029
+00:39:52,079 --> 00:39:53,589
+because you don't have to kind of carry
+
+1030
+00:39:53,599 --> 00:39:56,150
+over any exponents or do any complicated
+
+1031
+00:39:56,160 --> 00:39:58,710
+computations. The problem comes with the
+
+1032
+00:39:58,720 --> 00:40:00,230
+fact that a lot of these models were
+
+1033
+00:40:00,240 --> 00:40:02,470
+trained using floatingoint arithmetic.
+
+1034
+00:40:02,480 --> 00:40:04,150
+So now when you want to port them over
+
+1035
+00:40:04,160 --> 00:40:06,550
+to using integer arithmetic to serve
+
+1036
+00:40:06,560 --> 00:40:08,710
+them really fast, the accuracy starts to
+
+1037
+00:40:08,720 --> 00:40:10,150
+go down because they're doing something
+
+1038
+00:40:10,160 --> 00:40:12,310
+slightly different. And so people do a
+
+1039
+00:40:12,320 --> 00:40:15,349
+lot of work basically to train models or
+
+1040
+00:40:15,359 --> 00:40:17,510
+fine-tune models in a way that's
+
+1041
+00:40:17,520 --> 00:40:19,510
+essentially quantization aware that's
+
+1042
+00:40:19,520 --> 00:40:21,910
+aware of the fact that in the future all
+
+1043
+00:40:21,920 --> 00:40:23,589
+the operations are going to be redone as
+
+1044
+00:40:23,599 --> 00:40:25,670
+integer operations. that then lets you
+
+1045
+00:40:25,680 --> 00:40:27,829
+deploy these kinds of quantized models
+
+1046
+00:40:27,839 --> 00:40:31,270
+on edge devices or on servers as well
+
+1047
+00:40:31,280 --> 00:40:33,829
+and still get really good results.
+
+1048
+00:40:33,839 --> 00:40:36,470
+&gt;&gt; Can you give an example of a problem
+
+1049
+00:40:36,480 --> 00:40:38,710
+domain where that works?
+
+1050
+00:40:38,720 --> 00:40:41,430
+I actually suspect almost all of the
+
+1051
+00:40:41,440 --> 00:40:43,349
+large language models that are deployed
+
+1052
+00:40:43,359 --> 00:40:46,630
+right now are operating on quantized
+
+1053
+00:40:46,640 --> 00:40:49,190
+arithmetic at inference time because
+
+1054
+00:40:49,200 --> 00:40:51,349
+like you can get four times compared to
+
+1055
+00:40:51,359 --> 00:40:53,109
+16- bit integer but significantly more
+
+1056
+00:40:53,119 --> 00:40:54,630
+than four times compared to 16- bit
+
+1057
+00:40:54,640 --> 00:40:57,190
+floating point and so so much of the
+
+1058
+00:40:57,200 --> 00:40:59,030
+inference for these models is actually
+
+1059
+00:40:59,040 --> 00:41:01,349
+optimized for running an integer
+
+1060
+00:41:01,359 --> 00:41:03,030
+inference and like you'll see for
+
+1061
+00:41:03,040 --> 00:41:05,190
+example plenty of posts where Elon talks
+
+1062
+00:41:05,200 --> 00:41:06,950
+about how the fact that these models are
+
+1063
+00:41:06,960 --> 00:41:09,589
+trained in floating point itself is an
+
+1064
+00:41:09,599 --> 00:41:11,589
+issue and he's trying to push for a lot
+
+1065
+00:41:11,599 --> 00:41:14,390
+of the XAI work to train in integer
+
+1066
+00:41:14,400 --> 00:41:17,270
+arithmetic as well because then things
+
+1067
+00:41:17,280 --> 00:41:19,109
+can be even faster.
+
+1068
+00:41:19,119 --> 00:41:22,390
+&gt;&gt; Do you know if some of the biometric IDs
+
+1069
+00:41:22,400 --> 00:41:26,069
+that run on our phone fit that category?
+
+1070
+00:41:26,079 --> 00:41:27,990
+&gt;&gt; I actually don't know too much about how
+
+1071
+00:41:28,000 --> 00:41:29,750
+those are implemented or if they're
+
+1072
+00:41:29,760 --> 00:41:31,589
+using some of these really big
+
+1073
+00:41:31,599 --> 00:41:35,030
+workloads. quantization I've mostly seen
+
+1074
+00:41:35,040 --> 00:41:38,630
+people use for models that exceed you
+
+1075
+00:41:38,640 --> 00:41:40,790
+know 100 million parameters where you're
+
+1076
+00:41:40,800 --> 00:41:42,790
+now trying to bring it back to the
+
+1077
+00:41:42,800 --> 00:41:44,950
+device to run it but I don't think the
+
+1078
+00:41:44,960 --> 00:41:47,510
+biometric ID models are actually really
+
+1079
+00:41:47,520 --> 00:41:49,349
+really big models I think they're
+
+1080
+00:41:49,359 --> 00:41:51,030
+actually tuned in a different way for
+
+1081
+00:41:51,040 --> 00:41:52,390
+precision and recall
+
+1082
+00:41:52,400 --> 00:41:55,270
+&gt;&gt; distillation that's the next thing on my
+
+1083
+00:41:55,280 --> 00:41:57,430
+list how can that be used to impact
+
+1084
+00:41:57,440 --> 00:41:58,470
+latency
+
+1085
+00:41:58,480 --> 00:42:00,550
+&gt;&gt; so distillation is a really huge
+
+1086
+00:42:00,560 --> 00:42:02,309
+technique and it's used extremely
+
+1087
+00:42:02,319 --> 00:42:05,430
+widely. And so the idea here is small
+
+1088
+00:42:05,440 --> 00:42:08,069
+models are less smart than big models.
+
+1089
+00:42:08,079 --> 00:42:10,870
+Small models have less capacity to learn
+
+1090
+00:42:10,880 --> 00:42:13,190
+and understand things. However, if
+
+1091
+00:42:13,200 --> 00:42:14,950
+you're telling a small model to do
+
+1092
+00:42:14,960 --> 00:42:17,670
+something specific, it can learn how to
+
+1093
+00:42:17,680 --> 00:42:19,589
+do that very specific thing. And one of
+
+1094
+00:42:19,599 --> 00:42:21,510
+the ways that somebody can teach a small
+
+1095
+00:42:21,520 --> 00:42:23,030
+model to learn how to do that very
+
+1096
+00:42:23,040 --> 00:42:25,670
+specific thing is to ask a large model
+
+1097
+00:42:25,680 --> 00:42:27,750
+to teach it essentially. And the way
+
+1098
+00:42:27,760 --> 00:42:29,270
+that you get a large model to teach it
+
+1099
+00:42:29,280 --> 00:42:31,750
+is maybe you have a million examples of
+
+1100
+00:42:31,760 --> 00:42:34,309
+the task that you want to do. And you
+
+1101
+00:42:34,319 --> 00:42:35,750
+take those million examples, you have
+
+1102
+00:42:35,760 --> 00:42:37,990
+the large model try and perform the task
+
+1103
+00:42:38,000 --> 00:42:39,990
+on all million examples. And you get the
+
+1104
+00:42:40,000 --> 00:42:41,990
+answers that it produces. And you use
+
+1105
+00:42:42,000 --> 00:42:45,589
+that as the data to say, hey, let me now
+
+1106
+00:42:45,599 --> 00:42:47,589
+train the small model to mimic what the
+
+1107
+00:42:47,599 --> 00:42:49,750
+big model would have done. And now all
+
+1108
+00:42:49,760 --> 00:42:51,510
+of a sudden, the small model might not
+
+1109
+00:42:51,520 --> 00:42:52,950
+have been able to do the task to begin
+
+1110
+00:42:52,960 --> 00:42:54,069
+with because it doesn't have the
+
+1111
+00:42:54,079 --> 00:42:56,309
+capacity to learn everything on its own.
+
+1112
+00:42:56,319 --> 00:42:58,150
+But now that it's seen lots and lots of
+
+1113
+00:42:58,160 --> 00:42:59,990
+examples of how to do that, it can do
+
+1114
+00:43:00,000 --> 00:43:03,270
+that one thing really well, often just
+
+1115
+00:43:03,280 --> 00:43:05,670
+as well as the big model and probably
+
+1116
+00:43:05,680 --> 00:43:08,470
+not much else anymore at that point. And
+
+1117
+00:43:08,480 --> 00:43:10,390
+this technique is super powerful. It's
+
+1118
+00:43:10,400 --> 00:43:11,750
+used kind of across the board. So the
+
+1119
+00:43:11,760 --> 00:43:13,190
+way that I just described it was how
+
+1120
+00:43:13,200 --> 00:43:15,030
+it's used in large language models where
+
+1121
+00:43:15,040 --> 00:43:16,710
+people might distill a very large
+
+1122
+00:43:16,720 --> 00:43:18,390
+language model into a small language
+
+1123
+00:43:18,400 --> 00:43:20,390
+model. But it's also used across the
+
+1124
+00:43:20,400 --> 00:43:22,390
+board for example for computer vision
+
+1125
+00:43:22,400 --> 00:43:24,390
+models or speech models or things of
+
+1126
+00:43:24,400 --> 00:43:27,750
+that sort where you can get or even
+
+1127
+00:43:27,760 --> 00:43:29,589
+recommener systems. You can get really
+
+1128
+00:43:29,599 --> 00:43:32,710
+strong properties out of small models by
+
+1129
+00:43:32,720 --> 00:43:35,030
+training a much larger model first
+
+1130
+00:43:35,040 --> 00:43:36,150
+offline.
+
+1131
+00:43:36,160 --> 00:43:38,230
+&gt;&gt; Given a large language model, what's a
+
+1132
+00:43:38,240 --> 00:43:40,790
+good example of a use case where you
+
+1133
+00:43:40,800 --> 00:43:43,430
+want a small language model that's good
+
+1134
+00:43:43,440 --> 00:43:46,230
+at one particular thing? Basically,
+
+1135
+00:43:46,240 --> 00:43:48,550
+anything domain specific is a good
+
+1136
+00:43:48,560 --> 00:43:51,190
+example of this. So, let's take your
+
+1137
+00:43:51,200 --> 00:43:52,790
+example that you mentioned where you
+
+1138
+00:43:52,800 --> 00:43:56,069
+would often have recordings of
+
+1139
+00:43:56,079 --> 00:43:57,589
+interviews that you'd done where you
+
+1140
+00:43:57,599 --> 00:44:00,790
+were trying to get them to be shorter.
+
+1141
+00:44:00,800 --> 00:44:02,230
+And suppose you're trying to do that at
+
+1142
+00:44:02,240 --> 00:44:04,550
+scale, right, for lots and lots of
+
+1143
+00:44:04,560 --> 00:44:06,470
+things. If you sent every single one of
+
+1144
+00:44:06,480 --> 00:44:09,270
+those requests to GPT 5.1, it might be
+
+1145
+00:44:09,280 --> 00:44:11,589
+really slow, might take forever, might
+
+1146
+00:44:11,599 --> 00:44:13,510
+cost you a lot of money. And as a
+
+1147
+00:44:13,520 --> 00:44:14,950
+company, if you're doing that, or as an
+
+1148
+00:44:14,960 --> 00:44:16,630
+individual, if you're doing that, if you
+
+1149
+00:44:16,640 --> 00:44:19,270
+could turn that into a task that could
+
+1150
+00:44:19,280 --> 00:44:20,950
+be accomplished by a small model, it
+
+1151
+00:44:20,960 --> 00:44:22,150
+solves for a lot of the resource
+
+1152
+00:44:22,160 --> 00:44:23,430
+constraint trade-offs that you mentioned
+
+1153
+00:44:23,440 --> 00:44:25,109
+and that we were talking about earlier,
+
+1154
+00:44:25,119 --> 00:44:27,829
+right? Because now all you have to do is
+
+1155
+00:44:27,839 --> 00:44:30,710
+first either online or offline, you can
+
+1156
+00:44:30,720 --> 00:44:32,470
+generate all this data, then you train
+
+1157
+00:44:32,480 --> 00:44:34,950
+the small model once, and now every
+
+1158
+00:44:34,960 --> 00:44:36,710
+subsequent thing that you do is super
+
+1159
+00:44:36,720 --> 00:44:39,510
+fast, super cheap, and accomplishes the
+
+1160
+00:44:39,520 --> 00:44:41,910
+same result. And so like all sorts of
+
+1161
+00:44:41,920 --> 00:44:44,150
+domain specific things and domain
+
+1162
+00:44:44,160 --> 00:44:46,630
+specific applications, legal AI will
+
+1163
+00:44:46,640 --> 00:44:47,990
+have a lot of these kinds of things. A
+
+1164
+00:44:48,000 --> 00:44:49,990
+lot of medical AI tools will do this
+
+1165
+00:44:50,000 --> 00:44:52,150
+because it lets you serve a lot more
+
+1166
+00:44:52,160 --> 00:44:54,710
+requests at low latency, at low cost,
+
+1167
+00:44:54,720 --> 00:44:57,109
+still with quality. The other one is
+
+1168
+00:44:57,119 --> 00:44:59,990
+also for ondevice inference. So like if
+
+1169
+00:45:00,000 --> 00:45:01,990
+you want to bring something to work on
+
+1170
+00:45:02,000 --> 00:45:04,630
+your phone or on your laptop and you
+
+1171
+00:45:04,640 --> 00:45:07,270
+want to have a really highowered AI
+
+1172
+00:45:07,280 --> 00:45:09,589
+workload on that, sometimes the only way
+
+1173
+00:45:09,599 --> 00:45:11,349
+to get that to work on these really
+
+1174
+00:45:11,359 --> 00:45:14,470
+really you know small computers that
+
+1175
+00:45:14,480 --> 00:45:16,870
+exist on on a phone is to actually use
+
+1176
+00:45:16,880 --> 00:45:18,390
+this kind of a technique.
+
+1177
+00:45:18,400 --> 00:45:20,870
+&gt;&gt; I would love to have chat GPT on my
+
+1178
+00:45:20,880 --> 00:45:23,910
+laptop but what's a example of a limited
+
+1179
+00:45:23,920 --> 00:45:26,790
+scope application that's very useful to
+
+1180
+00:45:26,800 --> 00:45:29,349
+be able to run offline? A good example
+
+1181
+00:45:29,359 --> 00:45:31,270
+of this, and I don't know if Grammarly
+
+1182
+00:45:31,280 --> 00:45:33,670
+does this, but like grammar checkers for
+
+1183
+00:45:33,680 --> 00:45:36,150
+example, or autocorrect built into your
+
+1184
+00:45:36,160 --> 00:45:38,710
+keyboard or things like this where if
+
+1185
+00:45:38,720 --> 00:45:40,470
+you have a good language model, it
+
+1186
+00:45:40,480 --> 00:45:43,030
+should be able to accomplish this task
+
+1187
+00:45:43,040 --> 00:45:45,270
+really well and it just has to run fast
+
+1188
+00:45:45,280 --> 00:45:47,109
+and on my device because I can't send
+
+1189
+00:45:47,119 --> 00:45:48,950
+every single one of those requests to a
+
+1190
+00:45:48,960 --> 00:45:51,670
+server. So that's one example. A lot of
+
+1191
+00:45:51,680 --> 00:45:53,910
+vision models, this is really important.
+
+1192
+00:45:53,920 --> 00:45:57,030
+So vision models will often want to run
+
+1193
+00:45:57,040 --> 00:45:59,829
+on my phone or on my device. If for
+
+1194
+00:45:59,839 --> 00:46:02,230
+example I'm looking through a camera app
+
+1195
+00:46:02,240 --> 00:46:04,150
+and I want to tag objects that I'm
+
+1196
+00:46:04,160 --> 00:46:06,710
+looking at or if Tesla is driving a car,
+
+1197
+00:46:06,720 --> 00:46:08,150
+the amount of compute they can actually
+
+1198
+00:46:08,160 --> 00:46:10,230
+run on the device in the car is going to
+
+1199
+00:46:10,240 --> 00:46:12,309
+be lower than what they can train when
+
+1200
+00:46:12,319 --> 00:46:13,510
+they're training their models with their
+
+1201
+00:46:13,520 --> 00:46:15,990
+servers. And so, you know, any of these
+
+1202
+00:46:16,000 --> 00:46:18,390
+kinds of things where you don't want to
+
+1203
+00:46:18,400 --> 00:46:21,349
+be reliant on a network for being able
+
+1204
+00:46:21,359 --> 00:46:23,829
+to make a request and then you don't
+
+1205
+00:46:23,839 --> 00:46:26,950
+have to run servers as a developer
+
+1206
+00:46:26,960 --> 00:46:29,349
+yourself. You can have everything run on
+
+1207
+00:46:29,359 --> 00:46:31,910
+the user's device. And then for privacy
+
+1208
+00:46:31,920 --> 00:46:33,270
+sensitive applications, it's kind of the
+
+1209
+00:46:33,280 --> 00:46:35,430
+final core one where it's hey, no data
+
+1210
+00:46:35,440 --> 00:46:37,030
+will leave the device. It runs right
+
+1211
+00:46:37,040 --> 00:46:40,630
+there. And that's super useful. AI are
+
+1212
+00:46:40,640 --> 00:46:43,589
+LLMs in particular are different in the
+
+1213
+00:46:43,599 --> 00:46:45,589
+amount of randomness they introduce into
+
+1214
+00:46:45,599 --> 00:46:47,430
+the response. What are some techniques
+
+1215
+00:46:47,440 --> 00:46:49,990
+for managing that? This is one of the
+
+1216
+00:46:50,000 --> 00:46:52,230
+hardest parts about serving a lot of
+
+1217
+00:46:52,240 --> 00:46:55,270
+these applications and one of the ways
+
+1218
+00:46:55,280 --> 00:46:57,990
+in which that occurs is the kind of
+
+1219
+00:46:58,000 --> 00:47:00,069
+classic problem of hallucinations in AI.
+
+1220
+00:47:00,079 --> 00:47:03,190
+So maybe you ask a question and then all
+
+1221
+00:47:03,200 --> 00:47:05,270
+of a sudden the model goes off in a
+
+1222
+00:47:05,280 --> 00:47:07,910
+crazy loop and then starts to even do
+
+1223
+00:47:07,920 --> 00:47:09,829
+bad things like repeat the same sentence
+
+1224
+00:47:09,839 --> 00:47:11,270
+over and over and over again in an
+
+1225
+00:47:11,280 --> 00:47:13,109
+answer and then the request just never
+
+1226
+00:47:13,119 --> 00:47:16,150
+stops, never terminates and keeps
+
+1227
+00:47:16,160 --> 00:47:17,910
+consuming resources, never giving the
+
+1228
+00:47:17,920 --> 00:47:19,990
+user what they want. There's a bunch of
+
+1229
+00:47:20,000 --> 00:47:22,230
+different pathologies like this that can
+
+1230
+00:47:22,240 --> 00:47:25,109
+show up when serving AI applications.
+
+1231
+00:47:25,119 --> 00:47:27,990
+And there's two or three important
+
+1232
+00:47:28,000 --> 00:47:30,390
+things to do to handle this. So the
+
+1233
+00:47:30,400 --> 00:47:32,950
+first is like safeguards. So if you know
+
+1234
+00:47:32,960 --> 00:47:34,790
+how long an answer should be, that at
+
+1235
+00:47:34,800 --> 00:47:37,030
+least lets you cut off how bad of an
+
+1236
+00:47:37,040 --> 00:47:38,710
+output you can generate. So that's one
+
+1237
+00:47:38,720 --> 00:47:40,790
+thing that's really helpful. The second
+
+1238
+00:47:40,800 --> 00:47:44,470
+thing is catching it as the model is
+
+1239
+00:47:44,480 --> 00:47:47,510
+producing it. So one thing that can be
+
+1240
+00:47:47,520 --> 00:47:49,430
+done is like if the model starts
+
+1241
+00:47:49,440 --> 00:47:51,349
+hallucinating going off the rails start
+
+1242
+00:47:51,359 --> 00:47:52,710
+answering a different question from what
+
+1243
+00:47:52,720 --> 00:47:55,750
+it was asked that can be caught part way
+
+1244
+00:47:55,760 --> 00:47:57,510
+because the output's being partially
+
+1245
+00:47:57,520 --> 00:47:59,910
+produced and heristic algorithms can be
+
+1246
+00:47:59,920 --> 00:48:01,829
+used to catch that other LLM could be
+
+1247
+00:48:01,839 --> 00:48:03,510
+used to catch that all of these kinds of
+
+1248
+00:48:03,520 --> 00:48:05,670
+things allow for handling those kinds of
+
+1249
+00:48:05,680 --> 00:48:08,150
+problems and so you know this becomes
+
+1250
+00:48:08,160 --> 00:48:10,230
+really important because it's like even
+
+1251
+00:48:10,240 --> 00:48:12,630
+with normal questions that a user might
+
+1252
+00:48:12,640 --> 00:48:14,550
+ask sometimes these systems just go off
+
+1253
+00:48:14,560 --> 00:48:15,589
+the rails
+
+1254
+00:48:15,599 --> 00:48:18,950
+And as a developer, it's important that
+
+1255
+00:48:18,960 --> 00:48:20,790
+you're the one responsible for making
+
+1256
+00:48:20,800 --> 00:48:22,790
+sure the system doesn't go off the rails
+
+1257
+00:48:22,800 --> 00:48:24,710
+when a user is asking a normal question,
+
+1258
+00:48:24,720 --> 00:48:26,630
+let alone for the kind of handful of
+
+1259
+00:48:26,640 --> 00:48:28,470
+users who will try to break your system
+
+1260
+00:48:28,480 --> 00:48:31,030
+and give it hard things that will cause
+
+1261
+00:48:31,040 --> 00:48:32,630
+those kinds of problems to occur.
+
+1262
+00:48:32,640 --> 00:48:35,190
+&gt;&gt; Now, in the last few minutes, I want to
+
+1263
+00:48:35,200 --> 00:48:38,390
+talk about the issues of scale. How does
+
+1264
+00:48:38,400 --> 00:48:40,870
+latency degrade or become increasingly
+
+1265
+00:48:40,880 --> 00:48:44,230
+challenging at scale? So scale has a
+
+1266
+00:48:44,240 --> 00:48:46,549
+tremendous amount of impact on latency
+
+1267
+00:48:46,559 --> 00:48:48,630
+and I think a lot of it has to do with
+
+1268
+00:48:48,640 --> 00:48:53,510
+how GPU requests tend to actually get
+
+1269
+00:48:53,520 --> 00:48:56,069
+processed the more and more a load is on
+
+1270
+00:48:56,079 --> 00:48:59,270
+the GPU. So GPUs work by parallelizing
+
+1271
+00:48:59,280 --> 00:49:01,030
+lots of operations. They run lots of
+
+1272
+00:49:01,040 --> 00:49:03,430
+computations in parallel. But if two
+
+1273
+00:49:03,440 --> 00:49:05,109
+people, for example, submit a request at
+
+1274
+00:49:05,119 --> 00:49:08,790
+the same time, and mine has a, you know,
+
+1275
+00:49:08,800 --> 00:49:11,030
+200word question with a 10-word answer,
+
+1276
+00:49:11,040 --> 00:49:12,870
+and yours has a 10-word question with a
+
+1277
+00:49:12,880 --> 00:49:16,230
+200word answer, and the GPU tries to
+
+1278
+00:49:16,240 --> 00:49:19,829
+process them simultaneously, it now all
+
+1279
+00:49:19,839 --> 00:49:21,510
+of a sudden has to do two slightly
+
+1280
+00:49:21,520 --> 00:49:23,750
+different things for each of us. And so
+
+1281
+00:49:23,760 --> 00:49:25,589
+the way in which it can optimize the
+
+1282
+00:49:25,599 --> 00:49:28,630
+parallel computation changes, right? And
+
+1283
+00:49:28,640 --> 00:49:31,990
+so there's a lot of things that occur as
+
+1284
+00:49:32,000 --> 00:49:34,069
+systems and requests start to scale
+
+1285
+00:49:34,079 --> 00:49:36,470
+where more and more different types of
+
+1286
+00:49:36,480 --> 00:49:38,549
+requests get batched. And on the flip
+
+1287
+00:49:38,559 --> 00:49:39,990
+side, you have more opportunity to
+
+1288
+00:49:40,000 --> 00:49:43,349
+optimize it, right? So I can try as
+
+1289
+00:49:43,359 --> 00:49:44,950
+somebody working on infrastructure to
+
+1290
+00:49:44,960 --> 00:49:46,390
+optimize it. So similar kinds of
+
+1291
+00:49:46,400 --> 00:49:48,870
+requests go to the same server, right?
+
+1292
+00:49:48,880 --> 00:49:50,710
+And so that gives me opportunities for
+
+1293
+00:49:50,720 --> 00:49:53,349
+optimizing latency in a way that wasn't
+
+1294
+00:49:53,359 --> 00:49:56,230
+possible when there wasn't scale. And so
+
+1295
+00:49:56,240 --> 00:49:58,470
+scale both helps and hurts when it comes
+
+1296
+00:49:58,480 --> 00:50:00,309
+to latency. The place where it'll
+
+1297
+00:50:00,319 --> 00:50:02,150
+probably hurt the most is if you ever
+
+1298
+00:50:02,160 --> 00:50:04,470
+run out of resources and then now you're
+
+1299
+00:50:04,480 --> 00:50:06,150
+dealing with higher and higher load on
+
+1300
+00:50:06,160 --> 00:50:08,150
+the same set of machines and doing your
+
+1301
+00:50:08,160 --> 00:50:09,510
+best to make sure that you can actually
+
+1302
+00:50:09,520 --> 00:50:10,710
+service everybody.
+
+1303
+00:50:10,720 --> 00:50:14,630
+&gt;&gt; And how much of this behaviors that are
+
+1304
+00:50:14,640 --> 00:50:18,150
+more um unique to GPUs do you know going
+
+1305
+00:50:18,160 --> 00:50:20,069
+into it? And how much have you
+
+1306
+00:50:20,079 --> 00:50:22,549
+discovered with observability and
+
+1307
+00:50:22,559 --> 00:50:25,510
+digging into things that were not
+
+1308
+00:50:25,520 --> 00:50:27,030
+behaving as you expected?
+
+1309
+00:50:27,040 --> 00:50:29,829
+&gt;&gt; I'd probably say 50/50. Like there's a
+
+1310
+00:50:29,839 --> 00:50:31,510
+bunch of these kinds of problems that we
+
+1311
+00:50:31,520 --> 00:50:34,790
+know going in where we haven't solved
+
+1312
+00:50:34,800 --> 00:50:36,710
+them yet. And we know that at the next
+
+1313
+00:50:36,720 --> 00:50:38,309
+batch of scale it's going to be
+
+1314
+00:50:38,319 --> 00:50:40,150
+important to solve them. And there's a
+
+1315
+00:50:40,160 --> 00:50:42,470
+bunch of things that come up that are
+
+1316
+00:50:42,480 --> 00:50:44,230
+extremely hard to predict because
+
+1317
+00:50:44,240 --> 00:50:47,430
+sometimes one flag that you set for an
+
+1318
+00:50:47,440 --> 00:50:50,390
+NVIDIA CUDA kernel is the kind of thing
+
+1319
+00:50:50,400 --> 00:50:52,790
+that changes the performance of a system
+
+1320
+00:50:52,800 --> 00:50:56,390
+by 25% under a specific load pattern
+
+1321
+00:50:56,400 --> 00:50:58,470
+that we're experiencing. Like we
+
+1322
+00:50:58,480 --> 00:50:59,990
+literally had that happen at one point
+
+1323
+00:51:00,000 --> 00:51:02,230
+where one CUDA kernel flag improved
+
+1324
+00:51:02,240 --> 00:51:04,309
+performance by 25% due to a specific
+
+1325
+00:51:04,319 --> 00:51:06,790
+load pattern. And that's the kind of
+
+1326
+00:51:06,800 --> 00:51:09,750
+thing where there's no way we could have
+
+1327
+00:51:09,760 --> 00:51:11,829
+ever guessed that going into building
+
+1328
+00:51:11,839 --> 00:51:14,950
+the system. But by observing it, by
+
+1329
+00:51:14,960 --> 00:51:16,870
+seeing when it spiked, and then by
+
+1330
+00:51:16,880 --> 00:51:19,589
+looking at profiling of, hey, these
+
+1331
+00:51:19,599 --> 00:51:21,190
+operations were taking this amount of
+
+1332
+00:51:21,200 --> 00:51:22,870
+time, we're able to figure out that
+
+1333
+00:51:22,880 --> 00:51:24,309
+that's the thing that we needed to
+
+1334
+00:51:24,319 --> 00:51:26,630
+optimize in that situation.
+
+1335
+00:51:26,640 --> 00:51:28,790
+&gt;&gt; Are there any other lessons learned or
+
+1336
+00:51:28,800 --> 00:51:31,430
+best practices around managing latency
+
+1337
+00:51:31,440 --> 00:51:33,670
+that you'd like to convey?
+
+1338
+00:51:33,680 --> 00:51:36,470
+I think the most important one is that
+
+1339
+00:51:36,480 --> 00:51:38,950
+for anything latency sensitive,
+
+1340
+00:51:38,960 --> 00:51:40,470
+everything
+
+1341
+00:51:40,480 --> 00:51:42,710
+that's not critical should get removed
+
+1342
+00:51:42,720 --> 00:51:44,630
+from the critical path. And you know,
+
+1343
+00:51:44,640 --> 00:51:46,069
+when I phrase it that way, it sounds
+
+1344
+00:51:46,079 --> 00:51:47,990
+obvious cuz uh it's called the critical
+
+1345
+00:51:48,000 --> 00:51:50,150
+path, but it's really easy to have a
+
+1346
+00:51:50,160 --> 00:51:52,309
+database query here or a blocking
+
+1347
+00:51:52,319 --> 00:51:55,829
+operation there that is occurring in the
+
+1348
+00:51:55,839 --> 00:51:58,069
+primary path for a latency sensitive
+
+1349
+00:51:58,079 --> 00:52:00,710
+application. But 3 milliseconds here, 5
+
+1350
+00:52:00,720 --> 00:52:02,470
+milliseconds there, 10 milliseconds
+
+1351
+00:52:02,480 --> 00:52:04,710
+another place and that's under good
+
+1352
+00:52:04,720 --> 00:52:07,030
+conditions, you know, could become 100
+
+1353
+00:52:07,040 --> 00:52:09,589
+milliseconds here or there really fast.
+
+1354
+00:52:09,599 --> 00:52:13,349
+And it's actually often the innocuous
+
+1355
+00:52:13,359 --> 00:52:16,710
+pieces of code that people write that
+
+1356
+00:52:16,720 --> 00:52:20,549
+can very easily just cause overhead that
+
+1357
+00:52:20,559 --> 00:52:22,549
+doesn't need to be there. Right? That's
+
+1358
+00:52:22,559 --> 00:52:26,470
+the easy kind of overhead to avoid when
+
+1359
+00:52:26,480 --> 00:52:28,630
+being disciplined about programming. A
+
+1360
+00:52:28,640 --> 00:52:30,069
+lot of the other stuff is like you're
+
+1361
+00:52:30,079 --> 00:52:31,750
+gonna have to whack away at it. It's
+
+1362
+00:52:31,760 --> 00:52:33,430
+going to be a hard problem. You're going
+
+1363
+00:52:33,440 --> 00:52:35,829
+to have to dive into logs, observe
+
+1364
+00:52:35,839 --> 00:52:38,549
+things, and understand how like kernels
+
+1365
+00:52:38,559 --> 00:52:40,710
+work and things of that sort. And that's
+
+1366
+00:52:40,720 --> 00:52:42,549
+the hard work that always needs to
+
+1367
+00:52:42,559 --> 00:52:44,950
+happen. But the best practice of like
+
+1368
+00:52:44,960 --> 00:52:48,390
+make sure only the absolute bare minimum
+
+1369
+00:52:48,400 --> 00:52:50,470
+needs to happen in any blocking
+
+1370
+00:52:50,480 --> 00:52:52,549
+operation on the critical path like
+
+1371
+00:52:52,559 --> 00:52:55,109
+that's the kind of golden rule for me.
+
+1372
+00:52:55,119 --> 00:52:59,190
+It sounds very much like an idea that I
+
+1373
+00:52:59,200 --> 00:53:01,349
+ran across some years ago under the name
+
+1374
+00:53:01,359 --> 00:53:03,990
+of reactive applications where the idea
+
+1375
+00:53:04,000 --> 00:53:06,390
+was anything that you don't need the
+
+1376
+00:53:06,400 --> 00:53:10,069
+response in line put it in an async and
+
+1377
+00:53:10,079 --> 00:53:13,510
+just let it happen on its own and if you
+
+1378
+00:53:13,520 --> 00:53:15,030
+need to know when it finished use an
+
+1379
+00:53:15,040 --> 00:53:15,829
+event.
+
+1380
+00:53:15,839 --> 00:53:16,870
+&gt;&gt; Exactly.
+
+1381
+00:53:16,880 --> 00:53:19,990
+&gt;&gt; Okay. Well, Sahed thank you so much for
+
+1382
+00:53:20,000 --> 00:53:21,750
+this conversation. Before we wrap up,
+
+1383
+00:53:21,760 --> 00:53:23,510
+would you like to direct listeners to
+
+1384
+00:53:23,520 --> 00:53:25,910
+anywhere on the internet where they can
+
+1385
+00:53:25,920 --> 00:53:28,470
+find either you or your company?
+
+1386
+00:53:28,480 --> 00:53:30,790
+&gt;&gt; Yeah, so I would just recommend going to
+
+1387
+00:53:30,800 --> 00:53:32,710
+the Whisper Flow website. So that's
+
+1388
+00:53:32,720 --> 00:53:34,470
+where you can see some of our research
+
+1389
+00:53:34,480 --> 00:53:36,470
+and our blogs about how we think about
+
+1390
+00:53:36,480 --> 00:53:39,109
+optimizing and building voice AI models
+
+1391
+00:53:39,119 --> 00:53:41,829
+for improving things. And you can also
+
+1392
+00:53:41,839 --> 00:53:43,510
+download and play around with the
+
+1393
+00:53:43,520 --> 00:53:46,470
+application which lets you speak instead
+
+1394
+00:53:46,480 --> 00:53:48,069
+of type anywhere on your computer. So
+
+1395
+00:53:48,079 --> 00:53:49,430
+that's, you know, the best set of
+
+1396
+00:53:49,440 --> 00:53:51,750
+resources. And then I have a small
+
+1397
+00:53:51,760 --> 00:53:53,430
+lightweight personal blog that you can
+
+1398
+00:53:53,440 --> 00:53:54,549
+find online as well.
+
+1399
+00:53:54,559 --> 00:53:57,030
+&gt;&gt; So, thank you for speaking to Software
+
+1400
+00:53:57,040 --> 00:53:58,309
+Engineering Radio.
+
+1401
+00:53:58,319 --> 00:53:59,589
+&gt;&gt; Thank you for having me, Robert. It was
+
+1402
+00:53:59,599 --> 00:54:00,710
+a pleasure being here.
+
+1403
+00:54:00,720 --> 00:54:03,349
+&gt;&gt; This has been Robert Blumen for Software
+
+1404
+00:54:03,359 --> 00:54:04,790
+Engineering Radio. Thank you for
+
+1405
+00:54:04,800 --> 00:54:06,710
+listening. [music]
+
+1406
+00:54:06,720 --> 00:54:08,309
+&gt;&gt; Thanks for listening to SE Radio, an
+
+1407
+00:54:08,319 --> 00:54:10,390
+educational program brought to you by E
+
+1408
+00:54:10,400 --> 00:54:12,102
+Software Magazine. For more about
+
+1409
+00:54:12,112 --> 00:54:13,510
+[music] the podcast, including other
+
+1410
+00:54:13,520 --> 00:54:15,270
+episodes, visit our website at
+
+1411
+00:54:15,280 --> 00:54:17,670
+se-radio.net.
+
+1412
+00:54:17,680 --> 00:54:19,349
+To provide feedback, you can comment on
+
+1413
+00:54:19,359 --> 00:54:21,270
+each episode on the website or reach us
+
+1414
+00:54:21,280 --> 00:54:23,910
+on LinkedIn, Facebook, Twitter, or
+
+1415
+00:54:23,920 --> 00:54:25,270
+through our Slack channel at
+
+1416
+00:54:25,280 --> 00:54:28,309
+seradio.slack.com.
+
+1417
+00:54:29,670 --> 00:54:29,680
+You can also email us at
+
+1418
+00:54:29,680 --> 00:54:32,950
+teamseradio.net.
+
+1419
+00:54:34,870 --> 00:54:34,880
+This and all other episodes of SE Radio
+
+1420
+00:54:34,880 --> 00:54:36,337
+is licensed under Creative Common
+
+1421
+00:54:36,347 --> 00:54:38,870
+[music] License 2.5. Thanks for
+
+1422
+00:54:38,880 --> 00:54:41,880
+listening.

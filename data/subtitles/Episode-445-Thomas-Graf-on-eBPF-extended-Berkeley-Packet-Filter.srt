@@ -1,0 +1,8995 @@
+1
+00:00:00,389 --> 00:00:00,399
+[Music]
+
+2
+00:00:00,399 --> 00:00:02,310
+this is software engineering radio the
+
+3
+00:00:02,320 --> 00:00:04,230
+podcast for professional developers
+
+4
+00:00:04,240 --> 00:00:07,269
+on the web at se-radio.net
+
+5
+00:00:07,279 --> 00:00:09,190
+sc radio is brought to you by the ieee
+
+6
+00:00:09,200 --> 00:00:11,350
+computer society by ieee software
+
+7
+00:00:11,360 --> 00:00:12,470
+magazine
+
+8
+00:00:12,480 --> 00:00:21,349
+online at computer.org software
+
+9
+00:00:22,950 --> 00:00:22,960
+hello this is justin baier for software
+
+10
+00:00:22,960 --> 00:00:24,470
+engineering radio and today i'm speaking
+
+11
+00:00:24,480 --> 00:00:26,710
+with thomas graf about ebpf
+
+12
+00:00:26,720 --> 00:00:28,310
+thomas is a co-founder of psyllium and
+
+13
+00:00:28,320 --> 00:00:30,390
+the cto and co-founder of isovalene the
+
+14
+00:00:30,400 --> 00:00:32,229
+company behind silly
+
+15
+00:00:32,239 --> 00:00:34,150
+previously thomas worked at red hat and
+
+16
+00:00:34,160 --> 00:00:36,150
+cisco as a linux kernel developer on the
+
+17
+00:00:36,160 --> 00:00:37,910
+linux kernel and various other open
+
+18
+00:00:37,920 --> 00:00:39,110
+source projects
+
+19
+00:00:39,120 --> 00:00:40,790
+welcome to the show thomas thanks a lot
+
+20
+00:00:40,800 --> 00:00:42,790
+for having me justin yeah of course
+
+21
+00:00:42,800 --> 00:00:45,750
+so just to start off the show i want to
+
+22
+00:00:45,760 --> 00:00:46,790
+discuss
+
+23
+00:00:46,800 --> 00:00:48,549
+a little bit of a baseline before we
+
+24
+00:00:48,559 --> 00:00:49,990
+dive into the ebpf
+
+25
+00:00:50,000 --> 00:00:51,270
+i want to talk a little bit about how
+
+26
+00:00:51,280 --> 00:00:53,510
+the linux kernel is structured so
+
+27
+00:00:53,520 --> 00:00:55,270
+from a high level can you kind of
+
+28
+00:00:55,280 --> 00:00:57,350
+discuss you know
+
+29
+00:00:57,360 --> 00:00:59,110
+how does my user space program interact
+
+30
+00:00:59,120 --> 00:01:00,869
+with the linux kernel and a little bit
+
+31
+00:01:00,879 --> 00:01:02,150
+about the internal structure of the
+
+32
+00:01:02,160 --> 00:01:02,869
+kernel
+
+33
+00:01:02,879 --> 00:01:05,990
+sure um the kernel is
+
+34
+00:01:06,000 --> 00:01:08,469
+what typically sits between an
+
+35
+00:01:08,479 --> 00:01:09,830
+application and hardware
+
+36
+00:01:09,840 --> 00:01:13,190
+or appliances and
+
+37
+00:01:13,200 --> 00:01:14,789
+it is there to abstract the hardware
+
+38
+00:01:14,799 --> 00:01:16,710
+away so applications don't have to care
+
+39
+00:01:16,720 --> 00:01:17,749
+about what hardware
+
+40
+00:01:17,759 --> 00:01:19,109
+are your regular only and that could be
+
+41
+00:01:19,119 --> 00:01:20,710
+real hardware or could be virtualized
+
+42
+00:01:20,720 --> 00:01:22,149
+virtualized hardware
+
+43
+00:01:22,159 --> 00:01:25,109
+and the kernel is fundamentally event
+
+44
+00:01:25,119 --> 00:01:25,990
+driven so it will
+
+45
+00:01:26,000 --> 00:01:28,149
+only do something if you ask it to do
+
+46
+00:01:28,159 --> 00:01:29,030
+something right
+
+47
+00:01:29,040 --> 00:01:30,789
+it's not magically doing something there
+
+48
+00:01:30,799 --> 00:01:32,630
+are maybe some timer related things that
+
+49
+00:01:32,640 --> 00:01:33,830
+are happening but generally
+
+50
+00:01:33,840 --> 00:01:35,270
+there are system calls that are
+
+51
+00:01:35,280 --> 00:01:36,789
+happening from the applications for
+
+52
+00:01:36,799 --> 00:01:38,950
+example hey i want to open a file
+
+53
+00:01:38,960 --> 00:01:41,270
+or hey i want to do an a tcp network
+
+54
+00:01:41,280 --> 00:01:42,069
+connection
+
+55
+00:01:42,079 --> 00:01:44,469
+or there is hardware telling the kernel
+
+56
+00:01:44,479 --> 00:01:45,910
+i have something to read
+
+57
+00:01:45,920 --> 00:01:48,389
+or i have a network packet that has just
+
+58
+00:01:48,399 --> 00:01:49,910
+come in you need to do something about
+
+59
+00:01:49,920 --> 00:01:50,630
+it so
+
+60
+00:01:50,640 --> 00:01:52,710
+the kernel is there to act on those
+
+61
+00:01:52,720 --> 00:01:53,990
+events and to connect
+
+62
+00:01:54,000 --> 00:01:56,789
+hardware with applications to for
+
+63
+00:01:56,799 --> 00:01:58,389
+example allow an application
+
+64
+00:01:58,399 --> 00:02:00,950
+to open a tcp connection or to store a
+
+65
+00:02:00,960 --> 00:02:02,870
+file or to read from a file
+
+66
+00:02:02,880 --> 00:02:05,429
+and so on okay so it's event driven
+
+67
+00:02:05,439 --> 00:02:07,350
+we're leveraging sys calls
+
+68
+00:02:07,360 --> 00:02:09,270
+from the user space into kernel space to
+
+69
+00:02:09,280 --> 00:02:10,869
+drive those events
+
+70
+00:02:10,879 --> 00:02:13,270
+so we're going to dive a little bit into
+
+71
+00:02:13,280 --> 00:02:15,350
+this into where ebpf fits in that but
+
+72
+00:02:15,360 --> 00:02:16,390
+before we get there
+
+73
+00:02:16,400 --> 00:02:17,830
+i just want to talk a little bit about
+
+74
+00:02:17,840 --> 00:02:19,510
+how are changes actually made to the
+
+75
+00:02:19,520 --> 00:02:20,309
+kernel
+
+76
+00:02:20,319 --> 00:02:21,830
+so if we specifically talk about the
+
+77
+00:02:21,840 --> 00:02:24,070
+linux kernel which we do in the in the
+
+78
+00:02:24,080 --> 00:02:25,670
+context of ebpf
+
+79
+00:02:25,680 --> 00:02:27,589
+it is an open source community it's
+
+80
+00:02:27,599 --> 00:02:29,430
+hundreds or thousands of
+
+81
+00:02:29,440 --> 00:02:31,030
+kernel kernel engineers or kernel
+
+82
+00:02:31,040 --> 00:02:32,550
+developers who will
+
+83
+00:02:32,560 --> 00:02:35,670
+make source code modifications it's
+
+84
+00:02:35,680 --> 00:02:37,670
+i would i'll call it relatively old
+
+85
+00:02:37,680 --> 00:02:39,350
+school so it's still using mailing lists
+
+86
+00:02:39,360 --> 00:02:41,270
+it's not using slack it's not using
+
+87
+00:02:41,280 --> 00:02:42,550
+github yet it's
+
+88
+00:02:42,560 --> 00:02:44,949
+it's using git or git was actually came
+
+89
+00:02:44,959 --> 00:02:46,309
+out of the the kernel development
+
+90
+00:02:46,319 --> 00:02:47,030
+movement
+
+91
+00:02:47,040 --> 00:02:48,630
+so you have a hundreds of thousands of
+
+92
+00:02:48,640 --> 00:02:50,710
+people that are making
+
+93
+00:02:50,720 --> 00:02:53,030
+code changes that then run on millions
+
+94
+00:02:53,040 --> 00:02:54,949
+and millions of devices from
+
+95
+00:02:54,959 --> 00:02:57,190
+high-end servers to really small
+
+96
+00:02:57,200 --> 00:02:58,390
+embedded devices
+
+97
+00:02:58,400 --> 00:03:01,030
+which leads to this interesting scenario
+
+98
+00:03:01,040 --> 00:03:01,430
+that
+
+99
+00:03:01,440 --> 00:03:04,070
+have many many many different interests
+
+100
+00:03:04,080 --> 00:03:06,390
+and they all have to agree on that a
+
+101
+00:03:06,400 --> 00:03:08,229
+particular change makes sense for all of
+
+102
+00:03:08,239 --> 00:03:08,710
+them
+
+103
+00:03:08,720 --> 00:03:10,790
+so all of this creates this very unique
+
+104
+00:03:10,800 --> 00:03:12,309
+very very interesting
+
+105
+00:03:12,319 --> 00:03:14,550
+kind of group of people that are that
+
+106
+00:03:14,560 --> 00:03:15,350
+all have
+
+107
+00:03:15,360 --> 00:03:17,350
+similar goal but they're not all caring
+
+108
+00:03:17,360 --> 00:03:18,630
+about the exact same
+
+109
+00:03:18,640 --> 00:03:20,630
+thing yeah so it's almost like that
+
+110
+00:03:20,640 --> 00:03:22,790
+debate you get when you have the 500
+
+111
+00:03:22,800 --> 00:03:24,710
+distributions of linux of which one do i
+
+112
+00:03:24,720 --> 00:03:25,270
+pick
+
+113
+00:03:25,280 --> 00:03:27,350
+you're still at the kernel level trying
+
+114
+00:03:27,360 --> 00:03:29,509
+to summarize all of those
+
+115
+00:03:29,519 --> 00:03:31,910
+higher level specific like ubuntu
+
+116
+00:03:31,920 --> 00:03:33,110
+changes or
+
+117
+00:03:33,120 --> 00:03:35,430
+deviant changes or arch changes and
+
+118
+00:03:35,440 --> 00:03:36,869
+you're trying to kind of boil that down
+
+119
+00:03:36,879 --> 00:03:37,509
+to core
+
+120
+00:03:37,519 --> 00:03:39,430
+essence and say okay but this is the
+
+121
+00:03:39,440 --> 00:03:40,789
+actual functionality we need
+
+122
+00:03:40,799 --> 00:03:43,670
+in the kernel exactly exactly but the
+
+123
+00:03:43,680 --> 00:03:44,710
+huge benefit is
+
+124
+00:03:44,720 --> 00:03:47,030
+if you have something in the kernel it's
+
+125
+00:03:47,040 --> 00:03:48,149
+available
+
+126
+00:03:48,159 --> 00:03:49,910
+everywhere right linux is everywhere
+
+127
+00:03:49,920 --> 00:03:51,589
+these days so if you manage to get
+
+128
+00:03:51,599 --> 00:03:52,869
+functionality in
+
+129
+00:03:52,879 --> 00:03:54,789
+it means you have this available on any
+
+130
+00:03:54,799 --> 00:03:56,630
+smartphone that is linux based on any
+
+131
+00:03:56,640 --> 00:03:57,670
+linux server
+
+132
+00:03:57,680 --> 00:04:00,309
+on most home appliances that linux space
+
+133
+00:04:00,319 --> 00:04:01,429
+so
+
+134
+00:04:01,439 --> 00:04:03,589
+the the gain you get from something
+
+135
+00:04:03,599 --> 00:04:05,190
+integrated into linux kernel is huge
+
+136
+00:04:05,200 --> 00:04:07,910
+obviously so then kind of diving into
+
+137
+00:04:07,920 --> 00:04:08,550
+ebpf
+
+138
+00:04:08,560 --> 00:04:10,229
+how did that actually get introduced
+
+139
+00:04:10,239 --> 00:04:11,990
+into the linux kernel this is very
+
+140
+00:04:12,000 --> 00:04:12,710
+interesting
+
+141
+00:04:12,720 --> 00:04:16,150
+uh ebpf kind of origins from bpf
+
+142
+00:04:16,160 --> 00:04:18,710
+which is the the older more natural form
+
+143
+00:04:18,720 --> 00:04:21,749
+of it berkeley packet filter which is
+
+144
+00:04:21,759 --> 00:04:24,310
+is older than i am so it's very very old
+
+145
+00:04:24,320 --> 00:04:26,230
+and it is the original packet filter
+
+146
+00:04:26,240 --> 00:04:28,390
+from the bsd days it's
+
+147
+00:04:28,400 --> 00:04:30,870
+a small coding languages that call a
+
+148
+00:04:30,880 --> 00:04:33,110
+small coding language that allow to
+
+149
+00:04:33,120 --> 00:04:35,350
+write filters to for example if you're
+
+150
+00:04:35,360 --> 00:04:37,350
+on tcp dom to specify
+
+151
+00:04:37,360 --> 00:04:39,189
+with which packets should actually be
+
+152
+00:04:39,199 --> 00:04:41,189
+displayed or if you have a raw socket
+
+153
+00:04:41,199 --> 00:04:43,030
+which packets should be should be
+
+154
+00:04:43,040 --> 00:04:44,230
+received on a
+
+155
+00:04:44,240 --> 00:04:46,310
+raw socket so it's something low level
+
+156
+00:04:46,320 --> 00:04:47,430
+in the kernel that was
+
+157
+00:04:47,440 --> 00:04:49,590
+used to select a subset of network
+
+158
+00:04:49,600 --> 00:04:51,350
+packets and ebpf
+
+159
+00:04:51,360 --> 00:04:54,469
+is the extended version of that and
+
+160
+00:04:54,479 --> 00:04:57,189
+the motivation for it was that it became
+
+161
+00:04:57,199 --> 00:04:59,270
+harder and harder to find consensus
+
+162
+00:04:59,280 --> 00:04:59,830
+among
+
+163
+00:04:59,840 --> 00:05:01,510
+all among all of the linus kernel
+
+164
+00:05:01,520 --> 00:05:03,590
+engineers because a certain change may
+
+165
+00:05:03,600 --> 00:05:04,550
+make sense for
+
+166
+00:05:04,560 --> 00:05:06,310
+a google or a facebook or one of the
+
+167
+00:05:06,320 --> 00:05:08,629
+other very big companies utilizing
+
+168
+00:05:08,639 --> 00:05:10,469
+linux for high scale environments but it
+
+169
+00:05:10,479 --> 00:05:12,230
+may not make sense for for example
+
+170
+00:05:12,240 --> 00:05:13,590
+embedded systems
+
+171
+00:05:13,600 --> 00:05:15,909
+and this led to a motivation or to a
+
+172
+00:05:15,919 --> 00:05:17,110
+discussion is
+
+173
+00:05:17,120 --> 00:05:18,550
+kind of under the way of can we make the
+
+174
+00:05:18,560 --> 00:05:20,150
+linux kernel programmable and this is
+
+175
+00:05:20,160 --> 00:05:21,670
+where ebps draw it
+
+176
+00:05:21,680 --> 00:05:24,230
+okay so just to kind of go a little bit
+
+177
+00:05:24,240 --> 00:05:24,710
+back
+
+178
+00:05:24,720 --> 00:05:26,550
+when we're talking about packet
+
+179
+00:05:26,560 --> 00:05:27,749
+filtering
+
+180
+00:05:27,759 --> 00:05:29,590
+what actually is that because i know
+
+181
+00:05:29,600 --> 00:05:31,350
+some of our listeners may not be super
+
+182
+00:05:31,360 --> 00:05:32,710
+familiar with that
+
+183
+00:05:32,720 --> 00:05:36,070
+lower level network stuff yeah so packet
+
+184
+00:05:36,080 --> 00:05:36,710
+filtering
+
+185
+00:05:36,720 --> 00:05:38,710
+is done on multiple occasions the most
+
+186
+00:05:38,720 --> 00:05:39,830
+obvious one is
+
+187
+00:05:39,840 --> 00:05:41,990
+is for example a firewall right if you
+
+188
+00:05:42,000 --> 00:05:43,749
+if you want a security firewall you need
+
+189
+00:05:43,759 --> 00:05:45,510
+to be able to do packet filtering
+
+190
+00:05:45,520 --> 00:05:47,909
+to decide should i allow this packet or
+
+191
+00:05:47,919 --> 00:05:49,830
+should i not allow for this packet
+
+192
+00:05:49,840 --> 00:05:51,430
+uh the example that most people are
+
+193
+00:05:51,440 --> 00:05:54,150
+probably probably aware of is iptables
+
+194
+00:05:54,160 --> 00:05:54,790
+where
+
+195
+00:05:54,800 --> 00:05:57,270
+you have a rule such as i want to allow
+
+196
+00:05:57,280 --> 00:05:57,990
+ssh
+
+197
+00:05:58,000 --> 00:06:00,390
+and i want to drop everything else and i
+
+198
+00:06:00,400 --> 00:06:03,110
+want to allow all of my reply packets
+
+199
+00:06:03,120 --> 00:06:04,790
+and that's it like a stateful that's a
+
+200
+00:06:04,800 --> 00:06:06,629
+typical stateful packet filter
+
+201
+00:06:06,639 --> 00:06:08,710
+but there are other cases as well one is
+
+202
+00:06:08,720 --> 00:06:09,909
+a one is uh
+
+203
+00:06:09,919 --> 00:06:11,110
+something i've already mentioned which
+
+204
+00:06:11,120 --> 00:06:13,830
+is tcp dump you can run tcp dom to
+
+205
+00:06:13,840 --> 00:06:15,590
+capture network packets on a network
+
+206
+00:06:15,600 --> 00:06:16,469
+device
+
+207
+00:06:16,479 --> 00:06:18,629
+and display them for example for network
+
+208
+00:06:18,639 --> 00:06:19,510
+troubleshooting
+
+209
+00:06:19,520 --> 00:06:21,270
+in this case you also want to apply a
+
+210
+00:06:21,280 --> 00:06:22,870
+filter and for example say
+
+211
+00:06:22,880 --> 00:06:25,110
+oh i only want to see network packets on
+
+212
+00:06:25,120 --> 00:06:25,990
+port 80
+
+213
+00:06:26,000 --> 00:06:28,790
+or i only want to see tcp packets with
+
+214
+00:06:28,800 --> 00:06:29,749
+the syn flax set
+
+215
+00:06:29,759 --> 00:06:31,830
+and so on that's those are typical
+
+216
+00:06:31,840 --> 00:06:33,749
+examples of a packet filter
+
+217
+00:06:33,759 --> 00:06:36,230
+yeah and commonly i here discuss you
+
+218
+00:06:36,240 --> 00:06:37,909
+know tcp dump underlying something like
+
+219
+00:06:37,919 --> 00:06:40,150
+wireshark to display the actual captures
+
+220
+00:06:40,160 --> 00:06:40,629
+and
+
+221
+00:06:40,639 --> 00:06:42,550
+view the pcap files and all that kind of
+
+222
+00:06:42,560 --> 00:06:44,790
+stuff exactly exactly tcp dump is kind
+
+223
+00:06:44,800 --> 00:06:45,189
+of the
+
+224
+00:06:45,199 --> 00:06:47,430
+the raw form and wireshark is the gui on
+
+225
+00:06:47,440 --> 00:06:48,870
+top exactly so
+
+226
+00:06:48,880 --> 00:06:51,189
+you mentioned how evpf is kind of this
+
+227
+00:06:51,199 --> 00:06:53,029
+programmability in the linux kernel can
+
+228
+00:06:53,039 --> 00:06:54,230
+we kind of talk about how
+
+229
+00:06:54,240 --> 00:06:56,309
+ebpf is actually working under the hood
+
+230
+00:06:56,319 --> 00:06:58,150
+like integrated into it
+
+231
+00:06:58,160 --> 00:06:59,990
+like how is that actually hooking into
+
+232
+00:07:00,000 --> 00:07:01,670
+the kernel absolutely
+
+233
+00:07:01,680 --> 00:07:04,870
+evpf by itself is a bytecode language
+
+234
+00:07:04,880 --> 00:07:07,589
+which is is restricted but relatively
+
+235
+00:07:07,599 --> 00:07:08,950
+general purpose so you can write
+
+236
+00:07:08,960 --> 00:07:11,909
+programs which contain logic the kernel
+
+237
+00:07:11,919 --> 00:07:13,350
+then provides
+
+238
+00:07:13,360 --> 00:07:15,350
+a whole set of hook points to which you
+
+239
+00:07:15,360 --> 00:07:17,029
+can attach those programs
+
+240
+00:07:17,039 --> 00:07:18,870
+and run them when a certain event
+
+241
+00:07:18,880 --> 00:07:21,029
+happens and this suits nicely into the
+
+242
+00:07:21,039 --> 00:07:22,629
+event driven architecture of the linux
+
+243
+00:07:22,639 --> 00:07:25,110
+kernel so for example you can run a dpf
+
+244
+00:07:25,120 --> 00:07:25,749
+program
+
+245
+00:07:25,759 --> 00:07:27,510
+when a network packet is received or
+
+246
+00:07:27,520 --> 00:07:29,350
+when a network packet is transmitted
+
+247
+00:07:29,360 --> 00:07:31,430
+or when a system call is being made or
+
+248
+00:07:31,440 --> 00:07:33,990
+when a tree trace point is passed
+
+249
+00:07:34,000 --> 00:07:37,110
+or when um when a user space probe
+
+250
+00:07:37,120 --> 00:07:38,070
+function is called
+
+251
+00:07:38,080 --> 00:07:40,469
+and so on so the kernel provides a set
+
+252
+00:07:40,479 --> 00:07:43,110
+of hook points which you can extend and
+
+253
+00:07:43,120 --> 00:07:43,990
+run a bpf
+
+254
+00:07:44,000 --> 00:07:46,469
+program and that program can then return
+
+255
+00:07:46,479 --> 00:07:47,350
+a verdict
+
+256
+00:07:47,360 --> 00:07:49,270
+to instrument or to indicate to the
+
+257
+00:07:49,280 --> 00:07:50,550
+colonel what to do with
+
+258
+00:07:50,560 --> 00:07:53,589
+at that talk how to proceed further okay
+
+259
+00:07:53,599 --> 00:07:54,150
+and
+
+260
+00:07:54,160 --> 00:07:55,990
+we are going to dive a little bit into
+
+261
+00:07:56,000 --> 00:07:57,670
+those discussions about you know what
+
+262
+00:07:57,680 --> 00:07:59,029
+those hook points are and stuff and we
+
+263
+00:07:59,039 --> 00:08:00,550
+discuss a little bit later about writing
+
+264
+00:08:00,560 --> 00:08:02,070
+ebpf programs
+
+265
+00:08:02,080 --> 00:08:04,230
+but i just kind of want to talk about
+
+266
+00:08:04,240 --> 00:08:05,110
+what are we talking about with
+
+267
+00:08:05,120 --> 00:08:06,629
+complexity of ebpf
+
+268
+00:08:06,639 --> 00:08:09,110
+when we're talking you know time cost
+
+269
+00:08:09,120 --> 00:08:10,950
+memory cost if i want to write
+
+270
+00:08:10,960 --> 00:08:13,589
+an ebpf program how much of a hit on my
+
+271
+00:08:13,599 --> 00:08:14,790
+system am i going to see
+
+272
+00:08:14,800 --> 00:08:17,749
+so ebpf is specifically designed to be
+
+273
+00:08:17,759 --> 00:08:18,070
+as
+
+274
+00:08:18,080 --> 00:08:19,909
+efficient as possible and for that
+
+275
+00:08:19,919 --> 00:08:21,670
+reason it actually comes with a just in
+
+276
+00:08:21,680 --> 00:08:22,869
+time compiler
+
+277
+00:08:22,879 --> 00:08:24,230
+which means that even though you're
+
+278
+00:08:24,240 --> 00:08:26,309
+loading generic byte code
+
+279
+00:08:26,319 --> 00:08:28,150
+portable byte code into your linux
+
+280
+00:08:28,160 --> 00:08:29,749
+kernel but just in time compiler will
+
+281
+00:08:29,759 --> 00:08:31,909
+compile that and translate that into
+
+282
+00:08:31,919 --> 00:08:34,230
+whatever your cpu runs so from an
+
+283
+00:08:34,240 --> 00:08:36,230
+efficiency perspective you're very close
+
+284
+00:08:36,240 --> 00:08:37,509
+to execution speed
+
+285
+00:08:37,519 --> 00:08:40,389
+as if you would recompile a kernel evpef
+
+286
+00:08:40,399 --> 00:08:42,630
+programs are typically not very complex
+
+287
+00:08:42,640 --> 00:08:44,310
+there's even a complexity limit to
+
+288
+00:08:44,320 --> 00:08:45,990
+programs because from a kernel
+
+289
+00:08:46,000 --> 00:08:47,910
+perspective you don't want to allow
+
+290
+00:08:47,920 --> 00:08:49,910
+users to load programs which might then
+
+291
+00:08:49,920 --> 00:08:50,870
+stall the kernels
+
+292
+00:08:50,880 --> 00:08:52,949
+ebpf programs have to be fundamentally
+
+293
+00:08:52,959 --> 00:08:54,790
+secure and having a
+
+294
+00:08:54,800 --> 00:08:57,670
+known complexity or an upper complexity
+
+295
+00:08:57,680 --> 00:08:58,230
+limits
+
+296
+00:08:58,240 --> 00:09:00,070
+is a key part besides other other
+
+297
+00:09:00,080 --> 00:09:02,230
+aspects yeah and we'll dive into some of
+
+298
+00:09:02,240 --> 00:09:03,430
+those restrictions a little bit more
+
+299
+00:09:03,440 --> 00:09:04,470
+later on i know there's some
+
+300
+00:09:04,480 --> 00:09:06,389
+restrictions around looping and pointers
+
+301
+00:09:06,399 --> 00:09:07,750
+and all that kind of stuff
+
+302
+00:09:07,760 --> 00:09:09,509
+so when you're saying the just-in-time
+
+303
+00:09:09,519 --> 00:09:11,269
+compiler though are you talking about is
+
+304
+00:09:11,279 --> 00:09:13,430
+that where llvm kind of fits into that
+
+305
+00:09:13,440 --> 00:09:14,150
+layer
+
+306
+00:09:14,160 --> 00:09:15,670
+so there's two layers of compilation
+
+307
+00:09:15,680 --> 00:09:17,670
+that happen first of all bpf is an
+
+308
+00:09:17,680 --> 00:09:18,470
+assembly like
+
+309
+00:09:18,480 --> 00:09:21,030
+language it's uh it's looks very similar
+
+310
+00:09:21,040 --> 00:09:22,710
+to x86 assembly
+
+311
+00:09:22,720 --> 00:09:25,430
+and yes you can write the pbpf bytecode
+
+312
+00:09:25,440 --> 00:09:27,110
+at that level but that's not what you
+
+313
+00:09:27,120 --> 00:09:28,389
+typically do
+
+314
+00:09:28,399 --> 00:09:31,750
+you typically use c or a pseudo c
+
+315
+00:09:31,760 --> 00:09:33,910
+language and then use llvm to compile
+
+316
+00:09:33,920 --> 00:09:36,150
+sudo c into ppf pipe code
+
+317
+00:09:36,160 --> 00:09:37,750
+and then the kernel will translate that
+
+318
+00:09:37,760 --> 00:09:39,509
+again from the
+
+319
+00:09:39,519 --> 00:09:42,310
+generic pipe code into for example x86
+
+320
+00:09:42,320 --> 00:09:43,110
+evpf
+
+321
+00:09:43,120 --> 00:09:45,269
+okay and who's maintaining all of this
+
+322
+00:09:45,279 --> 00:09:46,870
+stuff within evpf because it sounds like
+
+323
+00:09:46,880 --> 00:09:48,550
+there's definitely a lot of underlying
+
+324
+00:09:48,560 --> 00:09:50,630
+functionality that's dependent on
+
+325
+00:09:50,640 --> 00:09:52,790
+constant maintenance exactly there's
+
+326
+00:09:52,800 --> 00:09:54,070
+multiple layers that
+
+327
+00:09:54,080 --> 00:09:55,829
+are stacked on top like if we start from
+
+328
+00:09:55,839 --> 00:09:57,269
+the very bottom there is
+
+329
+00:09:57,279 --> 00:09:59,590
+the edpf subsystem in the kernel which
+
+330
+00:09:59,600 --> 00:10:01,430
+is maintained by daniel borkman and
+
+331
+00:10:01,440 --> 00:10:03,030
+alexa story voitov
+
+332
+00:10:03,040 --> 00:10:06,310
+and andrei i sorry andre i completely
+
+333
+00:10:06,320 --> 00:10:07,910
+forgot i forgot your last name but
+
+334
+00:10:07,920 --> 00:10:10,870
+three maintainers on on the eppf kernel
+
+335
+00:10:10,880 --> 00:10:12,630
+side that's what's in the
+
+336
+00:10:12,640 --> 00:10:15,430
+kernel side uh this is the engine this
+
+337
+00:10:15,440 --> 00:10:16,790
+is the chit compiler this is the
+
+338
+00:10:16,800 --> 00:10:17,990
+verifier which we'll talk
+
+339
+00:10:18,000 --> 00:10:20,310
+later about this are the hook points
+
+340
+00:10:20,320 --> 00:10:21,509
+everything that runs
+
+341
+00:10:21,519 --> 00:10:23,590
+in the kernel and then there's a lit ppf
+
+342
+00:10:23,600 --> 00:10:25,430
+which is also maintained by the kernel
+
+343
+00:10:25,440 --> 00:10:26,790
+community that's low level
+
+344
+00:10:26,800 --> 00:10:29,750
+and then on top of that is um various
+
+345
+00:10:29,760 --> 00:10:31,670
+tool set like for the compiler suite
+
+346
+00:10:31,680 --> 00:10:32,470
+llvm
+
+347
+00:10:32,480 --> 00:10:34,710
+and then tools like cilia and bcc ppf
+
+348
+00:10:34,720 --> 00:10:36,790
+trades which are higher level
+
+349
+00:10:36,800 --> 00:10:38,550
+tools they're still very much in the
+
+350
+00:10:38,560 --> 00:10:41,110
+ebpf ecosystem because most users will
+
+351
+00:10:41,120 --> 00:10:42,949
+not typically write pf programs
+
+352
+00:10:42,959 --> 00:10:44,710
+themselves they will leverage a tool
+
+353
+00:10:44,720 --> 00:10:46,870
+that sits on top that provides a
+
+354
+00:10:46,880 --> 00:10:49,430
+more user-friendly way of actually using
+
+355
+00:10:49,440 --> 00:10:49,910
+it
+
+356
+00:10:49,920 --> 00:10:51,350
+yeah and we're going to discuss bpf
+
+357
+00:10:51,360 --> 00:10:52,790
+trace and some of those other tools when
+
+358
+00:10:52,800 --> 00:10:54,230
+we start talking about troubleshooting
+
+359
+00:10:54,240 --> 00:10:56,310
+the programs you're writing at bpf
+
+360
+00:10:56,320 --> 00:10:57,910
+but i just want to give a couple
+
+361
+00:10:57,920 --> 00:10:59,430
+examples of some functions
+
+362
+00:10:59,440 --> 00:11:01,670
+of writing an ebpf program what's going
+
+363
+00:11:01,680 --> 00:11:03,269
+to motivate me to write one of these
+
+364
+00:11:03,279 --> 00:11:03,750
+things
+
+365
+00:11:03,760 --> 00:11:06,949
+rather than just depending on a psyllium
+
+366
+00:11:06,959 --> 00:11:07,990
+or something like that
+
+367
+00:11:08,000 --> 00:11:10,470
+i think the vast majority will not like
+
+368
+00:11:10,480 --> 00:11:12,230
+write ebpf programs i think in bing
+
+369
+00:11:12,240 --> 00:11:14,230
+eating that was very much the case
+
+370
+00:11:14,240 --> 00:11:15,670
+a lot of the high leveling tooling did
+
+371
+00:11:15,680 --> 00:11:17,990
+not exist if you look at the typical use
+
+372
+00:11:18,000 --> 00:11:18,710
+cases to
+
+373
+00:11:18,720 --> 00:11:20,550
+leverage bppf it's tracing it's
+
+374
+00:11:20,560 --> 00:11:22,870
+networking it's uh security
+
+375
+00:11:22,880 --> 00:11:25,110
+for all of these major use cases a
+
+376
+00:11:25,120 --> 00:11:26,870
+tooling exists right if you are
+
+377
+00:11:26,880 --> 00:11:28,389
+if you're looking into profiling and
+
+378
+00:11:28,399 --> 00:11:30,470
+tracing you will use something like ppf
+
+379
+00:11:30,480 --> 00:11:31,030
+trace
+
+380
+00:11:31,040 --> 00:11:34,389
+and only if there is no specific
+
+381
+00:11:34,399 --> 00:11:37,350
+program in the huge set of the huge
+
+382
+00:11:37,360 --> 00:11:39,110
+library of existing ebpf programs
+
+383
+00:11:39,120 --> 00:11:40,630
+only then would you actually go in and
+
+384
+00:11:40,640 --> 00:11:42,150
+write your own eppf program
+
+385
+00:11:42,160 --> 00:11:43,590
+the learning curve is definitely
+
+386
+00:11:43,600 --> 00:11:46,069
+definitely high similar on the let's say
+
+387
+00:11:46,079 --> 00:11:46,870
+the sec
+
+388
+00:11:46,880 --> 00:11:48,389
+the system called security side there's
+
+389
+00:11:48,399 --> 00:11:50,550
+segcomp there's a second ppf
+
+390
+00:11:50,560 --> 00:11:52,710
+you there's no real reason why you would
+
+391
+00:11:52,720 --> 00:11:54,310
+go down to dppf layer you want to
+
+392
+00:11:54,320 --> 00:11:56,150
+benefit from the power of ebpf but
+
+393
+00:11:56,160 --> 00:11:57,190
+typically you can
+
+394
+00:11:57,200 --> 00:11:58,949
+you can make full use of it without
+
+395
+00:11:58,959 --> 00:12:01,030
+actually fully understanding ebpf
+
+396
+00:12:01,040 --> 00:12:03,110
+so i think unless you're starting or
+
+397
+00:12:03,120 --> 00:12:04,629
+unless you're looking to start a new
+
+398
+00:12:04,639 --> 00:12:05,910
+ebpf project
+
+399
+00:12:05,920 --> 00:12:07,509
+most likely you will start out with some
+
+400
+00:12:07,519 --> 00:12:09,190
+of the higher level tooling first
+
+401
+00:12:09,200 --> 00:12:10,710
+yeah so unless you're trying to dive
+
+402
+00:12:10,720 --> 00:12:13,110
+straight into you know i'm writing xyz
+
+403
+00:12:13,120 --> 00:12:14,870
+project and i need to do this kind of
+
+404
+00:12:14,880 --> 00:12:16,389
+interaction with the kernel and the
+
+405
+00:12:16,399 --> 00:12:17,910
+kernel devs won't accept my
+
+406
+00:12:17,920 --> 00:12:19,910
+patches you know that's when you might
+
+407
+00:12:19,920 --> 00:12:21,030
+start looking at
+
+408
+00:12:21,040 --> 00:12:24,150
+using something like ebpf to do that so
+
+409
+00:12:24,160 --> 00:12:25,590
+just kind of changing direction a little
+
+410
+00:12:25,600 --> 00:12:27,509
+bit the other
+
+411
+00:12:27,519 --> 00:12:29,110
+you know acronym that i hear thrown
+
+412
+00:12:29,120 --> 00:12:31,910
+around when evpf is discussed is xdp
+
+413
+00:12:31,920 --> 00:12:33,829
+can you kind of discuss what that is and
+
+414
+00:12:33,839 --> 00:12:35,670
+how that kind of fits into ebpf
+
+415
+00:12:35,680 --> 00:12:38,470
+yeah so xcp is the express data plane
+
+416
+00:12:38,480 --> 00:12:38,790
+and
+
+417
+00:12:38,800 --> 00:12:40,870
+in a nutshell it's the ability to run a
+
+418
+00:12:40,880 --> 00:12:42,310
+bpf program
+
+419
+00:12:42,320 --> 00:12:45,670
+inside of the network driver of linux
+
+420
+00:12:45,680 --> 00:12:47,590
+and why why would you want to do that
+
+421
+00:12:47,600 --> 00:12:49,190
+right i think
+
+422
+00:12:49,200 --> 00:12:51,670
+that sounds a bit it sounds a bit crazy
+
+423
+00:12:51,680 --> 00:12:53,190
+if you come from the networking role
+
+424
+00:12:53,200 --> 00:12:54,710
+it's actually not crazy
+
+425
+00:12:54,720 --> 00:12:57,110
+in the networking world it's several use
+
+426
+00:12:57,120 --> 00:12:57,750
+cases
+
+427
+00:12:57,760 --> 00:13:00,949
+quickly evolve around how
+
+428
+00:13:00,959 --> 00:13:02,790
+how many packets per second can you
+
+429
+00:13:02,800 --> 00:13:04,629
+handle so for example if you perform
+
+430
+00:13:04,639 --> 00:13:06,710
+high high performance load balancing
+
+431
+00:13:06,720 --> 00:13:10,069
+or if you if you perform ddos mitigation
+
+432
+00:13:10,079 --> 00:13:12,230
+the type of measurement you care about
+
+433
+00:13:12,240 --> 00:13:13,990
+very quickly is about packets per second
+
+434
+00:13:14,000 --> 00:13:15,590
+like how many packets per second can you
+
+435
+00:13:15,600 --> 00:13:16,550
+load balance
+
+436
+00:13:16,560 --> 00:13:18,870
+what type of ddos attack can i sustain
+
+437
+00:13:18,880 --> 00:13:20,790
+from a packets per second perspective
+
+438
+00:13:20,800 --> 00:13:22,870
+and in that context it's actually very
+
+439
+00:13:22,880 --> 00:13:23,829
+useful to run
+
+440
+00:13:23,839 --> 00:13:25,990
+as close to the hardware as possible so
+
+441
+00:13:26,000 --> 00:13:27,590
+you want to be able to do packet
+
+442
+00:13:27,600 --> 00:13:28,389
+filtering
+
+443
+00:13:28,399 --> 00:13:31,350
+or load balancing without actually going
+
+444
+00:13:31,360 --> 00:13:32,710
+through
+
+445
+00:13:32,720 --> 00:13:34,790
+millions millions of lines of kernel
+
+446
+00:13:34,800 --> 00:13:35,829
+code first
+
+447
+00:13:35,839 --> 00:13:38,550
+in that sense xtp comes in and it allows
+
+448
+00:13:38,560 --> 00:13:40,470
+you to program network logic
+
+449
+00:13:40,480 --> 00:13:42,310
+incredibly close to the hardware which
+
+450
+00:13:42,320 --> 00:13:44,470
+means that you pay the least amount of
+
+451
+00:13:44,480 --> 00:13:46,150
+least amount of overhead before you get
+
+452
+00:13:46,160 --> 00:13:48,069
+to the bpf program that does the actual
+
+453
+00:13:48,079 --> 00:13:51,269
+work so it's almost getting
+
+454
+00:13:51,279 --> 00:13:54,629
+an evpf insert before
+
+455
+00:13:54,639 --> 00:13:56,629
+drivers or at the same level as a driver
+
+456
+00:13:56,639 --> 00:13:57,990
+would be getting within the networking
+
+457
+00:13:58,000 --> 00:13:58,790
+hardware
+
+458
+00:13:58,800 --> 00:14:00,629
+it's at the same level as a driver but
+
+459
+00:14:00,639 --> 00:14:02,710
+you still have for example instead of
+
+460
+00:14:02,720 --> 00:14:04,790
+first of all creating what's called an
+
+461
+00:14:04,800 --> 00:14:06,870
+skb a socket buffer which is the
+
+462
+00:14:06,880 --> 00:14:09,269
+generic abstraction of a network packet
+
+463
+00:14:09,279 --> 00:14:10,790
+inside of a driver every driver will
+
+464
+00:14:10,800 --> 00:14:11,509
+have its own
+
+465
+00:14:11,519 --> 00:14:13,670
+view of things it's still very hardware
+
+466
+00:14:13,680 --> 00:14:15,750
+specific and then the linux kernel has
+
+467
+00:14:15,760 --> 00:14:17,269
+this abstraction layer on top which
+
+468
+00:14:17,279 --> 00:14:18,710
+makes everything generic and that is
+
+469
+00:14:18,720 --> 00:14:20,389
+already pretty costly you do memory
+
+470
+00:14:20,399 --> 00:14:21,829
+allocations and so on
+
+471
+00:14:21,839 --> 00:14:24,150
+xdp allows you to run logic before this
+
+472
+00:14:24,160 --> 00:14:25,430
+before you pay this
+
+473
+00:14:25,440 --> 00:14:27,750
+this big first cost it means that you
+
+474
+00:14:27,760 --> 00:14:29,910
+don't have access to a lot of what the
+
+475
+00:14:29,920 --> 00:14:31,189
+kernel provides
+
+476
+00:14:31,199 --> 00:14:33,350
+a lot of the for example there's no ip
+
+477
+00:14:33,360 --> 00:14:35,269
+or tcp or anything like that you're
+
+478
+00:14:35,279 --> 00:14:37,189
+talking about raw network packets
+
+479
+00:14:37,199 --> 00:14:38,790
+but if you do load balancing or if you
+
+480
+00:14:38,800 --> 00:14:41,189
+do ddos mitigation you don't need any of
+
+481
+00:14:41,199 --> 00:14:41,509
+that
+
+482
+00:14:41,519 --> 00:14:44,069
+all you want is to to be able to look at
+
+483
+00:14:44,079 --> 00:14:46,230
+the packet as early as possible and
+
+484
+00:14:46,240 --> 00:14:48,230
+um either do a load balancing decision
+
+485
+00:14:48,240 --> 00:14:49,829
+or say i need to drop this packet
+
+486
+00:14:49,839 --> 00:14:51,990
+because this is part of adidas attack
+
+487
+00:14:52,000 --> 00:14:54,150
+okay and just kind of diving into let's
+
+488
+00:14:54,160 --> 00:14:55,910
+say the ddos example a little bit or the
+
+489
+00:14:55,920 --> 00:14:57,670
+load balancing example a little bit
+
+490
+00:14:57,680 --> 00:15:00,069
+how am i passing that information into
+
+491
+00:15:00,079 --> 00:15:01,509
+xdp to say
+
+492
+00:15:01,519 --> 00:15:03,990
+you know yes these packets with this
+
+493
+00:15:04,000 --> 00:15:04,790
+signature
+
+494
+00:15:04,800 --> 00:15:07,030
+need to go away or these packets with
+
+495
+00:15:07,040 --> 00:15:08,710
+this signature need to be directed
+
+496
+00:15:08,720 --> 00:15:10,550
+to this ip address or something to that
+
+497
+00:15:10,560 --> 00:15:12,710
+effect exactly yes this is where
+
+498
+00:15:12,720 --> 00:15:15,189
+the generic nature of bpf comes in so
+
+499
+00:15:15,199 --> 00:15:17,509
+bpf consists of the program
+
+500
+00:15:17,519 --> 00:15:19,590
+aspect which is the actual program
+
+501
+00:15:19,600 --> 00:15:20,870
+called the logic
+
+502
+00:15:20,880 --> 00:15:23,189
+and then the second big aspect is bpf
+
+503
+00:15:23,199 --> 00:15:25,189
+maps those are data structures they can
+
+504
+00:15:25,199 --> 00:15:26,710
+be hash tables
+
+505
+00:15:26,720 --> 00:15:29,110
+that can be lpm longest prefix matches
+
+506
+00:15:29,120 --> 00:15:30,230
+table
+
+507
+00:15:30,240 --> 00:15:33,269
+and so on like a wide set of
+
+508
+00:15:33,279 --> 00:15:34,949
+data structures and typically the
+
+509
+00:15:34,959 --> 00:15:36,870
+configuration of a program is in those
+
+510
+00:15:36,880 --> 00:15:37,590
+maps so
+
+511
+00:15:37,600 --> 00:15:39,110
+if you look at for example a ddos
+
+512
+00:15:39,120 --> 00:15:40,629
+mitigation program
+
+513
+00:15:40,639 --> 00:15:43,990
+you would typically store the the ip
+
+514
+00:15:44,000 --> 00:15:45,269
+ranges or the
+
+515
+00:15:45,279 --> 00:15:47,509
+deciders which you want to drop in an
+
+516
+00:15:47,519 --> 00:15:49,829
+lpm table and your xtp program will
+
+517
+00:15:49,839 --> 00:15:50,629
+basically
+
+518
+00:15:50,639 --> 00:15:52,470
+parse the network header look at the
+
+519
+00:15:52,480 --> 00:15:53,670
+source ip address
+
+520
+00:15:53,680 --> 00:15:55,749
+and then see if there is an lpm match in
+
+521
+00:15:55,759 --> 00:15:56,870
+the lpm table
+
+522
+00:15:56,880 --> 00:15:58,790
+and if so drop the packet so that's the
+
+523
+00:15:58,800 --> 00:16:01,189
+program logic is relatively simple
+
+524
+00:16:01,199 --> 00:16:03,269
+and the actual configuration on what you
+
+525
+00:16:03,279 --> 00:16:05,590
+want to drop is actually encoded in ebpf
+
+526
+00:16:05,600 --> 00:16:06,150
+program
+
+527
+00:16:06,160 --> 00:16:07,990
+which means that if you change if you
+
+528
+00:16:08,000 --> 00:16:09,509
+need to change what you want to drop
+
+529
+00:16:09,519 --> 00:16:11,189
+you're not rewriting the program
+
+530
+00:16:11,199 --> 00:16:13,430
+you're only changing the content of the
+
+531
+00:16:13,440 --> 00:16:14,389
+bpf map
+
+532
+00:16:14,399 --> 00:16:17,269
+and this bpf map can be modified both
+
+533
+00:16:17,279 --> 00:16:19,030
+read and written to from user space as
+
+534
+00:16:19,040 --> 00:16:20,150
+well so there's a
+
+535
+00:16:20,160 --> 00:16:24,150
+system call that allows a application
+
+536
+00:16:24,160 --> 00:16:25,990
+running in user space to take control
+
+537
+00:16:26,000 --> 00:16:27,910
+over that ebpf program and to end the
+
+538
+00:16:27,920 --> 00:16:29,350
+eppf map
+
+539
+00:16:29,360 --> 00:16:31,030
+okay so i could almost have my user
+
+540
+00:16:31,040 --> 00:16:32,949
+space program running you know ddos
+
+541
+00:16:32,959 --> 00:16:33,910
+mitigator
+
+542
+00:16:33,920 --> 00:16:36,389
+that's getting network calls with citer
+
+543
+00:16:36,399 --> 00:16:37,910
+information from my security
+
+544
+00:16:37,920 --> 00:16:39,030
+infrastructure
+
+545
+00:16:39,040 --> 00:16:42,069
+and that's then updating the map
+
+546
+00:16:42,079 --> 00:16:45,430
+in bpf and then my xdp program
+
+547
+00:16:45,440 --> 00:16:48,230
+is referring to that bpf map and then
+
+548
+00:16:48,240 --> 00:16:49,590
+acting based off that
+
+549
+00:16:49,600 --> 00:16:51,590
+exactly so you have the control of what
+
+550
+00:16:51,600 --> 00:16:53,269
+we typically call the control plane the
+
+551
+00:16:53,279 --> 00:16:54,069
+controller
+
+552
+00:16:54,079 --> 00:16:56,150
+portion is in user space typically
+
+553
+00:16:56,160 --> 00:16:57,590
+written in something like go or another
+
+554
+00:16:57,600 --> 00:16:58,629
+high-level language
+
+555
+00:16:58,639 --> 00:17:00,310
+and the actual data path that needs to
+
+556
+00:17:00,320 --> 00:17:02,230
+be really fast handling millions and
+
+557
+00:17:02,240 --> 00:17:03,670
+millions of packets per second
+
+558
+00:17:03,680 --> 00:17:06,150
+that is in bpf xdp very very low very
+
+559
+00:17:06,160 --> 00:17:07,029
+low level okay
+
+560
+00:17:07,039 --> 00:17:10,309
+and you mentioned lpm tables in
+
+561
+00:17:10,319 --> 00:17:11,429
+passing there i'm assuming you're
+
+562
+00:17:11,439 --> 00:17:13,270
+talking about longest prefix match
+
+563
+00:17:13,280 --> 00:17:13,909
+exactly
+
+564
+00:17:13,919 --> 00:17:15,750
+can you kind of discuss what that is
+
+565
+00:17:15,760 --> 00:17:16,789
+because i'm not sure how many of our
+
+566
+00:17:16,799 --> 00:17:17,990
+listeners would be super familiar
+
+567
+00:17:18,000 --> 00:17:19,669
+with that yeah this is something quite
+
+568
+00:17:19,679 --> 00:17:21,829
+networking specific and it's the notion
+
+569
+00:17:21,839 --> 00:17:22,630
+that
+
+570
+00:17:22,640 --> 00:17:25,029
+if um on the internet you have you have
+
+571
+00:17:25,039 --> 00:17:26,870
+routing and routing means
+
+572
+00:17:26,880 --> 00:17:29,270
+routing is the the logic that decides
+
+573
+00:17:29,280 --> 00:17:31,029
+where network packets need to go
+
+574
+00:17:31,039 --> 00:17:33,830
+and in order to avoid that every single
+
+575
+00:17:33,840 --> 00:17:35,430
+device on the internet needs to know
+
+576
+00:17:35,440 --> 00:17:37,350
+every other device on the
+
+577
+00:17:37,360 --> 00:17:38,470
+internet there is something called
+
+578
+00:17:38,480 --> 00:17:41,270
+subnets or routing which means that some
+
+579
+00:17:41,280 --> 00:17:43,029
+devices will generally know
+
+580
+00:17:43,039 --> 00:17:45,830
+in which direction the packet need to go
+
+581
+00:17:45,840 --> 00:17:47,430
+and then the closer you get to the
+
+582
+00:17:47,440 --> 00:17:48,390
+destination
+
+583
+00:17:48,400 --> 00:17:50,310
+the more accurate information you have
+
+584
+00:17:50,320 --> 00:17:51,750
+in order to implement this you have
+
+585
+00:17:51,760 --> 00:17:53,350
+something like a longest prefix match
+
+586
+00:17:53,360 --> 00:17:54,070
+which means
+
+587
+00:17:54,080 --> 00:17:56,950
+it will always match on the the most
+
+588
+00:17:56,960 --> 00:17:57,750
+accurate the most
+
+589
+00:17:57,760 --> 00:17:59,990
+exact version of the information you
+
+590
+00:18:00,000 --> 00:18:01,590
+have so if you know about the
+
+591
+00:18:01,600 --> 00:18:04,230
+exact destination ip it will match on
+
+592
+00:18:04,240 --> 00:18:04,630
+that
+
+593
+00:18:04,640 --> 00:18:08,070
+but you can also add an entry into that
+
+594
+00:18:08,080 --> 00:18:11,590
+something like an ip 10.0.0
+
+595
+00:18:11,600 --> 00:18:14,310
+24 which means the last eight bits could
+
+596
+00:18:14,320 --> 00:18:16,150
+be anything and it will only match on
+
+597
+00:18:16,160 --> 00:18:17,590
+the first 24 bits
+
+598
+00:18:17,600 --> 00:18:19,590
+that's the longest prefix matching it's
+
+599
+00:18:19,600 --> 00:18:21,830
+something very networking specific
+
+600
+00:18:21,840 --> 00:18:23,909
+yeah so usually here like the simple
+
+601
+00:18:23,919 --> 00:18:25,110
+example as you kind of mentioned you
+
+602
+00:18:25,120 --> 00:18:26,830
+know you have that
+
+603
+00:18:26,840 --> 00:18:29,350
+10.0.0.
+
+604
+00:18:29,360 --> 00:18:32,950
+and then you have that 10.0.0.0.
+
+605
+00:18:32,960 --> 00:18:35,270
+you know eight the slash 24 is what's
+
+606
+00:18:35,280 --> 00:18:36,470
+going to win because it's that
+
+607
+00:18:36,480 --> 00:18:38,549
+longer prefix it's more defined more
+
+608
+00:18:38,559 --> 00:18:39,590
+specific
+
+609
+00:18:39,600 --> 00:18:43,029
+exactly so just kind of moving along
+
+610
+00:18:43,039 --> 00:18:43,750
+here
+
+611
+00:18:43,760 --> 00:18:46,150
+you kind of talked about xtp fitting in
+
+612
+00:18:46,160 --> 00:18:46,789
+at that
+
+613
+00:18:46,799 --> 00:18:49,750
+you know hardware interface nik level
+
+614
+00:18:49,760 --> 00:18:50,150
+you know
+
+615
+00:18:50,160 --> 00:18:53,029
+network interface card and evpf kind of
+
+616
+00:18:53,039 --> 00:18:53,990
+underlying that
+
+617
+00:18:54,000 --> 00:18:57,909
+as the logic is there any other use case
+
+618
+00:18:57,919 --> 00:18:58,950
+where you're going to want to start
+
+619
+00:18:58,960 --> 00:19:00,549
+using xdp
+
+620
+00:19:00,559 --> 00:19:02,870
+in combination with ebpf i think the
+
+621
+00:19:02,880 --> 00:19:04,549
+prominent use cases right now
+
+622
+00:19:04,559 --> 00:19:07,190
+are ddos mitigation and load balancing
+
+623
+00:19:07,200 --> 00:19:08,950
+and load balancing primarily what we
+
+624
+00:19:08,960 --> 00:19:09,590
+would call
+
+625
+00:19:09,600 --> 00:19:11,270
+north house load balancing that's
+
+626
+00:19:11,280 --> 00:19:13,430
+typically packets
+
+627
+00:19:13,440 --> 00:19:15,830
+coming into a data center or into a set
+
+628
+00:19:15,840 --> 00:19:17,190
+of machines
+
+629
+00:19:17,200 --> 00:19:18,789
+these type of load plans are typically
+
+630
+00:19:18,799 --> 00:19:20,070
+exposed to the internet so they're
+
+631
+00:19:20,080 --> 00:19:21,830
+subject to a lot of traffic
+
+632
+00:19:21,840 --> 00:19:24,230
+and you typically have a small number of
+
+633
+00:19:24,240 --> 00:19:26,230
+load balancers and then a
+
+634
+00:19:26,240 --> 00:19:28,630
+vast number of servers behind those load
+
+635
+00:19:28,640 --> 00:19:29,350
+balancers
+
+636
+00:19:29,360 --> 00:19:32,230
+for those xtp is ideal because what you
+
+637
+00:19:32,240 --> 00:19:33,990
+typically do in the for those low plans
+
+638
+00:19:34,000 --> 00:19:35,750
+is you receive a packet from the network
+
+639
+00:19:35,760 --> 00:19:36,470
+card
+
+640
+00:19:36,480 --> 00:19:38,390
+you do something to the network packet
+
+641
+00:19:38,400 --> 00:19:39,909
+and then you send it out the same
+
+642
+00:19:39,919 --> 00:19:40,470
+network
+
+643
+00:19:40,480 --> 00:19:42,230
+card so you're not actually that you're
+
+644
+00:19:42,240 --> 00:19:43,669
+not actually delivering it to an
+
+645
+00:19:43,679 --> 00:19:45,750
+application running on that same server
+
+646
+00:19:45,760 --> 00:19:47,110
+or on that on the on that
+
+647
+00:19:47,120 --> 00:19:49,510
+linux machine you all you want to do is
+
+648
+00:19:49,520 --> 00:19:51,270
+manipulate manipulate the network packet
+
+649
+00:19:51,280 --> 00:19:52,549
+to do the load balancing so
+
+650
+00:19:52,559 --> 00:19:55,029
+change some change certain fields in the
+
+651
+00:19:55,039 --> 00:19:56,549
+network headers and then send it out
+
+652
+00:19:56,559 --> 00:19:57,029
+again
+
+653
+00:19:57,039 --> 00:19:59,669
+those are the prime use cases for xtp
+
+654
+00:19:59,679 --> 00:20:01,590
+but they're definitely others as well
+
+655
+00:20:01,600 --> 00:20:03,270
+there has been talk about doing early
+
+656
+00:20:03,280 --> 00:20:04,870
+dmox in xdp
+
+657
+00:20:04,880 --> 00:20:06,630
+there's definitely cases where you can
+
+658
+00:20:06,640 --> 00:20:09,430
+do something like encapsulation in xdp
+
+659
+00:20:09,440 --> 00:20:11,510
+there are cases where i've seen people
+
+660
+00:20:11,520 --> 00:20:12,470
+build uh
+
+661
+00:20:12,480 --> 00:20:15,590
+net 46 so the translation from ipv4 into
+
+662
+00:20:15,600 --> 00:20:16,870
+ipv6 and back
+
+663
+00:20:16,880 --> 00:20:19,909
+for example for iot a lot of iot iot
+
+664
+00:20:19,919 --> 00:20:22,149
+devices will only do ipv6
+
+665
+00:20:22,159 --> 00:20:23,990
+but the actual backend applications are
+
+666
+00:20:24,000 --> 00:20:25,669
+written in a way that they don't
+
+667
+00:20:25,679 --> 00:20:27,350
+understand ipv6 and so on
+
+668
+00:20:27,360 --> 00:20:29,590
+all of those low level network functions
+
+669
+00:20:29,600 --> 00:20:31,190
+can be can be done at
+
+670
+00:20:31,200 --> 00:20:33,909
+very high speeds with xtp and when we
+
+671
+00:20:33,919 --> 00:20:36,549
+talk high speeds that usually also
+
+672
+00:20:36,559 --> 00:20:38,789
+translates to very low power consumption
+
+673
+00:20:38,799 --> 00:20:40,870
+per operation so it's not necessarily
+
+674
+00:20:40,880 --> 00:20:42,789
+millions of packets per second it's also
+
+675
+00:20:42,799 --> 00:20:44,789
+just watts per packet that sense so if
+
+676
+00:20:44,799 --> 00:20:46,230
+you have very little compute power
+
+677
+00:20:46,240 --> 00:20:47,990
+available xtp is very interesting as
+
+678
+00:20:48,000 --> 00:20:48,630
+well
+
+679
+00:20:48,640 --> 00:20:50,310
+yes so that's where it almost has that
+
+680
+00:20:50,320 --> 00:20:52,230
+perfect fit for the iot environment
+
+681
+00:20:52,240 --> 00:20:52,549
+where
+
+682
+00:20:52,559 --> 00:20:54,870
+you know if i want to stick x iot device
+
+683
+00:20:54,880 --> 00:20:56,230
+in someone's refrigerator
+
+684
+00:20:56,240 --> 00:20:57,669
+i don't want them changing the batteries
+
+685
+00:20:57,679 --> 00:20:59,590
+every single day because they're
+
+686
+00:20:59,600 --> 00:21:00,789
+they're not going to buy my product
+
+687
+00:21:00,799 --> 00:21:02,789
+anymore if that's the case let's kind of
+
+688
+00:21:02,799 --> 00:21:03,830
+talk about
+
+689
+00:21:03,840 --> 00:21:06,390
+how we write these programs you know how
+
+690
+00:21:06,400 --> 00:21:08,149
+i'm writing an ebpf program or an xdp
+
+691
+00:21:08,159 --> 00:21:08,710
+program
+
+692
+00:21:08,720 --> 00:21:12,390
+just from a high level what kinds of
+
+693
+00:21:12,400 --> 00:21:15,270
+libraries can i use to write an ebpf
+
+694
+00:21:15,280 --> 00:21:16,950
+program for example and then we'll kind
+
+695
+00:21:16,960 --> 00:21:17,510
+of discuss
+
+696
+00:21:17,520 --> 00:21:20,710
+about writing xdp programs yeah so
+
+697
+00:21:20,720 --> 00:21:22,230
+first of all i think the first category
+
+698
+00:21:22,240 --> 00:21:23,909
+is to not even write an ebpf program but
+
+699
+00:21:23,919 --> 00:21:24,310
+to just
+
+700
+00:21:24,320 --> 00:21:25,590
+leverage one of the tools i want to
+
+701
+00:21:25,600 --> 00:21:27,350
+emphasize that enough because
+
+702
+00:21:27,360 --> 00:21:28,870
+i think there is a perception that oh i
+
+703
+00:21:28,880 --> 00:21:30,870
+need to learn about ebpf i think that's
+
+704
+00:21:30,880 --> 00:21:31,909
+great but
+
+705
+00:21:31,919 --> 00:21:33,430
+you can leverage all of its powers
+
+706
+00:21:33,440 --> 00:21:35,029
+without actually having to write
+
+707
+00:21:35,039 --> 00:21:37,029
+your own program if you want to write
+
+708
+00:21:37,039 --> 00:21:38,230
+your own program
+
+709
+00:21:38,240 --> 00:21:39,750
+there's a set of libraries that you can
+
+710
+00:21:39,760 --> 00:21:41,510
+use starting from like there is
+
+711
+00:21:41,520 --> 00:21:43,110
+there's a rust implementation so you can
+
+712
+00:21:43,120 --> 00:21:44,549
+write programs in rost
+
+713
+00:21:44,559 --> 00:21:46,950
+there are ways of writing ebpf programs
+
+714
+00:21:46,960 --> 00:21:47,909
+in golang
+
+715
+00:21:47,919 --> 00:21:50,470
+typically the actual program code is
+
+716
+00:21:50,480 --> 00:21:51,110
+always
+
+717
+00:21:51,120 --> 00:21:54,390
+in sudo c so i use always some form of
+
+718
+00:21:54,400 --> 00:21:56,710
+of c code that is a bit it's kind of a
+
+719
+00:21:56,720 --> 00:21:57,990
+limited set of c so
+
+720
+00:21:58,000 --> 00:22:01,190
+you can't do arbitrary cs arbitrary c
+
+721
+00:22:01,200 --> 00:22:03,270
+you can do function calls by now you can
+
+722
+00:22:03,280 --> 00:22:04,870
+do what's called bounded loops but you
+
+723
+00:22:04,880 --> 00:22:06,630
+can you can't loop forever for example
+
+724
+00:22:06,640 --> 00:22:07,190
+so there's
+
+725
+00:22:07,200 --> 00:22:09,029
+it's a subset of c that you could use
+
+726
+00:22:09,039 --> 00:22:10,870
+you write that code and then you
+
+727
+00:22:10,880 --> 00:22:13,510
+either use llvm or more recently gcc
+
+728
+00:22:13,520 --> 00:22:15,190
+also has ppf support
+
+729
+00:22:15,200 --> 00:22:16,710
+and you run it through the compiler and
+
+730
+00:22:16,720 --> 00:22:18,630
+that will generate you the bytecode
+
+731
+00:22:18,640 --> 00:22:20,950
+at that point you will load that pipe
+
+732
+00:22:20,960 --> 00:22:23,110
+code into the kernel using the loader
+
+733
+00:22:23,120 --> 00:22:25,750
+infrastructure there is lip epf there is
+
+734
+00:22:25,760 --> 00:22:28,630
+tc there is pcc and a couple of other
+
+735
+00:22:28,640 --> 00:22:30,149
+loaders this is this is the
+
+736
+00:22:30,159 --> 00:22:32,310
+code that will take the bpf program and
+
+737
+00:22:32,320 --> 00:22:33,830
+load it into the kernel
+
+738
+00:22:33,840 --> 00:22:35,430
+so it will make sure that the dpf
+
+739
+00:22:35,440 --> 00:22:37,190
+program has the proper elf headers and
+
+740
+00:22:37,200 --> 00:22:38,549
+all of that to make sure the kernel
+
+741
+00:22:38,559 --> 00:22:39,990
+actually understands
+
+742
+00:22:40,000 --> 00:22:42,070
+and then this will load it into in into
+
+743
+00:22:42,080 --> 00:22:43,110
+the kernel
+
+744
+00:22:43,120 --> 00:22:45,350
+at that point the kernel will verify it
+
+745
+00:22:45,360 --> 00:22:46,149
+and
+
+746
+00:22:46,159 --> 00:22:47,750
+make a judgment whether the program is
+
+747
+00:22:47,760 --> 00:22:50,870
+safe to run and then either complain
+
+748
+00:22:50,880 --> 00:22:53,830
+or successfully load the program okay so
+
+749
+00:22:53,840 --> 00:22:55,350
+that's a lot to unpack there so let's
+
+750
+00:22:55,360 --> 00:22:56,310
+just kind of take this
+
+751
+00:22:56,320 --> 00:22:59,350
+like one bit at a time here so first
+
+752
+00:22:59,360 --> 00:23:00,710
+we're writing our code using some
+
+753
+00:23:00,720 --> 00:23:01,909
+library so
+
+754
+00:23:01,919 --> 00:23:03,190
+essentially we're creating some type of
+
+755
+00:23:03,200 --> 00:23:05,669
+pseudo c and i've also
+
+756
+00:23:05,679 --> 00:23:07,750
+heard the library for python bcc thrown
+
+757
+00:23:07,760 --> 00:23:09,270
+around handling a little bit of that
+
+758
+00:23:09,280 --> 00:23:10,390
+compilation on
+
+759
+00:23:10,400 --> 00:23:12,470
+automatically for you so then you're
+
+760
+00:23:12,480 --> 00:23:13,830
+compiling it into bytecode and you're
+
+761
+00:23:13,840 --> 00:23:14,870
+putting it into an
+
+762
+00:23:14,880 --> 00:23:16,870
+elf format can you kind of dive into
+
+763
+00:23:16,880 --> 00:23:18,310
+what that is and why you're putting it
+
+764
+00:23:18,320 --> 00:23:19,669
+into that format
+
+765
+00:23:19,679 --> 00:23:22,390
+yes because you need to like one aspect
+
+766
+00:23:22,400 --> 00:23:24,230
+is just the code itself and then another
+
+767
+00:23:24,240 --> 00:23:25,990
+aspect is you need metadata around the
+
+768
+00:23:26,000 --> 00:23:26,710
+program so
+
+769
+00:23:26,720 --> 00:23:29,510
+you need to understand what ppf map does
+
+770
+00:23:29,520 --> 00:23:30,549
+this program
+
+771
+00:23:30,559 --> 00:23:33,669
+use you need to understand how the
+
+772
+00:23:33,679 --> 00:23:35,590
+program should be loaded so at what hook
+
+773
+00:23:35,600 --> 00:23:37,909
+point should it be attached to um you
+
+774
+00:23:37,919 --> 00:23:39,510
+need to understand
+
+775
+00:23:39,520 --> 00:23:41,110
+who is loading this program and then
+
+776
+00:23:41,120 --> 00:23:42,870
+more recently also like
+
+777
+00:23:42,880 --> 00:23:45,269
+ebpf signing so the signature of the vpf
+
+778
+00:23:45,279 --> 00:23:46,789
+program is also being discussed so that
+
+779
+00:23:46,799 --> 00:23:47,190
+is
+
+780
+00:23:47,200 --> 00:23:49,110
+the program itself and then a bunch of
+
+781
+00:23:49,120 --> 00:23:50,789
+metadata that needs to go along with it
+
+782
+00:23:50,799 --> 00:23:52,390
+and that needs to be standardized so
+
+783
+00:23:52,400 --> 00:23:54,710
+kernel and user space need to understand
+
+784
+00:23:54,720 --> 00:23:56,789
+how this information is encoded so both
+
+785
+00:23:56,799 --> 00:23:58,950
+both sides can actually understand it
+
+786
+00:23:58,960 --> 00:24:00,710
+yeah and alpha is usually a common
+
+787
+00:24:00,720 --> 00:24:01,350
+format
+
+788
+00:24:01,360 --> 00:24:03,269
+for or a common standardized format in
+
+789
+00:24:03,279 --> 00:24:04,710
+the linux world for passing these
+
+790
+00:24:04,720 --> 00:24:06,070
+binaries around
+
+791
+00:24:06,080 --> 00:24:09,430
+yes so then it's getting
+
+792
+00:24:09,440 --> 00:24:11,190
+and we're going to discuss those hooks
+
+793
+00:24:11,200 --> 00:24:12,470
+and trace points and stuff like that a
+
+794
+00:24:12,480 --> 00:24:13,350
+little bit later
+
+795
+00:24:13,360 --> 00:24:15,430
+but so then it's getting loaded in so
+
+796
+00:24:15,440 --> 00:24:16,870
+how is that loading process
+
+797
+00:24:16,880 --> 00:24:19,190
+actually working so is that something a
+
+798
+00:24:19,200 --> 00:24:21,110
+kernel syscall that's pulling that in is
+
+799
+00:24:21,120 --> 00:24:22,549
+there a loader within the kernel that's
+
+800
+00:24:22,559 --> 00:24:24,470
+doing this
+
+801
+00:24:24,480 --> 00:24:26,149
+so it's a it's a system call there's the
+
+802
+00:24:26,159 --> 00:24:27,830
+ppf system call that
+
+803
+00:24:27,840 --> 00:24:30,470
+you can use to load the program the same
+
+804
+00:24:30,480 --> 00:24:32,549
+system call is also used to create maps
+
+805
+00:24:32,559 --> 00:24:34,230
+to attach to maps to
+
+806
+00:24:34,240 --> 00:24:36,470
+uh to pin maps we can talk about that as
+
+807
+00:24:36,480 --> 00:24:38,070
+well what that what that is
+
+808
+00:24:38,080 --> 00:24:40,149
+to access maps to write into maps to
+
+809
+00:24:40,159 --> 00:24:41,510
+read from apps and so on
+
+810
+00:24:41,520 --> 00:24:44,310
+but there's one system call that you do
+
+811
+00:24:44,320 --> 00:24:46,070
+to load the program so you can say here
+
+812
+00:24:46,080 --> 00:24:47,430
+is my program
+
+813
+00:24:47,440 --> 00:24:50,470
+this is the elf attach it to
+
+814
+00:24:50,480 --> 00:24:52,230
+let's say the tc layer that's a traffic
+
+815
+00:24:52,240 --> 00:24:54,310
+control layer and i want to run this
+
+816
+00:24:54,320 --> 00:24:54,950
+program
+
+817
+00:24:54,960 --> 00:24:57,190
+every time a network packet is received
+
+818
+00:24:57,200 --> 00:24:59,269
+on ethera for example and
+
+819
+00:24:59,279 --> 00:25:01,190
+and you tell this to colonel the kernel
+
+820
+00:25:01,200 --> 00:25:02,789
+will take the program verified and
+
+821
+00:25:02,799 --> 00:25:03,990
+attach it to
+
+822
+00:25:04,000 --> 00:25:06,230
+to that to that hook point and the
+
+823
+00:25:06,240 --> 00:25:07,990
+moment it is attached and that the next
+
+824
+00:25:08,000 --> 00:25:09,750
+network packet that is arrived will flow
+
+825
+00:25:09,760 --> 00:25:10,470
+through that
+
+826
+00:25:10,480 --> 00:25:13,269
+through the dbpf program okay so it's
+
+827
+00:25:13,279 --> 00:25:14,870
+still got that verification layer so can
+
+828
+00:25:14,880 --> 00:25:16,310
+we kind of talk about what that's doing
+
+829
+00:25:16,320 --> 00:25:17,909
+what is that checking for how does that
+
+830
+00:25:17,919 --> 00:25:18,789
+kind of work
+
+831
+00:25:18,799 --> 00:25:21,190
+and then what kind of feedback is it
+
+832
+00:25:21,200 --> 00:25:22,549
+giving to you as a developer if
+
+833
+00:25:22,559 --> 00:25:24,310
+something's wrong
+
+834
+00:25:24,320 --> 00:25:25,909
+yeah i think a lot of our listeners
+
+835
+00:25:25,919 --> 00:25:27,430
+might kind of be wondering at this point
+
+836
+00:25:27,440 --> 00:25:28,950
+why are you going through all of this
+
+837
+00:25:28,960 --> 00:25:30,630
+why are you just loading a linux kernel
+
+838
+00:25:30,640 --> 00:25:31,269
+module
+
+839
+00:25:31,279 --> 00:25:33,590
+the linux kernel was always extendable
+
+840
+00:25:33,600 --> 00:25:35,990
+and the very big difference between
+
+841
+00:25:36,000 --> 00:25:39,269
+a linux kernel module and ebpf is safety
+
+842
+00:25:39,279 --> 00:25:42,789
+ebpf is from design
+
+843
+00:25:42,799 --> 00:25:45,269
+secure which means that you can't load
+
+844
+00:25:45,279 --> 00:25:47,510
+arbitrary functions so it may sound like
+
+845
+00:25:47,520 --> 00:25:49,350
+making the kernel programmable means i
+
+846
+00:25:49,360 --> 00:25:51,350
+can call into arbitrary kernel functions
+
+847
+00:25:51,360 --> 00:25:52,470
+that's not true
+
+848
+00:25:52,480 --> 00:25:54,549
+you can call into what's called ebpf
+
+849
+00:25:54,559 --> 00:25:56,310
+helpers or helper calls
+
+850
+00:25:56,320 --> 00:25:59,269
+it's a it's a subset of the functions
+
+851
+00:25:59,279 --> 00:25:59,909
+that the
+
+852
+00:25:59,919 --> 00:26:02,470
+the internal kernel api offers but in a
+
+853
+00:26:02,480 --> 00:26:04,230
+stable manner so even across kernel
+
+854
+00:26:04,240 --> 00:26:05,750
+versions it will be the same so
+
+855
+00:26:05,760 --> 00:26:09,190
+it's a the the amount of complexity and
+
+856
+00:26:09,200 --> 00:26:11,430
+the amount of operations an eppf program
+
+857
+00:26:11,440 --> 00:26:13,669
+is can do is limited and the verifier
+
+858
+00:26:13,679 --> 00:26:14,789
+ensures
+
+859
+00:26:14,799 --> 00:26:17,110
+that this is this is met so a couple of
+
+860
+00:26:17,120 --> 00:26:18,630
+checks that the verifier does it will
+
+861
+00:26:18,640 --> 00:26:20,710
+first of all check the overall program
+
+862
+00:26:20,720 --> 00:26:21,269
+size
+
+863
+00:26:21,279 --> 00:26:24,870
+so you can't load a 50 megabyte program
+
+864
+00:26:24,880 --> 00:26:27,269
+into in in into the kernel the kernel
+
+865
+00:26:27,279 --> 00:26:29,350
+will reject it there is a
+
+866
+00:26:29,360 --> 00:26:32,310
+agreed on upper limit for ppf programs
+
+867
+00:26:32,320 --> 00:26:33,029
+and then
+
+868
+00:26:33,039 --> 00:26:36,070
+the kernel will do verification of every
+
+869
+00:26:36,080 --> 00:26:36,789
+single
+
+870
+00:26:36,799 --> 00:26:38,470
+branch that exists in a program so it
+
+871
+00:26:38,480 --> 00:26:40,630
+will it will calculate all the
+
+872
+00:26:40,640 --> 00:26:42,549
+possibilities that the program could go
+
+873
+00:26:42,559 --> 00:26:43,110
+into
+
+874
+00:26:43,120 --> 00:26:45,669
+and it will make sure that all of those
+
+875
+00:26:45,679 --> 00:26:46,230
+paths
+
+876
+00:26:46,240 --> 00:26:48,230
+run to completion so it will ensure that
+
+877
+00:26:48,240 --> 00:26:49,750
+nothing can loop forever
+
+878
+00:26:49,760 --> 00:26:51,430
+it will also make sure that nothing is
+
+879
+00:26:51,440 --> 00:26:53,430
+uninitialized so every single piece of
+
+880
+00:26:53,440 --> 00:26:55,190
+memory has to be initialized and so on
+
+881
+00:26:55,200 --> 00:26:56,710
+there's a long list of things that it
+
+882
+00:26:56,720 --> 00:26:57,430
+will do
+
+883
+00:26:57,440 --> 00:26:59,830
+to ensure that ebpf program even if it's
+
+884
+00:26:59,840 --> 00:27:00,710
+harmful
+
+885
+00:27:00,720 --> 00:27:02,710
+cannot crash the kernel and it cannot
+
+886
+00:27:02,720 --> 00:27:04,870
+stall the kernel so even if somebody has
+
+887
+00:27:04,880 --> 00:27:07,990
+access to the pppf system call which
+
+888
+00:27:08,000 --> 00:27:10,950
+is typically protected by privileges but
+
+889
+00:27:10,960 --> 00:27:12,070
+even if somebody
+
+890
+00:27:12,080 --> 00:27:14,470
+loads a malicious program the verifier
+
+891
+00:27:14,480 --> 00:27:16,149
+will ensure that the kernel can continue
+
+892
+00:27:16,159 --> 00:27:17,510
+running so that's a huge
+
+893
+00:27:17,520 --> 00:27:19,269
+major difference between a linux kernel
+
+894
+00:27:19,279 --> 00:27:20,549
+module and
+
+895
+00:27:20,559 --> 00:27:24,630
+ebpf okay so it has that almost
+
+896
+00:27:24,640 --> 00:27:26,789
+implicit benefit of even though it's
+
+897
+00:27:26,799 --> 00:27:27,750
+event
+
+898
+00:27:27,760 --> 00:27:29,510
+because it's event driven there's no way
+
+899
+00:27:29,520 --> 00:27:31,110
+to completely stall the kernel on an
+
+900
+00:27:31,120 --> 00:27:31,909
+event so
+
+901
+00:27:31,919 --> 00:27:35,269
+you know if i hook into network traffic
+
+902
+00:27:35,279 --> 00:27:37,269
+i can't write a program that just does
+
+903
+00:27:37,279 --> 00:27:38,310
+an infinite loop and
+
+904
+00:27:38,320 --> 00:27:40,070
+basically takes your entire server down
+
+905
+00:27:40,080 --> 00:27:41,430
+if i got on it yeah
+
+906
+00:27:41,440 --> 00:27:44,070
+exactly you can you can still you can
+
+907
+00:27:44,080 --> 00:27:46,149
+still do things like drop all your ssh
+
+908
+00:27:46,159 --> 00:27:48,230
+packets and lock yourself out but
+
+909
+00:27:48,240 --> 00:27:50,149
+you cannot do something like let's just
+
+910
+00:27:50,159 --> 00:27:51,669
+loop forever and then my kernel will
+
+911
+00:27:51,679 --> 00:27:52,549
+stall
+
+912
+00:27:52,559 --> 00:27:54,070
+exactly so you can still shoot yourself
+
+913
+00:27:54,080 --> 00:27:55,590
+on the foot like everything with linux
+
+914
+00:27:55,600 --> 00:27:56,070
+but yeah
+
+915
+00:27:56,080 --> 00:27:57,750
+you can't completely take the system
+
+916
+00:27:57,760 --> 00:27:59,110
+down
+
+917
+00:27:59,120 --> 00:28:02,149
+so what is the benefit of this
+
+918
+00:28:02,159 --> 00:28:04,389
+over a user space program i mean
+
+919
+00:28:04,399 --> 00:28:06,149
+generally with a user space program i
+
+920
+00:28:06,159 --> 00:28:07,190
+mean or even
+
+921
+00:28:07,200 --> 00:28:09,029
+you know a kernel module as you kind of
+
+922
+00:28:09,039 --> 00:28:10,549
+mentioned the benefits it's
+
+923
+00:28:10,559 --> 00:28:13,029
+more safe but from a developer
+
+924
+00:28:13,039 --> 00:28:13,750
+perspective
+
+925
+00:28:13,760 --> 00:28:16,070
+why am i going to go towards evpf over
+
+926
+00:28:16,080 --> 00:28:17,669
+writing a kernel module or writing some
+
+927
+00:28:17,679 --> 00:28:20,149
+user space program to do this
+
+928
+00:28:20,159 --> 00:28:21,990
+the only occasion where we actually want
+
+929
+00:28:22,000 --> 00:28:23,669
+to do this if you
+
+930
+00:28:23,679 --> 00:28:25,909
+need to run it in the linux kernel so
+
+931
+00:28:25,919 --> 00:28:27,430
+when do you need to run in the linux
+
+932
+00:28:27,440 --> 00:28:28,230
+kernel
+
+933
+00:28:28,240 --> 00:28:31,510
+one aspect is you are seeing
+
+934
+00:28:31,520 --> 00:28:33,350
+everything that the application is doing
+
+935
+00:28:33,360 --> 00:28:34,950
+so for example
+
+936
+00:28:34,960 --> 00:28:37,190
+if you want to implement what's called
+
+937
+00:28:37,200 --> 00:28:38,950
+container runtime security or system
+
+938
+00:28:38,960 --> 00:28:40,549
+call filtering and restrict
+
+939
+00:28:40,559 --> 00:28:42,630
+restrict the number of system calls a
+
+940
+00:28:42,640 --> 00:28:44,070
+particular application can do
+
+941
+00:28:44,080 --> 00:28:46,070
+you need to run in the linux kernel
+
+942
+00:28:46,080 --> 00:28:47,990
+because system calls are being made
+
+943
+00:28:48,000 --> 00:28:49,669
+through the linux current so you need to
+
+944
+00:28:49,679 --> 00:28:51,190
+run as part of linux kernel
+
+945
+00:28:51,200 --> 00:28:53,430
+or if you want to get involved into
+
+946
+00:28:53,440 --> 00:28:54,310
+networking
+
+947
+00:28:54,320 --> 00:28:56,630
+you either need to do this in the kernel
+
+948
+00:28:56,640 --> 00:28:57,510
+or you need to do
+
+949
+00:28:57,520 --> 00:28:59,190
+something like user space networking
+
+950
+00:28:59,200 --> 00:29:00,630
+where you bring the hardware to user
+
+951
+00:29:00,640 --> 00:29:01,590
+space
+
+952
+00:29:01,600 --> 00:29:03,750
+but typically the the main reason why
+
+953
+00:29:03,760 --> 00:29:05,990
+you want to write an ebpf program is
+
+954
+00:29:06,000 --> 00:29:08,470
+if you're if the context you need and if
+
+955
+00:29:08,480 --> 00:29:09,269
+the
+
+956
+00:29:09,279 --> 00:29:11,190
+the use case you have needs to be solved
+
+957
+00:29:11,200 --> 00:29:12,470
+in the kernel that's what's
+
+958
+00:29:12,480 --> 00:29:14,870
+that's what's that's why ebpf is there
+
+959
+00:29:14,880 --> 00:29:16,789
+it does not make sense to port arbitrary
+
+960
+00:29:16,799 --> 00:29:18,710
+applications into ebpf
+
+961
+00:29:18,720 --> 00:29:20,149
+exactly so there's no reason to port my
+
+962
+00:29:20,159 --> 00:29:22,789
+hello world program into evpf
+
+963
+00:29:22,799 --> 00:29:24,230
+because you know it works just fine in
+
+964
+00:29:24,240 --> 00:29:26,230
+user space and it's really
+
+965
+00:29:26,240 --> 00:29:28,230
+starting to get into that concept of if
+
+966
+00:29:28,240 --> 00:29:30,070
+you need to start intercepting cis calls
+
+967
+00:29:30,080 --> 00:29:31,590
+that's when you need to start going into
+
+968
+00:29:31,600 --> 00:29:33,350
+the kernel
+
+969
+00:29:33,360 --> 00:29:34,870
+but one other good example is for
+
+970
+00:29:34,880 --> 00:29:36,630
+example if you want to
+
+971
+00:29:36,640 --> 00:29:38,470
+to do performance troubleshooting of
+
+972
+00:29:38,480 --> 00:29:39,990
+your applications right you can
+
+973
+00:29:40,000 --> 00:29:43,029
+either go on and make modifications to
+
+974
+00:29:43,039 --> 00:29:44,950
+your application and
+
+975
+00:29:44,960 --> 00:29:47,510
+for example add trace points and add
+
+976
+00:29:47,520 --> 00:29:49,110
+print case or printfs
+
+977
+00:29:49,120 --> 00:29:52,230
+or like linker link in some debugging
+
+978
+00:29:52,240 --> 00:29:54,710
+library that will do profiling for you
+
+979
+00:29:54,720 --> 00:29:56,470
+but that requires you to recompile and
+
+980
+00:29:56,480 --> 00:29:57,830
+restart your application
+
+981
+00:29:57,840 --> 00:30:01,110
+with ebpf you can do a lot of this for a
+
+982
+00:30:01,120 --> 00:30:02,870
+already running application because the
+
+983
+00:30:02,880 --> 00:30:04,710
+kernel is always in a position to
+
+984
+00:30:04,720 --> 00:30:06,549
+observe what the application is doing
+
+985
+00:30:06,559 --> 00:30:07,990
+and this is where it gets really
+
+986
+00:30:08,000 --> 00:30:11,190
+powerful the kernel has access to
+
+987
+00:30:11,200 --> 00:30:14,070
+observe everything that is going on on
+
+988
+00:30:14,080 --> 00:30:15,669
+the system and it can
+
+989
+00:30:15,679 --> 00:30:17,269
+take control over everything that's
+
+990
+00:30:17,279 --> 00:30:18,630
+going on the system in a completely
+
+991
+00:30:18,640 --> 00:30:20,310
+transparent transparent manner
+
+992
+00:30:20,320 --> 00:30:22,389
+without having to change any application
+
+993
+00:30:22,399 --> 00:30:24,630
+code this is where a lot of the benefit
+
+994
+00:30:24,640 --> 00:30:25,510
+is coming in
+
+995
+00:30:25,520 --> 00:30:27,430
+if you look at a lot of the ebpf talks
+
+996
+00:30:27,440 --> 00:30:29,350
+around for example tracing and profiling
+
+997
+00:30:29,360 --> 00:30:30,310
+it's about
+
+998
+00:30:30,320 --> 00:30:31,990
+performance troubleshooting on live
+
+999
+00:30:32,000 --> 00:30:33,750
+applications in production where you
+
+1000
+00:30:33,760 --> 00:30:35,830
+cannot restart them you cannot run a
+
+1001
+00:30:35,840 --> 00:30:37,190
+debug version of this
+
+1002
+00:30:37,200 --> 00:30:38,549
+but you still need to figure out why
+
+1003
+00:30:38,559 --> 00:30:40,470
+your application is slow you still need
+
+1004
+00:30:40,480 --> 00:30:41,269
+to figure out
+
+1005
+00:30:41,279 --> 00:30:42,950
+your distributed application running on
+
+1006
+00:30:42,960 --> 00:30:45,350
+hundreds of servers what is consuming
+
+1007
+00:30:45,360 --> 00:30:47,269
+cpu like which functions are consuming
+
+1008
+00:30:47,279 --> 00:30:48,549
+how much cpu
+
+1009
+00:30:48,559 --> 00:30:50,230
+typically if you run this on your your
+
+1010
+00:30:50,240 --> 00:30:51,590
+in on your laptop you would
+
+1011
+00:30:51,600 --> 00:30:53,510
+you would link in some debug library or
+
+1012
+00:30:53,520 --> 00:30:54,389
+something that would give this
+
+1013
+00:30:54,399 --> 00:30:55,990
+information you cannot do this for the
+
+1014
+00:30:56,000 --> 00:30:58,149
+application running in production right
+
+1015
+00:30:58,159 --> 00:31:00,789
+this is this is the key benefit of the
+
+1016
+00:31:00,799 --> 00:31:03,029
+kernel it can see and control everything
+
+1017
+00:31:03,039 --> 00:31:04,389
+that's on the system
+
+1018
+00:31:04,399 --> 00:31:06,310
+exactly because you know you can't push
+
+1019
+00:31:06,320 --> 00:31:08,310
+a debug version of
+
+1020
+00:31:08,320 --> 00:31:10,789
+my giant distributed mail client
+
+1021
+00:31:10,799 --> 00:31:12,070
+nobody's gonna like it if all of a
+
+1022
+00:31:12,080 --> 00:31:13,590
+sudden their email has a bunch of error
+
+1023
+00:31:13,600 --> 00:31:15,190
+messages popping up
+
+1024
+00:31:15,200 --> 00:31:16,950
+on the client side it's bad user
+
+1025
+00:31:16,960 --> 00:31:19,430
+experience so just kind of driving back
+
+1026
+00:31:19,440 --> 00:31:20,549
+here
+
+1027
+00:31:20,559 --> 00:31:22,630
+you kind of mentioned you know we've
+
+1028
+00:31:22,640 --> 00:31:24,710
+talked a little bit about bpf maps
+
+1029
+00:31:24,720 --> 00:31:27,190
+so you mentioned pinning maps can we
+
+1030
+00:31:27,200 --> 00:31:28,149
+just kind of
+
+1031
+00:31:28,159 --> 00:31:30,710
+discuss what pinning a map is and why
+
+1032
+00:31:30,720 --> 00:31:32,789
+you're going to do that
+
+1033
+00:31:32,799 --> 00:31:35,669
+so as we mentioned bpf maps contain the
+
+1034
+00:31:35,679 --> 00:31:36,950
+state of the application or
+
+1035
+00:31:36,960 --> 00:31:37,750
+configuration
+
+1036
+00:31:37,760 --> 00:31:39,990
+it's a set of data structures that just
+
+1037
+00:31:40,000 --> 00:31:42,310
+immediately brings up the question
+
+1038
+00:31:42,320 --> 00:31:45,350
+who owns these maps right so
+
+1039
+00:31:45,360 --> 00:31:47,830
+you have the bpf program it's running in
+
+1040
+00:31:47,840 --> 00:31:48,870
+the kernel
+
+1041
+00:31:48,880 --> 00:31:51,830
+but the bpf program can actually access
+
+1042
+00:31:51,840 --> 00:31:52,789
+multiple maps
+
+1043
+00:31:52,799 --> 00:31:54,310
+and the map can be accessed from
+
+1044
+00:31:54,320 --> 00:31:56,630
+multiple bpf programs so the map itself
+
+1045
+00:31:56,640 --> 00:31:59,269
+cannot be owned by the bpf program
+
+1046
+00:31:59,279 --> 00:32:02,470
+you can for example have a program
+
+1047
+00:32:02,480 --> 00:32:04,389
+on the network level and another one on
+
+1048
+00:32:04,399 --> 00:32:06,070
+the system call level and they can
+
+1049
+00:32:06,080 --> 00:32:09,350
+both interact with the same ebpf map
+
+1050
+00:32:09,360 --> 00:32:11,269
+we also said that the ebpa although that
+
+1051
+00:32:11,279 --> 00:32:13,029
+the linux kernel is event driven
+
+1052
+00:32:13,039 --> 00:32:15,430
+and a user space application may not
+
+1053
+00:32:15,440 --> 00:32:16,549
+live forever
+
+1054
+00:32:16,559 --> 00:32:18,710
+which means that it opens up this
+
+1055
+00:32:18,720 --> 00:32:19,590
+difficult question
+
+1056
+00:32:19,600 --> 00:32:23,110
+who owns the ebpf map at what point
+
+1057
+00:32:23,120 --> 00:32:25,190
+is it no longer used and for this
+
+1058
+00:32:25,200 --> 00:32:27,509
+purpose it was decided that we need to
+
+1059
+00:32:27,519 --> 00:32:27,990
+somehow
+
+1060
+00:32:28,000 --> 00:32:29,669
+pin that to the file system so it needs
+
+1061
+00:32:29,679 --> 00:32:31,190
+to have some representation where you
+
+1062
+00:32:31,200 --> 00:32:32,389
+can see
+
+1063
+00:32:32,399 --> 00:32:34,950
+this ppf program exists or this map
+
+1064
+00:32:34,960 --> 00:32:35,909
+exists
+
+1065
+00:32:35,919 --> 00:32:37,750
+and there needs to be some way to
+
+1066
+00:32:37,760 --> 00:32:39,590
+release that resource again so kind of
+
+1067
+00:32:39,600 --> 00:32:40,630
+delete the map
+
+1068
+00:32:40,640 --> 00:32:42,470
+and for this reason there is a bpf file
+
+1069
+00:32:42,480 --> 00:32:44,070
+system and
+
+1070
+00:32:44,080 --> 00:32:47,430
+every bpf map can be represented on the
+
+1071
+00:32:47,440 --> 00:32:48,070
+file
+
+1072
+00:32:48,080 --> 00:32:50,310
+system and you can access it through a
+
+1073
+00:32:50,320 --> 00:32:51,350
+file descriptor
+
+1074
+00:32:51,360 --> 00:32:54,149
+this allows a program that loads cppf
+
+1075
+00:32:54,159 --> 00:32:55,190
+program
+
+1076
+00:32:55,200 --> 00:32:56,950
+or like a user space process loading the
+
+1077
+00:32:56,960 --> 00:32:58,950
+program into the kernel to actually
+
+1078
+00:32:58,960 --> 00:33:01,990
+quit and terminate and then start again
+
+1079
+00:33:02,000 --> 00:33:03,990
+and access the map again so you don't
+
+1080
+00:33:04,000 --> 00:33:05,669
+need to have a process running all the
+
+1081
+00:33:05,679 --> 00:33:06,710
+time in user space
+
+1082
+00:33:06,720 --> 00:33:07,909
+and as soon as that process would
+
+1083
+00:33:07,919 --> 00:33:09,509
+terminate all of your programs would be
+
+1084
+00:33:09,519 --> 00:33:10,389
+gone
+
+1085
+00:33:10,399 --> 00:33:12,070
+all the resources all the programs all
+
+1086
+00:33:12,080 --> 00:33:14,149
+the maps are pinned to the file system
+
+1087
+00:33:14,159 --> 00:33:15,909
+so they will exist even if the user
+
+1088
+00:33:15,919 --> 00:33:17,430
+space process
+
+1089
+00:33:17,440 --> 00:33:19,990
+terminates or crashes or or something
+
+1090
+00:33:20,000 --> 00:33:21,110
+this is why pinning
+
+1091
+00:33:21,120 --> 00:33:23,750
+pinning exists it's also a way for other
+
+1092
+00:33:23,760 --> 00:33:25,590
+programs to discover the maps so you can
+
+1093
+00:33:25,600 --> 00:33:27,909
+have multiple users based processes
+
+1094
+00:33:27,919 --> 00:33:29,990
+and they can discover a map by just
+
+1095
+00:33:30,000 --> 00:33:31,350
+opening the file system
+
+1096
+00:33:31,360 --> 00:33:34,549
+and opening the file basically
+
+1097
+00:33:34,559 --> 00:33:36,149
+yeah so your program's coming up and
+
+1098
+00:33:36,159 --> 00:33:37,830
+it's able to do that you know file
+
+1099
+00:33:37,840 --> 00:33:39,669
+descriptor you're doing an open syscall
+
+1100
+00:33:39,679 --> 00:33:42,310
+on that actual file that's underlying
+
+1101
+00:33:42,320 --> 00:33:42,950
+and
+
+1102
+00:33:42,960 --> 00:33:44,630
+as you kind of said you know and we
+
+1103
+00:33:44,640 --> 00:33:45,669
+might discuss a little bit when we
+
+1104
+00:33:45,679 --> 00:33:46,950
+discuss containers but
+
+1105
+00:33:46,960 --> 00:33:48,870
+you know they're ephemeral they can go
+
+1106
+00:33:48,880 --> 00:33:50,789
+away and disappear and
+
+1107
+00:33:50,799 --> 00:33:53,350
+go everywhere and they still need to be
+
+1108
+00:33:53,360 --> 00:33:55,110
+able to access these things without
+
+1109
+00:33:55,120 --> 00:33:57,509
+getting rid of that file but that brings
+
+1110
+00:33:57,519 --> 00:33:58,310
+up a question
+
+1111
+00:33:58,320 --> 00:33:59,830
+is there any kind of garbage collection
+
+1112
+00:33:59,840 --> 00:34:01,750
+on this how does it know this is no
+
+1113
+00:34:01,760 --> 00:34:02,230
+longer
+
+1114
+00:34:02,240 --> 00:34:04,789
+you know needed anymore no not really
+
+1115
+00:34:04,799 --> 00:34:05,990
+it's it's the the
+
+1116
+00:34:06,000 --> 00:34:08,790
+responsibility of the program loading or
+
+1117
+00:34:08,800 --> 00:34:10,550
+the process loading the program to also
+
+1118
+00:34:10,560 --> 00:34:11,829
+remove it again
+
+1119
+00:34:11,839 --> 00:34:15,270
+in typically ppf programs are a very
+
+1120
+00:34:15,280 --> 00:34:17,270
+crucial part of
+
+1121
+00:34:17,280 --> 00:34:19,030
+the overall system if the ep program
+
+1122
+00:34:19,040 --> 00:34:20,629
+does load balancing or for example
+
+1123
+00:34:20,639 --> 00:34:22,389
+container networking
+
+1124
+00:34:22,399 --> 00:34:24,389
+you want that to continue running under
+
+1125
+00:34:24,399 --> 00:34:26,149
+all circumstances because if
+
+1126
+00:34:26,159 --> 00:34:27,829
+it not being available could have
+
+1127
+00:34:27,839 --> 00:34:30,069
+tremendous uh consequences
+
+1128
+00:34:30,079 --> 00:34:32,149
+so the worry is always that something
+
+1129
+00:34:32,159 --> 00:34:34,230
+some failure and user space could affect
+
+1130
+00:34:34,240 --> 00:34:36,550
+what what the overall system is doing so
+
+1131
+00:34:36,560 --> 00:34:38,230
+there's no automatic garbage collection
+
+1132
+00:34:38,240 --> 00:34:38,710
+it's
+
+1133
+00:34:38,720 --> 00:34:41,109
+it's the it's the responsibility of the
+
+1134
+00:34:41,119 --> 00:34:42,230
+process
+
+1135
+00:34:42,240 --> 00:34:44,950
+uh which loaded the the program to also
+
+1136
+00:34:44,960 --> 00:34:46,310
+remove it again
+
+1137
+00:34:46,320 --> 00:34:48,230
+okay so essentially whatever loaded the
+
+1138
+00:34:48,240 --> 00:34:50,310
+bpf program through the bpf syscall is
+
+1139
+00:34:50,320 --> 00:34:51,909
+also responsible for
+
+1140
+00:34:51,919 --> 00:34:53,669
+unloading the bpf program and cleaning
+
+1141
+00:34:53,679 --> 00:34:55,829
+up any of the mess that it created
+
+1142
+00:34:55,839 --> 00:35:00,069
+yes okay so that also brings up
+
+1143
+00:35:00,079 --> 00:35:01,829
+another question that i have so we've
+
+1144
+00:35:01,839 --> 00:35:03,750
+mentioned throughout like trace points
+
+1145
+00:35:03,760 --> 00:35:04,390
+you know k
+
+1146
+00:35:04,400 --> 00:35:07,430
+probes k trace what are these things
+
+1147
+00:35:07,440 --> 00:35:08,790
+within the kernel
+
+1148
+00:35:08,800 --> 00:35:11,670
+that we're actually hooking it can be
+
+1149
+00:35:11,680 --> 00:35:12,150
+almost
+
+1150
+00:35:12,160 --> 00:35:14,390
+everything actually so it's actually a
+
+1151
+00:35:14,400 --> 00:35:16,870
+very very good question because
+
+1152
+00:35:16,880 --> 00:35:18,870
+the number of hooks that exist are
+
+1153
+00:35:18,880 --> 00:35:20,710
+continuously being extended
+
+1154
+00:35:20,720 --> 00:35:23,670
+they already range from if we start from
+
+1155
+00:35:23,680 --> 00:35:24,310
+top
+
+1156
+00:35:24,320 --> 00:35:27,430
+user space probe so even your regular
+
+1157
+00:35:27,440 --> 00:35:29,190
+applications process is running in user
+
+1158
+00:35:29,200 --> 00:35:30,470
+space you can define a
+
+1159
+00:35:30,480 --> 00:35:32,710
+so called user space probe and say if
+
+1160
+00:35:32,720 --> 00:35:33,510
+this function
+
+1161
+00:35:33,520 --> 00:35:35,430
+inside my application is called then
+
+1162
+00:35:35,440 --> 00:35:37,030
+invoke this eppf program
+
+1163
+00:35:37,040 --> 00:35:38,710
+this is how you can profile your own
+
+1164
+00:35:38,720 --> 00:35:40,390
+user space application
+
+1165
+00:35:40,400 --> 00:35:42,790
+you can do kprobe so for any kernel
+
+1166
+00:35:42,800 --> 00:35:44,069
+function with
+
+1167
+00:35:44,079 --> 00:35:47,589
+a known symbol you can attach a ppf
+
+1168
+00:35:47,599 --> 00:35:49,750
+program when that function is entered
+
+1169
+00:35:49,760 --> 00:35:52,550
+and when it exits for any trace point
+
+1170
+00:35:52,560 --> 00:35:53,349
+and the
+
+1171
+00:35:53,359 --> 00:35:56,310
+linux kernel system or the linux kernel
+
+1172
+00:35:56,320 --> 00:35:58,790
+provides or maintains a a long list of
+
+1173
+00:35:58,800 --> 00:35:59,990
+trace points
+
+1174
+00:36:00,000 --> 00:36:02,069
+stable names to which you can attach to
+
+1175
+00:36:02,079 --> 00:36:03,109
+for example
+
+1176
+00:36:03,119 --> 00:36:05,109
+a network packet is being transmitted on
+
+1177
+00:36:05,119 --> 00:36:06,790
+the ip layer or
+
+1178
+00:36:06,800 --> 00:36:10,069
+block storage access from like the
+
+1179
+00:36:10,079 --> 00:36:12,069
+generic block storage does a read or
+
+1180
+00:36:12,079 --> 00:36:13,349
+does it write and so on
+
+1181
+00:36:13,359 --> 00:36:15,030
+all of those are generic trace points
+
+1182
+00:36:15,040 --> 00:36:16,390
+then it goes all the way into
+
+1183
+00:36:16,400 --> 00:36:19,750
+very very specific scenarios such as tcp
+
+1184
+00:36:19,760 --> 00:36:21,910
+congestion algorithms so you can write
+
+1185
+00:36:21,920 --> 00:36:23,990
+programs that optimize how tcp
+
+1186
+00:36:24,000 --> 00:36:25,430
+congestion algorithm works
+
+1187
+00:36:25,440 --> 00:36:27,349
+or every system call that is being done
+
+1188
+00:36:27,359 --> 00:36:29,430
+you can attach a bpf program too
+
+1189
+00:36:29,440 --> 00:36:31,190
+or xtp as we mentioned like very
+
+1190
+00:36:31,200 --> 00:36:33,190
+networks networking specific
+
+1191
+00:36:33,200 --> 00:36:35,589
+or socket operations so sockets are used
+
+1192
+00:36:35,599 --> 00:36:36,950
+to do network operations of the
+
+1193
+00:36:36,960 --> 00:36:38,710
+application you can attach ebpf programs
+
+1194
+00:36:38,720 --> 00:36:39,270
+too
+
+1195
+00:36:39,280 --> 00:36:41,270
+ebpf is really becoming this very
+
+1196
+00:36:41,280 --> 00:36:42,470
+general purpose
+
+1197
+00:36:42,480 --> 00:36:46,069
+programmer programmability layer and is
+
+1198
+00:36:46,079 --> 00:36:47,270
+making its way into
+
+1199
+00:36:47,280 --> 00:36:49,190
+almost all of the kernel subsystems
+
+1200
+00:36:49,200 --> 00:36:51,510
+there is an ebpf program to do
+
+1201
+00:36:51,520 --> 00:36:53,750
+infrared frequency reprogramming or
+
+1202
+00:36:53,760 --> 00:36:55,109
+something like like
+
+1203
+00:36:55,119 --> 00:36:57,190
+very like very niche right very niche
+
+1204
+00:36:57,200 --> 00:37:00,230
+but it it shows the wide usage of of
+
+1205
+00:37:00,240 --> 00:37:00,950
+eppf
+
+1206
+00:37:00,960 --> 00:37:02,710
+i think in the future it will even go as
+
+1207
+00:37:02,720 --> 00:37:04,470
+far as
+
+1208
+00:37:04,480 --> 00:37:06,230
+code that is currently written by kernel
+
+1209
+00:37:06,240 --> 00:37:07,990
+developers natively and merged into the
+
+1210
+00:37:08,000 --> 00:37:09,829
+linux kernel in the future might be
+
+1211
+00:37:09,839 --> 00:37:10,390
+written
+
+1212
+00:37:10,400 --> 00:37:13,670
+in ebpf because it will be more secure
+
+1213
+00:37:13,680 --> 00:37:15,430
+it might be hard for us to believe but
+
+1214
+00:37:15,440 --> 00:37:16,710
+even kernel developers will make
+
+1215
+00:37:16,720 --> 00:37:18,390
+mistakes even kernel developers will
+
+1216
+00:37:18,400 --> 00:37:21,030
+include box and having a verification
+
+1217
+00:37:21,040 --> 00:37:22,790
+layer that is another safety net
+
+1218
+00:37:22,800 --> 00:37:25,589
+will have huge benefits because any bug
+
+1219
+00:37:25,599 --> 00:37:27,270
+in kernel code will affect millions and
+
+1220
+00:37:27,280 --> 00:37:28,150
+millions of
+
+1221
+00:37:28,160 --> 00:37:30,870
+of of users out there so i think ebpf is
+
+1222
+00:37:30,880 --> 00:37:31,990
+really becoming this
+
+1223
+00:37:32,000 --> 00:37:34,470
+very general uh programming layer for
+
+1224
+00:37:34,480 --> 00:37:36,310
+the linux kernel in general right
+
+1225
+00:37:36,320 --> 00:37:39,030
+we're talking linux kernel uh right now
+
+1226
+00:37:39,040 --> 00:37:40,470
+but i think it will actually make its
+
+1227
+00:37:40,480 --> 00:37:41,109
+way
+
+1228
+00:37:41,119 --> 00:37:43,030
+outside of outside of linux as well we
+
+1229
+00:37:43,040 --> 00:37:45,030
+are we're already seeing early on signs
+
+1230
+00:37:45,040 --> 00:37:47,270
+of this like there's a freebsd port
+
+1231
+00:37:47,280 --> 00:37:49,829
+um there's been tweets from microsoft
+
+1232
+00:37:49,839 --> 00:37:51,990
+about this so i i definitely
+
+1233
+00:37:52,000 --> 00:37:53,829
+bbpf will become much bigger and will
+
+1234
+00:37:53,839 --> 00:37:55,829
+make operating systems in general
+
+1235
+00:37:55,839 --> 00:37:57,750
+programmable yeah because it's almost
+
+1236
+00:37:57,760 --> 00:37:59,829
+providing that safe
+
+1237
+00:37:59,839 --> 00:38:02,150
+abstraction layer within the kernel not
+
+1238
+00:38:02,160 --> 00:38:03,750
+really an abstraction but
+
+1239
+00:38:03,760 --> 00:38:05,349
+a way to hook into the kernel in a more
+
+1240
+00:38:05,359 --> 00:38:07,030
+safe manner than people were doing when
+
+1241
+00:38:07,040 --> 00:38:08,310
+they were writing modules
+
+1242
+00:38:08,320 --> 00:38:09,829
+or like in the windows world when you're
+
+1243
+00:38:09,839 --> 00:38:11,670
+writing you know really low level
+
+1244
+00:38:11,680 --> 00:38:13,270
+drivers that are hooking into it to do
+
+1245
+00:38:13,280 --> 00:38:14,310
+some of these things
+
+1246
+00:38:14,320 --> 00:38:16,470
+you know it gives you a little bit of
+
+1247
+00:38:16,480 --> 00:38:17,750
+verification that you aren't getting
+
+1248
+00:38:17,760 --> 00:38:19,349
+with those other things
+
+1249
+00:38:19,359 --> 00:38:21,670
+it also makes programming easier because
+
+1250
+00:38:21,680 --> 00:38:22,390
+if you
+
+1251
+00:38:22,400 --> 00:38:24,390
+if you write a linux kernel module for
+
+1252
+00:38:24,400 --> 00:38:26,550
+example you are using
+
+1253
+00:38:26,560 --> 00:38:30,230
+internal kernel apis like functions or
+
+1254
+00:38:30,240 --> 00:38:31,510
+libraries that the kernel internally
+
+1255
+00:38:31,520 --> 00:38:33,589
+provides there is no stable guarantees
+
+1256
+00:38:33,599 --> 00:38:34,950
+given by the kernel
+
+1257
+00:38:34,960 --> 00:38:37,510
+kernel community that these functions
+
+1258
+00:38:37,520 --> 00:38:38,390
+have some sort of
+
+1259
+00:38:38,400 --> 00:38:41,030
+api or even api compatibility which
+
+1260
+00:38:41,040 --> 00:38:42,710
+means every kernel version may break
+
+1261
+00:38:42,720 --> 00:38:43,109
+this
+
+1262
+00:38:43,119 --> 00:38:45,670
+so you will have to adjust your kernel
+
+1263
+00:38:45,680 --> 00:38:46,870
+module code for every
+
+1264
+00:38:46,880 --> 00:38:48,230
+for every color reason you might even
+
+1265
+00:38:48,240 --> 00:38:50,069
+have to release it for different kernel
+
+1266
+00:38:50,079 --> 00:38:51,270
+versions and so on
+
+1267
+00:38:51,280 --> 00:38:54,230
+ebpf has this abstraction layer in
+
+1268
+00:38:54,240 --> 00:38:54,950
+between that
+
+1269
+00:38:54,960 --> 00:38:57,270
+yes you can for example call a function
+
+1270
+00:38:57,280 --> 00:38:59,109
+that will get you a random number back
+
+1271
+00:38:59,119 --> 00:39:01,589
+but there is a this this is a stable
+
+1272
+00:39:01,599 --> 00:39:02,710
+function that you call
+
+1273
+00:39:02,720 --> 00:39:04,470
+and even if the backing implementation
+
+1274
+00:39:04,480 --> 00:39:07,030
+changes that the actual helper call that
+
+1275
+00:39:07,040 --> 00:39:09,910
+api will always remain stable
+
+1276
+00:39:09,920 --> 00:39:11,589
+yes so kind of going along that example
+
+1277
+00:39:11,599 --> 00:39:13,349
+you know if
+
+1278
+00:39:13,359 --> 00:39:15,430
+for example the kernel changes how
+
+1279
+00:39:15,440 --> 00:39:17,349
+you're getting a random number and they
+
+1280
+00:39:17,359 --> 00:39:19,270
+change the function name from get random
+
+1281
+00:39:19,280 --> 00:39:20,710
+to get you random
+
+1282
+00:39:20,720 --> 00:39:22,950
+now that's a breaking change for your
+
+1283
+00:39:22,960 --> 00:39:24,550
+module and now you're putting a
+
+1284
+00:39:24,560 --> 00:39:26,069
+nice little if statement in there to
+
+1285
+00:39:26,079 --> 00:39:27,430
+check and see which kernel versions
+
+1286
+00:39:27,440 --> 00:39:28,790
+you're on and whether it's supported or
+
+1287
+00:39:28,800 --> 00:39:29,430
+not
+
+1288
+00:39:29,440 --> 00:39:32,150
+but from an ebpf perspective you can
+
+1289
+00:39:32,160 --> 00:39:33,910
+have just a simple you know
+
+1290
+00:39:33,920 --> 00:39:37,430
+get bpf random and whether it goes to
+
+1291
+00:39:37,440 --> 00:39:38,790
+you random or
+
+1292
+00:39:38,800 --> 00:39:40,470
+debut random or dev random it doesn't
+
+1293
+00:39:40,480 --> 00:39:42,150
+matter because from a developer
+
+1294
+00:39:42,160 --> 00:39:43,030
+perspective you're
+
+1295
+00:39:43,040 --> 00:39:45,990
+getting the same api call between
+
+1296
+00:39:46,000 --> 00:39:46,630
+exactly
+
+1297
+00:39:46,640 --> 00:39:47,990
+for those who have written kernel
+
+1298
+00:39:48,000 --> 00:39:49,990
+modules in the in in the past
+
+1299
+00:39:50,000 --> 00:39:52,470
+kernel module typically is thousands of
+
+1300
+00:39:52,480 --> 00:39:54,790
+preprocessor if conditions if kernel
+
+1301
+00:39:54,800 --> 00:39:56,870
+version acts if kernel version y
+
+1302
+00:39:56,880 --> 00:39:59,109
+and then different code it's a mess
+
+1303
+00:39:59,119 --> 00:40:00,950
+right it's a mess
+
+1304
+00:40:00,960 --> 00:40:02,630
+yeah and it's horrible to maintain
+
+1305
+00:40:02,640 --> 00:40:04,390
+because now you have to
+
+1306
+00:40:04,400 --> 00:40:06,150
+watch the kernel mailing list and you
+
+1307
+00:40:06,160 --> 00:40:07,510
+know almost have a little
+
+1308
+00:40:07,520 --> 00:40:09,109
+regex filter looking for whatever
+
+1309
+00:40:09,119 --> 00:40:10,550
+function names you're using to see
+
+1310
+00:40:10,560 --> 00:40:12,150
+did someone propose a change to this did
+
+1311
+00:40:12,160 --> 00:40:13,750
+someone propose a change to this
+
+1312
+00:40:13,760 --> 00:40:15,270
+and then giving that feedback to say no
+
+1313
+00:40:15,280 --> 00:40:17,510
+don't do this or oh wait i gotta fix my
+
+1314
+00:40:17,520 --> 00:40:19,670
+entire module now and re-release
+
+1315
+00:40:19,680 --> 00:40:22,390
+but kind of going back a little bit
+
+1316
+00:40:22,400 --> 00:40:24,069
+you'd mention the concept of
+
+1317
+00:40:24,079 --> 00:40:27,030
+um hooking anything with a known symbol
+
+1318
+00:40:27,040 --> 00:40:27,829
+in the kernel
+
+1319
+00:40:27,839 --> 00:40:29,109
+i'm not sure how many of our users would
+
+1320
+00:40:29,119 --> 00:40:30,870
+be familiar what does that mean when
+
+1321
+00:40:30,880 --> 00:40:32,790
+you're saying a known symbol
+
+1322
+00:40:32,800 --> 00:40:36,069
+so if you run your kernel typically you
+
+1323
+00:40:36,079 --> 00:40:37,990
+don't have to symbol table available
+
+1324
+00:40:38,000 --> 00:40:41,589
+which means that kernel functions are
+
+1325
+00:40:41,599 --> 00:40:44,470
+are behind arbitrary addresses right
+
+1326
+00:40:44,480 --> 00:40:46,630
+like kernel like memory addresses
+
+1327
+00:40:46,640 --> 00:40:48,710
+and in order to understand where a
+
+1328
+00:40:48,720 --> 00:40:50,550
+function starts or where a function
+
+1329
+00:40:50,560 --> 00:40:50,870
+where
+
+1330
+00:40:50,880 --> 00:40:53,190
+code for a function is located in memory
+
+1331
+00:40:53,200 --> 00:40:55,030
+you need something like a simple table
+
+1332
+00:40:55,040 --> 00:40:57,109
+and the symbol table will map the name
+
+1333
+00:40:57,119 --> 00:40:58,390
+for example
+
+1334
+00:40:58,400 --> 00:41:00,309
+system call write like where is the
+
+1335
+00:41:00,319 --> 00:41:02,150
+implementation for the write system call
+
+1336
+00:41:02,160 --> 00:41:04,390
+and will contain the memory address
+
+1337
+00:41:04,400 --> 00:41:06,069
+where is that code for that system
+
+1338
+00:41:06,079 --> 00:41:08,470
+call in memory and if you have that
+
+1339
+00:41:08,480 --> 00:41:10,309
+simple table available you can basically
+
+1340
+00:41:10,319 --> 00:41:10,950
+say
+
+1341
+00:41:10,960 --> 00:41:13,030
+i want to load an ebp i want to run an
+
+1342
+00:41:13,040 --> 00:41:14,390
+ebpf program
+
+1343
+00:41:14,400 --> 00:41:17,190
+when the system call function for write
+
+1344
+00:41:17,200 --> 00:41:19,270
+is invoked or when it returns
+
+1345
+00:41:19,280 --> 00:41:21,670
+and this is what what kprobs is about
+
+1346
+00:41:21,680 --> 00:41:23,190
+for this to function you need that
+
+1347
+00:41:23,200 --> 00:41:24,069
+simple table
+
+1348
+00:41:24,079 --> 00:41:26,870
+because as a human you don't recognize
+
+1349
+00:41:26,880 --> 00:41:27,589
+the symbol
+
+1350
+00:41:27,599 --> 00:41:29,589
+the symbol or the memory addresses but
+
+1351
+00:41:29,599 --> 00:41:31,910
+you will you will recognize the human
+
+1352
+00:41:31,920 --> 00:41:33,990
+readable function names
+
+1353
+00:41:34,000 --> 00:41:37,030
+yeah and even if you do know the
+
+1354
+00:41:37,040 --> 00:41:38,790
+you know memory address specifically
+
+1355
+00:41:38,800 --> 00:41:40,150
+because you sat there and debugged it
+
+1356
+00:41:40,160 --> 00:41:41,670
+the problem is when you have stuff like
+
+1357
+00:41:41,680 --> 00:41:43,349
+address space layout randomization
+
+1358
+00:41:43,359 --> 00:41:45,109
+turned on which should be turned on in
+
+1359
+00:41:45,119 --> 00:41:46,470
+your kernel and you shouldn't be turning
+
+1360
+00:41:46,480 --> 00:41:47,349
+it off
+
+1361
+00:41:47,359 --> 00:41:48,950
+you still need that symbol layer to do
+
+1362
+00:41:48,960 --> 00:41:50,790
+the symbol table to do the translation
+
+1363
+00:41:50,800 --> 00:41:52,150
+for the address for you
+
+1364
+00:41:52,160 --> 00:41:53,910
+since hard-coded address really doesn't
+
+1365
+00:41:53,920 --> 00:41:55,990
+work anymore exactly
+
+1366
+00:41:56,000 --> 00:41:59,030
+so we've kind of talked about
+
+1367
+00:41:59,040 --> 00:42:01,349
+writing these programs a little bit so
+
+1368
+00:42:01,359 --> 00:42:02,950
+how am i gonna troubleshoot
+
+1369
+00:42:02,960 --> 00:42:05,589
+this program if i'm writing one are
+
+1370
+00:42:05,599 --> 00:42:07,349
+there like tools that i'm gonna use to
+
+1371
+00:42:07,359 --> 00:42:08,230
+do that
+
+1372
+00:42:08,240 --> 00:42:10,230
+yes i think we can speak from our own
+
+1373
+00:42:10,240 --> 00:42:11,910
+experience uh as a maintainer of
+
+1374
+00:42:11,920 --> 00:42:13,910
+psyllium one probably the biggest ebpf
+
+1375
+00:42:13,920 --> 00:42:15,670
+program that currently exists
+
+1376
+00:42:15,680 --> 00:42:18,309
+we invested a lot into a troubleshooting
+
+1377
+00:42:18,319 --> 00:42:19,430
+and debugging layer
+
+1378
+00:42:19,440 --> 00:42:22,870
+and it's fantastic because
+
+1379
+00:42:22,880 --> 00:42:26,230
+we were able to leverage the the tracing
+
+1380
+00:42:26,240 --> 00:42:27,589
+layer of vpf so
+
+1381
+00:42:27,599 --> 00:42:29,510
+one of the prime use cases of vvpf is
+
+1382
+00:42:29,520 --> 00:42:31,670
+tracing and when you do tracing you
+
+1383
+00:42:31,680 --> 00:42:32,550
+typically
+
+1384
+00:42:32,560 --> 00:42:34,790
+you hook into user space applications or
+
+1385
+00:42:34,800 --> 00:42:36,150
+into kernel functions
+
+1386
+00:42:36,160 --> 00:42:39,190
+and then you emit a some event for
+
+1387
+00:42:39,200 --> 00:42:39,829
+example
+
+1388
+00:42:39,839 --> 00:42:43,349
+i um i have observed something or
+
+1389
+00:42:43,359 --> 00:42:45,030
+you want to emit the string or something
+
+1390
+00:42:45,040 --> 00:42:46,790
+and then show that in user space
+
+1391
+00:42:46,800 --> 00:42:48,790
+and for this the so-called perv ring
+
+1392
+00:42:48,800 --> 00:42:50,710
+buffer exists it's a it's a ring buffer
+
+1393
+00:42:50,720 --> 00:42:52,710
+that allows an ebpf program to send
+
+1394
+00:42:52,720 --> 00:42:55,190
+events to user space in a very efficient
+
+1395
+00:42:55,200 --> 00:42:56,950
+manner and for user space to
+
+1396
+00:42:56,960 --> 00:42:58,630
+retrieve those events and for example
+
+1397
+00:42:58,640 --> 00:43:00,309
+print them i mean it's
+
+1398
+00:43:00,319 --> 00:43:02,069
+it's an arbitrary generic ring buffer it
+
+1399
+00:43:02,079 --> 00:43:03,510
+could be messages it could be
+
+1400
+00:43:03,520 --> 00:43:05,670
+it could be really anything we are
+
+1401
+00:43:05,680 --> 00:43:07,030
+specifically using that
+
+1402
+00:43:07,040 --> 00:43:09,670
+to basically bake in debugging so it
+
+1403
+00:43:09,680 --> 00:43:11,589
+means that in the in the code
+
+1404
+00:43:11,599 --> 00:43:13,910
+we can basically print debug messages
+
+1405
+00:43:13,920 --> 00:43:15,030
+anywhere we want them
+
+1406
+00:43:15,040 --> 00:43:16,710
+and then on the fly actually enable
+
+1407
+00:43:16,720 --> 00:43:18,150
+enable this this is very interesting
+
+1408
+00:43:18,160 --> 00:43:19,349
+because of the
+
+1409
+00:43:19,359 --> 00:43:21,109
+the nature of ebp if it's possible to
+
+1410
+00:43:21,119 --> 00:43:23,109
+atomically replace programs
+
+1411
+00:43:23,119 --> 00:43:25,030
+we can even in a production environment
+
+1412
+00:43:25,040 --> 00:43:26,550
+actually enable
+
+1413
+00:43:26,560 --> 00:43:28,630
+data path troubleshooting messages and
+
+1414
+00:43:28,640 --> 00:43:29,910
+like very similar to how a kernel
+
+1415
+00:43:29,920 --> 00:43:31,750
+developer would do debugging with like
+
+1416
+00:43:31,760 --> 00:43:32,870
+print k statements
+
+1417
+00:43:32,880 --> 00:43:34,309
+we can do that but actually without
+
+1418
+00:43:34,319 --> 00:43:36,390
+recompiling kernel without restarting it
+
+1419
+00:43:36,400 --> 00:43:36,870
+so
+
+1420
+00:43:36,880 --> 00:43:39,349
+that allowed us to do a lot of fantastic
+
+1421
+00:43:39,359 --> 00:43:40,630
+troubleshooting when when
+
+1422
+00:43:40,640 --> 00:43:42,470
+when needed because if you run in the
+
+1423
+00:43:42,480 --> 00:43:44,950
+kernel it you can't simply attach a
+
+1424
+00:43:44,960 --> 00:43:45,589
+debugger
+
+1425
+00:43:45,599 --> 00:43:48,230
+it is possible but it's not as easy as
+
+1426
+00:43:48,240 --> 00:43:48,870
+it is for
+
+1427
+00:43:48,880 --> 00:43:52,069
+for for a user space application well
+
+1428
+00:43:52,079 --> 00:43:53,190
+yeah because you're trying to hook into
+
+1429
+00:43:53,200 --> 00:43:55,030
+the underlying operating system and now
+
+1430
+00:43:55,040 --> 00:43:56,630
+when you hook a debugger to things it
+
+1431
+00:43:56,640 --> 00:43:59,430
+messes everything up and gets all weird
+
+1432
+00:43:59,440 --> 00:44:01,030
+yeah and like in a lot of cases you
+
+1433
+00:44:01,040 --> 00:44:03,030
+can't even just sleep and break right if
+
+1434
+00:44:03,040 --> 00:44:04,630
+you are processing a network packet you
+
+1435
+00:44:04,640 --> 00:44:05,430
+can't just
+
+1436
+00:44:05,440 --> 00:44:07,750
+okay let's wait that option does not
+
+1437
+00:44:07,760 --> 00:44:09,750
+exist you would break your kernel
+
+1438
+00:44:09,760 --> 00:44:11,750
+or if you're doing a system well in a
+
+1439
+00:44:11,760 --> 00:44:13,190
+system called you could actually
+
+1440
+00:44:13,200 --> 00:44:15,829
+sleep right that's actually feasible
+
+1441
+00:44:15,839 --> 00:44:16,309
+your
+
+1442
+00:44:16,319 --> 00:44:17,829
+the application during the system call
+
+1443
+00:44:17,839 --> 00:44:19,670
+would then sleep and stall and it would
+
+1444
+00:44:19,680 --> 00:44:21,349
+look like deadlocked or something but
+
+1445
+00:44:21,359 --> 00:44:23,190
+that's it that would actually be okay
+
+1446
+00:44:23,200 --> 00:44:25,030
+but for a lot of the other ebpf program
+
+1447
+00:44:25,040 --> 00:44:27,589
+usages it's not possible to even just
+
+1448
+00:44:27,599 --> 00:44:29,670
+break and stop as a typical debucker
+
+1449
+00:44:29,680 --> 00:44:31,190
+would do
+
+1450
+00:44:31,200 --> 00:44:33,510
+okay and you were kind of mentioning you
+
+1451
+00:44:33,520 --> 00:44:35,109
+know this debug layer and being able to
+
+1452
+00:44:35,119 --> 00:44:36,150
+atomically replace
+
+1453
+00:44:36,160 --> 00:44:37,910
+programs how are you actually doing that
+
+1454
+00:44:37,920 --> 00:44:40,069
+atomic replacement in uvpf
+
+1455
+00:44:40,079 --> 00:44:43,109
+yeah so the the really fantastic
+
+1456
+00:44:43,119 --> 00:44:45,510
+property of evpf is that the program
+
+1457
+00:44:45,520 --> 00:44:47,990
+and its state is separate so if you look
+
+1458
+00:44:48,000 --> 00:44:48,790
+at a
+
+1459
+00:44:48,800 --> 00:44:52,309
+typical application the when you load
+
+1460
+00:44:52,319 --> 00:44:54,230
+the program and if you want to replace
+
+1461
+00:44:54,240 --> 00:44:56,309
+the program of your of your users based
+
+1462
+00:44:56,319 --> 00:44:56,950
+process
+
+1463
+00:44:56,960 --> 00:44:59,109
+you have to restart the entire program
+
+1464
+00:44:59,119 --> 00:45:00,550
+the process and you will
+
+1465
+00:45:00,560 --> 00:45:02,230
+also lose all of its memory you will
+
+1466
+00:45:02,240 --> 00:45:04,630
+lose this stack you will you will lose
+
+1467
+00:45:04,640 --> 00:45:06,550
+like everything like you will start from
+
+1468
+00:45:06,560 --> 00:45:08,950
+scratch with ppf this is different
+
+1469
+00:45:08,960 --> 00:45:12,390
+because the you will also lose the stack
+
+1470
+00:45:12,400 --> 00:45:12,790
+right
+
+1471
+00:45:12,800 --> 00:45:15,030
+because the stack only exists for one in
+
+1472
+00:45:15,040 --> 00:45:16,630
+the invocation of the program
+
+1473
+00:45:16,640 --> 00:45:18,630
+but between invocations of the program
+
+1474
+00:45:18,640 --> 00:45:21,190
+you can replace the program
+
+1475
+00:45:21,200 --> 00:45:24,390
+atomically while the map state prevails
+
+1476
+00:45:24,400 --> 00:45:26,710
+which means you can for example collect
+
+1477
+00:45:26,720 --> 00:45:28,230
+statistics or
+
+1478
+00:45:28,240 --> 00:45:29,990
+maintain a connection tracking table in
+
+1479
+00:45:30,000 --> 00:45:31,270
+bpf or
+
+1480
+00:45:31,280 --> 00:45:33,109
+have firewall rules in the map and then
+
+1481
+00:45:33,119 --> 00:45:35,190
+replace the program with the bpf system
+
+1482
+00:45:35,200 --> 00:45:36,550
+call atomically
+
+1483
+00:45:36,560 --> 00:45:38,950
+while the state still persists which
+
+1484
+00:45:38,960 --> 00:45:39,750
+means you can
+
+1485
+00:45:39,760 --> 00:45:41,990
+you can you can apply hotfixes you can
+
+1486
+00:45:42,000 --> 00:45:43,670
+upgrade your programs
+
+1487
+00:45:43,680 --> 00:45:45,430
+without actually disrupting anything
+
+1488
+00:45:45,440 --> 00:45:47,190
+that's going on
+
+1489
+00:45:47,200 --> 00:45:49,910
+so almost if you had let's say a debug
+
+1490
+00:45:49,920 --> 00:45:51,670
+switch in your control plane
+
+1491
+00:45:51,680 --> 00:45:54,710
+you could say flip this into debug mode
+
+1492
+00:45:54,720 --> 00:45:57,109
+it'll swap out and load the debug
+
+1493
+00:45:57,119 --> 00:45:59,109
+version of your bpf
+
+1494
+00:45:59,119 --> 00:46:01,910
+code and because your map is pinned as
+
+1495
+00:46:01,920 --> 00:46:03,109
+we discussed earlier
+
+1496
+00:46:03,119 --> 00:46:04,870
+that doesn't get thrown away because
+
+1497
+00:46:04,880 --> 00:46:06,390
+that's the responsibility of the program
+
+1498
+00:46:06,400 --> 00:46:07,190
+to clean up
+
+1499
+00:46:07,200 --> 00:46:08,630
+instead now you have this debugging
+
+1500
+00:46:08,640 --> 00:46:10,230
+version but
+
+1501
+00:46:10,240 --> 00:46:11,910
+how does that work with that ring buffer
+
+1502
+00:46:11,920 --> 00:46:13,190
+that you were discussing earlier does
+
+1503
+00:46:13,200 --> 00:46:14,309
+that get cleared
+
+1504
+00:46:14,319 --> 00:46:16,790
+for or is that new for each instance of
+
+1505
+00:46:16,800 --> 00:46:19,030
+a program or does that actually persist
+
+1506
+00:46:19,040 --> 00:46:20,550
+that persists as well a ring buffer is
+
+1507
+00:46:20,560 --> 00:46:22,550
+just another bpf map as well so that the
+
+1508
+00:46:22,560 --> 00:46:25,510
+ring buffer is always there as well
+
+1509
+00:46:25,520 --> 00:46:27,430
+so essentially because that's still
+
+1510
+00:46:27,440 --> 00:46:29,589
+there again as you kind of said you're
+
+1511
+00:46:29,599 --> 00:46:31,270
+not losing anything by swapping it out
+
+1512
+00:46:31,280 --> 00:46:32,550
+to the debug version now
+
+1513
+00:46:32,560 --> 00:46:33,910
+you know the buffer might just fill up a
+
+1514
+00:46:33,920 --> 00:46:35,190
+little more because you have more debug
+
+1515
+00:46:35,200 --> 00:46:36,630
+messages coming out
+
+1516
+00:46:36,640 --> 00:46:38,230
+yeah and if because it's a ring buffer
+
+1517
+00:46:38,240 --> 00:46:40,470
+even if the the bpf program is very
+
+1518
+00:46:40,480 --> 00:46:41,750
+quick and may process
+
+1519
+00:46:41,760 --> 00:46:43,589
+let's say only a couple of thousand
+
+1520
+00:46:43,599 --> 00:46:45,430
+packets per second it may still emit
+
+1521
+00:46:45,440 --> 00:46:47,510
+hundreds of thousands of debug messages
+
+1522
+00:46:47,520 --> 00:46:49,190
+the user space program
+
+1523
+00:46:49,200 --> 00:46:51,270
+doesn't have to be quick enough to read
+
+1524
+00:46:51,280 --> 00:46:52,550
+everything in real time
+
+1525
+00:46:52,560 --> 00:46:53,910
+it can buffer everything in the rim
+
+1526
+00:46:53,920 --> 00:46:56,230
+buffer and then at a later stage read it
+
+1527
+00:46:56,240 --> 00:46:58,150
+because the the user space program may
+
+1528
+00:46:58,160 --> 00:46:59,750
+not actually have
+
+1529
+00:46:59,760 --> 00:47:01,829
+may not be scheduled on the cpu at the
+
+1530
+00:47:01,839 --> 00:47:04,069
+same time as the bpf program is running
+
+1531
+00:47:04,079 --> 00:47:06,950
+so this allows for a kind of a
+
+1532
+00:47:06,960 --> 00:47:08,870
+a single switch that kind of oh i need
+
+1533
+00:47:08,880 --> 00:47:11,109
+debugging now uh maybe for the next 10
+
+1534
+00:47:11,119 --> 00:47:12,550
+packets and then
+
+1535
+00:47:12,560 --> 00:47:14,790
+disable it again because all i need is a
+
+1536
+00:47:14,800 --> 00:47:16,150
+couple of traces to figure out what's
+
+1537
+00:47:16,160 --> 00:47:17,349
+going on in my program
+
+1538
+00:47:17,359 --> 00:47:19,670
+you can even do things like uh only
+
+1539
+00:47:19,680 --> 00:47:21,270
+because you can atopically replace the
+
+1540
+00:47:21,280 --> 00:47:21,829
+program
+
+1541
+00:47:21,839 --> 00:47:24,470
+if you know the failure scenario you can
+
+1542
+00:47:24,480 --> 00:47:26,390
+only enable the debugging if a packet is
+
+1543
+00:47:26,400 --> 00:47:27,430
+arriving
+
+1544
+00:47:27,440 --> 00:47:29,589
+matching that failure that specific
+
+1545
+00:47:29,599 --> 00:47:31,510
+failure failure scenario this is how we
+
+1546
+00:47:31,520 --> 00:47:32,230
+have for example
+
+1547
+00:47:32,240 --> 00:47:35,190
+track down box around ipvc ipv6
+
+1548
+00:47:35,200 --> 00:47:36,150
+extension headers
+
+1549
+00:47:36,160 --> 00:47:37,990
+we would have logic in there that would
+
+1550
+00:47:38,000 --> 00:47:39,270
+only emit the traces
+
+1551
+00:47:39,280 --> 00:47:41,829
+if the if packets of ipv6 extension
+
+1552
+00:47:41,839 --> 00:47:43,510
+headers would be would be received and
+
+1553
+00:47:43,520 --> 00:47:44,069
+so on
+
+1554
+00:47:44,079 --> 00:47:46,630
+it's i've actually been fantastic at
+
+1555
+00:47:46,640 --> 00:47:48,309
+least from a perspective of a linux
+
+1556
+00:47:48,319 --> 00:47:49,829
+current developer where
+
+1557
+00:47:49,839 --> 00:47:51,670
+that's that's kind of our standard right
+
+1558
+00:47:51,680 --> 00:47:53,430
+like from a perspective of a
+
+1559
+00:47:53,440 --> 00:47:55,190
+let's say a java application developer
+
+1560
+00:47:55,200 --> 00:47:57,430
+it's still very difficult to upload to
+
+1561
+00:47:57,440 --> 00:47:58,150
+debug an
+
+1562
+00:47:58,160 --> 00:48:00,230
+ebpf program but compared to kernel
+
+1563
+00:48:00,240 --> 00:48:01,829
+development it's actually
+
+1564
+00:48:01,839 --> 00:48:03,910
+it's actually very handy yeah you know
+
+1565
+00:48:03,920 --> 00:48:05,349
+when you're used to having that user
+
+1566
+00:48:05,359 --> 00:48:05,990
+space you
+
+1567
+00:48:06,000 --> 00:48:07,910
+know apm you know application
+
+1568
+00:48:07,920 --> 00:48:09,430
+performance monitor
+
+1569
+00:48:09,440 --> 00:48:10,790
+reading everything in your code you just
+
+1570
+00:48:10,800 --> 00:48:12,630
+go to a web interface and see run times
+
+1571
+00:48:12,640 --> 00:48:13,510
+for each function
+
+1572
+00:48:13,520 --> 00:48:15,430
+it's a lot easier than trying to write a
+
+1573
+00:48:15,440 --> 00:48:17,109
+program to handle some ring buffers and
+
+1574
+00:48:17,119 --> 00:48:18,950
+maps and all that kind of stuff
+
+1575
+00:48:18,960 --> 00:48:20,870
+so i kind of want to change directions a
+
+1576
+00:48:20,880 --> 00:48:22,069
+little bit here and start talking about
+
+1577
+00:48:22,079 --> 00:48:23,430
+some of the use cases that we have with
+
+1578
+00:48:23,440 --> 00:48:25,349
+ebpf i mean we've discussed a
+
+1579
+00:48:25,359 --> 00:48:27,430
+bunch of them so far you know anything
+
+1580
+00:48:27,440 --> 00:48:29,030
+from you know xtp being used in the
+
+1581
+00:48:29,040 --> 00:48:29,589
+knicks
+
+1582
+00:48:29,599 --> 00:48:31,829
+and even projects like psyllium and some
+
+1583
+00:48:31,839 --> 00:48:34,390
+of the use cases you guys fulfill but
+
+1584
+00:48:34,400 --> 00:48:37,510
+i do want to talk you know as we've
+
+1585
+00:48:37,520 --> 00:48:40,309
+moved into a more containerized world
+
+1586
+00:48:40,319 --> 00:48:41,510
+how do you get
+
+1587
+00:48:41,520 --> 00:48:44,630
+ebpf to understand that concept
+
+1588
+00:48:44,640 --> 00:48:47,349
+of a container that's an interest that's
+
+1589
+00:48:47,359 --> 00:48:48,069
+interesting
+
+1590
+00:48:48,079 --> 00:48:50,069
+because the linux kernel and this may be
+
+1591
+00:48:50,079 --> 00:48:51,829
+a surprise the linux kernel does not
+
+1592
+00:48:51,839 --> 00:48:53,349
+actually know what a container is
+
+1593
+00:48:53,359 --> 00:48:56,230
+the linux kernel understands c groups
+
+1594
+00:48:56,240 --> 00:48:57,670
+name spaces
+
+1595
+00:48:57,680 --> 00:49:01,270
+process boundaries process forking and
+
+1596
+00:49:01,280 --> 00:49:02,870
+so on but it doesn't actually understand
+
+1597
+00:49:02,880 --> 00:49:04,470
+container container uses
+
+1598
+00:49:04,480 --> 00:49:06,309
+all of what i just mentioned to to
+
+1599
+00:49:06,319 --> 00:49:08,390
+create like container isolation or the
+
+1600
+00:49:08,400 --> 00:49:10,069
+concept of a container
+
+1601
+00:49:10,079 --> 00:49:13,589
+so you cannot go on and say colonel
+
+1602
+00:49:13,599 --> 00:49:16,470
+give me give me the memory usage of
+
+1603
+00:49:16,480 --> 00:49:18,870
+container if container idx the kernel
+
+1604
+00:49:18,880 --> 00:49:21,430
+does not know what container idx is
+
+1605
+00:49:21,440 --> 00:49:23,190
+you would need to translate container
+
+1606
+00:49:23,200 --> 00:49:25,109
+idx into the actual c
+
+1607
+00:49:25,119 --> 00:49:27,430
+group id and then ask the kernel okay
+
+1608
+00:49:27,440 --> 00:49:28,950
+this container is using this c
+
+1609
+00:49:28,960 --> 00:49:30,870
+group for memory consumption or for
+
+1610
+00:49:30,880 --> 00:49:32,230
+memory isolation
+
+1611
+00:49:32,240 --> 00:49:33,670
+show me the configuration or something
+
+1612
+00:49:33,680 --> 00:49:35,270
+show me the usage and so on
+
+1613
+00:49:35,280 --> 00:49:37,670
+and this is where ebpf comes in and can
+
+1614
+00:49:37,680 --> 00:49:38,309
+make
+
+1615
+00:49:38,319 --> 00:49:41,349
+the kernel indirectly aware of concepts
+
+1616
+00:49:41,359 --> 00:49:42,390
+like kubernetes
+
+1617
+00:49:42,400 --> 00:49:45,270
+container micro services and so on by
+
+1618
+00:49:45,280 --> 00:49:47,190
+allowing it to for example do
+
+1619
+00:49:47,200 --> 00:49:48,950
+uh packet filtering or system call
+
+1620
+00:49:48,960 --> 00:49:50,470
+filtering
+
+1621
+00:49:50,480 --> 00:49:52,470
+with the awareness of container id
+
+1622
+00:49:52,480 --> 00:49:55,109
+because or containers or parts and so on
+
+1623
+00:49:55,119 --> 00:49:56,870
+by encoding that as part of ebpf
+
+1624
+00:49:56,880 --> 00:49:59,190
+programs that that's making it so
+
+1625
+00:49:59,200 --> 00:50:01,030
+powerful the reason why that's even
+
+1626
+00:50:01,040 --> 00:50:02,790
+needed in the first place is because
+
+1627
+00:50:02,800 --> 00:50:05,589
+typically the time between writing a
+
+1628
+00:50:05,599 --> 00:50:06,390
+kernel feature
+
+1629
+00:50:06,400 --> 00:50:08,470
+and the time by the time it gets
+
+1630
+00:50:08,480 --> 00:50:10,710
+available is multiple years like
+
+1631
+00:50:10,720 --> 00:50:13,109
+it's often five plus years like somebody
+
+1632
+00:50:13,119 --> 00:50:14,710
+writes a kernel feature and then by the
+
+1633
+00:50:14,720 --> 00:50:16,230
+time that kernel release
+
+1634
+00:50:16,240 --> 00:50:18,790
+gets into the hand of users it's just so
+
+1635
+00:50:18,800 --> 00:50:20,630
+long that it's very rare that the kernel
+
+1636
+00:50:20,640 --> 00:50:21,349
+is actually
+
+1637
+00:50:21,359 --> 00:50:23,670
+up to date in terms of use cases the
+
+1638
+00:50:23,680 --> 00:50:24,790
+kernel that you run
+
+1639
+00:50:24,800 --> 00:50:27,190
+right now it's probably not been written
+
+1640
+00:50:27,200 --> 00:50:29,109
+with your current use cases in mind and
+
+1641
+00:50:29,119 --> 00:50:30,549
+evpf programs you can prob
+
+1642
+00:50:30,559 --> 00:50:32,710
+obviously load any program that you want
+
+1643
+00:50:32,720 --> 00:50:34,390
+which means you can bridge that gap
+
+1644
+00:50:34,400 --> 00:50:36,549
+this is what's making it so powerful
+
+1645
+00:50:36,559 --> 00:50:38,069
+yeah so it's giving you that flexibility
+
+1646
+00:50:38,079 --> 00:50:39,510
+that you don't actually get with kernel
+
+1647
+00:50:39,520 --> 00:50:40,069
+development
+
+1648
+00:50:40,079 --> 00:50:41,430
+because of the fact that kernel
+
+1649
+00:50:41,440 --> 00:50:43,430
+development's delayed it takes forever
+
+1650
+00:50:43,440 --> 00:50:44,309
+to get a patch in
+
+1651
+00:50:44,319 --> 00:50:45,910
+and then even once you have that in now
+
+1652
+00:50:45,920 --> 00:50:46,950
+it has to be rolled out to all the
+
+1653
+00:50:46,960 --> 00:50:48,710
+distributions and not everybody's
+
+1654
+00:50:48,720 --> 00:50:50,470
+running the latest version of the kernel
+
+1655
+00:50:50,480 --> 00:50:51,990
+in their distribution and
+
+1656
+00:50:52,000 --> 00:50:54,309
+you know every other what-if scenario
+
+1657
+00:50:54,319 --> 00:50:56,069
+but just kind of circling back so you
+
+1658
+00:50:56,079 --> 00:50:57,990
+mentioned the concept of name spaces c
+
+1659
+00:50:58,000 --> 00:51:00,390
+groups all that kind of stuff and as you
+
+1660
+00:51:00,400 --> 00:51:01,270
+kind of mentioned
+
+1661
+00:51:01,280 --> 00:51:03,270
+probably most software engineers aren't
+
+1662
+00:51:03,280 --> 00:51:05,190
+going to know what that is
+
+1663
+00:51:05,200 --> 00:51:06,390
+they might understand the concept of a
+
+1664
+00:51:06,400 --> 00:51:07,510
+container but they might not know how
+
+1665
+00:51:07,520 --> 00:51:09,109
+that works at the lower
+
+1666
+00:51:09,119 --> 00:51:10,710
+kernel level can you kind of dive into
+
+1667
+00:51:10,720 --> 00:51:12,309
+that a little bit and explain it
+
+1668
+00:51:12,319 --> 00:51:15,030
+sure so i think containers are two
+
+1669
+00:51:15,040 --> 00:51:16,710
+aspects like one is the container image
+
+1670
+00:51:16,720 --> 00:51:18,150
+which i will not cover a lot of the
+
+1671
+00:51:18,160 --> 00:51:19,270
+packaging
+
+1672
+00:51:19,280 --> 00:51:20,950
+shipping the entire dependencies and so
+
+1673
+00:51:20,960 --> 00:51:22,870
+on that's one aspect and then the other
+
+1674
+00:51:22,880 --> 00:51:24,230
+aspect is
+
+1675
+00:51:24,240 --> 00:51:26,390
+the deployment form like how it actually
+
+1676
+00:51:26,400 --> 00:51:27,750
+runs on the system
+
+1677
+00:51:27,760 --> 00:51:29,589
+and the migration or the movement away
+
+1678
+00:51:29,599 --> 00:51:31,670
+from virtual machines as the deployment
+
+1679
+00:51:31,680 --> 00:51:32,710
+or kind of the
+
+1680
+00:51:32,720 --> 00:51:35,190
+the isolation form to a container in
+
+1681
+00:51:35,200 --> 00:51:36,150
+which case
+
+1682
+00:51:36,160 --> 00:51:39,990
+the kernel becomes responsible to
+
+1683
+00:51:40,000 --> 00:51:41,670
+negotiate the resources between
+
+1684
+00:51:41,680 --> 00:51:42,870
+containers because obviously we're
+
+1685
+00:51:42,880 --> 00:51:44,630
+running multiple containers
+
+1686
+00:51:44,640 --> 00:51:47,109
+on a single system which means somebody
+
+1687
+00:51:47,119 --> 00:51:48,069
+needs to be
+
+1688
+00:51:48,079 --> 00:51:51,990
+aware and in charge of for example
+
+1689
+00:51:52,000 --> 00:51:53,589
+making sure that one container cannot
+
+1690
+00:51:53,599 --> 00:51:55,109
+use all of the memory of the entire
+
+1691
+00:51:55,119 --> 00:51:57,109
+system or all of the cpu on the system
+
+1692
+00:51:57,119 --> 00:51:57,990
+or
+
+1693
+00:51:58,000 --> 00:52:01,510
+who ensures that the the networking
+
+1694
+00:52:01,520 --> 00:52:03,829
+of one container like one application
+
+1695
+00:52:03,839 --> 00:52:05,270
+running in a container cannot just
+
+1696
+00:52:05,280 --> 00:52:06,790
+access the other application in another
+
+1697
+00:52:06,800 --> 00:52:08,069
+container on the same system because
+
+1698
+00:52:08,079 --> 00:52:09,589
+from a networking perspective that would
+
+1699
+00:52:09,599 --> 00:52:10,950
+obviously be possible if you don't do
+
+1700
+00:52:10,960 --> 00:52:12,069
+the isolation
+
+1701
+00:52:12,079 --> 00:52:13,589
+for this purpose the concept of
+
+1702
+00:52:13,599 --> 00:52:15,349
+namespaces has been
+
+1703
+00:52:15,359 --> 00:52:17,750
+has been created actually much longer
+
+1704
+00:52:17,760 --> 00:52:19,670
+than containers exist as a concept it's
+
+1705
+00:52:19,680 --> 00:52:20,549
+been
+
+1706
+00:52:20,559 --> 00:52:22,950
+many many many many years and then later
+
+1707
+00:52:22,960 --> 00:52:24,549
+on the concept of c groups have been
+
+1708
+00:52:24,559 --> 00:52:25,670
+introduced as well
+
+1709
+00:52:25,680 --> 00:52:27,910
+it's all about making the littles code
+
+1710
+00:52:27,920 --> 00:52:29,910
+multi-tenant so multiple
+
+1711
+00:52:29,920 --> 00:52:31,910
+multiple applications multiple tenants
+
+1712
+00:52:31,920 --> 00:52:33,589
+can operate a single system
+
+1713
+00:52:33,599 --> 00:52:35,430
+without necessarily trusting each other
+
+1714
+00:52:35,440 --> 00:52:37,589
+and by providing isolation on all levels
+
+1715
+00:52:37,599 --> 00:52:39,109
+cpu memory
+
+1716
+00:52:39,119 --> 00:52:42,150
+uh networking storage file system mounts
+
+1717
+00:52:42,160 --> 00:52:44,230
+users and so on yeah and this is where
+
+1718
+00:52:44,240 --> 00:52:46,150
+that benefit of the kernel almost being
+
+1719
+00:52:46,160 --> 00:52:46,710
+that
+
+1720
+00:52:46,720 --> 00:52:48,710
+chokepoint helps because now it can
+
+1721
+00:52:48,720 --> 00:52:50,790
+filter syscalls that are
+
+1722
+00:52:50,800 --> 00:52:52,710
+accessing these items based on those c
+
+1723
+00:52:52,720 --> 00:52:54,710
+groups and that's where you know you can
+
+1724
+00:52:54,720 --> 00:52:57,589
+start leveraging ebpf to hook into that
+
+1725
+00:52:57,599 --> 00:52:59,510
+but to kind of dive into some examples
+
+1726
+00:52:59,520 --> 00:53:01,270
+here so
+
+1727
+00:53:01,280 --> 00:53:05,030
+how would you roll out ebpf in something
+
+1728
+00:53:05,040 --> 00:53:06,630
+like a microservice environment
+
+1729
+00:53:06,640 --> 00:53:08,549
+you know for things like observability
+
+1730
+00:53:08,559 --> 00:53:10,150
+networking security
+
+1731
+00:53:10,160 --> 00:53:11,750
+i know that's a lot of what psyllium is
+
+1732
+00:53:11,760 --> 00:53:14,230
+actually capable of doing
+
+1733
+00:53:14,240 --> 00:53:16,790
+yes so so suleiman is a networking and
+
+1734
+00:53:16,800 --> 00:53:18,630
+security layer for specifically for
+
+1735
+00:53:18,640 --> 00:53:21,670
+kubernetes cloud native and for
+
+1736
+00:53:21,680 --> 00:53:22,630
+networking
+
+1737
+00:53:22,640 --> 00:53:25,270
+you typically we can use the specific
+
+1738
+00:53:25,280 --> 00:53:26,150
+example of
+
+1739
+00:53:26,160 --> 00:53:28,230
+kubernetes which i guess is the most
+
+1740
+00:53:28,240 --> 00:53:29,750
+most most dominant uh
+
+1741
+00:53:29,760 --> 00:53:31,750
+container platform right now you you
+
+1742
+00:53:31,760 --> 00:53:33,750
+typically come as a so-called cni
+
+1743
+00:53:33,760 --> 00:53:35,349
+plug-in like containing an orchid
+
+1744
+00:53:35,359 --> 00:53:37,190
+interface at that point
+
+1745
+00:53:37,200 --> 00:53:39,109
+you are the the component that is
+
+1746
+00:53:39,119 --> 00:53:40,870
+responsible for
+
+1747
+00:53:40,880 --> 00:53:43,349
+allowing containers to to communicate
+
+1748
+00:53:43,359 --> 00:53:44,470
+with each other like
+
+1749
+00:53:44,480 --> 00:53:46,390
+contain to container and also how to
+
+1750
+00:53:46,400 --> 00:53:47,910
+communicate to the outside world
+
+1751
+00:53:47,920 --> 00:53:50,150
+and how how to allow the outside world
+
+1752
+00:53:50,160 --> 00:53:51,990
+to talk to containers
+
+1753
+00:53:52,000 --> 00:53:54,950
+and in that sense the cni plugin that
+
+1754
+00:53:54,960 --> 00:53:56,549
+actually has a lot of freedom on how to
+
+1755
+00:53:56,559 --> 00:53:57,270
+do this
+
+1756
+00:53:57,280 --> 00:54:00,549
+specifically most cnr plugins will use
+
+1757
+00:54:00,559 --> 00:54:04,069
+so-called virtual ethernet pairs to
+
+1758
+00:54:04,079 --> 00:54:07,510
+create a virtual virtual ethernet cable
+
+1759
+00:54:07,520 --> 00:54:08,309
+basically
+
+1760
+00:54:08,319 --> 00:54:11,030
+between the network namespace of the the
+
+1761
+00:54:11,040 --> 00:54:11,829
+container
+
+1762
+00:54:11,839 --> 00:54:13,670
+and what's called the host namespace so
+
+1763
+00:54:13,680 --> 00:54:15,349
+like there's always like
+
+1764
+00:54:15,359 --> 00:54:17,910
+namespaces and and c groups are almost
+
+1765
+00:54:17,920 --> 00:54:18,950
+always um
+
+1766
+00:54:18,960 --> 00:54:20,630
+like in you know come in the form of a
+
+1767
+00:54:20,640 --> 00:54:22,390
+tree so you have like an init or a
+
+1768
+00:54:22,400 --> 00:54:24,230
+hostname space or a c group and then you
+
+1769
+00:54:24,240 --> 00:54:25,030
+can
+
+1770
+00:54:25,040 --> 00:54:26,790
+go down into multiple levels so you need
+
+1771
+00:54:26,800 --> 00:54:28,069
+to bridge the
+
+1772
+00:54:28,079 --> 00:54:29,910
+the container namespace with the actual
+
+1773
+00:54:29,920 --> 00:54:31,589
+host and then also bridge that
+
+1774
+00:54:31,599 --> 00:54:33,190
+out to the outside world this is what
+
+1775
+00:54:33,200 --> 00:54:34,790
+the cni does and that
+
+1776
+00:54:34,800 --> 00:54:36,789
+that gives the opportunity to attach an
+
+1777
+00:54:36,799 --> 00:54:38,789
+ebpf program
+
+1778
+00:54:38,799 --> 00:54:40,789
+to that virtual ethernet cable so it
+
+1779
+00:54:40,799 --> 00:54:42,470
+sees and controls all of the network
+
+1780
+00:54:42,480 --> 00:54:43,750
+packets that come in and out of a
+
+1781
+00:54:43,760 --> 00:54:44,710
+container
+
+1782
+00:54:44,720 --> 00:54:47,750
+and for the case of of system calls
+
+1783
+00:54:47,760 --> 00:54:50,549
+you would typically attach the ebpf
+
+1784
+00:54:50,559 --> 00:54:51,430
+program
+
+1785
+00:54:51,440 --> 00:54:54,710
+to the c group so all of the system
+
+1786
+00:54:54,720 --> 00:54:55,589
+calls being done
+
+1787
+00:54:55,599 --> 00:54:57,349
+in the concept of that c group which
+
+1788
+00:54:57,359 --> 00:54:59,109
+then is equivalent to
+
+1789
+00:54:59,119 --> 00:55:00,549
+all of the system calls being done in
+
+1790
+00:55:00,559 --> 00:55:02,470
+that container would go through that
+
+1791
+00:55:02,480 --> 00:55:04,069
+ebpf program as well so
+
+1792
+00:55:04,079 --> 00:55:06,549
+you're using the kernel level constructs
+
+1793
+00:55:06,559 --> 00:55:08,789
+which are used to build containers
+
+1794
+00:55:08,799 --> 00:55:12,150
+as a way to integrate into containers
+
+1795
+00:55:12,160 --> 00:55:13,990
+okay and that's almost something like
+
+1796
+00:55:14,000 --> 00:55:15,990
+where falco would almost hook into that
+
+1797
+00:55:16,000 --> 00:55:16,870
+system that's
+
+1798
+00:55:16,880 --> 00:55:19,430
+using that evpf and filtering based on
+
+1799
+00:55:19,440 --> 00:55:20,710
+those c groups and
+
+1800
+00:55:20,720 --> 00:55:23,109
+then looking at the specific sys calls
+
+1801
+00:55:23,119 --> 00:55:25,030
+coming from those specific containers
+
+1802
+00:55:25,040 --> 00:55:28,309
+exactly yes yeah and back on episode 341
+
+1803
+00:55:28,319 --> 00:55:29,430
+i know we discussed a little bit about
+
+1804
+00:55:29,440 --> 00:55:31,589
+container networking and on 290 we
+
+1805
+00:55:31,599 --> 00:55:33,270
+discussed some stuff around docker and
+
+1806
+00:55:33,280 --> 00:55:34,069
+security and
+
+1807
+00:55:34,079 --> 00:55:35,750
+some of this lower level stuff and how
+
+1808
+00:55:35,760 --> 00:55:37,430
+this isolation works
+
+1809
+00:55:37,440 --> 00:55:39,270
+but just to kind of dive into some
+
+1810
+00:55:39,280 --> 00:55:41,190
+specific examples here
+
+1811
+00:55:41,200 --> 00:55:43,190
+with observability you know we've kind
+
+1812
+00:55:43,200 --> 00:55:44,789
+of mentioned tracing
+
+1813
+00:55:44,799 --> 00:55:47,190
+would i hook my ebpf program into some
+
+1814
+00:55:47,200 --> 00:55:49,349
+type of overall like distributed tracing
+
+1815
+00:55:49,359 --> 00:55:50,069
+framework
+
+1816
+00:55:50,079 --> 00:55:53,670
+or is it really just like pod specific
+
+1817
+00:55:53,680 --> 00:55:56,950
+for kubernetes for example both actually
+
+1818
+00:55:56,960 --> 00:55:57,510
+so
+
+1819
+00:55:57,520 --> 00:56:00,150
+in the case of psyllium you offer kind
+
+1820
+00:56:00,160 --> 00:56:00,630
+of
+
+1821
+00:56:00,640 --> 00:56:02,549
+all the way from low level network flow
+
+1822
+00:56:02,559 --> 00:56:03,829
+logs what you would expect from a
+
+1823
+00:56:03,839 --> 00:56:04,950
+typical network
+
+1824
+00:56:04,960 --> 00:56:07,030
+layer all the way into higher level
+
+1825
+00:56:07,040 --> 00:56:08,789
+tracing languages like such as open
+
+1826
+00:56:08,799 --> 00:56:09,829
+tracing
+
+1827
+00:56:09,839 --> 00:56:11,589
+tracing information that you would
+
+1828
+00:56:11,599 --> 00:56:13,430
+typically only expect from the
+
+1829
+00:56:13,440 --> 00:56:15,109
+application levels like understanding of
+
+1830
+00:56:15,119 --> 00:56:16,630
+http calls
+
+1831
+00:56:16,640 --> 00:56:20,470
+cough cut topics grpc calls
+
+1832
+00:56:20,480 --> 00:56:22,789
+and so on dns information like high
+
+1833
+00:56:22,799 --> 00:56:24,950
+level like clearly beyond what you would
+
+1834
+00:56:24,960 --> 00:56:26,150
+typically get from a network
+
+1835
+00:56:26,160 --> 00:56:27,430
+observability platform
+
+1836
+00:56:27,440 --> 00:56:29,990
+but also we can do both and that's the
+
+1837
+00:56:30,000 --> 00:56:30,710
+that's a
+
+1838
+00:56:30,720 --> 00:56:32,390
+really part of the really powerful
+
+1839
+00:56:32,400 --> 00:56:33,910
+aspect of ebpf because
+
+1840
+00:56:33,920 --> 00:56:35,829
+we can combine what we see on the
+
+1841
+00:56:35,839 --> 00:56:37,670
+network level from a packet perspective
+
+1842
+00:56:37,680 --> 00:56:39,829
+but that we can also hook into for
+
+1843
+00:56:39,839 --> 00:56:41,510
+example the socket layer and understand
+
+1844
+00:56:41,520 --> 00:56:43,510
+the data that an application sends or
+
+1845
+00:56:43,520 --> 00:56:44,309
+receives
+
+1846
+00:56:44,319 --> 00:56:47,349
+or even instrument envoy um which is the
+
+1847
+00:56:47,359 --> 00:56:49,109
+the layer four proxy that cilium uses
+
+1848
+00:56:49,119 --> 00:56:50,950
+for some of the http parsing
+
+1849
+00:56:50,960 --> 00:56:52,950
+and get information from that as well
+
+1850
+00:56:52,960 --> 00:56:54,230
+that's that's the
+
+1851
+00:56:54,240 --> 00:56:56,870
+the the true power of it because ebpf
+
+1852
+00:56:56,880 --> 00:56:57,990
+can be used to glue
+
+1853
+00:56:58,000 --> 00:56:59,670
+everything together and then combine all
+
+1854
+00:56:59,680 --> 00:57:01,430
+of that information to probably
+
+1855
+00:57:01,440 --> 00:57:03,349
+provide a very meaningful visibility
+
+1856
+00:57:03,359 --> 00:57:05,510
+layer that's that goes well beyond what
+
+1857
+00:57:05,520 --> 00:57:06,309
+you would
+
+1858
+00:57:06,319 --> 00:57:08,630
+what typically existed so far yes so
+
+1859
+00:57:08,640 --> 00:57:10,150
+you're almost getting that full stack
+
+1860
+00:57:10,160 --> 00:57:11,510
+monitoring capability from an
+
+1861
+00:57:11,520 --> 00:57:13,589
+observability perspective so this would
+
+1862
+00:57:13,599 --> 00:57:17,270
+almost replace or at least supplement
+
+1863
+00:57:17,280 --> 00:57:19,430
+something like putting like an apm
+
+1864
+00:57:19,440 --> 00:57:21,829
+library into my specific code
+
+1865
+00:57:21,839 --> 00:57:24,630
+or you know having all of my engineers
+
+1866
+00:57:24,640 --> 00:57:25,270
+implement
+
+1867
+00:57:25,280 --> 00:57:28,789
+you know open trace this is almost that
+
+1868
+00:57:28,799 --> 00:57:30,630
+i can get this same level of
+
+1869
+00:57:30,640 --> 00:57:32,069
+observability without having to make
+
+1870
+00:57:32,079 --> 00:57:33,510
+every engineer rewrite every piece of
+
+1871
+00:57:33,520 --> 00:57:34,549
+code
+
+1872
+00:57:34,559 --> 00:57:37,030
+yeah absolutely and the real powerful
+
+1873
+00:57:37,040 --> 00:57:38,309
+part here is that
+
+1874
+00:57:38,319 --> 00:57:39,910
+this will work even for applications
+
+1875
+00:57:39,920 --> 00:57:41,589
+that you don't want to change anymore
+
+1876
+00:57:41,599 --> 00:57:42,069
+right
+
+1877
+00:57:42,079 --> 00:57:44,470
+um in a lot of scenarios you don't even
+
+1878
+00:57:44,480 --> 00:57:45,829
+you may not even have access to the
+
+1879
+00:57:45,839 --> 00:57:46,630
+source code so
+
+1880
+00:57:46,640 --> 00:57:48,390
+the option it it's not the decision
+
+1881
+00:57:48,400 --> 00:57:50,150
+whether you want to change
+
+1882
+00:57:50,160 --> 00:57:51,589
+or don't want to change your application
+
+1883
+00:57:51,599 --> 00:57:53,510
+you just don't for some applications you
+
+1884
+00:57:53,520 --> 00:57:54,549
+can't you're running
+
+1885
+00:57:54,559 --> 00:57:56,470
+a proprietary piece of code and you
+
+1886
+00:57:56,480 --> 00:57:58,230
+still want to instrument it or you want
+
+1887
+00:57:58,240 --> 00:58:00,069
+to understand what type of http calls
+
+1888
+00:58:00,079 --> 00:58:01,109
+are going on
+
+1889
+00:58:01,119 --> 00:58:02,789
+what is the latency how long does it
+
+1890
+00:58:02,799 --> 00:58:04,150
+take for a
+
+1891
+00:58:04,160 --> 00:58:06,710
+rest api to respond and maybe you don't
+
+1892
+00:58:06,720 --> 00:58:07,990
+have access to the source because maybe
+
+1893
+00:58:08,000 --> 00:58:09,910
+you cannot add instrumentation code and
+
+1894
+00:58:09,920 --> 00:58:11,510
+this is where ebpf comes in and you can
+
+1895
+00:58:11,520 --> 00:58:13,430
+do this at multiple levels you can
+
+1896
+00:58:13,440 --> 00:58:14,870
+combine the visibility you have at the
+
+1897
+00:58:14,880 --> 00:58:17,349
+network layer and then also instrument
+
+1898
+00:58:17,359 --> 00:58:19,750
+with ebpm for example the http layer of
+
+1899
+00:58:19,760 --> 00:58:21,349
+the application such as the
+
+1900
+00:58:21,359 --> 00:58:24,549
+http goal library and for example add
+
+1901
+00:58:24,559 --> 00:58:26,309
+trace points to figure out how long does
+
+1902
+00:58:26,319 --> 00:58:28,309
+it take to decode and parse an http
+
+1903
+00:58:28,319 --> 00:58:29,589
+header how long did it take
+
+1904
+00:58:29,599 --> 00:58:31,510
+for the application to respond and so on
+
+1905
+00:58:31,520 --> 00:58:33,109
+and combine all of that so you can
+
+1906
+00:58:33,119 --> 00:58:34,230
+answer questions
+
+1907
+00:58:34,240 --> 00:58:36,390
+is the application slow is the network's
+
+1908
+00:58:36,400 --> 00:58:38,230
+low is it tcp
+
+1909
+00:58:38,240 --> 00:58:40,630
+is it like overall cpu on the system you
+
+1910
+00:58:40,640 --> 00:58:41,670
+can correlate
+
+1911
+00:58:41,680 --> 00:58:43,270
+what you see in terms of latency with
+
+1912
+00:58:43,280 --> 00:58:45,270
+for example tcp re-transmission so you
+
+1913
+00:58:45,280 --> 00:58:46,789
+understand whether maybe it's a lossy
+
+1914
+00:58:46,799 --> 00:58:47,750
+network and
+
+1915
+00:58:47,760 --> 00:58:49,270
+this this is the really interesting part
+
+1916
+00:58:49,280 --> 00:58:51,430
+you can combine all of this
+
+1917
+00:58:51,440 --> 00:58:53,030
+which gives you a very compelling
+
+1918
+00:58:53,040 --> 00:58:55,190
+compelling visibility layer like a true
+
+1919
+00:58:55,200 --> 00:58:56,630
+answer
+
+1920
+00:58:56,640 --> 00:58:58,789
+which was just not available for evpf
+
+1921
+00:58:58,799 --> 00:59:00,309
+not because the information did not
+
+1922
+00:59:00,319 --> 00:59:01,829
+exist but simply it was
+
+1923
+00:59:01,839 --> 00:59:04,549
+spread across multiple systems typically
+
+1924
+00:59:04,559 --> 00:59:05,190
+yes so
+
+1925
+00:59:05,200 --> 00:59:07,109
+how does this compare to something like
+
+1926
+00:59:07,119 --> 00:59:09,109
+an istio service mesh
+
+1927
+00:59:09,119 --> 00:59:11,430
+that's an interesting question uh we get
+
+1928
+00:59:11,440 --> 00:59:12,309
+that a lot and
+
+1929
+00:59:12,319 --> 00:59:15,270
+there's a lot of overlapping in kind of
+
+1930
+00:59:15,280 --> 00:59:17,190
+the values we provide like
+
+1931
+00:59:17,200 --> 00:59:20,390
+service mesh psyllium the
+
+1932
+00:59:20,400 --> 00:59:23,829
+the ask or the the promise is to provide
+
+1933
+00:59:23,839 --> 00:59:26,390
+visibility into applications network
+
+1934
+00:59:26,400 --> 00:59:28,150
+service calls and so on a transparent
+
+1935
+00:59:28,160 --> 00:59:28,710
+matter
+
+1936
+00:59:28,720 --> 00:59:30,309
+the implementation is very different
+
+1937
+00:59:30,319 --> 00:59:32,069
+like service mesh or istio typically
+
+1938
+00:59:32,079 --> 00:59:32,870
+uses
+
+1939
+00:59:32,880 --> 00:59:35,349
+what's what's called sidecar proxies um
+
+1940
+00:59:35,359 --> 00:59:36,069
+to inject
+
+1941
+00:59:36,079 --> 00:59:39,030
+uh proxies into the application parts
+
+1942
+00:59:39,040 --> 00:59:39,589
+and to
+
+1943
+00:59:39,599 --> 00:59:41,670
+to extract visibility from there the
+
+1944
+00:59:41,680 --> 00:59:44,230
+outcome is similar you get a transparent
+
+1945
+00:59:44,240 --> 00:59:47,510
+you get a piece of code that
+
+1946
+00:59:47,520 --> 00:59:48,950
+sits in there transparently and can
+
+1947
+00:59:48,960 --> 00:59:50,789
+observe and control like
+
+1948
+00:59:50,799 --> 00:59:52,230
+in the service measure is the case it's
+
+1949
+00:59:52,240 --> 00:59:54,150
+the sidecar it for still limits the ebpf
+
+1950
+00:59:54,160 --> 00:59:54,870
+program
+
+1951
+00:59:54,880 --> 00:59:56,710
+the big difference is that there's
+
+1952
+00:59:56,720 --> 00:59:58,150
+always like an
+
+1953
+00:59:58,160 --> 01:00:00,150
+a latency and an overall performance
+
+1954
+01:00:00,160 --> 01:00:02,230
+overhead between sidecar and
+
+1955
+01:00:02,240 --> 01:00:04,150
+and ebpf and we could talk a long time
+
+1956
+01:00:04,160 --> 01:00:05,510
+about about that
+
+1957
+01:00:05,520 --> 01:00:07,829
+but i think the even more fundamental
+
+1958
+01:00:07,839 --> 01:00:09,109
+difference is that
+
+1959
+01:00:09,119 --> 01:00:12,309
+service mesh typically relies on
+
+1960
+01:00:12,319 --> 01:00:13,750
+for a lot of the functionality to kind
+
+1961
+01:00:13,760 --> 01:00:15,510
+of have end-to-end visibility you need
+
+1962
+01:00:15,520 --> 01:00:17,190
+to have the side car proxies on both
+
+1963
+01:00:17,200 --> 01:00:19,190
+sides for example mutual tls will not
+
+1964
+01:00:19,200 --> 01:00:20,390
+work if you
+
+1965
+01:00:20,400 --> 01:00:22,710
+if you don't have sidecars on both sides
+
+1966
+01:00:22,720 --> 01:00:25,109
+uh with a lot of what psyllium is doing
+
+1967
+01:00:25,119 --> 01:00:26,630
+because it's integrating on the kernel
+
+1968
+01:00:26,640 --> 01:00:28,230
+level it does not require
+
+1969
+01:00:28,240 --> 01:00:30,309
+to have this it doesn't need does not
+
+1970
+01:00:30,319 --> 01:00:32,309
+require to manage both sides
+
+1971
+01:00:32,319 --> 01:00:34,870
+you can easily do for example http
+
+1972
+01:00:34,880 --> 01:00:36,150
+latency tracing
+
+1973
+01:00:36,160 --> 01:00:38,470
+while only running on one side of the of
+
+1974
+01:00:38,480 --> 01:00:39,349
+the connection so
+
+1975
+01:00:39,359 --> 01:00:41,270
+only for example the client is somewhere
+
+1976
+01:00:41,280 --> 01:00:42,390
+else and you're not controlling the
+
+1977
+01:00:42,400 --> 01:00:43,829
+client you can still measure http
+
+1978
+01:00:43,839 --> 01:00:45,270
+latencies for example
+
+1979
+01:00:45,280 --> 01:00:48,230
+but overall i think you can get the same
+
+1980
+01:00:48,240 --> 01:00:49,750
+or very similar information from both
+
+1981
+01:00:49,760 --> 01:00:51,030
+systems
+
+1982
+01:00:51,040 --> 01:00:52,789
+yeah it's and we've discussed i think
+
+1983
+01:00:52,799 --> 01:00:55,030
+back in episode 361
+
+1984
+01:00:55,040 --> 01:00:56,309
+more on the seo service mess
+
+1985
+01:00:56,319 --> 01:00:57,670
+specifically but as you kind of
+
+1986
+01:00:57,680 --> 01:00:59,589
+mentioned it's all dependent on
+
+1987
+01:00:59,599 --> 01:01:02,470
+the proxy and the sidecar being able to
+
+1988
+01:01:02,480 --> 01:01:03,910
+work on both ends of the connection and
+
+1989
+01:01:03,920 --> 01:01:05,270
+you get some of those benefits like
+
+1990
+01:01:05,280 --> 01:01:06,870
+you know mutual tls and some of those
+
+1991
+01:01:06,880 --> 01:01:08,630
+other security benefits but as you
+
+1992
+01:01:08,640 --> 01:01:09,670
+mentioned if you don't control the
+
+1993
+01:01:09,680 --> 01:01:10,789
+client
+
+1994
+01:01:10,799 --> 01:01:12,390
+you're missing half the connections so
+
+1995
+01:01:12,400 --> 01:01:15,109
+there's not really as much value there
+
+1996
+01:01:15,119 --> 01:01:17,430
+and you're also adding like a latency
+
+1997
+01:01:17,440 --> 01:01:19,030
+overhead for
+
+1998
+01:01:19,040 --> 01:01:20,390
+all of these connection calls whereas
+
+1999
+01:01:20,400 --> 01:01:21,910
+with ebpf i mean as you mentioned
+
+2000
+01:01:21,920 --> 01:01:22,710
+earlier
+
+2001
+01:01:22,720 --> 01:01:25,750
+it's near execution time
+
+2002
+01:01:25,760 --> 01:01:27,750
+exactly and i think the other thing to
+
+2003
+01:01:27,760 --> 01:01:29,349
+mention here is that
+
+2004
+01:01:29,359 --> 01:01:32,230
+the sidecar will only see like layers
+
+2005
+01:01:32,240 --> 01:01:34,309
+layer four and up right like
+
+2006
+01:01:34,319 --> 01:01:35,589
+you don't have and you have any
+
+2007
+01:01:35,599 --> 01:01:37,190
+visibility what's going on in the kernel
+
+2008
+01:01:37,200 --> 01:01:38,870
+so you cannot correlate this information
+
+2009
+01:01:38,880 --> 01:01:40,710
+with for example network visibility or
+
+2010
+01:01:40,720 --> 01:01:42,390
+network layer information or tcp
+
+2011
+01:01:42,400 --> 01:01:43,990
+retransmissions and so on
+
+2012
+01:01:44,000 --> 01:01:45,510
+you cannot answer the question whether
+
+2013
+01:01:45,520 --> 01:01:47,270
+it's network or application
+
+2014
+01:01:47,280 --> 01:01:50,710
+all you see is kind of sidecar and up
+
+2015
+01:01:50,720 --> 01:01:52,710
+there's also just a complexity overhead
+
+2016
+01:01:52,720 --> 01:01:54,309
+i think
+
+2017
+01:01:54,319 --> 01:01:56,470
+the the real benefit from like the ebpf
+
+2018
+01:01:56,480 --> 01:01:59,109
+model is that from a user perspective
+
+2019
+01:01:59,119 --> 01:02:01,589
+nothing changes right like the kernel is
+
+2020
+01:02:01,599 --> 01:02:02,390
+to most people is
+
+2021
+01:02:02,400 --> 01:02:03,750
+it's basically already this huge big
+
+2022
+01:02:03,760 --> 01:02:06,150
+black box and you're adding pro
+
+2023
+01:02:06,160 --> 01:02:08,309
+programs into the kernel and it will do
+
+2024
+01:02:08,319 --> 01:02:10,069
+address or kind of extract visibilities
+
+2025
+01:02:10,079 --> 01:02:11,910
+you're not changing anything from
+
+2026
+01:02:11,920 --> 01:02:14,390
+how it looks to the end to the end user
+
+2027
+01:02:14,400 --> 01:02:16,230
+whereas in the service mesh
+
+2028
+01:02:16,240 --> 01:02:19,349
+model you're definitely changing in way
+
+2029
+01:02:19,359 --> 01:02:20,309
+i mean the site
+
+2030
+01:02:20,319 --> 01:02:22,150
+is visible to application developers
+
+2031
+01:02:22,160 --> 01:02:24,150
+it's running as as part of the
+
+2032
+01:02:24,160 --> 01:02:27,029
+kubernetes pod which is typically owned
+
+2033
+01:02:27,039 --> 01:02:28,309
+by the application team so it's
+
+2034
+01:02:28,319 --> 01:02:28,789
+definitely
+
+2035
+01:02:28,799 --> 01:02:30,630
+visible to some extent and you're
+
+2036
+01:02:30,640 --> 01:02:31,910
+changing
+
+2037
+01:02:31,920 --> 01:02:33,750
+you're changing how the network flows or
+
+2038
+01:02:33,760 --> 01:02:35,750
+happening and so it's definitely a
+
+2039
+01:02:35,760 --> 01:02:39,109
+a more involved architectural change
+
+2040
+01:02:39,119 --> 01:02:41,910
+and that's and that's a i don't want to
+
+2041
+01:02:41,920 --> 01:02:42,309
+bash
+
+2042
+01:02:42,319 --> 01:02:44,710
+service mesh too much i think a lot of
+
+2043
+01:02:44,720 --> 01:02:45,990
+what service mesh is bringing is
+
+2044
+01:02:46,000 --> 01:02:46,549
+actually
+
+2045
+01:02:46,559 --> 01:02:48,630
+absolutely fantastic i'm not 100 in
+
+2046
+01:02:48,640 --> 01:02:50,150
+agreement with the current cycle
+
+2047
+01:02:50,160 --> 01:02:51,430
+implementation model
+
+2048
+01:02:51,440 --> 01:02:53,349
+i think what we will see longer term is
+
+2049
+01:02:53,359 --> 01:02:54,950
+that the
+
+2050
+01:02:54,960 --> 01:02:58,069
+the control plane and the the the user
+
+2051
+01:02:58,079 --> 01:02:59,670
+interfaces of service mesh
+
+2052
+01:02:59,680 --> 01:03:02,549
+will continue to exist and i think we'll
+
+2053
+01:03:02,559 --> 01:03:02,950
+see
+
+2054
+01:03:02,960 --> 01:03:04,549
+more and more of the side car or the
+
+2055
+01:03:04,559 --> 01:03:06,150
+more and more of the service mesh data
+
+2056
+01:03:06,160 --> 01:03:07,510
+plane to be implemented by something
+
+2057
+01:03:07,520 --> 01:03:09,750
+like cilium or ebpf where
+
+2058
+01:03:09,760 --> 01:03:11,109
+you still get the same high level
+
+2059
+01:03:11,119 --> 01:03:12,390
+benefits but you will have a more
+
+2060
+01:03:12,400 --> 01:03:13,029
+efficient
+
+2061
+01:03:13,039 --> 01:03:15,910
+data plane implementation yes so you'll
+
+2062
+01:03:15,920 --> 01:03:17,430
+essentially start to see
+
+2063
+01:03:17,440 --> 01:03:19,109
+as i can imagine like with the mutual
+
+2064
+01:03:19,119 --> 01:03:20,789
+tls like that might still exist within
+
+2065
+01:03:20,799 --> 01:03:22,230
+that service mesh layer
+
+2066
+01:03:22,240 --> 01:03:23,670
+you know some of the you know pot
+
+2067
+01:03:23,680 --> 01:03:26,069
+authentication might still live within
+
+2068
+01:03:26,079 --> 01:03:28,390
+that control plane service mesh but when
+
+2069
+01:03:28,400 --> 01:03:29,910
+we start talking about like lower level
+
+2070
+01:03:29,920 --> 01:03:31,750
+observability and application tracing
+
+2071
+01:03:31,760 --> 01:03:33,190
+and network tracing
+
+2072
+01:03:33,200 --> 01:03:35,109
+that's going to start to maybe migrate
+
+2073
+01:03:35,119 --> 01:03:37,349
+into the closer to the kernel world
+
+2074
+01:03:37,359 --> 01:03:38,630
+where
+
+2075
+01:03:38,640 --> 01:03:40,309
+you know you're preserving kind of the
+
+2076
+01:03:40,319 --> 01:03:41,750
+black box layer between
+
+2077
+01:03:41,760 --> 01:03:45,109
+you know the kernel and user space
+
+2078
+01:03:45,119 --> 01:03:47,510
+absolutely i think there's even a like a
+
+2079
+01:03:47,520 --> 01:03:48,950
+more fundamental difference here which
+
+2080
+01:03:48,960 --> 01:03:49,589
+is
+
+2081
+01:03:49,599 --> 01:03:51,029
+or like another very fundamental
+
+2082
+01:03:51,039 --> 01:03:52,630
+interesting point which is
+
+2083
+01:03:52,640 --> 01:03:54,309
+salim can for example do policy what's
+
+2084
+01:03:54,319 --> 01:03:56,309
+called policy driven tls termination so
+
+2085
+01:03:56,319 --> 01:03:56,950
+you can
+
+2086
+01:03:56,960 --> 01:03:58,630
+you can terminate the tls connection on
+
+2087
+01:03:58,640 --> 01:04:00,470
+behalf of the application you can also
+
+2088
+01:04:00,480 --> 01:04:01,910
+do this with service mesh there's a
+
+2089
+01:04:01,920 --> 01:04:03,270
+difference here though that
+
+2090
+01:04:03,280 --> 01:04:05,510
+if you throw this as part of a sidecar
+
+2091
+01:04:05,520 --> 01:04:06,470
+you are
+
+2092
+01:04:06,480 --> 01:04:08,390
+within the bounds of the part within the
+
+2093
+01:04:08,400 --> 01:04:10,150
+parts within the bounds of what's owned
+
+2094
+01:04:10,160 --> 01:04:11,670
+by the application so if that
+
+2095
+01:04:11,680 --> 01:04:13,910
+application gets compromised in some way
+
+2096
+01:04:13,920 --> 01:04:15,510
+whatever the sidecar is doing is
+
+2097
+01:04:15,520 --> 01:04:17,829
+also gets compromised in the case of
+
+2098
+01:04:17,839 --> 01:04:20,150
+psyllium and with evpf we can do this
+
+2099
+01:04:20,160 --> 01:04:21,990
+outside of the part so it's outside of
+
+2100
+01:04:22,000 --> 01:04:23,510
+the control of the application
+
+2101
+01:04:23,520 --> 01:04:25,430
+which is really interesting if you are
+
+2102
+01:04:25,440 --> 01:04:27,190
+running untrusted workloads so if you
+
+2103
+01:04:27,200 --> 01:04:29,190
+cannot fully trust
+
+2104
+01:04:29,200 --> 01:04:30,789
+the workloads that you're running in
+
+2105
+01:04:30,799 --> 01:04:32,549
+your clusters but you still need for
+
+2106
+01:04:32,559 --> 01:04:34,470
+example tls termination or you want
+
+2107
+01:04:34,480 --> 01:04:36,549
+token injection and want to use certain
+
+2108
+01:04:36,559 --> 01:04:37,589
+and want to
+
+2109
+01:04:37,599 --> 01:04:38,789
+force certain services to use
+
+2110
+01:04:38,799 --> 01:04:40,390
+certificates or keys in order to access
+
+2111
+01:04:40,400 --> 01:04:41,670
+an external service
+
+2112
+01:04:41,680 --> 01:04:44,630
+with ebpf we can do this outside of the
+
+2113
+01:04:44,640 --> 01:04:45,109
+pod
+
+2114
+01:04:45,119 --> 01:04:47,190
+which means you can you can run fully
+
+2115
+01:04:47,200 --> 01:04:48,870
+untrusted for clouds and don't have to
+
+2116
+01:04:48,880 --> 01:04:50,710
+expose any secrets or certificates to
+
+2117
+01:04:50,720 --> 01:04:51,430
+them
+
+2118
+01:04:51,440 --> 01:04:53,829
+okay so when you get the proprietary
+
+2119
+01:04:53,839 --> 01:04:55,750
+black box from your vendor you can still
+
+2120
+01:04:55,760 --> 01:04:57,190
+you know inject some of the security
+
+2121
+01:04:57,200 --> 01:04:58,710
+that you want in there exactly yeah
+
+2122
+01:04:58,720 --> 01:05:00,069
+that's that's a that's the common use
+
+2123
+01:05:00,079 --> 01:05:01,430
+case
+
+2124
+01:05:01,440 --> 01:05:03,270
+so i just want to wrap up the show now
+
+2125
+01:05:03,280 --> 01:05:04,789
+and start closing this out
+
+2126
+01:05:04,799 --> 01:05:06,710
+so what are some resources you would
+
+2127
+01:05:06,720 --> 01:05:08,230
+direct people to
+
+2128
+01:05:08,240 --> 01:05:10,630
+if they want to learn more about evpf
+
+2129
+01:05:10,640 --> 01:05:12,630
+they want to learn more about xtp
+
+2130
+01:05:12,640 --> 01:05:14,470
+you know writing this code something
+
+2131
+01:05:14,480 --> 01:05:17,109
+like psyllium and where that fits in
+
+2132
+01:05:17,119 --> 01:05:19,349
+yes so i think the best starting point
+
+2133
+01:05:19,359 --> 01:05:22,549
+is a website called ebpf.org
+
+2134
+01:05:22,559 --> 01:05:24,470
+it's a community-owned website that we
+
+2135
+01:05:24,480 --> 01:05:26,230
+have launched a couple of months ago
+
+2136
+01:05:26,240 --> 01:05:28,390
+it will give you an overview of ebpf
+
+2137
+01:05:28,400 --> 01:05:30,230
+basically everything we covered today
+
+2138
+01:05:30,240 --> 01:05:32,230
+and also list all of the projects that
+
+2139
+01:05:32,240 --> 01:05:34,390
+exist in the ebpf ecosystem so if you're
+
+2140
+01:05:34,400 --> 01:05:35,750
+interested in tracing what are the
+
+2141
+01:05:35,760 --> 01:05:37,510
+projects that exist around tracing if
+
+2142
+01:05:37,520 --> 01:05:39,029
+you want system call
+
+2143
+01:05:39,039 --> 01:05:41,109
+security what projects exist if you need
+
+2144
+01:05:41,119 --> 01:05:42,390
+container networking what are the
+
+2145
+01:05:42,400 --> 01:05:44,390
+projects that exist and so on
+
+2146
+01:05:44,400 --> 01:05:47,029
+we also have a eppf slack community uh
+
+2147
+01:05:47,039 --> 01:05:47,829
+ebpf
+
+2148
+01:05:47,839 --> 01:05:51,190
+dot io slack that link is also an ebpfio
+
+2149
+01:05:51,200 --> 01:05:54,150
+hundreds of ebpf developers or other
+
+2150
+01:05:54,160 --> 01:05:55,670
+people learning about eb or
+
+2151
+01:05:55,680 --> 01:05:58,069
+with an intent to learn about vpf in our
+
+2152
+01:05:58,079 --> 01:05:59,430
+slack community
+
+2153
+01:05:59,440 --> 01:06:01,109
+helping each other out and then we've
+
+2154
+01:06:01,119 --> 01:06:03,510
+also covered psyllium
+
+2155
+01:06:03,520 --> 01:06:04,950
+you can find more information about
+
+2156
+01:06:04,960 --> 01:06:07,829
+sodium on cilium.io a source of great
+
+2157
+01:06:07,839 --> 01:06:10,789
+talks is uh is the ebpf summit which we
+
+2158
+01:06:10,799 --> 01:06:12,710
+hosted a couple of weeks back
+
+2159
+01:06:12,720 --> 01:06:15,910
+dozens of really amazing talks um
+
+2160
+01:06:15,920 --> 01:06:17,829
+about open source projects in ebpf
+
+2161
+01:06:17,839 --> 01:06:19,670
+project in the ebpf space
+
+2162
+01:06:19,680 --> 01:06:21,829
+you can also find that on ebpfio that's
+
+2163
+01:06:21,839 --> 01:06:23,270
+definitely there's i think
+
+2164
+01:06:23,280 --> 01:06:26,390
+great intro level talks to
+
+2165
+01:06:26,400 --> 01:06:30,069
+low level ebpf verifier internals like
+
+2166
+01:06:30,079 --> 01:06:31,990
+like really anything that that your
+
+2167
+01:06:32,000 --> 01:06:33,750
+heart could could ever wish for in the
+
+2168
+01:06:33,760 --> 01:06:34,549
+eppf
+
+2169
+01:06:34,559 --> 01:06:36,710
+space yeah i was watching some of those
+
+2170
+01:06:36,720 --> 01:06:37,990
+summit talks there's actually a really
+
+2171
+01:06:38,000 --> 01:06:38,789
+good keynote
+
+2172
+01:06:38,799 --> 01:06:40,150
+um from the recent one on just some
+
+2173
+01:06:40,160 --> 01:06:41,990
+basics of writing a basic bpf
+
+2174
+01:06:42,000 --> 01:06:43,990
+ebpf program and that might be good for
+
+2175
+01:06:44,000 --> 01:06:45,270
+listeners if they want to start getting
+
+2176
+01:06:45,280 --> 01:06:46,950
+exposed to what the code actually looks
+
+2177
+01:06:46,960 --> 01:06:47,910
+like
+
+2178
+01:06:47,920 --> 01:06:50,309
+so what other stuff are you working on
+
+2179
+01:06:50,319 --> 01:06:53,190
+now any additional research in the area
+
+2180
+01:06:53,200 --> 01:06:55,190
+there's so much going on in ebpf right
+
+2181
+01:06:55,200 --> 01:06:56,870
+now that i think it would be unfair to
+
+2182
+01:06:56,880 --> 01:06:57,990
+mention just a couple
+
+2183
+01:06:58,000 --> 01:07:01,109
+i think in general we're seeing the
+
+2184
+01:07:01,119 --> 01:07:02,870
+space is literally exploding right now
+
+2185
+01:07:02,880 --> 01:07:03,349
+like
+
+2186
+01:07:03,359 --> 01:07:07,270
+um we're seeing huge investments into
+
+2187
+01:07:07,280 --> 01:07:09,270
+linux security modules which is the the
+
+2188
+01:07:09,280 --> 01:07:11,109
+overall runtime security layer that the
+
+2189
+01:07:11,119 --> 01:07:12,309
+kernel provides
+
+2190
+01:07:12,319 --> 01:07:14,230
+google is heavily investing in there i
+
+2191
+01:07:14,240 --> 01:07:15,829
+think that's super interesting
+
+2192
+01:07:15,839 --> 01:07:17,750
+we're seeing ebpf obviously in the
+
+2193
+01:07:17,760 --> 01:07:19,510
+overall security space in the visibility
+
+2194
+01:07:19,520 --> 01:07:21,349
+space in the networking space
+
+2195
+01:07:21,359 --> 01:07:23,190
+uh we're seeing more and more tracing
+
+2196
+01:07:23,200 --> 01:07:25,190
+tools come up there was i think pixie
+
+2197
+01:07:25,200 --> 01:07:26,630
+labs just launched a couple of weeks
+
+2198
+01:07:26,640 --> 01:07:27,589
+back as well with
+
+2199
+01:07:27,599 --> 01:07:29,910
+really interesting topics there's just a
+
+2200
+01:07:29,920 --> 01:07:31,349
+lot going on right now
+
+2201
+01:07:31,359 --> 01:07:34,069
+it's really hard to to even uh keep
+
+2202
+01:07:34,079 --> 01:07:35,829
+track of what's going on i think it's
+
+2203
+01:07:35,839 --> 01:07:38,390
+the promises is huge and a lot of people
+
+2204
+01:07:38,400 --> 01:07:40,150
+are just starting to realize the full
+
+2205
+01:07:40,160 --> 01:07:41,829
+potential of it and we'll we'll see a
+
+2206
+01:07:41,839 --> 01:07:44,230
+ton of stuff getting created by ebpf
+
+2207
+01:07:44,240 --> 01:07:46,390
+but again i think it won't be that a lot
+
+2208
+01:07:46,400 --> 01:07:47,349
+of people will
+
+2209
+01:07:47,359 --> 01:07:49,990
+will natively use ebpf like evpf has
+
+2210
+01:07:50,000 --> 01:07:51,589
+been designed for kernel developers and
+
+2211
+01:07:51,599 --> 01:07:52,390
+it will
+
+2212
+01:07:52,400 --> 01:07:54,230
+remain like that but a lot of the higher
+
+2213
+01:07:54,240 --> 01:07:55,990
+level projects that are written
+
+2214
+01:07:56,000 --> 01:07:57,910
+on top of it will be very very
+
+2215
+01:07:57,920 --> 01:07:59,670
+interesting to a lot of people
+
+2216
+01:07:59,680 --> 01:08:01,109
+yeah so it'll be like most things at
+
+2217
+01:08:01,119 --> 01:08:02,630
+open source i'm going to start taking
+
+2218
+01:08:02,640 --> 01:08:04,150
+someone's already implemented project
+
+2219
+01:08:04,160 --> 01:08:06,069
+and then tweaking it as i need to for my
+
+2220
+01:08:06,079 --> 01:08:07,510
+environment
+
+2221
+01:08:07,520 --> 01:08:08,630
+all right well thomas thank you for
+
+2222
+01:08:08,640 --> 01:08:10,069
+coming on the show and discussing bpf
+
+2223
+01:08:10,079 --> 01:08:11,589
+and xdp and how we can leverage them for
+
+2224
+01:08:11,599 --> 01:08:13,589
+observability networking and security
+
+2225
+01:08:13,599 --> 01:08:15,589
+i will definitely put links to those
+
+2226
+01:08:15,599 --> 01:08:16,950
+sites that you mentioned and some of the
+
+2227
+01:08:16,960 --> 01:08:18,630
+resources i used for research
+
+2228
+01:08:18,640 --> 01:08:20,789
+uh on this topic awesome that this was
+
+2229
+01:08:20,799 --> 01:08:22,149
+great that's not for having me
+
+2230
+01:08:22,159 --> 01:08:24,229
+justin this is justin baier for software
+
+2231
+01:08:24,239 --> 01:08:25,269
+engineering radio
+
+2232
+01:08:25,279 --> 01:08:27,829
+thank you for listening thanks for
+
+2233
+01:08:27,839 --> 01:08:29,590
+listening to sc radio an educational
+
+2234
+01:08:29,600 --> 01:08:31,590
+program brought to you by ieee software
+
+2235
+01:08:31,600 --> 01:08:32,470
+magazine
+
+2236
+01:08:32,480 --> 01:08:33,990
+for more about the podcast including
+
+2237
+01:08:34,000 --> 01:08:35,990
+other episodes visit our website at
+
+2238
+01:08:36,000 --> 01:08:39,590
+se radio.net to provide feedback you can
+
+2239
+01:08:39,600 --> 01:08:41,510
+comment on each episode on the website
+
+2240
+01:08:41,520 --> 01:08:42,950
+or reach us on linkedin
+
+2241
+01:08:42,960 --> 01:08:45,430
+facebook twitter or through our slack
+
+2242
+01:08:45,440 --> 01:08:47,630
+channel at
+
+2243
+01:08:47,640 --> 01:08:49,110
+scradio.slack.com
+
+2244
+01:08:49,120 --> 01:08:51,950
+you can also email us at team
+
+2245
+01:08:51,960 --> 01:08:53,749
+sc-radio.net
+
+2246
+01:08:53,759 --> 01:08:55,669
+this and all other episodes of sc radio
+
+2247
+01:08:55,679 --> 01:08:57,269
+is licensed under creative commons
+
+2248
+01:08:57,279 --> 01:08:59,189
+license 2.5
+
+2249
+01:08:59,199 --> 01:09:13,110
+thanks for listening

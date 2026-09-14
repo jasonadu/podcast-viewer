@@ -1,0 +1,6003 @@
+1
+00:00:00,870 --> 00:00:00,880
+[Music]
+
+2
+00:00:00,880 --> 00:00:02,790
+this is software engineering radio the
+
+3
+00:00:02,800 --> 00:00:04,789
+podcast for professional developers on
+
+4
+00:00:04,799 --> 00:00:07,749
+the web at se-radio.net
+
+5
+00:00:07,759 --> 00:00:09,750
+sc radio is brought to you by the ieee
+
+6
+00:00:09,760 --> 00:00:11,830
+computer society by ieee software
+
+7
+00:00:11,840 --> 00:00:16,790
+magazine online at computer.org software
+
+8
+00:00:16,800 --> 00:00:18,790
+hi this is priyanka raghavan for
+
+9
+00:00:18,800 --> 00:00:21,029
+software engineering radio and my guest
+
+10
+00:00:21,039 --> 00:00:23,990
+today is sam scott who's the cto and
+
+11
+00:00:24,000 --> 00:00:26,710
+co-founder of oso where the image from
+
+12
+00:00:26,720 --> 00:00:29,269
+linkedin and several other blogs say
+
+13
+00:00:29,279 --> 00:00:31,189
+we're making security easier for
+
+14
+00:00:31,199 --> 00:00:32,630
+developers
+
+15
+00:00:32,640 --> 00:00:35,030
+sam holds a phd in cryptography and he
+
+16
+00:00:35,040 --> 00:00:37,510
+regularly writes on authorization
+
+17
+00:00:37,520 --> 00:00:39,350
+and has also appeared in several
+
+18
+00:00:39,360 --> 00:00:40,709
+podcasts
+
+19
+00:00:40,719 --> 00:00:42,310
+today we're going to be talking about
+
+20
+00:00:42,320 --> 00:00:44,709
+how to build a consistent and global
+
+21
+00:00:44,719 --> 00:00:47,350
+authorization system or service and
+
+22
+00:00:47,360 --> 00:00:49,029
+subsequent challenges
+
+23
+00:00:49,039 --> 00:00:51,189
+so welcome to the show sam thanks for
+
+24
+00:00:51,199 --> 00:00:53,189
+having me it's good to be here is there
+
+25
+00:00:53,199 --> 00:00:55,029
+anything else you would like listeners
+
+26
+00:00:55,039 --> 00:00:57,590
+to know about yourself before we jump
+
+27
+00:00:57,600 --> 00:00:59,910
+into all things authorization i think
+
+28
+00:00:59,920 --> 00:01:01,750
+you've about covered it i mean i guess
+
+29
+00:01:01,760 --> 00:01:04,390
+you know one other thing is i've been
+
+30
+00:01:04,400 --> 00:01:07,030
+myself coding for about 10 years or so
+
+31
+00:01:07,040 --> 00:01:08,950
+now one big changing event for me was
+
+32
+00:01:08,960 --> 00:01:10,469
+when i discovered rust i'd actually kind
+
+33
+00:01:10,479 --> 00:01:12,550
+of resigned myself to not be a decent
+
+34
+00:01:12,560 --> 00:01:13,910
+programmer and i thought i'd maybe stick
+
+35
+00:01:13,920 --> 00:01:15,749
+in academia and research but kind of
+
+36
+00:01:15,759 --> 00:01:17,030
+found rust and that like unlocked a
+
+37
+00:01:17,040 --> 00:01:19,190
+bunch of a bunch of things for me
+
+38
+00:01:19,200 --> 00:01:20,710
+we're definitely going to ask you a lot
+
+39
+00:01:20,720 --> 00:01:23,109
+more about that soon but you know let me
+
+40
+00:01:23,119 --> 00:01:24,710
+just take you a little bit through sc
+
+41
+00:01:24,720 --> 00:01:26,390
+radio right software engineering radio
+
+42
+00:01:26,400 --> 00:01:29,109
+we've done a couple of episodes on
+
+43
+00:01:29,119 --> 00:01:31,670
+securing your apis we've done an episode
+
+44
+00:01:31,680 --> 00:01:33,030
+on warp 2
+
+45
+00:01:33,040 --> 00:01:35,910
+we also had a show on open ldap but
+
+46
+00:01:35,920 --> 00:01:37,990
+we've never really focused a show just
+
+47
+00:01:38,000 --> 00:01:39,990
+on authorization so i thought you know
+
+48
+00:01:40,000 --> 00:01:41,910
+we could start right from the top
+
+49
+00:01:41,920 --> 00:01:43,990
+where maybe the first question i'll ask
+
+50
+00:01:44,000 --> 00:01:46,469
+you which maybe is oft repeated but what
+
+51
+00:01:46,479 --> 00:01:47,830
+is the difference between say
+
+52
+00:01:47,840 --> 00:01:50,149
+authentication and authorization can you
+
+53
+00:01:50,159 --> 00:01:52,230
+define the terms plus it's a great
+
+54
+00:01:52,240 --> 00:01:54,310
+question especially because a lot of the
+
+55
+00:01:54,320 --> 00:01:56,069
+time people just say auth and they sort
+
+56
+00:01:56,079 --> 00:01:58,310
+of maybe meet either one so it's good to
+
+57
+00:01:58,320 --> 00:01:59,350
+clarify
+
+58
+00:01:59,360 --> 00:02:01,910
+so authentication is the process you go
+
+59
+00:02:01,920 --> 00:02:04,310
+through of identifying who somebody is
+
+60
+00:02:04,320 --> 00:02:06,149
+you know so typically this means you log
+
+61
+00:02:06,159 --> 00:02:08,309
+in with username and password or you
+
+62
+00:02:08,319 --> 00:02:10,469
+maybe log in with a maybe like a social
+
+63
+00:02:10,479 --> 00:02:12,630
+login facebook or google it's kind of
+
+64
+00:02:12,640 --> 00:02:13,910
+that process through which you know the
+
+65
+00:02:13,920 --> 00:02:16,070
+website identifies who you are on the
+
+66
+00:02:16,080 --> 00:02:18,470
+other hand so authorization is kind of
+
+67
+00:02:18,480 --> 00:02:19,830
+the bit that comes next it's like now
+
+68
+00:02:19,840 --> 00:02:21,510
+that i know who you are what are you
+
+69
+00:02:21,520 --> 00:02:22,710
+allowed to do
+
+70
+00:02:22,720 --> 00:02:25,110
+those are kind of the two pieces and
+
+71
+00:02:25,120 --> 00:02:26,390
+what gets really challenging here as
+
+72
+00:02:26,400 --> 00:02:27,589
+well you just touched on a few
+
+73
+00:02:27,599 --> 00:02:29,430
+technologies like oh what's on ldap
+
+74
+00:02:29,440 --> 00:02:30,710
+where
+
+75
+00:02:30,720 --> 00:02:32,150
+it starts blurring the lines between the
+
+76
+00:02:32,160 --> 00:02:34,949
+two a lot i mean you know oauth is
+
+77
+00:02:34,959 --> 00:02:36,229
+technically primarily around
+
+78
+00:02:36,239 --> 00:02:38,150
+authorization in a sort of a different
+
+79
+00:02:38,160 --> 00:02:40,630
+context it's granting consent to other
+
+80
+00:02:40,640 --> 00:02:41,990
+people to access your data on your
+
+81
+00:02:42,000 --> 00:02:43,110
+behalf
+
+82
+00:02:43,120 --> 00:02:44,390
+also use sometimes for doing
+
+83
+00:02:44,400 --> 00:02:46,229
+authentication like you know can i check
+
+84
+00:02:46,239 --> 00:02:48,630
+you have this identity and the two terms
+
+85
+00:02:48,640 --> 00:02:50,150
+get very very mixed and very
+
+86
+00:02:50,160 --> 00:02:51,430
+interchangeable
+
+87
+00:02:51,440 --> 00:02:53,350
+okay so maybe then you can break it down
+
+88
+00:02:53,360 --> 00:02:55,910
+another terminology which is often seen
+
+89
+00:02:55,920 --> 00:02:57,990
+in literature is our back
+
+90
+00:02:58,000 --> 00:03:00,309
+what is that can you define that yes
+
+91
+00:03:00,319 --> 00:03:02,149
+rbac stands for role-based access
+
+92
+00:03:02,159 --> 00:03:04,470
+control it's a pretty broad term
+
+93
+00:03:04,480 --> 00:03:06,949
+it captures the sort of the idea that
+
+94
+00:03:06,959 --> 00:03:08,630
+you know instead of just saying directly
+
+95
+00:03:08,640 --> 00:03:10,550
+like what can a user do you sort of
+
+96
+00:03:10,560 --> 00:03:12,070
+group a bunch of users together under
+
+97
+00:03:12,080 --> 00:03:14,070
+like a you know a role is what it's
+
+98
+00:03:14,080 --> 00:03:15,670
+called you basically define what that
+
+99
+00:03:15,680 --> 00:03:17,270
+role can do instead
+
+100
+00:03:17,280 --> 00:03:19,350
+and so you imagine you have a website
+
+101
+00:03:19,360 --> 00:03:21,509
+with like millions of users you maybe
+
+102
+00:03:21,519 --> 00:03:23,270
+just can sort of segment them into two
+
+103
+00:03:23,280 --> 00:03:24,789
+different user types you have members
+
+104
+00:03:24,799 --> 00:03:26,390
+and admins those might be the two
+
+105
+00:03:26,400 --> 00:03:27,990
+different roles and then it's like
+
+106
+00:03:28,000 --> 00:03:30,390
+pretty easy to say members can do xyz
+
+107
+00:03:30,400 --> 00:03:33,110
+admins can do abc and so it's kind of a
+
+108
+00:03:33,120 --> 00:03:34,630
+way of structuring that authorization
+
+109
+00:03:34,640 --> 00:03:37,509
+logic you said you have a group i guess
+
+110
+00:03:37,519 --> 00:03:39,750
+a group of individuals who belong to a
+
+111
+00:03:39,760 --> 00:03:41,430
+particular role and then you can give
+
+112
+00:03:41,440 --> 00:03:43,670
+them what can they do like i guess on a
+
+113
+00:03:43,680 --> 00:03:45,990
+resource i guess would that be right
+
+114
+00:03:46,000 --> 00:03:49,190
+exactly yes so another thing that i see
+
+115
+00:03:49,200 --> 00:03:51,670
+is especially when i was researching
+
+116
+00:03:51,680 --> 00:03:53,350
+before talking to you was there was
+
+117
+00:03:53,360 --> 00:03:55,750
+another term called reback which is
+
+118
+00:03:55,760 --> 00:03:58,149
+relationship based authorization so can
+
+119
+00:03:58,159 --> 00:03:59,750
+you also define that
+
+120
+00:03:59,760 --> 00:04:02,550
+yeah so in some ways you can think of
+
+121
+00:04:02,560 --> 00:04:04,550
+relationship based access control reback
+
+122
+00:04:04,560 --> 00:04:07,190
+as a more general version of role based
+
+123
+00:04:07,200 --> 00:04:08,869
+so instead of just saying
+
+124
+00:04:08,879 --> 00:04:10,470
+you know grouping users by a role you
+
+125
+00:04:10,480 --> 00:04:12,070
+start saying well like what other kinds
+
+126
+00:04:12,080 --> 00:04:15,030
+of relationships exist between things
+
+127
+00:04:15,040 --> 00:04:16,949
+maybe users and resources of resources
+
+128
+00:04:16,959 --> 00:04:18,469
+and other resources
+
+129
+00:04:18,479 --> 00:04:20,229
+a simple one might be
+
+130
+00:04:20,239 --> 00:04:21,909
+most websites you know if you post a
+
+131
+00:04:21,919 --> 00:04:23,909
+comment or something you can normally
+
+132
+00:04:23,919 --> 00:04:25,590
+also delete that comment or maybe even
+
+133
+00:04:25,600 --> 00:04:27,350
+edit that comment you know but most
+
+134
+00:04:27,360 --> 00:04:28,469
+users can't
+
+135
+00:04:28,479 --> 00:04:30,070
+and so it's kind of saying well you have
+
+136
+00:04:30,080 --> 00:04:31,350
+a you have a relationship with that
+
+137
+00:04:31,360 --> 00:04:32,790
+comment you're the one who submitted the
+
+138
+00:04:32,800 --> 00:04:35,430
+comment and as the submitter you're able
+
+139
+00:04:35,440 --> 00:04:37,749
+to you know make certain changes and
+
+140
+00:04:37,759 --> 00:04:38,870
+it's kind of like different versions of
+
+141
+00:04:38,880 --> 00:04:41,189
+that so maybe you have a good example
+
+142
+00:04:41,199 --> 00:04:42,870
+would be like in a google drive like
+
+143
+00:04:42,880 --> 00:04:45,270
+system you have you know files belong to
+
+144
+00:04:45,280 --> 00:04:46,950
+folders folders along to other folders
+
+145
+00:04:46,960 --> 00:04:49,749
+folders belong to organizations like all
+
+146
+00:04:49,759 --> 00:04:51,110
+of those are the relationships between
+
+147
+00:04:51,120 --> 00:04:52,790
+the data and there's kind of different
+
+148
+00:04:52,800 --> 00:04:54,469
+forms of relationships there it's like
+
+149
+00:04:54,479 --> 00:04:56,070
+you know maybe it's a user to a resource
+
+150
+00:04:56,080 --> 00:04:57,670
+you know you create a document it's a
+
+151
+00:04:57,680 --> 00:04:59,110
+resource to another resource you know
+
+152
+00:04:59,120 --> 00:05:01,110
+document belongs to a folder you maybe
+
+153
+00:05:01,120 --> 00:05:02,790
+throw a role in there as well and it's
+
+154
+00:05:02,800 --> 00:05:04,950
+you know you're a an admin of a folder
+
+155
+00:05:04,960 --> 00:05:06,950
+and the document belongs to the folder
+
+156
+00:05:06,960 --> 00:05:08,710
+you can do certain things
+
+157
+00:05:08,720 --> 00:05:10,070
+i think this kind of separation between
+
+158
+00:05:10,080 --> 00:05:12,310
+the two is a relatively new thing like a
+
+159
+00:05:12,320 --> 00:05:13,749
+lot of what i've just described could
+
+160
+00:05:13,759 --> 00:05:16,070
+also sort of be broadly captured in the
+
+161
+00:05:16,080 --> 00:05:18,629
+our back in the role based paradigm like
+
+162
+00:05:18,639 --> 00:05:20,629
+it'll sound similar like oh i'm in i'm
+
+163
+00:05:20,639 --> 00:05:21,990
+an admin of the folder and the documents
+
+164
+00:05:22,000 --> 00:05:24,950
+in the folder like sounds very rosy but
+
+165
+00:05:24,960 --> 00:05:26,070
+i think kind of go to actually a little
+
+166
+00:05:26,080 --> 00:05:27,430
+bit of granularity and saying well
+
+167
+00:05:27,440 --> 00:05:29,350
+actually we're describing something
+
+168
+00:05:29,360 --> 00:05:31,270
+unique here by describing this like file
+
+169
+00:05:31,280 --> 00:05:33,590
+system hierarchy is is what reebok's
+
+170
+00:05:33,600 --> 00:05:34,469
+about
+
+171
+00:05:34,479 --> 00:05:36,150
+great another
+
+172
+00:05:36,160 --> 00:05:38,790
+term to add to this picture is the
+
+173
+00:05:38,800 --> 00:05:40,629
+authorization model
+
+174
+00:05:40,639 --> 00:05:43,590
+where whenever i read a lot of articles
+
+175
+00:05:43,600 --> 00:05:46,310
+or papers they talk about how important
+
+176
+00:05:46,320 --> 00:05:48,870
+it is to have a good authorization model
+
+177
+00:05:48,880 --> 00:05:51,350
+to enforce things so can you maybe
+
+178
+00:05:51,360 --> 00:05:53,430
+define that so all of this do you put
+
+179
+00:05:53,440 --> 00:05:55,749
+that into an authorization model yeah
+
+180
+00:05:55,759 --> 00:05:57,430
+absolutely so the way i kind of think
+
+181
+00:05:57,440 --> 00:05:59,670
+about it is to start with
+
+182
+00:05:59,680 --> 00:06:01,510
+the way i described authorization is is
+
+183
+00:06:01,520 --> 00:06:03,510
+this entirely open-ended question who
+
+184
+00:06:03,520 --> 00:06:05,350
+can do what it's like okay like where'd
+
+185
+00:06:05,360 --> 00:06:07,590
+i begin so the idea of authorization
+
+186
+00:06:07,600 --> 00:06:09,270
+models is really just sort of
+
+187
+00:06:09,280 --> 00:06:11,270
+identifying patterns that are very very
+
+188
+00:06:11,280 --> 00:06:12,150
+common
+
+189
+00:06:12,160 --> 00:06:14,309
+out there and sort of giving you a
+
+190
+00:06:14,319 --> 00:06:15,830
+little bit more structure on how you go
+
+191
+00:06:15,840 --> 00:06:17,590
+about answering that question
+
+192
+00:06:17,600 --> 00:06:18,629
+and so
+
+193
+00:06:18,639 --> 00:06:20,230
+really what it allows you to do is sort
+
+194
+00:06:20,240 --> 00:06:22,469
+of say like you know if your app fits
+
+195
+00:06:22,479 --> 00:06:23,990
+this kind of a shape like if you are
+
+196
+00:06:24,000 --> 00:06:26,710
+building a b2b app you will probably
+
+197
+00:06:26,720 --> 00:06:28,710
+want to use role-based system like very
+
+198
+00:06:28,720 --> 00:06:30,710
+very commonly you know and you know you
+
+199
+00:06:30,720 --> 00:06:32,950
+should think about it as users have a
+
+200
+00:06:32,960 --> 00:06:34,550
+role inside an organization and they can
+
+201
+00:06:34,560 --> 00:06:35,830
+do these things
+
+202
+00:06:35,840 --> 00:06:37,350
+you sort of take in this problem which
+
+203
+00:06:37,360 --> 00:06:39,830
+is entirely open-ended completely open
+
+204
+00:06:39,840 --> 00:06:42,150
+to someone to solve however they want to
+
+205
+00:06:42,160 --> 00:06:44,469
+into something which is like now has
+
+206
+00:06:44,479 --> 00:06:46,309
+existing paths existing templates and
+
+207
+00:06:46,319 --> 00:06:47,350
+like give someone a little more
+
+208
+00:06:47,360 --> 00:06:49,029
+structure to approach it and that's kind
+
+209
+00:06:49,039 --> 00:06:50,550
+of what a model is about
+
+210
+00:06:50,560 --> 00:06:52,710
+so once you have a model i guess it
+
+211
+00:06:52,720 --> 00:06:55,350
+becomes easier to make decisions or
+
+212
+00:06:55,360 --> 00:06:56,390
+enforce
+
+213
+00:06:56,400 --> 00:06:58,309
+policies or would i be right and saying
+
+214
+00:06:58,319 --> 00:06:59,990
+that you've touched on a few things like
+
+215
+00:07:00,000 --> 00:07:01,830
+you can kind of break up how you go
+
+216
+00:07:01,840 --> 00:07:03,270
+about implementing authorization into a
+
+217
+00:07:03,280 --> 00:07:05,270
+few different pieces so the way we talk
+
+218
+00:07:05,280 --> 00:07:06,550
+about it is
+
+219
+00:07:06,560 --> 00:07:08,550
+there's kind of a separation between
+
+220
+00:07:08,560 --> 00:07:10,710
+enforcement and decisions
+
+221
+00:07:10,720 --> 00:07:12,629
+enforcement it's the lines of code you
+
+222
+00:07:12,639 --> 00:07:14,070
+add inside your app that kind of
+
+223
+00:07:14,080 --> 00:07:15,430
+ultimately
+
+224
+00:07:15,440 --> 00:07:17,110
+do you show a page to a user or you
+
+225
+00:07:17,120 --> 00:07:18,950
+redirect them to an error page that's
+
+226
+00:07:18,960 --> 00:07:20,390
+kind of like the enforcement piece like
+
+227
+00:07:20,400 --> 00:07:21,830
+what do you do once you know if a user
+
+228
+00:07:21,840 --> 00:07:24,230
+can is allowed to do something or not
+
+229
+00:07:24,240 --> 00:07:25,749
+the decision piece is like how do you
+
+230
+00:07:25,759 --> 00:07:27,430
+make the decision if they should or not
+
+231
+00:07:27,440 --> 00:07:29,350
+so like how do i answer the question is
+
+232
+00:07:29,360 --> 00:07:31,749
+this user allowed to see this page or
+
+233
+00:07:31,759 --> 00:07:33,830
+this document when we talk about that
+
+234
+00:07:33,840 --> 00:07:35,670
+kind of like decision mechanism that's
+
+235
+00:07:35,680 --> 00:07:37,110
+really where those authorization models
+
+236
+00:07:37,120 --> 00:07:38,469
+come in it's like
+
+237
+00:07:38,479 --> 00:07:39,749
+how do i go about answering that
+
+238
+00:07:39,759 --> 00:07:42,469
+question like what am i trying to get to
+
+239
+00:07:42,479 --> 00:07:44,390
+the policy piece that you touched on
+
+240
+00:07:44,400 --> 00:07:45,749
+plays into
+
+241
+00:07:45,759 --> 00:07:46,950
+kind of the specifics of how you
+
+242
+00:07:46,960 --> 00:07:47,909
+actually implement that decision
+
+243
+00:07:47,919 --> 00:07:49,990
+mechanism like you might say okay i want
+
+244
+00:07:50,000 --> 00:07:51,110
+roles
+
+245
+00:07:51,120 --> 00:07:52,790
+how do you want to implement that you
+
+246
+00:07:52,800 --> 00:07:54,790
+could you know use a roles library you
+
+247
+00:07:54,800 --> 00:07:56,390
+could use a policy engine it's kind of
+
+248
+00:07:56,400 --> 00:07:58,309
+multiple different approaches i think i
+
+249
+00:07:58,319 --> 00:08:00,070
+understood that it's very important to
+
+250
+00:08:00,080 --> 00:08:02,390
+make that distinction okay that's great
+
+251
+00:08:02,400 --> 00:08:04,150
+so let's now that we've got the
+
+252
+00:08:04,160 --> 00:08:06,309
+definitions out of the way or maybe you
+
+253
+00:08:06,319 --> 00:08:08,629
+can do a little deep dive into
+
+254
+00:08:08,639 --> 00:08:10,390
+say one of the main parts of this
+
+255
+00:08:10,400 --> 00:08:12,629
+podcast which is also about the google
+
+256
+00:08:12,639 --> 00:08:15,110
+zanzibar system which i think we'll jump
+
+257
+00:08:15,120 --> 00:08:17,909
+into but before that you know we had the
+
+258
+00:08:17,919 --> 00:08:20,150
+traditional way of doing authorization
+
+259
+00:08:20,160 --> 00:08:22,309
+was you know say with ldap where you
+
+260
+00:08:22,319 --> 00:08:25,029
+have a group of users belonging to one
+
+261
+00:08:25,039 --> 00:08:26,629
+particular part of the org and then they
+
+262
+00:08:26,639 --> 00:08:29,189
+are given access to a resource how does
+
+263
+00:08:29,199 --> 00:08:31,510
+that differ from say what i don't know
+
+264
+00:08:31,520 --> 00:08:33,190
+if the right term is to call it new age
+
+265
+00:08:33,200 --> 00:08:34,630
+authorization or maybe it's been around
+
+266
+00:08:34,640 --> 00:08:37,110
+for a long time but new age services
+
+267
+00:08:37,120 --> 00:08:39,750
+that focus on doing authorization house
+
+268
+00:08:39,760 --> 00:08:41,430
+how is it different that's a great
+
+269
+00:08:41,440 --> 00:08:43,350
+question and in some ways it kind of
+
+270
+00:08:43,360 --> 00:08:44,710
+comes back to
+
+271
+00:08:44,720 --> 00:08:45,829
+what i'm saying earlier you know
+
+272
+00:08:45,839 --> 00:08:47,350
+authorization it kind of does cover a
+
+273
+00:08:47,360 --> 00:08:48,949
+lot of different topics
+
+274
+00:08:48,959 --> 00:08:51,269
+i think what we've seen has changed
+
+275
+00:08:51,279 --> 00:08:53,670
+yeah in the last i know several decades
+
+276
+00:08:53,680 --> 00:08:56,870
+really is there's been a huge shift from
+
+277
+00:08:56,880 --> 00:08:58,310
+a lot of software development being done
+
+278
+00:08:58,320 --> 00:08:59,590
+like in-house internally inside
+
+279
+00:08:59,600 --> 00:09:01,350
+organizations a lot of it being really
+
+280
+00:09:01,360 --> 00:09:03,670
+an internal thing into you know the
+
+281
+00:09:03,680 --> 00:09:06,150
+explosion of like software as a service
+
+282
+00:09:06,160 --> 00:09:08,230
+and people building software products
+
+283
+00:09:08,240 --> 00:09:09,829
+and that's kind of the
+
+284
+00:09:09,839 --> 00:09:12,550
+shift of authorization models like so
+
+285
+00:09:12,560 --> 00:09:14,230
+you know things like ldap active
+
+286
+00:09:14,240 --> 00:09:16,790
+directory those kind of technologies
+
+287
+00:09:16,800 --> 00:09:18,630
+you know it's an interface
+
+288
+00:09:18,640 --> 00:09:19,829
+for
+
+289
+00:09:19,839 --> 00:09:22,230
+managing and assigning users to
+
+290
+00:09:22,240 --> 00:09:24,230
+permissions to groups to roles things
+
+291
+00:09:24,240 --> 00:09:26,150
+like that the focus is on like you know
+
+292
+00:09:26,160 --> 00:09:27,750
+i have a set of users
+
+293
+00:09:27,760 --> 00:09:29,269
+how do i you know give them the right
+
+294
+00:09:29,279 --> 00:09:31,190
+permissions how do i
+
+295
+00:09:31,200 --> 00:09:32,470
+group them together assign them to
+
+296
+00:09:32,480 --> 00:09:34,230
+resources things like that which makes
+
+297
+00:09:34,240 --> 00:09:35,590
+sense for like in an
+
+298
+00:09:35,600 --> 00:09:38,150
+internal it team inside enterprise
+
+299
+00:09:38,160 --> 00:09:39,670
+needs to give the sales team access to
+
+300
+00:09:39,680 --> 00:09:41,190
+the sales folder with the sales reports
+
+301
+00:09:41,200 --> 00:09:43,750
+things like that when we talk about the
+
+302
+00:09:43,760 --> 00:09:45,910
+kind of new authorization systems
+
+303
+00:09:45,920 --> 00:09:47,269
+we're talking about a different
+
+304
+00:09:47,279 --> 00:09:49,030
+different set of people we're talking
+
+305
+00:09:49,040 --> 00:09:50,710
+about you know developers building
+
+306
+00:09:50,720 --> 00:09:52,630
+applications for
+
+307
+00:09:52,640 --> 00:09:54,150
+their end users
+
+308
+00:09:54,160 --> 00:09:55,509
+those are now like multiple
+
+309
+00:09:55,519 --> 00:09:58,070
+organizations not just one organization
+
+310
+00:09:58,080 --> 00:09:59,509
+and so in some ways
+
+311
+00:09:59,519 --> 00:10:00,870
+you know what we're talking about is how
+
+312
+00:10:00,880 --> 00:10:02,870
+how do people build things like ldap
+
+313
+00:10:02,880 --> 00:10:05,269
+into their apps you know so ldap is kind
+
+314
+00:10:05,279 --> 00:10:06,710
+of it's an existing product that's you
+
+315
+00:10:06,720 --> 00:10:07,910
+know integrated with different systems
+
+316
+00:10:07,920 --> 00:10:09,030
+but now it's like well you're building
+
+317
+00:10:09,040 --> 00:10:10,550
+your own app how do you want
+
+318
+00:10:10,560 --> 00:10:11,910
+authorization how do you want users to
+
+319
+00:10:11,920 --> 00:10:13,750
+like manage things inside your
+
+320
+00:10:13,760 --> 00:10:15,990
+application so if someone enrolls you
+
+321
+00:10:16,000 --> 00:10:17,190
+create a new organization and they want
+
+322
+00:10:17,200 --> 00:10:18,310
+to add people to groups like what's
+
+323
+00:10:18,320 --> 00:10:19,750
+their experience
+
+324
+00:10:19,760 --> 00:10:22,230
+and ldap wasn't really
+
+325
+00:10:22,240 --> 00:10:23,990
+designed to be used in that way that
+
+326
+00:10:24,000 --> 00:10:26,310
+it'd be like embedded in other products
+
+327
+00:10:26,320 --> 00:10:27,269
+and
+
+328
+00:10:27,279 --> 00:10:28,630
+in other ways is you know not the
+
+329
+00:10:28,640 --> 00:10:30,310
+easiest thing to use so it's not like
+
+330
+00:10:30,320 --> 00:10:31,590
+something that people have like jumped
+
+331
+00:10:31,600 --> 00:10:32,710
+to try and integrate into their
+
+332
+00:10:32,720 --> 00:10:33,910
+applications
+
+333
+00:10:33,920 --> 00:10:34,870
+true
+
+334
+00:10:34,880 --> 00:10:37,350
+we can now jump into a little bit into
+
+335
+00:10:37,360 --> 00:10:39,910
+the google zanzibar project and i think
+
+336
+00:10:39,920 --> 00:10:42,310
+in the show notes of this podcast i will
+
+337
+00:10:42,320 --> 00:10:44,630
+add a link to the paper that came out
+
+338
+00:10:44,640 --> 00:10:46,550
+from google there were several things
+
+339
+00:10:46,560 --> 00:10:48,550
+that stood out in the paper but maybe we
+
+340
+00:10:48,560 --> 00:10:50,470
+can take it like you know one by one
+
+341
+00:10:50,480 --> 00:10:52,389
+the first thing what i wanted to ask you
+
+342
+00:10:52,399 --> 00:10:53,990
+was maybe you could tell us a little bit
+
+343
+00:10:54,000 --> 00:10:56,069
+about the zanzibar system before you
+
+344
+00:10:56,079 --> 00:10:57,750
+know we jump into a few things
+
+345
+00:10:57,760 --> 00:10:59,030
+can you just talk a little bit about
+
+346
+00:10:59,040 --> 00:11:02,310
+that sure so google zanzibar is the name
+
+347
+00:11:02,320 --> 00:11:04,470
+of a system developed at google they
+
+348
+00:11:04,480 --> 00:11:07,110
+released a paper on this in about 2019 i
+
+349
+00:11:07,120 --> 00:11:08,230
+think it was
+
+350
+00:11:08,240 --> 00:11:10,230
+it's the central system for how google
+
+351
+00:11:10,240 --> 00:11:12,150
+does authorization across like their
+
+352
+00:11:12,160 --> 00:11:13,509
+entire
+
+353
+00:11:13,519 --> 00:11:15,509
+fleet of applications so you know
+
+354
+00:11:15,519 --> 00:11:17,430
+everything from you know google drive
+
+355
+00:11:17,440 --> 00:11:19,910
+and google documents to you know youtube
+
+356
+00:11:19,920 --> 00:11:21,350
+for example
+
+357
+00:11:21,360 --> 00:11:22,230
+and
+
+358
+00:11:22,240 --> 00:11:24,790
+it's a phenomenal piece of engineering
+
+359
+00:11:24,800 --> 00:11:26,310
+there's two pieces that i love to call
+
+360
+00:11:26,320 --> 00:11:27,590
+out as like the real like core
+
+361
+00:11:27,600 --> 00:11:28,870
+innovations
+
+362
+00:11:28,880 --> 00:11:31,030
+i mean one is like the sort of the mind
+
+363
+00:11:31,040 --> 00:11:33,750
+mind-blowing scale that um
+
+364
+00:11:33,760 --> 00:11:35,590
+needs to that needs to happen for google
+
+365
+00:11:35,600 --> 00:11:37,430
+to do authorization at google for all
+
+366
+00:11:37,440 --> 00:11:38,949
+those services right
+
+367
+00:11:38,959 --> 00:11:40,790
+but i think the second one it touches on
+
+368
+00:11:40,800 --> 00:11:42,630
+what we're speaking about earlier it's
+
+369
+00:11:42,640 --> 00:11:44,069
+as far as i'm aware it's kind of one of
+
+370
+00:11:44,079 --> 00:11:45,910
+the first
+
+371
+00:11:45,920 --> 00:11:48,150
+kind of really publicly spoken about
+
+372
+00:11:48,160 --> 00:11:50,389
+implementations of relationship-based
+
+373
+00:11:50,399 --> 00:11:52,230
+access control i think people spoke
+
+374
+00:11:52,240 --> 00:11:54,150
+about it in the context of
+
+375
+00:11:54,160 --> 00:11:55,509
+like social graphs like facebook
+
+376
+00:11:55,519 --> 00:11:56,949
+previously but i hadn't seen anyone
+
+377
+00:11:56,959 --> 00:11:58,790
+who'd written about it in quite such a
+
+378
+00:11:58,800 --> 00:12:01,670
+sort of b2b focus oriented way like they
+
+379
+00:12:01,680 --> 00:12:03,430
+had at google so it's kind of those
+
+380
+00:12:03,440 --> 00:12:04,710
+really like those two core pieces like
+
+381
+00:12:04,720 --> 00:12:06,470
+the model that they spoke about and they
+
+382
+00:12:06,480 --> 00:12:07,990
+shared and like how developers of google
+
+383
+00:12:08,000 --> 00:12:09,190
+build apps
+
+384
+00:12:09,200 --> 00:12:10,629
+with the system
+
+385
+00:12:10,639 --> 00:12:12,230
+and then there's just like the feats of
+
+386
+00:12:12,240 --> 00:12:13,990
+engineering to make this thing
+
+387
+00:12:14,000 --> 00:12:15,509
+scale
+
+388
+00:12:15,519 --> 00:12:17,110
+so i think they refer to something
+
+389
+00:12:17,120 --> 00:12:19,829
+called as a relationship tuple and
+
+390
+00:12:19,839 --> 00:12:21,190
+nothing was another thing called name
+
+391
+00:12:21,200 --> 00:12:22,949
+space configuration
+
+392
+00:12:22,959 --> 00:12:25,110
+being from a mathematical background i'm
+
+393
+00:12:25,120 --> 00:12:27,590
+sure you uh understood that piece where
+
+394
+00:12:27,600 --> 00:12:29,829
+there's a lot of scary equations uh but
+
+395
+00:12:29,839 --> 00:12:31,910
+i think essentially it was describing
+
+396
+00:12:31,920 --> 00:12:34,069
+the relationship tuple as well as
+
+397
+00:12:34,079 --> 00:12:35,350
+i think how they grouped that under a
+
+398
+00:12:35,360 --> 00:12:37,190
+namespace maybe you could just give us a
+
+399
+00:12:37,200 --> 00:12:39,350
+little intro to that
+
+400
+00:12:39,360 --> 00:12:41,350
+yes i have a background in in academia
+
+401
+00:12:41,360 --> 00:12:42,790
+but i had to read that paper numerous
+
+402
+00:12:42,800 --> 00:12:44,710
+times until it finally kind of fell into
+
+403
+00:12:44,720 --> 00:12:45,590
+place
+
+404
+00:12:45,600 --> 00:12:47,430
+it's not a light concept
+
+405
+00:12:47,440 --> 00:12:49,269
+it's a really interesting system so i
+
+406
+00:12:49,279 --> 00:12:50,389
+mean to start with the problem is
+
+407
+00:12:50,399 --> 00:12:52,629
+solving we spoke about reback
+
+408
+00:12:52,639 --> 00:12:53,829
+relationship based access control
+
+409
+00:12:53,839 --> 00:12:55,590
+earlier and i said you know it's like a
+
+410
+00:12:55,600 --> 00:12:57,190
+file belongs to a folder a user has a
+
+411
+00:12:57,200 --> 00:13:00,069
+role for a folder a document is inside a
+
+412
+00:13:00,079 --> 00:13:02,069
+folder you know things like that a lot
+
+413
+00:13:02,079 --> 00:13:04,230
+of that is an important step there is
+
+414
+00:13:04,240 --> 00:13:05,350
+the data
+
+415
+00:13:05,360 --> 00:13:07,190
+who has what role for what and what
+
+416
+00:13:07,200 --> 00:13:09,110
+folders this file belong to and things
+
+417
+00:13:09,120 --> 00:13:09,990
+like that
+
+418
+00:13:10,000 --> 00:13:11,829
+and these are very
+
+419
+00:13:11,839 --> 00:13:14,470
+varied data sources that can
+
+420
+00:13:14,480 --> 00:13:15,590
+look completely different they can be
+
+421
+00:13:15,600 --> 00:13:17,110
+stored and managed in multiple different
+
+422
+00:13:17,120 --> 00:13:17,990
+ways
+
+423
+00:13:18,000 --> 00:13:20,389
+so if you want to start thinking about
+
+424
+00:13:20,399 --> 00:13:22,629
+how do we write a like consistent
+
+425
+00:13:22,639 --> 00:13:23,990
+abstraction over all these kind of
+
+426
+00:13:24,000 --> 00:13:25,030
+things
+
+427
+00:13:25,040 --> 00:13:26,230
+you have a really hard problem in your
+
+428
+00:13:26,240 --> 00:13:27,190
+hands
+
+429
+00:13:27,200 --> 00:13:29,509
+because you now have like i know 500
+
+430
+00:13:29,519 --> 00:13:31,110
+different teams across google running
+
+431
+00:13:31,120 --> 00:13:32,150
+different applications for different
+
+432
+00:13:32,160 --> 00:13:33,590
+purposes using different back-ends and
+
+433
+00:13:33,600 --> 00:13:35,750
+stuff all these kinds of things
+
+434
+00:13:35,760 --> 00:13:37,030
+and you're trying to say well actually
+
+435
+00:13:37,040 --> 00:13:38,949
+no i want to be able to say that there
+
+436
+00:13:38,959 --> 00:13:40,310
+is like one single way of doing
+
+437
+00:13:40,320 --> 00:13:41,430
+authorization there's one consistent way
+
+438
+00:13:41,440 --> 00:13:43,110
+of doing authorization
+
+439
+00:13:43,120 --> 00:13:44,710
+and so the way that google went about
+
+440
+00:13:44,720 --> 00:13:45,990
+solving this
+
+441
+00:13:46,000 --> 00:13:48,949
+is they basically first came up with a
+
+442
+00:13:48,959 --> 00:13:51,269
+kind of unified data format and that's
+
+443
+00:13:51,279 --> 00:13:53,110
+those relationship two ports
+
+444
+00:13:53,120 --> 00:13:55,430
+they basically said we're gonna have a
+
+445
+00:13:55,440 --> 00:13:57,829
+storage engine for that data
+
+446
+00:13:57,839 --> 00:13:59,430
+and this is gonna be the format it's
+
+447
+00:13:59,440 --> 00:14:01,509
+basically gonna be consists of three
+
+448
+00:14:01,519 --> 00:14:02,470
+things
+
+449
+00:14:02,480 --> 00:14:04,069
+the subject the predicate and the
+
+450
+00:14:04,079 --> 00:14:06,949
+objects so the subject would be like the
+
+451
+00:14:06,959 --> 00:14:08,470
+you know say the user
+
+452
+00:14:08,480 --> 00:14:09,750
+the predicate would be like you know the
+
+453
+00:14:09,760 --> 00:14:11,350
+admin role and the object would be a
+
+454
+00:14:11,360 --> 00:14:13,189
+folder because like pretty much all
+
+455
+00:14:13,199 --> 00:14:14,949
+relationships you can kind of kind of
+
+456
+00:14:14,959 --> 00:14:16,230
+think of them like a graph you know
+
+457
+00:14:16,240 --> 00:14:17,750
+there's like sort of draw a line between
+
+458
+00:14:17,760 --> 00:14:19,670
+a user and that folder and the like the
+
+459
+00:14:19,680 --> 00:14:21,829
+value on the on the edge would be like
+
+460
+00:14:21,839 --> 00:14:23,910
+the admin role or something or you know
+
+461
+00:14:23,920 --> 00:14:26,069
+file to a folder and that folder is like
+
+462
+00:14:26,079 --> 00:14:27,750
+the parent or something
+
+463
+00:14:27,760 --> 00:14:28,870
+and so they kind of said well we just
+
+464
+00:14:28,880 --> 00:14:31,910
+can take all that data and you just need
+
+465
+00:14:31,920 --> 00:14:33,990
+to like send that data to us and put it
+
+466
+00:14:34,000 --> 00:14:35,350
+into this format
+
+467
+00:14:35,360 --> 00:14:36,870
+and now what we have is just like one
+
+468
+00:14:36,880 --> 00:14:38,949
+data store that has all these different
+
+469
+00:14:38,959 --> 00:14:42,150
+data formats in one consistent way
+
+470
+00:14:42,160 --> 00:14:43,670
+now that we have it in this format like
+
+471
+00:14:43,680 --> 00:14:44,870
+we can
+
+472
+00:14:44,880 --> 00:14:46,310
+basically build an authorization system
+
+473
+00:14:46,320 --> 00:14:48,069
+on top of it and that's kind of where
+
+474
+00:14:48,079 --> 00:14:50,310
+the namespace configuration piece comes
+
+475
+00:14:50,320 --> 00:14:52,710
+in it's basically a
+
+476
+00:14:52,720 --> 00:14:55,750
+configuration format for developers to
+
+477
+00:14:55,760 --> 00:14:56,870
+like tell
+
+478
+00:14:56,880 --> 00:14:58,629
+this central system kind of telling them
+
+479
+00:14:58,639 --> 00:15:00,389
+like what does this data mean and like
+
+480
+00:15:00,399 --> 00:15:02,310
+how do you combine it and like compose
+
+481
+00:15:02,320 --> 00:15:03,509
+it together
+
+482
+00:15:03,519 --> 00:15:04,389
+so
+
+483
+00:15:04,399 --> 00:15:06,389
+you know the kind of thing you might say
+
+484
+00:15:06,399 --> 00:15:07,350
+is
+
+485
+00:15:07,360 --> 00:15:09,829
+if you're an admin of a folder then
+
+486
+00:15:09,839 --> 00:15:11,670
+you're an admin of any file inside that
+
+487
+00:15:11,680 --> 00:15:12,710
+folder
+
+488
+00:15:12,720 --> 00:15:14,470
+and so the configuration format kind of
+
+489
+00:15:14,480 --> 00:15:16,550
+allows you to express that kind of logic
+
+490
+00:15:16,560 --> 00:15:18,150
+here's how you kind of take those data
+
+491
+00:15:18,160 --> 00:15:20,230
+pieces and kind of combine them together
+
+492
+00:15:20,240 --> 00:15:21,829
+putting all that stuff together you now
+
+493
+00:15:21,839 --> 00:15:24,310
+have like the core of this authorization
+
+494
+00:15:24,320 --> 00:15:25,829
+system it's not fully the way to
+
+495
+00:15:25,839 --> 00:15:27,110
+authorization but it's like a long way
+
+496
+00:15:27,120 --> 00:15:28,550
+there it's like what relationship do i
+
+497
+00:15:28,560 --> 00:15:30,470
+have with this piece of data
+
+498
+00:15:30,480 --> 00:15:32,150
+this authorization engine can basically
+
+499
+00:15:32,160 --> 00:15:33,829
+take the configuration can take all of
+
+500
+00:15:33,839 --> 00:15:35,670
+its data and do that expensive
+
+501
+00:15:35,680 --> 00:15:37,910
+computation like you know recursively
+
+502
+00:15:37,920 --> 00:15:39,030
+this file belongs to this folder this
+
+503
+00:15:39,040 --> 00:15:40,150
+folder wants this folder this folder
+
+504
+00:15:40,160 --> 00:15:41,670
+launched this organization oh and this
+
+505
+00:15:41,680 --> 00:15:44,389
+user is an admin of that organization so
+
+506
+00:15:44,399 --> 00:15:45,990
+tracing all that through you know doing
+
+507
+00:15:46,000 --> 00:15:48,310
+that recursive query i can figure out
+
+508
+00:15:48,320 --> 00:15:50,230
+that like yes you are an owner of this
+
+509
+00:15:50,240 --> 00:15:52,949
+file and voila your google document
+
+510
+00:15:52,959 --> 00:15:54,949
+opens and you know you're allowed to go
+
+511
+00:15:54,959 --> 00:15:55,990
+and edit it
+
+512
+00:15:56,000 --> 00:15:58,629
+the other part uh where you know that
+
+513
+00:15:58,639 --> 00:16:01,110
+google document opening quickly uh is
+
+514
+00:16:01,120 --> 00:16:03,430
+also a big thing i think the thing that
+
+515
+00:16:03,440 --> 00:16:05,110
+fantastically stood out in that paper
+
+516
+00:16:05,120 --> 00:16:07,670
+was of course the scalability challenges
+
+517
+00:16:07,680 --> 00:16:09,110
+and the numbers that they threw out
+
+518
+00:16:09,120 --> 00:16:11,189
+there right like just to quote a few of
+
+519
+00:16:11,199 --> 00:16:12,790
+it i have to read it from here one i
+
+520
+00:16:12,800 --> 00:16:15,350
+think it said something like 1500
+
+521
+00:16:15,360 --> 00:16:17,749
+namespace which is defined by hundreds
+
+522
+00:16:17,759 --> 00:16:20,230
+of clients and there were two trillion
+
+523
+00:16:20,240 --> 00:16:22,629
+relationship tuples of about 100
+
+524
+00:16:22,639 --> 00:16:25,350
+terabytes and he was able to handle 10
+
+525
+00:16:25,360 --> 00:16:27,910
+million client queries per second
+
+526
+00:16:27,920 --> 00:16:28,629
+so
+
+527
+00:16:28,639 --> 00:16:31,030
+in this regard i wanted to ask you your
+
+528
+00:16:31,040 --> 00:16:34,629
+take on how important is it for a good
+
+529
+00:16:34,639 --> 00:16:37,509
+authorization system to place importance
+
+530
+00:16:37,519 --> 00:16:40,230
+on say scalability and consistency i
+
+531
+00:16:40,240 --> 00:16:41,430
+mean those numbers kind of speak for
+
+532
+00:16:41,440 --> 00:16:42,870
+themselves right i mean if you think
+
+533
+00:16:42,880 --> 00:16:44,069
+about the
+
+534
+00:16:44,079 --> 00:16:45,670
+the volume of data is not surprising
+
+535
+00:16:45,680 --> 00:16:47,670
+when i just you know spoke about what it
+
+536
+00:16:47,680 --> 00:16:49,829
+consists of files blowing to folders
+
+537
+00:16:49,839 --> 00:16:51,670
+users having wrote like a lot of that is
+
+538
+00:16:51,680 --> 00:16:53,509
+really core application data and so
+
+539
+00:16:53,519 --> 00:16:54,470
+you're saying
+
+540
+00:16:54,480 --> 00:16:55,910
+you know this is a central data store
+
+541
+00:16:55,920 --> 00:16:57,350
+that is handling
+
+542
+00:16:57,360 --> 00:16:59,269
+a big chunk of
+
+543
+00:16:59,279 --> 00:17:00,550
+google's data you know and that's why
+
+544
+00:17:00,560 --> 00:17:02,389
+there is 10 trillion whatever it was
+
+545
+00:17:02,399 --> 00:17:04,390
+relationships that's you know data
+
+546
+00:17:04,400 --> 00:17:05,750
+basically collected from every app at
+
+547
+00:17:05,760 --> 00:17:06,870
+google
+
+548
+00:17:06,880 --> 00:17:08,630
+and then you you think about the you
+
+549
+00:17:08,640 --> 00:17:10,949
+know 10 million queries per second
+
+550
+00:17:10,959 --> 00:17:13,189
+authorization is something that is
+
+551
+00:17:13,199 --> 00:17:14,470
+happening on
+
+552
+00:17:14,480 --> 00:17:16,309
+or should be happening either once if
+
+553
+00:17:16,319 --> 00:17:17,909
+not multiple times on like every single
+
+554
+00:17:17,919 --> 00:17:20,069
+request that goes to any application
+
+555
+00:17:20,079 --> 00:17:22,150
+like anytime a user reads a piece of
+
+556
+00:17:22,160 --> 00:17:23,429
+data you should be checking are they
+
+557
+00:17:23,439 --> 00:17:24,630
+allowed to read that anytime they try
+
+558
+00:17:24,640 --> 00:17:26,470
+and do something you need to be checking
+
+559
+00:17:26,480 --> 00:17:28,390
+are they allowed to do that for any
+
+560
+00:17:28,400 --> 00:17:29,909
+application authorization is always
+
+561
+00:17:29,919 --> 00:17:32,230
+going to be this piece that is
+
+562
+00:17:32,240 --> 00:17:33,350
+effectively
+
+563
+00:17:33,360 --> 00:17:35,590
+kind of like kind of a fixed cost on
+
+564
+00:17:35,600 --> 00:17:37,110
+the scale of your application it's like
+
+565
+00:17:37,120 --> 00:17:38,630
+not something that just
+
+566
+00:17:38,640 --> 00:17:40,310
+you know it's painful at a certain stage
+
+567
+00:17:40,320 --> 00:17:41,430
+it's like no it's always going to be
+
+568
+00:17:41,440 --> 00:17:43,029
+it's always getting expensive
+
+569
+00:17:43,039 --> 00:17:45,350
+and it's pretty common basically for any
+
+570
+00:17:45,360 --> 00:17:46,789
+for any team that like authorization is
+
+571
+00:17:46,799 --> 00:17:48,710
+going to be this like hugely impactful
+
+572
+00:17:48,720 --> 00:17:50,950
+performing piece of their their app and
+
+573
+00:17:50,960 --> 00:17:52,390
+i think you know basically what google
+
+574
+00:17:52,400 --> 00:17:53,830
+did by putting this all into one place
+
+575
+00:17:53,840 --> 00:17:54,870
+and being able to measure is you can
+
+576
+00:17:54,880 --> 00:17:56,710
+kind of see the impact of that full
+
+577
+00:17:56,720 --> 00:17:59,029
+disclosure here so at my day job i also
+
+578
+00:17:59,039 --> 00:18:01,350
+have been working on building a kind of
+
+579
+00:18:01,360 --> 00:18:04,470
+unified authorization service we're on
+
+580
+00:18:04,480 --> 00:18:06,870
+iteration 2 right now it's tough trying
+
+581
+00:18:06,880 --> 00:18:09,590
+to build something generically is
+
+582
+00:18:09,600 --> 00:18:12,710
+challenging to say the least so in your
+
+583
+00:18:12,720 --> 00:18:15,909
+experience should you build your own
+
+584
+00:18:15,919 --> 00:18:18,150
+authorization service or should you
+
+585
+00:18:18,160 --> 00:18:19,669
+repurpose something
+
+586
+00:18:19,679 --> 00:18:21,510
+any advice on that
+
+587
+00:18:21,520 --> 00:18:23,430
+the challenge is there really
+
+588
+00:18:23,440 --> 00:18:25,029
+aren't that many existing solutions out
+
+589
+00:18:25,039 --> 00:18:26,870
+there i mean that's obviously so that
+
+590
+00:18:26,880 --> 00:18:28,070
+we're trying to change you know we're
+
+591
+00:18:28,080 --> 00:18:30,070
+trying to address by building building
+
+592
+00:18:30,080 --> 00:18:31,430
+stuff and and there's kind of a few
+
+593
+00:18:31,440 --> 00:18:32,230
+other
+
+594
+00:18:32,240 --> 00:18:34,070
+people out there trying to do the same
+
+595
+00:18:34,080 --> 00:18:35,350
+the challenge a lot of people face that
+
+596
+00:18:35,360 --> 00:18:37,909
+we've spoken we've spoken with is
+
+597
+00:18:37,919 --> 00:18:39,510
+companies rather share like 80 of like
+
+598
+00:18:39,520 --> 00:18:40,950
+kind of the same logic the same core
+
+599
+00:18:40,960 --> 00:18:42,470
+pieces and and that stuff you could
+
+600
+00:18:42,480 --> 00:18:44,070
+maybe try and like standardize or you
+
+601
+00:18:44,080 --> 00:18:45,750
+could build like one product for and
+
+602
+00:18:45,760 --> 00:18:47,909
+solve but everybody has their own like
+
+603
+00:18:47,919 --> 00:18:50,070
+20 of like special unique to their
+
+604
+00:18:50,080 --> 00:18:52,150
+business things they need to handle
+
+605
+00:18:52,160 --> 00:18:54,070
+you know whether it's like
+
+606
+00:18:54,080 --> 00:18:55,029
+some
+
+607
+00:18:55,039 --> 00:18:57,350
+billing based logic where if you've paid
+
+608
+00:18:57,360 --> 00:18:59,110
+for a certainty you get access maybe
+
+609
+00:18:59,120 --> 00:19:01,350
+it's around like usage quotas maybe it's
+
+610
+00:19:01,360 --> 00:19:03,430
+around i know you have a specific like
+
+611
+00:19:03,440 --> 00:19:04,950
+collaboration and sharing model like
+
+612
+00:19:04,960 --> 00:19:07,110
+everyone has these unique pieces and so
+
+613
+00:19:07,120 --> 00:19:08,549
+it can be really hard to find something
+
+614
+00:19:08,559 --> 00:19:10,710
+like off the shelf that like just works
+
+615
+00:19:10,720 --> 00:19:12,710
+you know you take something like like a
+
+616
+00:19:12,720 --> 00:19:14,549
+zanzibar as i say earlier it gets you
+
+617
+00:19:14,559 --> 00:19:15,510
+like a lot of the way there if it
+
+618
+00:19:15,520 --> 00:19:16,789
+doesn't actually even like fully solve
+
+619
+00:19:16,799 --> 00:19:19,669
+your problem i think the key key problem
+
+620
+00:19:19,679 --> 00:19:22,310
+that like google science bar solves is
+
+621
+00:19:22,320 --> 00:19:24,549
+performing data lookups over like very
+
+622
+00:19:24,559 --> 00:19:26,710
+relational data very like hierarchical
+
+623
+00:19:26,720 --> 00:19:28,789
+nested data especially if you want to do
+
+624
+00:19:28,799 --> 00:19:29,990
+that across
+
+625
+00:19:30,000 --> 00:19:32,150
+like multiple applications it's like one
+
+626
+00:19:32,160 --> 00:19:34,070
+of the things that zanzibar was needed
+
+627
+00:19:34,080 --> 00:19:35,430
+to solve was like
+
+628
+00:19:35,440 --> 00:19:36,950
+i might get the specifics wrong of this
+
+629
+00:19:36,960 --> 00:19:38,630
+but it's like if you're embedding a
+
+630
+00:19:38,640 --> 00:19:40,470
+youtube video inside a google document
+
+631
+00:19:40,480 --> 00:19:42,070
+then you might still need to do
+
+632
+00:19:42,080 --> 00:19:44,789
+authorization on the youtube document
+
+633
+00:19:44,799 --> 00:19:46,310
+and the google document and like kind of
+
+634
+00:19:46,320 --> 00:19:47,669
+do those things together it's like get
+
+635
+00:19:47,679 --> 00:19:49,510
+kind of like messy nested but that's
+
+636
+00:19:49,520 --> 00:19:51,750
+like one one big piece that zanzibar is
+
+637
+00:19:51,760 --> 00:19:52,870
+going after but it doesn't kind of
+
+638
+00:19:52,880 --> 00:19:55,029
+actually help you go do that like final
+
+639
+00:19:55,039 --> 00:19:56,310
+piece of
+
+640
+00:19:56,320 --> 00:19:57,430
+what different permissions do you have
+
+641
+00:19:57,440 --> 00:19:58,950
+inside a google document and like what
+
+642
+00:19:58,960 --> 00:20:00,630
+can what kind of editor or document do
+
+643
+00:20:00,640 --> 00:20:02,630
+versus what kind of viewer can do and
+
+644
+00:20:02,640 --> 00:20:04,070
+like what should the user interface look
+
+645
+00:20:04,080 --> 00:20:05,350
+like like what pieces of data should we
+
+646
+00:20:05,360 --> 00:20:06,870
+share to the user like should we tell
+
+647
+00:20:06,880 --> 00:20:08,710
+the user if they can do this or not the
+
+648
+00:20:08,720 --> 00:20:10,630
+challenge with authorization is there
+
+649
+00:20:10,640 --> 00:20:12,310
+like so many different parts of the
+
+650
+00:20:12,320 --> 00:20:13,909
+prompt to solve that cut across so many
+
+651
+00:20:13,919 --> 00:20:15,510
+different parts of the stack
+
+652
+00:20:15,520 --> 00:20:17,350
+that it's sort of hard to talk about
+
+653
+00:20:17,360 --> 00:20:18,230
+like
+
+654
+00:20:18,240 --> 00:20:20,230
+do we build an authorization service or
+
+655
+00:20:20,240 --> 00:20:21,350
+not like
+
+656
+00:20:21,360 --> 00:20:22,950
+should someone solve this or not it's
+
+657
+00:20:22,960 --> 00:20:24,950
+around finding the
+
+658
+00:20:24,960 --> 00:20:27,029
+suitable pieces to
+
+659
+00:20:27,039 --> 00:20:28,230
+attack like the different parts of the
+
+660
+00:20:28,240 --> 00:20:29,430
+problem you have
+
+661
+00:20:29,440 --> 00:20:31,029
+zanzibar i think specifically is very
+
+662
+00:20:31,039 --> 00:20:33,110
+good at solving that like scaling
+
+663
+00:20:33,120 --> 00:20:34,870
+authorization
+
+664
+00:20:34,880 --> 00:20:37,270
+for deeply hierarchical nested data like
+
+665
+00:20:37,280 --> 00:20:38,710
+a global scale
+
+666
+00:20:38,720 --> 00:20:40,870
+but it's also not like a template to
+
+667
+00:20:40,880 --> 00:20:42,390
+build something and solve all your
+
+668
+00:20:42,400 --> 00:20:43,510
+problems
+
+669
+00:20:43,520 --> 00:20:45,350
+what i'm hearing is there's just not any
+
+670
+00:20:45,360 --> 00:20:48,390
+one magic bullet for your authorization
+
+671
+00:20:48,400 --> 00:20:50,630
+challenges oh yeah unfortunately
+
+672
+00:20:50,640 --> 00:20:52,630
+you have to go through the hard task of
+
+673
+00:20:52,640 --> 00:20:55,110
+actually building the relationships and
+
+674
+00:20:55,120 --> 00:20:57,190
+trying to work it out i guess the
+
+675
+00:20:57,200 --> 00:20:59,830
+modeling is super important before you
+
+676
+00:20:59,840 --> 00:21:02,549
+jump into any implementation
+
+677
+00:21:02,559 --> 00:21:04,710
+and enforcement
+
+678
+00:21:04,720 --> 00:21:06,950
+so now i guess i should move on to the
+
+679
+00:21:06,960 --> 00:21:09,029
+meat of what we're here to talk with you
+
+680
+00:21:09,039 --> 00:21:12,470
+about which is also what is also i did
+
+681
+00:21:12,480 --> 00:21:15,669
+read on twitter that also means there in
+
+682
+00:21:15,679 --> 00:21:18,310
+spanish what's the inspiration and how
+
+683
+00:21:18,320 --> 00:21:20,870
+did that tie in with authorization yeah
+
+684
+00:21:20,880 --> 00:21:23,029
+i was always indeed fair in spanish the
+
+685
+00:21:23,039 --> 00:21:24,789
+name came about
+
+686
+00:21:24,799 --> 00:21:26,470
+i mean honestly because as you mentioned
+
+687
+00:21:26,480 --> 00:21:28,230
+at the very beginning right like
+
+688
+00:21:28,240 --> 00:21:29,669
+what we're about as a company is is
+
+689
+00:21:29,679 --> 00:21:31,669
+making security easier for developers
+
+690
+00:21:31,679 --> 00:21:32,870
+and
+
+691
+00:21:32,880 --> 00:21:34,789
+when graham and i and my co-founder and
+
+692
+00:21:34,799 --> 00:21:36,950
+i were like coming up with names i kind
+
+693
+00:21:36,960 --> 00:21:38,549
+of had like one requirement i was like i
+
+694
+00:21:38,559 --> 00:21:40,070
+don't want to be named like all those
+
+695
+00:21:40,080 --> 00:21:43,029
+other security companies that sound
+
+696
+00:21:43,039 --> 00:21:45,669
+scary and intimidating and they always
+
+697
+00:21:45,679 --> 00:21:48,230
+have like some security name in them or
+
+698
+00:21:48,240 --> 00:21:50,310
+fortress or things like that and just
+
+699
+00:21:50,320 --> 00:21:51,590
+they really kind of want to feel like
+
+700
+00:21:51,600 --> 00:21:52,950
+they're selling you on like this you
+
+701
+00:21:52,960 --> 00:21:54,549
+know where the secure solution needs to
+
+702
+00:21:54,559 --> 00:21:56,390
+be scared and trust us like that's not
+
+703
+00:21:56,400 --> 00:21:58,789
+what we're about we're about like making
+
+704
+00:21:58,799 --> 00:22:00,310
+security more accessible for developers
+
+705
+00:22:00,320 --> 00:22:01,909
+empowering them giving them tools that
+
+706
+00:22:01,919 --> 00:22:02,950
+help them
+
+707
+00:22:02,960 --> 00:22:04,230
+like take away the bits they don't want
+
+708
+00:22:04,240 --> 00:22:05,830
+to solve and kind of make it easier for
+
+709
+00:22:05,840 --> 00:22:07,350
+them to build and so that was my
+
+710
+00:22:07,360 --> 00:22:08,710
+requirement that we had something that
+
+711
+00:22:08,720 --> 00:22:10,390
+was kind of a little bit more friendly
+
+712
+00:22:10,400 --> 00:22:11,669
+and accessible
+
+713
+00:22:11,679 --> 00:22:12,870
+it happens the graham and i both speak
+
+714
+00:22:12,880 --> 00:22:15,430
+spanish and so and we just and we wanted
+
+715
+00:22:15,440 --> 00:22:16,549
+something that was like kind of easy to
+
+716
+00:22:16,559 --> 00:22:19,110
+remember and easy to spell and randomly
+
+717
+00:22:19,120 --> 00:22:21,110
+came up with with oso just kind of fell
+
+718
+00:22:21,120 --> 00:22:22,230
+in love with that
+
+719
+00:22:22,240 --> 00:22:25,029
+okay so what can also do
+
+720
+00:22:25,039 --> 00:22:26,710
+yeah so oso is an open source framework
+
+721
+00:22:26,720 --> 00:22:29,430
+for authorization and the kind of core
+
+722
+00:22:29,440 --> 00:22:31,270
+of it is helping you figure out how to
+
+723
+00:22:31,280 --> 00:22:32,470
+build authorization into your
+
+724
+00:22:32,480 --> 00:22:34,950
+application a few core pieces of this
+
+725
+00:22:34,960 --> 00:22:37,029
+we've touched on a lot so far but so we
+
+726
+00:22:37,039 --> 00:22:39,110
+have for example a party language called
+
+727
+00:22:39,120 --> 00:22:40,870
+polar that has a lot of like kind of
+
+728
+00:22:40,880 --> 00:22:42,630
+building blocks and built-in pieces to
+
+729
+00:22:42,640 --> 00:22:44,630
+help you with that modeling piece so for
+
+730
+00:22:44,640 --> 00:22:45,990
+things like roles and relationships that
+
+731
+00:22:46,000 --> 00:22:47,590
+we've touched on we have like specific
+
+732
+00:22:47,600 --> 00:22:49,830
+patterns built into that to like help
+
+733
+00:22:49,840 --> 00:22:51,830
+you get started and to say like
+
+734
+00:22:51,840 --> 00:22:53,029
+here's the backbone of your
+
+735
+00:22:53,039 --> 00:22:54,630
+authorization model here is you know
+
+736
+00:22:54,640 --> 00:22:57,830
+that 80 that you should just kind of do
+
+737
+00:22:57,840 --> 00:22:59,750
+because the best practice and like kind
+
+738
+00:22:59,760 --> 00:23:01,669
+of you know will give you that piece the
+
+739
+00:23:01,679 --> 00:23:02,950
+policy language piece of it means it's
+
+740
+00:23:02,960 --> 00:23:04,710
+like super flexible to do all those kind
+
+741
+00:23:04,720 --> 00:23:05,590
+of like
+
+742
+00:23:05,600 --> 00:23:06,710
+extra
+
+743
+00:23:06,720 --> 00:23:08,070
+custom things you're gonna need to do
+
+744
+00:23:08,080 --> 00:23:09,430
+you know you can you know if this thing
+
+745
+00:23:09,440 --> 00:23:11,350
+is public you can see it and if the you
+
+746
+00:23:11,360 --> 00:23:13,190
+know whatever this was created in the
+
+747
+00:23:13,200 --> 00:23:15,029
+last 10 days and you can't edit it you
+
+748
+00:23:15,039 --> 00:23:16,390
+know whatever the custom logic needs to
+
+749
+00:23:16,400 --> 00:23:17,830
+be like the policy engine can help you
+
+750
+00:23:17,840 --> 00:23:18,549
+do
+
+751
+00:23:18,559 --> 00:23:20,070
+and so that's like on the modeling front
+
+752
+00:23:20,080 --> 00:23:21,190
+we support like a number of different
+
+753
+00:23:21,200 --> 00:23:22,710
+languages and we have a kind of a bunch
+
+754
+00:23:22,720 --> 00:23:24,390
+of enforcement apis that really helps
+
+755
+00:23:24,400 --> 00:23:25,350
+you with the
+
+756
+00:23:25,360 --> 00:23:27,590
+how do you actually make an integrated
+
+757
+00:23:27,600 --> 00:23:29,190
+authorization like into your application
+
+758
+00:23:29,200 --> 00:23:30,470
+like how do you make sure you're turning
+
+759
+00:23:30,480 --> 00:23:33,029
+the right pieces of data how can you you
+
+760
+00:23:33,039 --> 00:23:34,070
+know make sure you're taking the right
+
+761
+00:23:34,080 --> 00:23:35,669
+action at the right time and kind of
+
+762
+00:23:35,679 --> 00:23:37,430
+making sure you don't get anything wrong
+
+763
+00:23:37,440 --> 00:23:39,510
+so you talked about patterns what is
+
+764
+00:23:39,520 --> 00:23:41,350
+that can we just explain that a little
+
+765
+00:23:41,360 --> 00:23:43,190
+bit more what do you mean that patterns
+
+766
+00:23:43,200 --> 00:23:45,350
+so we have this concept of a resource
+
+767
+00:23:45,360 --> 00:23:47,669
+block the policies you write with also
+
+768
+00:23:47,679 --> 00:23:49,190
+very resource-centric because a lot of
+
+769
+00:23:49,200 --> 00:23:50,789
+authorization tends to be like can i see
+
+770
+00:23:50,799 --> 00:23:53,269
+this thing or not and so we have
+
+771
+00:23:53,279 --> 00:23:55,269
+you know syntax built into language to
+
+772
+00:23:55,279 --> 00:23:58,149
+express hey i have a resource
+
+773
+00:23:58,159 --> 00:23:59,430
+these are the kinds of permissions that
+
+774
+00:23:59,440 --> 00:24:01,110
+users can have on that resource you know
+
+775
+00:24:01,120 --> 00:24:02,470
+they can read they can write they can
+
+776
+00:24:02,480 --> 00:24:04,630
+delete here are the roles that i want to
+
+777
+00:24:04,640 --> 00:24:06,710
+exist on this resource and like hear the
+
+778
+00:24:06,720 --> 00:24:08,630
+relationships that this resource has
+
+779
+00:24:08,640 --> 00:24:10,149
+with other ones you know so
+
+780
+00:24:10,159 --> 00:24:11,990
+you know i have a document and it has a
+
+781
+00:24:12,000 --> 00:24:13,990
+parent folder and so we kind of have
+
+782
+00:24:14,000 --> 00:24:15,990
+like syntax that helps you like specify
+
+783
+00:24:16,000 --> 00:24:18,149
+that like declare his here's everything
+
+784
+00:24:18,159 --> 00:24:20,230
+i know about my resource now that you
+
+785
+00:24:20,240 --> 00:24:22,310
+have kind of like that piece in place
+
+786
+00:24:22,320 --> 00:24:24,310
+we make it like super easy to to write
+
+787
+00:24:24,320 --> 00:24:26,230
+your authorization logic from that you
+
+788
+00:24:26,240 --> 00:24:28,310
+know user can read this document if they
+
+789
+00:24:28,320 --> 00:24:31,510
+are an admin of the parent folder
+
+790
+00:24:31,520 --> 00:24:33,350
+like you literally just write you know
+
+791
+00:24:33,360 --> 00:24:36,070
+read if admin on parent that's simple to
+
+792
+00:24:36,080 --> 00:24:37,750
+write that model so we kind of give you
+
+793
+00:24:37,760 --> 00:24:39,029
+those like building blocks there so you
+
+794
+00:24:39,039 --> 00:24:40,630
+can kind of get your core authorization
+
+795
+00:24:40,640 --> 00:24:42,310
+model built out really quickly so
+
+796
+00:24:42,320 --> 00:24:44,230
+there's a lot of examples and things
+
+797
+00:24:44,240 --> 00:24:45,909
+like that to start off lots of darks
+
+798
+00:24:45,919 --> 00:24:47,750
+lots of examples lots of like yeah
+
+799
+00:24:47,760 --> 00:24:49,669
+sample applications using this things
+
+800
+00:24:49,679 --> 00:24:51,269
+like that one of the things that you
+
+801
+00:24:51,279 --> 00:24:52,789
+talked about when you were chatting
+
+802
+00:24:52,799 --> 00:24:54,149
+right now is you know you need to do
+
+803
+00:24:54,159 --> 00:24:56,470
+authorization at like say every level
+
+804
+00:24:56,480 --> 00:24:57,750
+like it could be
+
+805
+00:24:57,760 --> 00:25:00,390
+right from the ui to the business logic
+
+806
+00:25:00,400 --> 00:25:02,710
+to maybe at the database
+
+807
+00:25:02,720 --> 00:25:05,110
+so does also do give you like patterns
+
+808
+00:25:05,120 --> 00:25:07,350
+for that as well like yeah that's coming
+
+809
+00:25:07,360 --> 00:25:09,110
+coming back to the the enforcement apis
+
+810
+00:25:09,120 --> 00:25:10,950
+i was talking about it just kind of
+
+811
+00:25:10,960 --> 00:25:12,789
+provides some more context for folks
+
+812
+00:25:12,799 --> 00:25:14,470
+listening in something i think people
+
+813
+00:25:14,480 --> 00:25:15,909
+often overlook with authorization is
+
+814
+00:25:15,919 --> 00:25:17,590
+just like how far it can spread through
+
+815
+00:25:17,600 --> 00:25:19,669
+an app authorization done really well
+
+816
+00:25:19,679 --> 00:25:21,350
+can be like should be bubbled up like
+
+817
+00:25:21,360 --> 00:25:23,590
+all the way to the user interface so
+
+818
+00:25:23,600 --> 00:25:25,430
+you're going through the website you're
+
+819
+00:25:25,440 --> 00:25:27,190
+trying to do something and maybe the
+
+820
+00:25:27,200 --> 00:25:29,269
+button is grayed out and you hover over
+
+821
+00:25:29,279 --> 00:25:30,870
+and says like you know only admins can
+
+822
+00:25:30,880 --> 00:25:31,990
+delete this
+
+823
+00:25:32,000 --> 00:25:33,269
+that right there is like your
+
+824
+00:25:33,279 --> 00:25:34,630
+authorization logic that's been like
+
+825
+00:25:34,640 --> 00:25:36,870
+presented all the way up to your user i
+
+826
+00:25:36,880 --> 00:25:38,149
+think the worst people have seen of this
+
+827
+00:25:38,159 --> 00:25:39,269
+is you try and do something and you get
+
+828
+00:25:39,279 --> 00:25:40,710
+some like horrible pop-up you can't do
+
+829
+00:25:40,720 --> 00:25:42,470
+this talk to your administrator
+
+830
+00:25:42,480 --> 00:25:43,669
+like what
+
+831
+00:25:43,679 --> 00:25:44,870
+this becomes like a really interesting
+
+832
+00:25:44,880 --> 00:25:47,029
+challenge with authorizations it's like
+
+833
+00:25:47,039 --> 00:25:48,470
+you want to apply best practices and
+
+834
+00:25:48,480 --> 00:25:50,310
+like decouple it and keep it separate
+
+835
+00:25:50,320 --> 00:25:52,230
+from your business logic but it it's so
+
+836
+00:25:52,240 --> 00:25:54,310
+pervasive how do you solve that the way
+
+837
+00:25:54,320 --> 00:25:55,990
+we let you do that with oso so you
+
+838
+00:25:56,000 --> 00:25:57,350
+express your logic in this party
+
+839
+00:25:57,360 --> 00:25:58,789
+language and that's kind of it's by
+
+840
+00:25:58,799 --> 00:26:00,950
+itself kind of separate from the app but
+
+841
+00:26:00,960 --> 00:26:02,149
+when you need to
+
+842
+00:26:02,159 --> 00:26:03,590
+integrate with your applications we have
+
+843
+00:26:03,600 --> 00:26:05,669
+like different apis of different layers
+
+844
+00:26:05,679 --> 00:26:06,549
+so
+
+845
+00:26:06,559 --> 00:26:07,909
+one that's useful for the for like the
+
+846
+00:26:07,919 --> 00:26:09,909
+front end is you can get you can ask
+
+847
+00:26:09,919 --> 00:26:11,350
+also for like a list of all the things
+
+848
+00:26:11,360 --> 00:26:12,710
+the user can do
+
+849
+00:26:12,720 --> 00:26:13,909
+and then you can like return that's the
+
+850
+00:26:13,919 --> 00:26:15,909
+front end and use it to like make ui
+
+851
+00:26:15,919 --> 00:26:16,950
+differences
+
+852
+00:26:16,960 --> 00:26:18,549
+the core one is basically just
+
+853
+00:26:18,559 --> 00:26:19,909
+authorizing can you use to do this thing
+
+854
+00:26:19,919 --> 00:26:21,830
+or not but then we also have you know
+
+855
+00:26:21,840 --> 00:26:24,870
+things like an authorized query api
+
+856
+00:26:24,880 --> 00:26:27,190
+which basically allows you to
+
+857
+00:26:27,200 --> 00:26:29,350
+get your policy your authorization logic
+
+858
+00:26:29,360 --> 00:26:31,110
+utilization policy expressed as like a
+
+859
+00:26:31,120 --> 00:26:32,950
+database filter so instead of just
+
+860
+00:26:32,960 --> 00:26:34,390
+saying can the user see this one thing
+
+861
+00:26:34,400 --> 00:26:35,669
+you say like what are all the things
+
+862
+00:26:35,679 --> 00:26:37,430
+this user can see i'm actually then
+
+863
+00:26:37,440 --> 00:26:39,029
+going to go make that as a database
+
+864
+00:26:39,039 --> 00:26:40,870
+query i'm going to the database handle
+
+865
+00:26:40,880 --> 00:26:42,710
+the heavy lifting of like filtering down
+
+866
+00:26:42,720 --> 00:26:44,710
+my you know what have 10 million records
+
+867
+00:26:44,720 --> 00:26:46,789
+down to the five the user can see
+
+868
+00:26:46,799 --> 00:26:47,909
+you know something that people often
+
+869
+00:26:47,919 --> 00:26:49,990
+overlook but it's to do that well
+
+870
+00:26:50,000 --> 00:26:51,350
+requires you to have a system that is
+
+871
+00:26:51,360 --> 00:26:53,190
+like aware that needs to be used in all
+
+872
+00:26:53,200 --> 00:26:55,029
+these like multiple different places
+
+873
+00:26:55,039 --> 00:26:56,310
+i was actually going to ask you some
+
+874
+00:26:56,320 --> 00:26:58,470
+stuff on filtering but maybe i can ask
+
+875
+00:26:58,480 --> 00:26:59,430
+that now
+
+876
+00:26:59,440 --> 00:27:01,990
+so specifically this because um you know
+
+877
+00:27:02,000 --> 00:27:04,390
+we talked about having authorization at
+
+878
+00:27:04,400 --> 00:27:06,390
+every layer i think this latency becomes
+
+879
+00:27:06,400 --> 00:27:08,149
+a big problem getting huge amounts of
+
+880
+00:27:08,159 --> 00:27:09,990
+data and then what do you present to to
+
+881
+00:27:10,000 --> 00:27:11,269
+the user right
+
+882
+00:27:11,279 --> 00:27:13,990
+what can also help with this you have
+
+883
+00:27:14,000 --> 00:27:16,950
+any sort of filtering specific tips and
+
+884
+00:27:16,960 --> 00:27:17,990
+tricks i don't know do you have a
+
+885
+00:27:18,000 --> 00:27:19,669
+filtering query language or something
+
+886
+00:27:19,679 --> 00:27:21,750
+like that so what we have
+
+887
+00:27:21,760 --> 00:27:22,630
+is
+
+888
+00:27:22,640 --> 00:27:24,070
+without wanting to go too much into the
+
+889
+00:27:24,080 --> 00:27:25,909
+weeds of this we sort of have an api
+
+890
+00:27:25,919 --> 00:27:27,590
+that allows you to say
+
+891
+00:27:27,600 --> 00:27:29,190
+instead of passing in a concrete object
+
+892
+00:27:29,200 --> 00:27:30,950
+and saying can the user see this you
+
+893
+00:27:30,960 --> 00:27:33,190
+basically just tell us like the type
+
+894
+00:27:33,200 --> 00:27:35,510
+the resource type you know the document
+
+895
+00:27:35,520 --> 00:27:37,029
+you pass in the you know arguments being
+
+896
+00:27:37,039 --> 00:27:39,590
+like user maybe the string read and this
+
+897
+00:27:39,600 --> 00:27:42,389
+type document and basically when also
+
+898
+00:27:42,399 --> 00:27:43,990
+goes and evaluates the authorization
+
+899
+00:27:44,000 --> 00:27:46,070
+logic you wrote in the policy it goes
+
+900
+00:27:46,080 --> 00:27:47,190
+through and basically instead of like
+
+901
+00:27:47,200 --> 00:27:49,430
+concretely checking you know is this
+
+902
+00:27:49,440 --> 00:27:51,430
+what are the fields on this resource it
+
+903
+00:27:51,440 --> 00:27:53,029
+kind of just like accumulates those as a
+
+904
+00:27:53,039 --> 00:27:54,389
+set of filters
+
+905
+00:27:54,399 --> 00:27:55,590
+and it can do this across like pretty
+
+906
+00:27:55,600 --> 00:27:57,750
+complex expressions right so
+
+907
+00:27:57,760 --> 00:27:58,870
+the
+
+908
+00:27:58,880 --> 00:28:00,470
+you know expression it gets back might
+
+909
+00:28:00,480 --> 00:28:01,510
+be
+
+910
+00:28:01,520 --> 00:28:04,310
+yes the user can see all documents
+
+911
+00:28:04,320 --> 00:28:06,710
+that belong to a folder
+
+912
+00:28:06,720 --> 00:28:10,070
+where the user has the admin role or the
+
+913
+00:28:10,080 --> 00:28:12,070
+member role on that folder
+
+914
+00:28:12,080 --> 00:28:13,430
+we do have like an internal
+
+915
+00:28:13,440 --> 00:28:14,789
+representation for that that does look
+
+916
+00:28:14,799 --> 00:28:16,630
+kind of very similar to at least in the
+
+917
+00:28:16,640 --> 00:28:18,789
+latest version looks quite similar to
+
+918
+00:28:18,799 --> 00:28:20,230
+like a relational algebra like a sql
+
+919
+00:28:20,240 --> 00:28:21,830
+kind of thing but it's mostly just like
+
+920
+00:28:21,840 --> 00:28:23,590
+an internal thing and then we basically
+
+921
+00:28:23,600 --> 00:28:24,950
+have an api that allows you to kind of
+
+922
+00:28:24,960 --> 00:28:27,990
+hook that up to your data models so that
+
+923
+00:28:28,000 --> 00:28:29,190
+typically is very easy to do with
+
+924
+00:28:29,200 --> 00:28:30,470
+something like an rm but we're also
+
+925
+00:28:30,480 --> 00:28:32,230
+making it possible to go like direct to
+
+926
+00:28:32,240 --> 00:28:33,510
+sql with that
+
+927
+00:28:33,520 --> 00:28:35,430
+the kind of core points is
+
+928
+00:28:35,440 --> 00:28:37,590
+yeah we sort of return this intermediate
+
+929
+00:28:37,600 --> 00:28:39,029
+expression that like kind of looks like
+
+930
+00:28:39,039 --> 00:28:40,950
+a data filter but we have like an api to
+
+931
+00:28:40,960 --> 00:28:42,310
+hook that up into
+
+932
+00:28:42,320 --> 00:28:45,510
+existing data models the idea being that
+
+933
+00:28:45,520 --> 00:28:46,710
+you
+
+934
+00:28:46,720 --> 00:28:48,310
+basically get to do this like rich
+
+935
+00:28:48,320 --> 00:28:49,830
+complex authorization and you know what
+
+936
+00:28:49,840 --> 00:28:52,070
+all the things i can see but your your
+
+937
+00:28:52,080 --> 00:28:53,590
+application data like stays exactly
+
+938
+00:28:53,600 --> 00:28:54,710
+where it is
+
+939
+00:28:54,720 --> 00:28:55,990
+and this is kind of
+
+940
+00:28:56,000 --> 00:28:57,510
+the big like conceptual difference
+
+941
+00:28:57,520 --> 00:28:58,389
+between
+
+942
+00:28:58,399 --> 00:29:00,630
+oso and like a zanzibar so what else
+
+943
+00:29:00,640 --> 00:29:03,029
+describing zanzibar as a developer
+
+944
+00:29:03,039 --> 00:29:04,230
+you're responsible for basically
+
+945
+00:29:04,240 --> 00:29:05,990
+migrating and moving all of your data
+
+946
+00:29:06,000 --> 00:29:07,029
+all your application data into the
+
+947
+00:29:07,039 --> 00:29:08,310
+central servers
+
+948
+00:29:08,320 --> 00:29:09,590
+it's very convenient to do that because
+
+949
+00:29:09,600 --> 00:29:10,870
+now it's like well now my data is
+
+950
+00:29:10,880 --> 00:29:13,029
+structured so i can do authorization for
+
+951
+00:29:13,039 --> 00:29:15,430
+you we kind of push ourselves
+
+952
+00:29:15,440 --> 00:29:16,710
+we challenge ourselves to say like
+
+953
+00:29:16,720 --> 00:29:18,710
+actually i think we don't have to deal
+
+954
+00:29:18,720 --> 00:29:20,950
+with migrating synchronizing data data
+
+955
+00:29:20,960 --> 00:29:22,149
+should stay where it is that's the
+
+956
+00:29:22,159 --> 00:29:23,510
+easiest way to be able to make like
+
+957
+00:29:23,520 --> 00:29:26,230
+dynamic up-to-date decisions so instead
+
+958
+00:29:26,240 --> 00:29:27,269
+we're going to do that work of like
+
+959
+00:29:27,279 --> 00:29:28,630
+figuring out how do we plug in and
+
+960
+00:29:28,640 --> 00:29:30,630
+integrate with your database
+
+961
+00:29:30,640 --> 00:29:32,710
+okay it's interesting so you also will
+
+962
+00:29:32,720 --> 00:29:34,950
+actually tie in with any of your data
+
+963
+00:29:34,960 --> 00:29:37,269
+models on your database and provide you
+
+964
+00:29:37,279 --> 00:29:39,350
+this query processing i guess that's
+
+965
+00:29:39,360 --> 00:29:41,269
+again something that you have to
+
+966
+00:29:41,279 --> 00:29:43,269
+actually look for okay that's great i
+
+967
+00:29:43,279 --> 00:29:44,950
+think i think and i guess there are many
+
+968
+00:29:44,960 --> 00:29:47,190
+examples on the documentation on how you
+
+969
+00:29:47,200 --> 00:29:49,830
+could do this right exactly yeah
+
+970
+00:29:49,840 --> 00:29:51,190
+what can be really nice about this as
+
+971
+00:29:51,200 --> 00:29:52,149
+well is
+
+972
+00:29:52,159 --> 00:29:54,710
+it also sometimes lets you do
+
+973
+00:29:54,720 --> 00:29:56,149
+like your data fetching and your
+
+974
+00:29:56,159 --> 00:29:58,310
+authorization in one shot it's because
+
+975
+00:29:58,320 --> 00:29:59,669
+like typically you're going to need to
+
+976
+00:29:59,679 --> 00:30:00,870
+you get the request you pass the
+
+977
+00:30:00,880 --> 00:30:02,389
+parameters you go and fetch some data
+
+978
+00:30:02,399 --> 00:30:04,070
+from the database we actually make it
+
+979
+00:30:04,080 --> 00:30:05,430
+possible to
+
+980
+00:30:05,440 --> 00:30:06,870
+in that one go fetch the data from the
+
+981
+00:30:06,880 --> 00:30:08,630
+database and apply the authorization
+
+982
+00:30:08,640 --> 00:30:10,630
+logic while you're doing it and so kind
+
+983
+00:30:10,640 --> 00:30:11,750
+of the
+
+984
+00:30:11,760 --> 00:30:13,590
+authorization overhead there is just the
+
+985
+00:30:13,600 --> 00:30:15,909
+kind of extra query parameters there is
+
+986
+00:30:15,919 --> 00:30:17,669
+no like separate latency piece needed
+
+987
+00:30:17,679 --> 00:30:19,669
+which is quite nice okay okay
+
+988
+00:30:19,679 --> 00:30:20,789
+interesting so
+
+989
+00:30:20,799 --> 00:30:22,789
+so you're saying that you know i mean
+
+990
+00:30:22,799 --> 00:30:25,029
+there could be i mean i think latency
+
+991
+00:30:25,039 --> 00:30:27,269
+will not be an issue if you tune the
+
+992
+00:30:27,279 --> 00:30:30,070
+parameters correctly
+
+993
+00:30:30,080 --> 00:30:31,190
+yeah
+
+994
+00:30:31,200 --> 00:30:32,950
+okay you've built this whole
+
+995
+00:30:32,960 --> 00:30:35,669
+authorization logic using your
+
+996
+00:30:35,679 --> 00:30:37,830
+declarative languages are called polar
+
+997
+00:30:37,840 --> 00:30:40,070
+and then you've got it implemented how
+
+998
+00:30:40,080 --> 00:30:42,149
+do you check if this is the right
+
+999
+00:30:42,159 --> 00:30:44,310
+behavior do you have any
+
+1000
+00:30:44,320 --> 00:30:46,630
+testing framework that can check that
+
+1001
+00:30:46,640 --> 00:30:48,070
+it's doing the right thing
+
+1002
+00:30:48,080 --> 00:30:49,510
+yeah so typically
+
+1003
+00:30:49,520 --> 00:30:51,430
+people just use the existing built-in
+
+1004
+00:30:51,440 --> 00:30:53,590
+test frameworks in whatever language and
+
+1005
+00:30:53,600 --> 00:30:55,190
+framework they're using the thing that's
+
+1006
+00:30:55,200 --> 00:30:56,950
+particularly nice about it because what
+
+1007
+00:30:56,960 --> 00:30:58,710
+the approach does is
+
+1008
+00:30:58,720 --> 00:31:00,310
+decouples that logic from the
+
+1009
+00:31:00,320 --> 00:31:02,149
+application code it's basically very
+
+1010
+00:31:02,159 --> 00:31:04,070
+easy to unit test your logic because you
+
+1011
+00:31:04,080 --> 00:31:06,149
+can just write a test that says create a
+
+1012
+00:31:06,159 --> 00:31:07,909
+new dummy user make them an admin and
+
+1013
+00:31:07,919 --> 00:31:09,830
+then check they can read a thing and if
+
+1014
+00:31:09,840 --> 00:31:11,190
+that works you know the application
+
+1015
+00:31:11,200 --> 00:31:12,310
+logic is going to work too because
+
+1016
+00:31:12,320 --> 00:31:13,669
+they're using the same methods they're
+
+1017
+00:31:13,679 --> 00:31:15,750
+using the same apis it basically makes
+
+1018
+00:31:15,760 --> 00:31:17,029
+it very easy to kind of do that sort of
+
+1019
+00:31:17,039 --> 00:31:18,630
+unit testing logic
+
+1020
+00:31:18,640 --> 00:31:19,909
+it is something though that we want to
+
+1021
+00:31:19,919 --> 00:31:21,350
+kind of work and develop on more is
+
+1022
+00:31:21,360 --> 00:31:22,389
+actually
+
+1023
+00:31:22,399 --> 00:31:24,310
+go beyond that and be able to let you
+
+1024
+00:31:24,320 --> 00:31:25,750
+sort of do
+
+1025
+00:31:25,760 --> 00:31:27,350
+kind of like property test style things
+
+1026
+00:31:27,360 --> 00:31:28,710
+where you say
+
+1027
+00:31:28,720 --> 00:31:31,990
+i want to check that any you know user
+
+1028
+00:31:32,000 --> 00:31:33,990
+must have a role some role to be able to
+
+1029
+00:31:34,000 --> 00:31:35,269
+access this kind of resource or
+
+1030
+00:31:35,279 --> 00:31:37,110
+something we can just like just check
+
+1031
+00:31:37,120 --> 00:31:39,750
+that over the policy itself as sort of a
+
+1032
+00:31:39,760 --> 00:31:41,830
+step towards that like now we've
+
+1033
+00:31:41,840 --> 00:31:43,669
+basically been adding a lot of sort of
+
+1034
+00:31:43,679 --> 00:31:45,750
+validation checks to our policy right
+
+1035
+00:31:45,760 --> 00:31:48,710
+now so you know we'll tell you if you've
+
+1036
+00:31:48,720 --> 00:31:50,149
+tried to assign permissions to a role
+
+1037
+00:31:50,159 --> 00:31:51,909
+doesn't exist or if there's a permission
+
+1038
+00:31:51,919 --> 00:31:53,590
+that doesn't have any doesn't have any
+
+1039
+00:31:53,600 --> 00:31:55,590
+roles assigned to it or you're missing a
+
+1040
+00:31:55,600 --> 00:31:57,029
+piece of logic like we'll give you those
+
+1041
+00:31:57,039 --> 00:31:58,870
+kind of built-in verification checks to
+
+1042
+00:31:58,880 --> 00:32:00,870
+make sure you get it right
+
+1043
+00:32:00,880 --> 00:32:01,909
+i should have asked you this in the
+
+1044
+00:32:01,919 --> 00:32:03,669
+beginning but one of the things that is
+
+1045
+00:32:03,679 --> 00:32:04,789
+plaguing
+
+1046
+00:32:04,799 --> 00:32:06,789
+me to work and i i don't know if this is
+
+1047
+00:32:06,799 --> 00:32:08,230
+a problem with a lot of people is that a
+
+1048
+00:32:08,240 --> 00:32:11,269
+good rule of thumb on how many roles one
+
+1049
+00:32:11,279 --> 00:32:12,310
+can have
+
+1050
+00:32:12,320 --> 00:32:14,149
+there's a great question i'll say as few
+
+1051
+00:32:14,159 --> 00:32:15,909
+as possible
+
+1052
+00:32:15,919 --> 00:32:18,549
+as few as possible we spoke around like
+
+1053
+00:32:18,559 --> 00:32:20,470
+very high level like what role-based
+
+1054
+00:32:20,480 --> 00:32:22,149
+action control is but
+
+1055
+00:32:22,159 --> 00:32:23,350
+i think the thing that's like really
+
+1056
+00:32:23,360 --> 00:32:25,430
+important to do with roadway sectors
+
+1057
+00:32:25,440 --> 00:32:27,029
+control is
+
+1058
+00:32:27,039 --> 00:32:29,350
+it's effectively a way to communicate
+
+1059
+00:32:29,360 --> 00:32:31,269
+to your end users like what they should
+
+1060
+00:32:31,279 --> 00:32:33,430
+expect to be able to do inside an app
+
+1061
+00:32:33,440 --> 00:32:34,389
+and
+
+1062
+00:32:34,399 --> 00:32:36,070
+that's often pretty clear in like an
+
+1063
+00:32:36,080 --> 00:32:38,310
+admin member worlds you know maybe like
+
+1064
+00:32:38,320 --> 00:32:40,230
+admins can invite other users admin can
+
+1065
+00:32:40,240 --> 00:32:41,590
+rename the organization they can delete
+
+1066
+00:32:41,600 --> 00:32:43,269
+the organization and you know members
+
+1067
+00:32:43,279 --> 00:32:45,750
+can typically use the app you know do
+
+1068
+00:32:45,760 --> 00:32:47,509
+the things they need to roles work
+
+1069
+00:32:47,519 --> 00:32:49,430
+really well when they communicate to an
+
+1070
+00:32:49,440 --> 00:32:50,710
+end user like what their
+
+1071
+00:32:50,720 --> 00:32:51,990
+responsibilities are inside an
+
+1072
+00:32:52,000 --> 00:32:54,149
+application i think uh
+
+1073
+00:32:54,159 --> 00:32:57,029
+gitlab the version control development
+
+1074
+00:32:57,039 --> 00:32:58,710
+platform has like some really nice
+
+1075
+00:32:58,720 --> 00:33:00,870
+examples of this where they have guests
+
+1076
+00:33:00,880 --> 00:33:03,909
+they have like reviewers who can review
+
+1077
+00:33:03,919 --> 00:33:05,590
+they have like moderators who can
+
+1078
+00:33:05,600 --> 00:33:07,669
+moderate and update and maintainers who
+
+1079
+00:33:07,679 --> 00:33:09,350
+can maintain the code it's you know
+
+1080
+00:33:09,360 --> 00:33:10,710
+those names like they kind of tell you
+
+1081
+00:33:10,720 --> 00:33:12,549
+what you should be able to do a mistake
+
+1082
+00:33:12,559 --> 00:33:13,830
+people have to make is they just keep on
+
+1083
+00:33:13,840 --> 00:33:15,190
+adding more and more roles to try and
+
+1084
+00:33:15,200 --> 00:33:16,230
+address more and more different use
+
+1085
+00:33:16,240 --> 00:33:18,070
+cases and like you end up with these
+
+1086
+00:33:18,080 --> 00:33:19,430
+giant matrices of people trying to
+
+1087
+00:33:19,440 --> 00:33:21,350
+figure out what they need
+
+1088
+00:33:21,360 --> 00:33:24,149
+often the answer if you're finding that
+
+1089
+00:33:24,159 --> 00:33:25,830
+you're trying to add more roles i
+
+1090
+00:33:25,840 --> 00:33:27,350
+actually find often the answer can be
+
+1091
+00:33:27,360 --> 00:33:28,549
+adding more
+
+1092
+00:33:28,559 --> 00:33:30,310
+data model structures
+
+1093
+00:33:30,320 --> 00:33:32,389
+so for example adding things like teams
+
+1094
+00:33:32,399 --> 00:33:33,669
+or projects
+
+1095
+00:33:33,679 --> 00:33:35,269
+because then like
+
+1096
+00:33:35,279 --> 00:33:36,789
+users can they they kind of get a little
+
+1097
+00:33:36,799 --> 00:33:38,870
+more control about themselves they can
+
+1098
+00:33:38,880 --> 00:33:41,269
+create a sales team project or something
+
+1099
+00:33:41,279 --> 00:33:42,870
+they can add a bunch of resources into
+
+1100
+00:33:42,880 --> 00:33:45,029
+the sales team folder and they can give
+
+1101
+00:33:45,039 --> 00:33:47,029
+you know the head of sales admin access
+
+1102
+00:33:47,039 --> 00:33:49,029
+in just that folder and then that person
+
+1103
+00:33:49,039 --> 00:33:50,630
+can't go and see like legal documents in
+
+1104
+00:33:50,640 --> 00:33:52,630
+a different folder adding that is very
+
+1105
+00:33:52,640 --> 00:33:53,990
+intuitive it's very natural for people
+
+1106
+00:33:54,000 --> 00:33:55,830
+to understand that it's kind of an easy
+
+1107
+00:33:55,840 --> 00:33:57,669
+way to go about it rather than try and
+
+1108
+00:33:57,679 --> 00:33:59,590
+pre-empt those and build them as like a
+
+1109
+00:33:59,600 --> 00:34:01,990
+bunch of roles yourself basically i do
+
+1110
+00:34:02,000 --> 00:34:03,990
+know that there was this one project
+
+1111
+00:34:04,000 --> 00:34:05,909
+that i was working on where they had so
+
+1112
+00:34:05,919 --> 00:34:09,030
+many roles that when one person had to
+
+1113
+00:34:09,040 --> 00:34:10,550
+onboard a new user they didn't know what
+
+1114
+00:34:10,560 --> 00:34:11,829
+to do and they just went and gave them
+
+1115
+00:34:11,839 --> 00:34:14,470
+system admin because
+
+1116
+00:34:14,480 --> 00:34:16,149
+that was the one they could understand
+
+1117
+00:34:16,159 --> 00:34:20,629
+yeah
+
+1118
+00:34:23,109 --> 00:34:23,119
+anyway now that we've covered a few of
+
+1119
+00:34:23,119 --> 00:34:25,109
+these things i want to get into a bit
+
+1120
+00:34:25,119 --> 00:34:27,829
+onto the deployment and see consistency
+
+1121
+00:34:27,839 --> 00:34:29,909
+part so now that you have this
+
+1122
+00:34:29,919 --> 00:34:31,589
+authorization service so from what i
+
+1123
+00:34:31,599 --> 00:34:33,990
+understood is you can have it embedded
+
+1124
+00:34:34,000 --> 00:34:35,750
+into your application
+
+1125
+00:34:35,760 --> 00:34:38,470
+as or you know have it outside but
+
+1126
+00:34:38,480 --> 00:34:39,669
+what is the thing should it be a
+
+1127
+00:34:39,679 --> 00:34:41,669
+separate service so that you can scale
+
+1128
+00:34:41,679 --> 00:34:44,550
+it up and down and things like that or i
+
+1129
+00:34:44,560 --> 00:34:46,230
+think it sort of depends we sort of have
+
+1130
+00:34:46,240 --> 00:34:48,629
+like a bit of a golden rule also which
+
+1131
+00:34:48,639 --> 00:34:49,669
+is
+
+1132
+00:34:49,679 --> 00:34:51,750
+you should build authorization around
+
+1133
+00:34:51,760 --> 00:34:53,109
+your application not the other way
+
+1134
+00:34:53,119 --> 00:34:54,230
+around
+
+1135
+00:34:54,240 --> 00:34:56,389
+so doing something like a zanzibar where
+
+1136
+00:34:56,399 --> 00:34:57,349
+you
+
+1137
+00:34:57,359 --> 00:34:58,710
+pull all of your data outside your
+
+1138
+00:34:58,720 --> 00:35:00,470
+application or you refactor or migrate
+
+1139
+00:35:00,480 --> 00:35:02,870
+your applications to use a specific
+
+1140
+00:35:02,880 --> 00:35:04,710
+authorization system to me there's a
+
+1141
+00:35:04,720 --> 00:35:06,390
+little bit of an answer pattern because
+
+1142
+00:35:06,400 --> 00:35:08,069
+you're basically pushing so much of the
+
+1143
+00:35:08,079 --> 00:35:10,390
+work onto the developers to understand
+
+1144
+00:35:10,400 --> 00:35:12,150
+how to use the system how to synchronize
+
+1145
+00:35:12,160 --> 00:35:13,670
+with it and things like that you know i
+
+1146
+00:35:13,680 --> 00:35:14,630
+think there are ways you can kind of
+
+1147
+00:35:14,640 --> 00:35:16,630
+mitigate less than that but generally
+
+1148
+00:35:16,640 --> 00:35:17,990
+speaking i think
+
+1149
+00:35:18,000 --> 00:35:19,270
+you should let like the shape of your
+
+1150
+00:35:19,280 --> 00:35:20,950
+application drive how authorization
+
+1151
+00:35:20,960 --> 00:35:21,910
+works
+
+1152
+00:35:21,920 --> 00:35:23,910
+practically how we often see that
+
+1153
+00:35:23,920 --> 00:35:25,990
+playing out is it's very very common for
+
+1154
+00:35:26,000 --> 00:35:28,150
+people to have like a central
+
+1155
+00:35:28,160 --> 00:35:30,390
+user management service where you know
+
+1156
+00:35:30,400 --> 00:35:32,470
+users can get assigned to organizations
+
+1157
+00:35:32,480 --> 00:35:34,230
+and roles within it and projects and
+
+1158
+00:35:34,240 --> 00:35:35,750
+things like that because that's just
+
+1159
+00:35:35,760 --> 00:35:37,349
+typically how like the application got
+
+1160
+00:35:37,359 --> 00:35:39,109
+structured out you know and then there's
+
+1161
+00:35:39,119 --> 00:35:41,109
+the individual applications are built
+
+1162
+00:35:41,119 --> 00:35:42,310
+inside their own services and things
+
+1163
+00:35:42,320 --> 00:35:43,349
+like that
+
+1164
+00:35:43,359 --> 00:35:44,870
+those services need to get that roles
+
+1165
+00:35:44,880 --> 00:35:46,310
+data to be able to make an authorization
+
+1166
+00:35:46,320 --> 00:35:47,349
+decision
+
+1167
+00:35:47,359 --> 00:35:48,230
+which
+
+1168
+00:35:48,240 --> 00:35:50,550
+is kind of a form of centralization but
+
+1169
+00:35:50,560 --> 00:35:51,990
+it's using the
+
+1170
+00:35:52,000 --> 00:35:53,670
+the existing structure that is inherent
+
+1171
+00:35:53,680 --> 00:35:55,349
+in your app you're saying okay well we
+
+1172
+00:35:55,359 --> 00:35:57,829
+have we have a user management app
+
+1173
+00:35:57,839 --> 00:35:59,349
+basically what do we need to do to make
+
+1174
+00:35:59,359 --> 00:36:00,870
+it so that other applications can use
+
+1175
+00:36:00,880 --> 00:36:02,870
+that for authorization decisions how do
+
+1176
+00:36:02,880 --> 00:36:04,390
+we get the roles from that from that
+
+1177
+00:36:04,400 --> 00:36:05,349
+service
+
+1178
+00:36:05,359 --> 00:36:06,630
+and that basically allows you just to
+
+1179
+00:36:06,640 --> 00:36:07,829
+keep the structure of your application
+
+1180
+00:36:07,839 --> 00:36:09,270
+as it already was do you have the same
+
+1181
+00:36:09,280 --> 00:36:10,470
+separation you already you know the
+
+1182
+00:36:10,480 --> 00:36:12,390
+architect you were going with and
+
+1183
+00:36:12,400 --> 00:36:14,150
+basically figuring out how to make that
+
+1184
+00:36:14,160 --> 00:36:16,630
+work i think basically the
+
+1185
+00:36:16,640 --> 00:36:18,390
+where the rubber meets the road of that
+
+1186
+00:36:18,400 --> 00:36:19,349
+is
+
+1187
+00:36:19,359 --> 00:36:21,670
+at certain scales that in itself does
+
+1188
+00:36:21,680 --> 00:36:23,910
+become a challenging problem like it's
+
+1189
+00:36:23,920 --> 00:36:25,270
+not just a oh whatever you just scale
+
+1190
+00:36:25,280 --> 00:36:27,030
+that one app up and it does reach a
+
+1191
+00:36:27,040 --> 00:36:28,310
+point where you do need like the
+
+1192
+00:36:28,320 --> 00:36:30,470
+sophistication of something like of like
+
+1193
+00:36:30,480 --> 00:36:32,069
+a zanzibar to really to make that
+
+1194
+00:36:32,079 --> 00:36:33,829
+service have that low latency to have
+
+1195
+00:36:33,839 --> 00:36:35,270
+that scale to be able to process that
+
+1196
+00:36:35,280 --> 00:36:37,190
+much data the point is like you
+
+1197
+00:36:37,200 --> 00:36:38,710
+identified that based on the size and
+
+1198
+00:36:38,720 --> 00:36:40,069
+the scale of your application more so
+
+1199
+00:36:40,079 --> 00:36:41,270
+than just like you do because of
+
+1200
+00:36:41,280 --> 00:36:43,589
+authorization and like clearly google
+
+1201
+00:36:43,599 --> 00:36:44,950
+reached that scale
+
+1202
+00:36:44,960 --> 00:36:46,790
+i think there's been a few others airbnb
+
+1203
+00:36:46,800 --> 00:36:48,230
+who've you know similarly reached that
+
+1204
+00:36:48,240 --> 00:36:49,510
+scale like you know okay this is
+
+1205
+00:36:49,520 --> 00:36:51,270
+becoming a huge part of a huge
+
+1206
+00:36:51,280 --> 00:36:52,710
+bottleneck in application like we need
+
+1207
+00:36:52,720 --> 00:36:55,190
+to like solve this problem to me that's
+
+1208
+00:36:55,200 --> 00:36:56,630
+kind of the right way to approach it is
+
+1209
+00:36:56,640 --> 00:36:58,390
+like you sort of
+
+1210
+00:36:58,400 --> 00:36:59,910
+see where your application grows
+
+1211
+00:36:59,920 --> 00:37:01,190
+naturally and like what shape it's
+
+1212
+00:37:01,200 --> 00:37:02,710
+taking and once you see that that is a
+
+1213
+00:37:02,720 --> 00:37:04,950
+bottleneck you look for the appropriate
+
+1214
+00:37:04,960 --> 00:37:07,109
+technology to address it data plays a
+
+1215
+00:37:07,119 --> 00:37:09,349
+big role in finding that out right
+
+1216
+00:37:09,359 --> 00:37:11,510
+they'll face a huge part in it yeah
+
+1217
+00:37:11,520 --> 00:37:13,349
+there are also these other authorization
+
+1218
+00:37:13,359 --> 00:37:16,390
+services like i think ori is what i saw
+
+1219
+00:37:16,400 --> 00:37:19,109
+which also seems to be built on zanzibar
+
+1220
+00:37:19,119 --> 00:37:21,670
+i see a lot more how does also differ
+
+1221
+00:37:21,680 --> 00:37:24,710
+from other services like this that you
+
+1222
+00:37:24,720 --> 00:37:28,069
+see on open source platforms like github
+
+1223
+00:37:28,079 --> 00:37:30,870
+the conceptual difference of where does
+
+1224
+00:37:30,880 --> 00:37:32,870
+the data go where's the data live with
+
+1225
+00:37:32,880 --> 00:37:34,069
+oso we
+
+1226
+00:37:34,079 --> 00:37:35,670
+went to great length to let you keep the
+
+1227
+00:37:35,680 --> 00:37:37,430
+data where it is and figure out how to
+
+1228
+00:37:37,440 --> 00:37:39,270
+do authorization around your data
+
+1229
+00:37:39,280 --> 00:37:40,790
+basically like using your data living
+
+1230
+00:37:40,800 --> 00:37:42,470
+where it is a lot of some of the new
+
+1231
+00:37:42,480 --> 00:37:43,670
+solutions coming through based on
+
+1232
+00:37:43,680 --> 00:37:45,109
+zanzibar they they all work as a
+
+1233
+00:37:45,119 --> 00:37:46,710
+separate service like you know r is no
+
+1234
+00:37:46,720 --> 00:37:48,310
+different you need to put all your data
+
+1235
+00:37:48,320 --> 00:37:50,470
+into the service that it can do do some
+
+1236
+00:37:50,480 --> 00:37:52,230
+of this authorization stuff there's kind
+
+1237
+00:37:52,240 --> 00:37:54,790
+of an interesting landscape of solutions
+
+1238
+00:37:54,800 --> 00:37:57,589
+because there's been a long history of
+
+1239
+00:37:57,599 --> 00:37:59,349
+existing authorization libraries that
+
+1240
+00:37:59,359 --> 00:38:01,349
+tend to be for
+
+1241
+00:38:01,359 --> 00:38:03,270
+specific frameworks like i think you
+
+1242
+00:38:03,280 --> 00:38:04,870
+know rails has often had a pretty rich
+
+1243
+00:38:04,880 --> 00:38:06,710
+history of like goods
+
+1244
+00:38:06,720 --> 00:38:08,630
+authorization like libraries integrate
+
+1245
+00:38:08,640 --> 00:38:10,069
+with rails they could do various pieces
+
+1246
+00:38:10,079 --> 00:38:11,109
+of this
+
+1247
+00:38:11,119 --> 00:38:12,069
+or
+
+1248
+00:38:12,079 --> 00:38:13,670
+frameworks that very much focus on like
+
+1249
+00:38:13,680 --> 00:38:15,190
+role-based access control but not much
+
+1250
+00:38:15,200 --> 00:38:17,030
+else i think what we're seeing from
+
+1251
+00:38:17,040 --> 00:38:20,470
+these from like oso and others is
+
+1252
+00:38:20,480 --> 00:38:22,069
+really try and tackle the kind of
+
+1253
+00:38:22,079 --> 00:38:23,829
+authorization complexity
+
+1254
+00:38:23,839 --> 00:38:25,270
+like those skating problems that comes
+
+1255
+00:38:25,280 --> 00:38:26,950
+with doing more complex models that
+
+1256
+00:38:26,960 --> 00:38:29,030
+gives you more more granular control
+
+1257
+00:38:29,040 --> 00:38:30,950
+more granular access control things like
+
+1258
+00:38:30,960 --> 00:38:32,790
+that so i think that's like kind of the
+
+1259
+00:38:32,800 --> 00:38:33,990
+the main trend we've seen from a lot of
+
+1260
+00:38:34,000 --> 00:38:35,270
+these newer ones
+
+1261
+00:38:35,280 --> 00:38:36,630
+in some ways we're kind of trying to
+
+1262
+00:38:36,640 --> 00:38:37,829
+stick with the
+
+1263
+00:38:37,839 --> 00:38:39,190
+tried and tested approach of keeping in
+
+1264
+00:38:39,200 --> 00:38:40,150
+the app
+
+1265
+00:38:40,160 --> 00:38:41,829
+versus kind of i think others which have
+
+1266
+00:38:41,839 --> 00:38:43,589
+sort of seen google and being like well
+
+1267
+00:38:43,599 --> 00:38:45,349
+maybe we should do what google does
+
+1268
+00:38:45,359 --> 00:38:47,990
+i also tried one of the libraries that
+
+1269
+00:38:48,000 --> 00:38:50,870
+you have supported on github so i tried
+
+1270
+00:38:50,880 --> 00:38:53,910
+the node.js version i tried python
+
+1271
+00:38:53,920 --> 00:38:56,470
+and then um i saw that you had no dotnet
+
+1272
+00:38:56,480 --> 00:38:57,910
+support maybe you don't have so many
+
+1273
+00:38:57,920 --> 00:38:59,750
+people programming in documents i just
+
+1274
+00:38:59,760 --> 00:39:01,750
+wanted to ask you why is that we've had
+
+1275
+00:39:01,760 --> 00:39:03,190
+so many requests for dotnet support
+
+1276
+00:39:03,200 --> 00:39:05,270
+actually it's it's almost certainly like
+
+1277
+00:39:05,280 --> 00:39:07,349
+the next one we'll get to the challenge
+
+1278
+00:39:07,359 --> 00:39:08,390
+is
+
+1279
+00:39:08,400 --> 00:39:10,150
+we did build and design oso so that it
+
+1280
+00:39:10,160 --> 00:39:11,829
+could be like easily
+
+1281
+00:39:11,839 --> 00:39:13,430
+a lot of the core of this is built in
+
+1282
+00:39:13,440 --> 00:39:14,950
+rust and shared between the multiple
+
+1283
+00:39:14,960 --> 00:39:16,710
+different libraries so that like you
+
+1284
+00:39:16,720 --> 00:39:19,030
+know adding a library isn't you know
+
+1285
+00:39:19,040 --> 00:39:20,950
+like a linear amount of work it's like
+
+1286
+00:39:20,960 --> 00:39:22,790
+you know sublinear like small amount of
+
+1287
+00:39:22,800 --> 00:39:24,950
+work at each library but i think what
+
+1288
+00:39:24,960 --> 00:39:26,069
+we've been struggling with is we've been
+
+1289
+00:39:26,079 --> 00:39:27,750
+kind of iterating a lot and making a ton
+
+1290
+00:39:27,760 --> 00:39:28,950
+of improvements to the individual
+
+1291
+00:39:28,960 --> 00:39:30,069
+libraries
+
+1292
+00:39:30,079 --> 00:39:32,150
+that we've already sort of started
+
+1293
+00:39:32,160 --> 00:39:34,630
+putting more efforts into like a few of
+
+1294
+00:39:34,640 --> 00:39:35,510
+them
+
+1295
+00:39:35,520 --> 00:39:37,670
+so in particular like node python and go
+
+1296
+00:39:37,680 --> 00:39:38,950
+i think are getting a lot more attention
+
+1297
+00:39:38,960 --> 00:39:40,950
+recently a lot of the newer stuff we're
+
+1298
+00:39:40,960 --> 00:39:42,230
+trying out there first rather than
+
+1299
+00:39:42,240 --> 00:39:43,270
+trying to do like six things
+
+1300
+00:39:43,280 --> 00:39:45,430
+simultaneously if we did.net we know
+
+1301
+00:39:45,440 --> 00:39:46,710
+that we wouldn't be able to like keep it
+
+1302
+00:39:46,720 --> 00:39:48,390
+up to date at the the kind of the latest
+
+1303
+00:39:48,400 --> 00:39:50,710
+and greatest oso version so we're sort
+
+1304
+00:39:50,720 --> 00:39:52,710
+of waiting for some of the new features
+
+1305
+00:39:52,720 --> 00:39:54,870
+to settle a little bit before expanding
+
+1306
+00:39:54,880 --> 00:39:56,710
+out to other languages so that we
+
+1307
+00:39:56,720 --> 00:39:59,109
+can kind of like release with sort of a
+
+1308
+00:39:59,119 --> 00:40:01,349
+mature feature set um
+
+1309
+00:40:01,359 --> 00:40:04,069
+so it's in the pipeline it is yeah
+
+1310
+00:40:04,079 --> 00:40:05,430
+it's highly requested we have we have a
+
+1311
+00:40:05,440 --> 00:40:07,430
+github issue to track it that's
+
+1312
+00:40:07,440 --> 00:40:11,829
+i think is the most highly upvoted
+
+1313
+00:40:13,829 --> 00:40:13,839
+if we're definitely aware of it yeah
+
+1314
+00:40:13,839 --> 00:40:15,829
+finally i guess i had to ask you about
+
+1315
+00:40:15,839 --> 00:40:17,510
+the choice of language that you've
+
+1316
+00:40:17,520 --> 00:40:20,150
+written also and which is rust could you
+
+1317
+00:40:20,160 --> 00:40:22,069
+just talk a little bit about it why did
+
+1318
+00:40:22,079 --> 00:40:25,270
+you choose rust for writing also
+
+1319
+00:40:25,280 --> 00:40:27,670
+one part is i just think rust is a real
+
+1320
+00:40:27,680 --> 00:40:30,069
+pleasure and a real joy to develop in in
+
+1321
+00:40:30,079 --> 00:40:31,750
+particular like the tooling around it
+
+1322
+00:40:31,760 --> 00:40:33,190
+the developer experience around it is
+
+1323
+00:40:33,200 --> 00:40:35,270
+fantastic like the error messages from
+
+1324
+00:40:35,280 --> 00:40:36,550
+the compiler are very very useful and
+
+1325
+00:40:36,560 --> 00:40:37,910
+they guide you in a good way there's got
+
+1326
+00:40:37,920 --> 00:40:39,510
+a good linting system the package
+
+1327
+00:40:39,520 --> 00:40:40,950
+management is very easy and things like
+
+1328
+00:40:40,960 --> 00:40:43,430
+that so i just think it's a it's a joy
+
+1329
+00:40:43,440 --> 00:40:45,750
+to program in from a more
+
+1330
+00:40:45,760 --> 00:40:47,670
+technical perspective
+
+1331
+00:40:47,680 --> 00:40:48,550
+the
+
+1332
+00:40:48,560 --> 00:40:50,069
+advantages it offered aligned very
+
+1333
+00:40:50,079 --> 00:40:51,750
+nicely is what we needed
+
+1334
+00:40:51,760 --> 00:40:52,710
+so
+
+1335
+00:40:52,720 --> 00:40:53,910
+you know number one we're building
+
+1336
+00:40:53,920 --> 00:40:55,190
+something that's like on the critical
+
+1337
+00:40:55,200 --> 00:40:57,510
+path for security so
+
+1338
+00:40:57,520 --> 00:41:00,150
+you know being performant was important
+
+1339
+00:41:00,160 --> 00:41:01,750
+you know protecting against memory
+
+1340
+00:41:01,760 --> 00:41:03,990
+vulnerabilities was like a huge bonus
+
+1341
+00:41:04,000 --> 00:41:05,349
+that it would offer
+
+1342
+00:41:05,359 --> 00:41:06,710
+being able to write something that we
+
+1343
+00:41:06,720 --> 00:41:08,150
+had like fine green control over that
+
+1344
+00:41:08,160 --> 00:41:09,910
+was pretty low level like all that was
+
+1345
+00:41:09,920 --> 00:41:11,910
+like very compelling benefits that it
+
+1346
+00:41:11,920 --> 00:41:13,030
+would offer
+
+1347
+00:41:13,040 --> 00:41:15,190
+and then the thing that sealed the deal
+
+1348
+00:41:15,200 --> 00:41:16,950
+really was that we knew we wanted this
+
+1349
+00:41:16,960 --> 00:41:18,069
+to be
+
+1350
+00:41:18,079 --> 00:41:19,430
+something weird in bed in multiple
+
+1351
+00:41:19,440 --> 00:41:20,470
+languages
+
+1352
+00:41:20,480 --> 00:41:22,069
+the most natural way for us to do that
+
+1353
+00:41:22,079 --> 00:41:24,710
+would be to have some kind of a c
+
+1354
+00:41:24,720 --> 00:41:26,950
+apic interface as soon as you need that
+
+1355
+00:41:26,960 --> 00:41:28,309
+that really limits your options down to
+
+1356
+00:41:28,319 --> 00:41:29,750
+a few different things and felt like
+
+1357
+00:41:29,760 --> 00:41:31,589
+kind of rust was like the best of the
+
+1358
+00:41:31,599 --> 00:41:33,910
+bunch for doing that one other thing as
+
+1359
+00:41:33,920 --> 00:41:35,190
+well was
+
+1360
+00:41:35,200 --> 00:41:37,109
+which is very convenient nice from like
+
+1361
+00:41:37,119 --> 00:41:38,550
+the runtime models
+
+1362
+00:41:38,560 --> 00:41:40,150
+because this kind of just compiles down
+
+1363
+00:41:40,160 --> 00:41:42,069
+to effectually like a system library
+
+1364
+00:41:42,079 --> 00:41:43,109
+it's kind of how it basically looks
+
+1365
+00:41:43,119 --> 00:41:44,950
+under the surface there are no like
+
+1366
+00:41:44,960 --> 00:41:46,790
+background threads there's no runtime
+
+1367
+00:41:46,800 --> 00:41:49,990
+there's no extra processing deadlocks
+
+1368
+00:41:50,000 --> 00:41:51,430
+happening like none of that stuff's
+
+1369
+00:41:51,440 --> 00:41:53,270
+happening under the surface it's like
+
+1370
+00:41:53,280 --> 00:41:55,430
+oso only executes when you told it to do
+
+1371
+00:41:55,440 --> 00:41:57,109
+something and if you're doing something
+
+1372
+00:41:57,119 --> 00:41:59,430
+it does nothing it's just it's
+
+1373
+00:41:59,440 --> 00:42:01,190
+it's not blocking or consuming resources
+
+1374
+00:42:01,200 --> 00:42:03,030
+or there's no garbage collection or
+
+1375
+00:42:03,040 --> 00:42:04,230
+anything like that
+
+1376
+00:42:04,240 --> 00:42:05,910
+it's just very very very predictable you
+
+1377
+00:42:05,920 --> 00:42:07,030
+kind of know what it's going to do
+
+1378
+00:42:07,040 --> 00:42:08,550
+you're not going to see
+
+1379
+00:42:08,560 --> 00:42:10,550
+bizarre like latency spikes and things
+
+1380
+00:42:10,560 --> 00:42:11,510
+like that
+
+1381
+00:42:11,520 --> 00:42:12,470
+okay
+
+1382
+00:42:12,480 --> 00:42:14,309
+interesting i think so that's on one of
+
+1383
+00:42:14,319 --> 00:42:17,750
+my bucket list
+
+1384
+00:42:20,069 --> 00:42:20,079
+this has been great before i let you go
+
+1385
+00:42:20,079 --> 00:42:22,309
+slam i just wanted to ask you one final
+
+1386
+00:42:22,319 --> 00:42:24,390
+question so to sum this whole
+
+1387
+00:42:24,400 --> 00:42:26,630
+conversation up are there any like some
+
+1388
+00:42:26,640 --> 00:42:28,470
+three golden rules that you would say
+
+1389
+00:42:28,480 --> 00:42:29,349
+for
+
+1390
+00:42:29,359 --> 00:42:31,589
+building a consistent
+
+1391
+00:42:31,599 --> 00:42:33,750
+authorization system or service
+
+1392
+00:42:33,760 --> 00:42:35,670
+the number one
+
+1393
+00:42:35,680 --> 00:42:38,390
+rule of authorization is
+
+1394
+00:42:38,400 --> 00:42:40,309
+your ability for your end users
+
+1395
+00:42:40,319 --> 00:42:42,390
+first and foremost like
+
+1396
+00:42:42,400 --> 00:42:44,390
+that is kind of why i love this area as
+
+1397
+00:42:44,400 --> 00:42:45,670
+well it's like
+
+1398
+00:42:45,680 --> 00:42:47,109
+i think the end user experience should
+
+1399
+00:42:47,119 --> 00:42:48,470
+be what drives a lot of the decision
+
+1400
+00:42:48,480 --> 00:42:50,710
+making here like what is ultimately
+
+1401
+00:42:50,720 --> 00:42:52,390
+building products that's kind of the
+
+1402
+00:42:52,400 --> 00:42:55,030
+main thing that matters and so
+
+1403
+00:42:55,040 --> 00:42:56,309
+that i think just kind of leads you to
+
+1404
+00:42:56,319 --> 00:42:57,430
+think around like what's gonna make
+
+1405
+00:42:57,440 --> 00:42:59,030
+sense the user is it about roles is it
+
+1406
+00:42:59,040 --> 00:43:00,550
+relationships like how how do you
+
+1407
+00:43:00,560 --> 00:43:02,309
+explain this to a user and i think
+
+1408
+00:43:02,319 --> 00:43:03,510
+basically models help you have like a
+
+1409
+00:43:03,520 --> 00:43:04,870
+consistent version of that on the back
+
+1410
+00:43:04,880 --> 00:43:07,750
+end we spoke about like architecturally
+
+1411
+00:43:07,760 --> 00:43:09,270
+you know building authorization around
+
+1412
+00:43:09,280 --> 00:43:10,230
+your application not the other way
+
+1413
+00:43:10,240 --> 00:43:11,109
+around
+
+1414
+00:43:11,119 --> 00:43:12,710
+to me that means primarily you know
+
+1415
+00:43:12,720 --> 00:43:15,030
+leaving the application data where it is
+
+1416
+00:43:15,040 --> 00:43:16,950
+being able to
+
+1417
+00:43:16,960 --> 00:43:18,710
+reuse or repurpose what you already have
+
+1418
+00:43:18,720 --> 00:43:20,710
+so you're not you're duplicating effort
+
+1419
+00:43:20,720 --> 00:43:22,069
+your application is already capable of
+
+1420
+00:43:22,079 --> 00:43:23,510
+fetching things from the database your
+
+1421
+00:43:23,520 --> 00:43:25,510
+application already has a way to
+
+1422
+00:43:25,520 --> 00:43:27,510
+determine if somebody belongs an
+
+1423
+00:43:27,520 --> 00:43:29,030
+organization has a data model that says
+
+1424
+00:43:29,040 --> 00:43:30,550
+that how do you make sure you can reuse
+
+1425
+00:43:30,560 --> 00:43:32,309
+that inside one app or across like
+
+1426
+00:43:32,319 --> 00:43:33,910
+multiple applications you know how are
+
+1427
+00:43:33,920 --> 00:43:35,589
+we distributing data across our
+
+1428
+00:43:35,599 --> 00:43:37,349
+architecture that's how authorization
+
+1429
+00:43:37,359 --> 00:43:38,790
+should be distributed
+
+1430
+00:43:38,800 --> 00:43:41,589
+i think number three is
+
+1431
+00:43:41,599 --> 00:43:43,670
+something we haven't touched on yet but
+
+1432
+00:43:43,680 --> 00:43:44,950
+such a huge part of this is the
+
+1433
+00:43:44,960 --> 00:43:46,870
+developer experience as well you know
+
+1434
+00:43:46,880 --> 00:43:48,710
+authorization is an interesting one it's
+
+1435
+00:43:48,720 --> 00:43:50,230
+that like you know at a bigger team
+
+1436
+00:43:50,240 --> 00:43:51,430
+you're gonna want you're gonna want your
+
+1437
+00:43:51,440 --> 00:43:53,430
+security engineers like helping out
+
+1438
+00:43:53,440 --> 00:43:54,790
+helping audit your code check that it's
+
+1439
+00:43:54,800 --> 00:43:57,430
+all correct but ultimately like
+
+1440
+00:43:57,440 --> 00:43:58,950
+authorization is so intuitive in the
+
+1441
+00:43:58,960 --> 00:44:00,230
+application that you're going to want
+
+1442
+00:44:00,240 --> 00:44:01,670
+that developer experience to be good and
+
+1443
+00:44:01,680 --> 00:44:03,190
+such a core part of it
+
+1444
+00:44:03,200 --> 00:44:04,870
+and so that means you know providing
+
+1445
+00:44:04,880 --> 00:44:06,950
+them something that's easy for them to
+
+1446
+00:44:06,960 --> 00:44:09,270
+work with it's easy for them to update
+
+1447
+00:44:09,280 --> 00:44:11,430
+and modify one that comes up a lot it's
+
+1448
+00:44:11,440 --> 00:44:12,710
+like if a
+
+1449
+00:44:12,720 --> 00:44:14,630
+developer is adding a new feature
+
+1450
+00:44:14,640 --> 00:44:15,750
+you know they add a new endpoint and
+
+1451
+00:44:15,760 --> 00:44:17,109
+they need to be able to check you know
+
+1452
+00:44:17,119 --> 00:44:18,950
+make sure they add a new permission that
+
+1453
+00:44:18,960 --> 00:44:20,630
+the user can do this thing or not you
+
+1454
+00:44:20,640 --> 00:44:22,550
+want that to be like
+
+1455
+00:44:22,560 --> 00:44:24,069
+instinctive and intuitive to them you
+
+1456
+00:44:24,079 --> 00:44:25,109
+want them to be able to test that
+
+1457
+00:44:25,119 --> 00:44:26,870
+locally to figure it out to kind of get
+
+1458
+00:44:26,880 --> 00:44:28,710
+that working you don't want it to be
+
+1459
+00:44:28,720 --> 00:44:30,390
+like they send some
+
+1460
+00:44:30,400 --> 00:44:32,230
+pr off into the void where it gets like
+
+1461
+00:44:32,240 --> 00:44:33,589
+reviewed by some person three weeks
+
+1462
+00:44:33,599 --> 00:44:35,510
+later and comes back to them and
+
+1463
+00:44:35,520 --> 00:44:36,470
+or like
+
+1464
+00:44:36,480 --> 00:44:37,750
+you know if the permissions break in
+
+1465
+00:44:37,760 --> 00:44:39,750
+production that they don't know why like
+
+1466
+00:44:39,760 --> 00:44:41,430
+it's a really crucial thing to get right
+
+1467
+00:44:41,440 --> 00:44:42,950
+and it it forces you a little bit to
+
+1468
+00:44:42,960 --> 00:44:45,109
+reevaluate how you think around
+
+1469
+00:44:45,119 --> 00:44:46,790
+like who owns the authorization code
+
+1470
+00:44:46,800 --> 00:44:47,990
+basically
+
+1471
+00:44:48,000 --> 00:44:49,510
+i think what goes hand-in-hand with that
+
+1472
+00:44:49,520 --> 00:44:50,870
+hand in hand with that actually comes
+
+1473
+00:44:50,880 --> 00:44:53,270
+back to the first point just you know
+
+1474
+00:44:53,280 --> 00:44:54,950
+developers the ones building they have
+
+1475
+00:44:54,960 --> 00:44:56,390
+the the context of the product they're
+
+1476
+00:44:56,400 --> 00:44:57,670
+the ones building the product features
+
+1477
+00:44:57,680 --> 00:44:59,349
+they hopefully are geared in on what the
+
+1478
+00:44:59,359 --> 00:45:01,510
+users want and so like empowering them
+
+1479
+00:45:01,520 --> 00:45:02,630
+to be able to make good authorization
+
+1480
+00:45:02,640 --> 00:45:04,630
+decisions kind of like connects that
+
+1481
+00:45:04,640 --> 00:45:06,870
+full circle you know
+
+1482
+00:45:06,880 --> 00:45:08,790
+that's great things very well put
+
+1483
+00:45:08,800 --> 00:45:10,790
+together so thank you so much for coming
+
+1484
+00:45:10,800 --> 00:45:12,710
+on the show thank you for having me this
+
+1485
+00:45:12,720 --> 00:45:14,950
+is fun this is uh signing off for
+
+1486
+00:45:14,960 --> 00:45:16,390
+priyanka raghavan for software
+
+1487
+00:45:16,400 --> 00:45:19,670
+engineering video thanks
+
+1488
+00:45:19,680 --> 00:45:21,190
+thanks for listening to sc radio an
+
+1489
+00:45:21,200 --> 00:45:22,710
+educational program brought to you by
+
+1490
+00:45:22,720 --> 00:45:25,190
+ieee software magazine for more about
+
+1491
+00:45:25,200 --> 00:45:26,950
+the podcast including other episodes
+
+1492
+00:45:26,960 --> 00:45:30,550
+visit our website at se radio.net
+
+1493
+00:45:30,560 --> 00:45:32,309
+to provide feedback you can comment on
+
+1494
+00:45:32,319 --> 00:45:34,230
+each episode on the website or reach us
+
+1495
+00:45:34,240 --> 00:45:37,109
+on linkedin facebook twitter or through
+
+1496
+00:45:37,119 --> 00:45:41,270
+our slack channel at scradio.slack.com
+
+1497
+00:45:44,829 --> 00:45:44,839
+you can also email us at team
+
+1498
+00:45:44,839 --> 00:45:47,109
+sc-radio.net this and all other episodes
+
+1499
+00:45:47,119 --> 00:45:49,030
+of sc radio is licensed under creative
+
+1500
+00:45:49,040 --> 00:45:51,349
+commons license 2.5
+
+1501
+00:45:51,359 --> 00:46:04,790
+thanks for listening

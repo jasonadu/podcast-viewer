@@ -1,0 +1,5515 @@
+1
+00:00:00,950 --> 00:00:00,960
+[Music]
+
+2
+00:00:00,960 --> 00:00:02,950
+This is software engineering radio, the
+
+3
+00:00:02,960 --> 00:00:04,950
+podcast for professional developers on
+
+4
+00:00:04,960 --> 00:00:07,909
+the web at se-radio.net.
+
+5
+00:00:07,919 --> 00:00:09,910
+SE Radio is brought to you by the ITE
+
+6
+00:00:09,920 --> 00:00:12,070
+computer society and by it e software
+
+7
+00:00:12,080 --> 00:00:13,830
+magazine online at
+
+8
+00:00:13,840 --> 00:00:15,740
+computer.org/software.
+
+9
+00:00:15,750 --> 00:00:19,109
+[Music]
+
+10
+00:00:19,119 --> 00:00:21,029
+Welcome to software engineering radio.
+
+11
+00:00:21,039 --> 00:00:22,870
+I'm your host Jovanas Prony and today
+
+12
+00:00:22,880 --> 00:00:24,790
+I'll be discussing observability in the
+
+13
+00:00:24,800 --> 00:00:27,429
+tool chain with Brian Dear. Brian is a
+
+14
+00:00:27,439 --> 00:00:29,830
+developer advocate at Gradle, a Java
+
+15
+00:00:29,840 --> 00:00:31,509
+Champion and Apache member who
+
+16
+00:00:31,519 --> 00:00:34,150
+contributes to the directory Maven and
+
+17
+00:00:34,160 --> 00:00:36,389
+Shirro projects. He spends much of his
+
+18
+00:00:36,399 --> 00:00:38,709
+day contributing to OSS projects by
+
+19
+00:00:38,719 --> 00:00:40,630
+writing code, tutorials, blogs, and
+
+20
+00:00:40,640 --> 00:00:42,950
+answering questions. Brian, welcome to
+
+21
+00:00:42,960 --> 00:00:44,950
+Software Engineering Radio. Is there
+
+22
+00:00:44,960 --> 00:00:47,190
+anything I miss that you'd like to add?
+
+23
+00:00:47,200 --> 00:00:48,470
+Yeah, well, thanks for having me. I
+
+24
+00:00:48,480 --> 00:00:50,310
+think that bio pretty much covers it. I
+
+25
+00:00:50,320 --> 00:00:51,910
+think the only other thing I'll add is
+
+26
+00:00:51,920 --> 00:00:53,350
+most of my career has kind of been in
+
+27
+00:00:53,360 --> 00:00:55,350
+and around the Java world. So everything
+
+28
+00:00:55,360 --> 00:00:57,110
+I think about is sort of skewed a little
+
+29
+00:00:57,120 --> 00:00:58,549
+in that direction, but I think
+
+30
+00:00:58,559 --> 00:00:59,510
+everything we're going to talk about
+
+31
+00:00:59,520 --> 00:01:01,830
+today applies to just about any
+
+32
+00:01:01,840 --> 00:01:04,869
+developer. Okay. So let's start now.
+
+33
+00:01:04,879 --> 00:01:06,950
+Tool chains. In software development, we
+
+34
+00:01:06,960 --> 00:01:09,109
+have several tool chains. Compiler tool
+
+35
+00:01:09,119 --> 00:01:11,429
+chain, build tool chain, CI/CD tool
+
+36
+00:01:11,439 --> 00:01:13,670
+chain, lots of tool chains. What tool
+
+37
+00:01:13,680 --> 00:01:16,149
+chains are we referring to here? I think
+
+38
+00:01:16,159 --> 00:01:18,789
+the answer is yes, all of them. So I
+
+39
+00:01:18,799 --> 00:01:20,710
+think the issue really is exactly what
+
+40
+00:01:20,720 --> 00:01:21,990
+you mentioned, right? We have all of
+
+41
+00:01:22,000 --> 00:01:23,670
+these tools. They're complex. They're
+
+42
+00:01:23,680 --> 00:01:25,510
+all kind of tied together. Some of them
+
+43
+00:01:25,520 --> 00:01:26,950
+are stitched together better than
+
+44
+00:01:26,960 --> 00:01:28,870
+others. So, we really need a better way
+
+45
+00:01:28,880 --> 00:01:31,990
+to understand them. Okay. We'll be
+
+46
+00:01:32,000 --> 00:01:33,510
+talking about all the tool chains we'll
+
+47
+00:01:33,520 --> 00:01:36,950
+be using here. Yeah. Yes. Good. Now,
+
+48
+00:01:36,960 --> 00:01:38,789
+when we talk about observability in the
+
+49
+00:01:38,799 --> 00:01:40,310
+tool chain, what are the similarities
+
+50
+00:01:40,320 --> 00:01:42,310
+and differences with the observability
+
+51
+00:01:42,320 --> 00:01:44,710
+of systems running production? Because
+
+52
+00:01:44,720 --> 00:01:45,990
+usually when we talk about
+
+53
+00:01:46,000 --> 00:01:47,749
+observability, we think about the system
+
+54
+00:01:47,759 --> 00:01:50,069
+in production and the various events,
+
+55
+00:01:50,079 --> 00:01:52,710
+logs and things we can get to understand
+
+56
+00:01:52,720 --> 00:01:54,469
+what is happening there. So are there
+
+57
+00:01:54,479 --> 00:01:57,030
+any similarities with this? Yeah,
+
+58
+00:01:57,040 --> 00:01:58,789
+absolutely. Absolutely. So if we think
+
+59
+00:01:58,799 --> 00:02:01,190
+about our production applications,
+
+60
+00:02:01,200 --> 00:02:02,550
+right, you wouldn't deploy a production
+
+61
+00:02:02,560 --> 00:02:04,230
+application today without any kind of
+
+62
+00:02:04,240 --> 00:02:06,069
+monitoring or anything behind it, right?
+
+63
+00:02:06,079 --> 00:02:07,350
+And a lot of that is because they're
+
+64
+00:02:07,360 --> 00:02:09,350
+complex. We don't really know the load
+
+65
+00:02:09,360 --> 00:02:10,869
+on the system or all these other things
+
+66
+00:02:10,879 --> 00:02:13,430
+we are unaware of until that I don't
+
+67
+00:02:13,440 --> 00:02:14,949
+know Black Friday event happens or
+
+68
+00:02:14,959 --> 00:02:17,030
+whatever. Our build tools are very
+
+69
+00:02:17,040 --> 00:02:18,949
+complex systems or build chains
+
+70
+00:02:18,959 --> 00:02:20,790
+everything are very complex right you
+
+71
+00:02:20,800 --> 00:02:22,150
+have all these things happening
+
+72
+00:02:22,160 --> 00:02:24,550
+downloading dependencies compiling
+
+73
+00:02:24,560 --> 00:02:27,030
+linting unit tests integration tests
+
+74
+00:02:27,040 --> 00:02:29,510
+whatever there's security scanning lots
+
+75
+00:02:29,520 --> 00:02:31,190
+of things that can go wrong just like
+
+76
+00:02:31,200 --> 00:02:33,430
+our production applications. So to me,
+
+77
+00:02:33,440 --> 00:02:35,350
+it's kind of mindboggling to think about
+
+78
+00:02:35,360 --> 00:02:37,190
+that we're just now getting to a point
+
+79
+00:02:37,200 --> 00:02:39,990
+where we're treating the complexity of
+
+80
+00:02:40,000 --> 00:02:42,390
+our build tools the same way as we would
+
+81
+00:02:42,400 --> 00:02:44,550
+our applications, right? So if something
+
+82
+00:02:44,560 --> 00:02:46,630
+goes wrong in your build tool, how do
+
+83
+00:02:46,640 --> 00:02:48,150
+you deploy something to production?
+
+84
+00:02:48,160 --> 00:02:50,150
+Well, you can't, right? So if your build
+
+85
+00:02:50,160 --> 00:02:52,229
+tools are actually in line, they're on
+
+86
+00:02:52,239 --> 00:02:54,150
+the path to getting something deployed
+
+87
+00:02:54,160 --> 00:02:56,630
+to production. And also, is there any
+
+88
+00:02:56,640 --> 00:02:58,470
+relationship with the shifting of
+
+89
+00:02:58,480 --> 00:03:00,630
+servability left? This is something that
+
+90
+00:03:00,640 --> 00:03:02,869
+you find a lot nowadays that is pretty
+
+91
+00:03:02,879 --> 00:03:05,750
+much feeding observability data from the
+
+92
+00:03:05,760 --> 00:03:07,830
+system production to basically the
+
+93
+00:03:07,840 --> 00:03:09,509
+developers for the day-to-day
+
+94
+00:03:09,519 --> 00:03:11,350
+activities. Is there any relationship
+
+95
+00:03:11,360 --> 00:03:13,270
+between observability in the tool chain
+
+96
+00:03:13,280 --> 00:03:16,390
+and this shift left of the observability
+
+97
+00:03:16,400 --> 00:03:18,710
+of the system? Absolutely. I think one
+
+98
+00:03:18,720 --> 00:03:20,229
+of my favorite things to talk about is
+
+99
+00:03:20,239 --> 00:03:22,630
+flaky test for example. Right. So flaky
+
+100
+00:03:22,640 --> 00:03:24,470
+test, I may mention this a few times,
+
+101
+00:03:24,480 --> 00:03:26,309
+but if you haven't ever been aware of
+
+102
+00:03:26,319 --> 00:03:28,149
+flaky test, it's a test that essentially
+
+103
+00:03:28,159 --> 00:03:29,750
+will pass one minute and then without
+
+104
+00:03:29,760 --> 00:03:31,830
+any code changes will fail the next
+
+105
+00:03:31,840 --> 00:03:34,149
+minute or vice versa, or works in my
+
+106
+00:03:34,159 --> 00:03:36,070
+machine, but not your machine. It works
+
+107
+00:03:36,080 --> 00:03:38,229
+on CI but not locally, whatever it is,
+
+108
+00:03:38,239 --> 00:03:40,390
+there's some inherent flakiness. So the
+
+109
+00:03:40,400 --> 00:03:42,789
+earlier developers can know about those
+
+110
+00:03:42,799 --> 00:03:44,949
+types of problems, the better they can
+
+111
+00:03:44,959 --> 00:03:47,190
+spend their time. So if I'm working on a
+
+112
+00:03:47,200 --> 00:03:48,949
+feature and there's a flaky test, for
+
+113
+00:03:48,959 --> 00:03:50,949
+example, that has nothing to do with my
+
+114
+00:03:50,959 --> 00:03:53,430
+code that I'm changing, just the fact
+
+115
+00:03:53,440 --> 00:03:55,509
+that I'm aware of that will make it so I
+
+116
+00:03:55,519 --> 00:03:57,350
+don't go hunt down that issue. Right
+
+117
+00:03:57,360 --> 00:03:58,710
+now, there's a lot of other problems
+
+118
+00:03:58,720 --> 00:04:00,630
+with flaky tests. We can talk about how
+
+119
+00:04:00,640 --> 00:04:02,229
+fixing them and how to monitor them and
+
+120
+00:04:02,239 --> 00:04:03,589
+all that, but essentially that's just
+
+121
+00:04:03,599 --> 00:04:05,910
+one example of a developer having
+
+122
+00:04:05,920 --> 00:04:08,470
+knowledge earlier in in the system is
+
+123
+00:04:08,480 --> 00:04:11,110
+better. Okay. And in terms of problems
+
+124
+00:04:11,120 --> 00:04:13,270
+that is observability in the tool chain
+
+125
+00:04:13,280 --> 00:04:14,949
+now what problems are we are actually
+
+126
+00:04:14,959 --> 00:04:17,110
+trying to address with this? So you
+
+127
+00:04:17,120 --> 00:04:18,949
+mentioned flaky test and maybe also
+
+128
+00:04:18,959 --> 00:04:20,789
+security scanning some other stuff but
+
+129
+00:04:20,799 --> 00:04:22,550
+in general what are we trying to achieve
+
+130
+00:04:22,560 --> 00:04:24,469
+here? I think one of the biggest ones
+
+131
+00:04:24,479 --> 00:04:26,629
+that I know at Gradle we talk about a
+
+132
+00:04:26,639 --> 00:04:29,590
+lot is developer feedback cycles, right?
+
+133
+00:04:29,600 --> 00:04:32,469
+So oftent times we run into issues where
+
+134
+00:04:32,479 --> 00:04:34,710
+builds are hours long, right? I know of
+
+135
+00:04:34,720 --> 00:04:37,110
+a lot of shops who don't run their tests
+
+136
+00:04:37,120 --> 00:04:39,030
+locally. They let their CI systems
+
+137
+00:04:39,040 --> 00:04:40,870
+handle everything. So they can't even
+
+138
+00:04:40,880 --> 00:04:42,390
+run their test. So their feedback cycles
+
+139
+00:04:42,400 --> 00:04:43,909
+are incredibly long and very
+
+140
+00:04:43,919 --> 00:04:45,510
+disconnected. So again, that kind of
+
+141
+00:04:45,520 --> 00:04:47,510
+goes to shifting left. If I can't even
+
+142
+00:04:47,520 --> 00:04:49,990
+run my tests, then there's no way I'm
+
+143
+00:04:50,000 --> 00:04:51,510
+going to be able to be productive,
+
+144
+00:04:51,520 --> 00:04:52,950
+right? So, I'm going to make some code
+
+145
+00:04:52,960 --> 00:04:54,629
+changes. I don't know, throw some salt
+
+146
+00:04:54,639 --> 00:04:56,469
+over my shoulder and then push the CI,
+
+147
+00:04:56,479 --> 00:04:58,390
+right? Or push my git repository and
+
+148
+00:04:58,400 --> 00:04:59,909
+then CI is going to pick it up and then
+
+149
+00:04:59,919 --> 00:05:01,510
+maybe an hour or two later, I'll get the
+
+150
+00:05:01,520 --> 00:05:03,590
+feedback for my test. So, there's no way
+
+151
+00:05:03,600 --> 00:05:05,430
+that I can be productive in that
+
+152
+00:05:05,440 --> 00:05:07,749
+environment. But even in the case of if
+
+153
+00:05:07,759 --> 00:05:10,230
+I can run tests locally, if my feedback
+
+154
+00:05:10,240 --> 00:05:12,950
+cycle is let's say 20 minutes, I run a
+
+155
+00:05:12,960 --> 00:05:15,029
+build, you know, I make some changes and
+
+156
+00:05:15,039 --> 00:05:16,790
+I run some build. So whatever that
+
+157
+00:05:16,800 --> 00:05:20,150
+includes, linting, compiling, testing,
+
+158
+00:05:20,160 --> 00:05:21,590
+whatever your build includes, all of
+
+159
+00:05:21,600 --> 00:05:23,590
+those things, if my feedback loop is 20
+
+160
+00:05:23,600 --> 00:05:25,189
+minutes, well, how many times can I do
+
+161
+00:05:25,199 --> 00:05:27,590
+that a day, right? And some people
+
+162
+00:05:27,600 --> 00:05:29,350
+listening to this may be thinking 20
+
+163
+00:05:29,360 --> 00:05:31,350
+minutes is fast, right? But even if you
+
+164
+00:05:31,360 --> 00:05:33,189
+can get that down to 2 minutes, just
+
+165
+00:05:33,199 --> 00:05:35,670
+think about if you and I were silent for
+
+166
+00:05:35,680 --> 00:05:37,590
+2 minutes, right? People would be
+
+167
+00:05:37,600 --> 00:05:39,029
+checking their phones or whatever to see
+
+168
+00:05:39,039 --> 00:05:41,270
+if this thing is actually working. or if
+
+169
+00:05:41,280 --> 00:05:42,710
+you were having a conversation with
+
+170
+00:05:42,720 --> 00:05:45,110
+somebody and you waited for 2 minutes
+
+171
+00:05:45,120 --> 00:05:46,469
+before you said the next word, you'd
+
+172
+00:05:46,479 --> 00:05:48,070
+probably just turn around and walk off.
+
+173
+00:05:48,080 --> 00:05:50,230
+So, we really need to think about
+
+174
+00:05:50,240 --> 00:05:51,830
+feedback cycles being as fast as
+
+175
+00:05:51,840 --> 00:05:54,710
+possible. But again, using from the
+
+176
+00:05:54,720 --> 00:05:57,029
+perspective of observability, we need to
+
+177
+00:05:57,039 --> 00:05:59,430
+have data to figure out how long those
+
+178
+00:05:59,440 --> 00:06:01,110
+feedback cycles are and then of course
+
+179
+00:06:01,120 --> 00:06:03,029
+data to know where the bottlenecks are
+
+180
+00:06:03,039 --> 00:06:06,070
+to improve them. Okay. So, it's really
+
+181
+00:06:06,080 --> 00:06:08,150
+is about here efficiency and
+
+182
+00:06:08,160 --> 00:06:10,150
+productivity. Am I correct? These are
+
+183
+00:06:10,160 --> 00:06:11,350
+the kind of things I think that's one
+
+184
+00:06:11,360 --> 00:06:13,270
+angle. I think the biggest angle we see
+
+185
+00:06:13,280 --> 00:06:15,590
+is definitely productivity but I think
+
+186
+00:06:15,600 --> 00:06:17,830
+there's a lot of other angles too. So
+
+187
+00:06:17,840 --> 00:06:19,990
+just by having data something goes wrong
+
+188
+00:06:20,000 --> 00:06:21,590
+you can figure it out. So maybe you can
+
+189
+00:06:21,600 --> 00:06:22,790
+think of efficiency as in
+
+190
+00:06:22,800 --> 00:06:25,590
+troubleshooting efficiency but also if
+
+191
+00:06:25,600 --> 00:06:27,029
+you don't know what dependencies you're
+
+192
+00:06:27,039 --> 00:06:29,510
+using right so you're just not aware of
+
+193
+00:06:29,520 --> 00:06:31,670
+what is in the system to begin with.
+
+194
+00:06:31,680 --> 00:06:33,430
+That is actually quite an interesting
+
+195
+00:06:33,440 --> 00:06:35,110
+one. I think in the Java world probably
+
+196
+00:06:35,120 --> 00:06:36,950
+is a problem that is very often
+
+197
+00:06:36,960 --> 00:06:39,510
+presented quite it's a big problem.
+
+198
+00:06:39,520 --> 00:06:42,550
+I remember with having classps with
+
+199
+00:06:42,560 --> 00:06:45,110
+different versions of the same jar in
+
+200
+00:06:45,120 --> 00:06:46,870
+the same class path because people
+
+201
+00:06:46,880 --> 00:06:49,270
+forgot to remove some dependencies and
+
+202
+00:06:49,280 --> 00:06:51,510
+then strange behaviors happening.
+
+203
+00:06:51,520 --> 00:06:53,270
+Absolutely. I mean we still see those
+
+204
+00:06:53,280 --> 00:06:55,590
+today. So that's a problem that and it
+
+205
+00:06:55,600 --> 00:06:57,270
+was probably more popular earlier in my
+
+206
+00:06:57,280 --> 00:06:59,510
+career but we still see echoes of that
+
+207
+00:06:59,520 --> 00:07:02,309
+now where things change packages or
+
+208
+00:07:02,319 --> 00:07:04,390
+namespaces. So you can still end up with
+
+209
+00:07:04,400 --> 00:07:06,150
+basically two of the same thing on your
+
+210
+00:07:06,160 --> 00:07:07,909
+class path which just adds to the
+
+211
+00:07:07,919 --> 00:07:10,710
+complexity and without either a great
+
+212
+00:07:10,720 --> 00:07:12,309
+deal of knowledge about how the system
+
+213
+00:07:12,319 --> 00:07:14,390
+works it's really difficult to find
+
+214
+00:07:14,400 --> 00:07:16,150
+unless you have some tooling around the
+
+215
+00:07:16,160 --> 00:07:18,710
+system. Okay. And so I guess this aspect
+
+216
+00:07:18,720 --> 00:07:22,309
+of observability is around also well is
+
+217
+00:07:22,319 --> 00:07:24,710
+about developer productivity engineering
+
+218
+00:07:24,720 --> 00:07:27,270
+as well isn't it? Absolutely.
+
+219
+00:07:27,280 --> 00:07:29,029
+Absolutely. So developer productivity
+
+220
+00:07:29,039 --> 00:07:31,510
+engineering or DPE is basically all
+
+221
+00:07:31,520 --> 00:07:33,990
+about engineering our way into making
+
+222
+00:07:34,000 --> 00:07:35,990
+our builds faster or basically the
+
+223
+00:07:36,000 --> 00:07:38,469
+feedback cycles shorter so I can get
+
+224
+00:07:38,479 --> 00:07:40,629
+more done. I can stay in the flow,
+
+225
+00:07:40,639 --> 00:07:42,550
+right? As a developer, what I really
+
+226
+00:07:42,560 --> 00:07:45,510
+want to do is write code. So if I'm
+
+227
+00:07:45,520 --> 00:07:47,830
+spending a long period of time not
+
+228
+00:07:47,840 --> 00:07:49,909
+writing code or not waiting for a long
+
+229
+00:07:49,919 --> 00:07:51,670
+process to happen, that's less time I'm
+
+230
+00:07:51,680 --> 00:07:53,350
+going to be active or excited about
+
+231
+00:07:53,360 --> 00:07:55,510
+whatever I'm working on. Okay. So it's
+
+232
+00:07:55,520 --> 00:07:56,950
+not only about productivity, but it's
+
+233
+00:07:56,960 --> 00:07:58,869
+also about developer experience then. So
+
+234
+00:07:58,879 --> 00:08:00,790
+it's both things. I think those two
+
+235
+00:08:00,800 --> 00:08:02,790
+things are very related depending on who
+
+236
+00:08:02,800 --> 00:08:04,309
+you talk to, depending on how much they
+
+237
+00:08:04,319 --> 00:08:05,909
+like software, but I think if you've
+
+238
+00:08:05,919 --> 00:08:08,150
+been in the industry for more than a few
+
+239
+00:08:08,160 --> 00:08:09,990
+years, you know, if you like writing
+
+240
+00:08:10,000 --> 00:08:11,909
+code, right? And if you don't, you're
+
+241
+00:08:11,919 --> 00:08:14,070
+probably migrating away from banging on
+
+242
+00:08:14,080 --> 00:08:16,070
+the keyboard every day. But if you do
+
+243
+00:08:16,080 --> 00:08:17,990
+enjoy that, then you want to be
+
+244
+00:08:18,000 --> 00:08:19,670
+productive. You want to learn, you want
+
+245
+00:08:19,680 --> 00:08:21,749
+to get the little hits of dopamine every
+
+246
+00:08:21,759 --> 00:08:24,070
+time you get some feedback, right? So
+
+247
+00:08:24,080 --> 00:08:26,390
+maybe you run a test in your IDE and it
+
+248
+00:08:26,400 --> 00:08:28,550
+goes green, right? That little bit of
+
+249
+00:08:28,560 --> 00:08:31,350
+feedback is exciting to your brain and
+
+250
+00:08:31,360 --> 00:08:33,589
+it makes you happy. And I keep saying
+
+251
+00:08:33,599 --> 00:08:35,430
+that a happy developer is a productive
+
+252
+00:08:35,440 --> 00:08:37,509
+developer. So it's a win-win all around.
+
+253
+00:08:37,519 --> 00:08:39,430
+Win for me because I'm a happy person.
+
+254
+00:08:39,440 --> 00:08:41,110
+It's a win for the company that I work
+
+255
+00:08:41,120 --> 00:08:42,949
+for because I'm more productive.
+
+256
+00:08:42,959 --> 00:08:44,870
+Essentially, me being productive saves
+
+257
+00:08:44,880 --> 00:08:46,470
+them money or makes them money depending
+
+258
+00:08:46,480 --> 00:08:49,030
+on how you look at it. True. Yeah. Yeah.
+
+259
+00:08:49,040 --> 00:08:50,870
+I can see the the usefulness of this
+
+260
+00:08:50,880 --> 00:08:53,030
+solving some of those irritations that
+
+261
+00:08:53,040 --> 00:08:54,630
+you have every day when tools don't work
+
+262
+00:08:54,640 --> 00:08:56,870
+well or you have to wait for stuff.
+
+263
+00:08:56,880 --> 00:08:59,350
+Absolutely. Yeah, I can understand that.
+
+264
+00:08:59,360 --> 00:09:01,990
+I can see it being a developer myself.
+
+265
+00:09:02,000 --> 00:09:04,630
+And in terms of observability here, what
+
+266
+00:09:04,640 --> 00:09:06,389
+are we observing? So, can you give us
+
+267
+00:09:06,399 --> 00:09:09,269
+some example of what kind of information
+
+268
+00:09:09,279 --> 00:09:12,150
+data we are looking for here? Sure. I
+
+269
+00:09:12,160 --> 00:09:14,150
+think it depends on what your problems
+
+270
+00:09:14,160 --> 00:09:16,070
+are, but essentially you can kind of
+
+271
+00:09:16,080 --> 00:09:18,070
+think about them as in I guess the
+
+272
+00:09:18,080 --> 00:09:20,710
+original three pillars of observability.
+
+273
+00:09:20,720 --> 00:09:22,949
+So I think starting with logs, logs is
+
+274
+00:09:22,959 --> 00:09:24,550
+the easy one, right? Build tools have
+
+275
+00:09:24,560 --> 00:09:27,110
+all kinds of logs. In some cases, too
+
+276
+00:09:27,120 --> 00:09:29,269
+many logs. So you know if you have a
+
+277
+00:09:29,279 --> 00:09:31,750
+million line of code project, regardless
+
+278
+00:09:31,760 --> 00:09:33,590
+of what your build is doing, that's
+
+279
+00:09:33,600 --> 00:09:35,190
+going to output a lot of logs. So how do
+
+280
+00:09:35,200 --> 00:09:36,870
+you sift through that, right? And it's
+
+281
+00:09:36,880 --> 00:09:38,230
+the same with our applications in
+
+282
+00:09:38,240 --> 00:09:39,750
+production. If you have a lot of logs,
+
+283
+00:09:39,760 --> 00:09:41,509
+you need tools to just cut through them
+
+284
+00:09:41,519 --> 00:09:43,269
+and sort them and and whatever. But
+
+285
+00:09:43,279 --> 00:09:45,750
+yeah, so tracing. So where are your
+
+286
+00:09:45,760 --> 00:09:48,230
+bottlenecks in your build? So in a lot
+
+287
+00:09:48,240 --> 00:09:50,230
+of cases, it's testing, right? We've
+
+288
+00:09:50,240 --> 00:09:53,110
+seen a lot of shops where 80 90% of your
+
+289
+00:09:53,120 --> 00:09:55,190
+build time is testing. So whenever I
+
+290
+00:09:55,200 --> 00:09:57,910
+talk about builds, I include test time,
+
+291
+00:09:57,920 --> 00:09:59,670
+right? I know not everybody does that
+
+292
+00:09:59,680 --> 00:10:01,190
+because a lot of people like to skip
+
+293
+00:10:01,200 --> 00:10:03,350
+their tests, but I won't go down that
+
+294
+00:10:03,360 --> 00:10:05,030
+path, right? So finding bottlenecks in
+
+295
+00:10:05,040 --> 00:10:07,190
+your builds and then metrics like build
+
+296
+00:10:07,200 --> 00:10:09,509
+times, how long are your build times? If
+
+297
+00:10:09,519 --> 00:10:11,030
+build time is the issue, right? If
+
+298
+00:10:11,040 --> 00:10:12,949
+you're measuring feedback cycles, if you
+
+299
+00:10:12,959 --> 00:10:14,630
+don't measure what those feedback cycles
+
+300
+00:10:14,640 --> 00:10:16,470
+are, how are you going to improve them,
+
+301
+00:10:16,480 --> 00:10:17,750
+right? Or how do you know when they get
+
+302
+00:10:17,760 --> 00:10:19,509
+worse or better? So how do you report
+
+303
+00:10:19,519 --> 00:10:21,829
+success to your boss who's paying you to
+
+304
+00:10:21,839 --> 00:10:24,470
+improve your feedback times or whatever?
+
+305
+00:10:24,480 --> 00:10:28,069
+Yeah. Okay. And in terms of what we can
+
+306
+00:10:28,079 --> 00:10:29,990
+do currently, what kind of observability
+
+307
+00:10:30,000 --> 00:10:32,870
+options the tools currently offer? I
+
+308
+00:10:32,880 --> 00:10:34,310
+think right now there's not a lot out
+
+309
+00:10:34,320 --> 00:10:35,910
+there. I mean, I know our product. So,
+
+310
+00:10:35,920 --> 00:10:37,509
+so I work at Gradle. We have a product
+
+311
+00:10:37,519 --> 00:10:39,350
+called De Velocity who works in the Java
+
+312
+00:10:39,360 --> 00:10:41,670
+world that obviously specializes in this
+
+313
+00:10:41,680 --> 00:10:43,350
+very thing we're talking about. But in
+
+314
+00:10:43,360 --> 00:10:45,670
+general, I don't think that tooling is
+
+315
+00:10:45,680 --> 00:10:48,790
+very robust in a lot of systems. And
+
+316
+00:10:48,800 --> 00:10:50,310
+that's all the way down to the
+
+317
+00:10:50,320 --> 00:10:52,150
+individual tools themselves like
+
+318
+00:10:52,160 --> 00:10:54,870
+compilers, llinters. They may not even
+
+319
+00:10:54,880 --> 00:10:57,829
+output a lot of data that you want to
+
+320
+00:10:57,839 --> 00:10:59,670
+consume. So I think we're starting to
+
+321
+00:10:59,680 --> 00:11:01,910
+see more robust data come out of these
+
+322
+00:11:01,920 --> 00:11:04,230
+tools and I think it goes handinhand
+
+323
+00:11:04,240 --> 00:11:06,630
+with a lot of the supply chain security
+
+324
+00:11:06,640 --> 00:11:08,630
+that's happening too because we want to
+
+325
+00:11:08,640 --> 00:11:09,910
+know what goes into the system we want
+
+326
+00:11:09,920 --> 00:11:11,430
+to know what comes out of the system for
+
+327
+00:11:11,440 --> 00:11:13,509
+security reasons but we can also use
+
+328
+00:11:13,519 --> 00:11:15,509
+that same mechanism to gather
+
+329
+00:11:15,519 --> 00:11:17,190
+information to improve the lives for
+
+330
+00:11:17,200 --> 00:11:19,110
+everybody and so at the moment so you
+
+331
+00:11:19,120 --> 00:11:20,630
+said the tools don't really offer much
+
+332
+00:11:20,640 --> 00:11:22,949
+so in practice is there something that
+
+333
+00:11:22,959 --> 00:11:24,710
+we can still do with what we've got at
+
+334
+00:11:24,720 --> 00:11:26,790
+the moment in terms of observability in
+
+335
+00:11:26,800 --> 00:11:28,310
+the tool chain absolely Absolutely.
+
+336
+00:11:28,320 --> 00:11:29,750
+Yeah. So, I think even without
+
+337
+00:11:29,760 --> 00:11:31,750
+specialized tools, just measuring how
+
+338
+00:11:31,760 --> 00:11:34,069
+long a process takes or individual
+
+339
+00:11:34,079 --> 00:11:36,310
+executions in your pipeline take, right?
+
+340
+00:11:36,320 --> 00:11:38,069
+You could do that, dump it to a file or
+
+341
+00:11:38,079 --> 00:11:40,150
+dump it to a database somewhere and
+
+342
+00:11:40,160 --> 00:11:42,230
+that's a pretty lowhanging fruit, right?
+
+343
+00:11:42,240 --> 00:11:43,750
+It's not a lot of data. It's not rich
+
+344
+00:11:43,760 --> 00:11:45,829
+data, but if you don't have anything,
+
+345
+00:11:45,839 --> 00:11:47,430
+that's a huge improvement. And then at
+
+346
+00:11:47,440 --> 00:11:49,030
+least you have enough data to make
+
+347
+00:11:49,040 --> 00:11:51,590
+decisions on where to invest or where to
+
+348
+00:11:51,600 --> 00:11:53,190
+spend effort in collecting more
+
+349
+00:11:53,200 --> 00:11:55,269
+information. with all these tools you
+
+350
+00:11:55,279 --> 00:11:57,269
+mentioned compilers you mentioned tools
+
+351
+00:11:57,279 --> 00:12:00,069
+to basically security scanning maybe
+
+352
+00:12:00,079 --> 00:12:03,590
+test runs things that break or instead
+
+353
+00:12:03,600 --> 00:12:06,550
+of running and all this so several tools
+
+354
+00:12:06,560 --> 00:12:08,629
+different data potentially an enormous
+
+355
+00:12:08,639 --> 00:12:10,470
+amount of data I'm think also especially
+
+356
+00:12:10,480 --> 00:12:12,949
+like logs I remember well in the Java
+
+357
+00:12:12,959 --> 00:12:14,710
+world actually when you compile stuff is
+
+358
+00:12:14,720 --> 00:12:17,190
+common to see logs warnings so all sorts
+
+359
+00:12:17,200 --> 00:12:20,310
+of stuff lots of information there how
+
+360
+00:12:20,320 --> 00:12:22,710
+are we supposed to collect this data
+
+361
+00:12:22,720 --> 00:12:24,629
+make sense of it. So with the current
+
+362
+00:12:24,639 --> 00:12:26,310
+tools, you said we don't have much but
+
+363
+00:12:26,320 --> 00:12:28,069
+how can we make sense of it? That's a
+
+364
+00:12:28,079 --> 00:12:30,629
+great point. So let's take the example
+
+365
+00:12:30,639 --> 00:12:33,509
+of uh compilation either I don't know
+
+366
+00:12:33,519 --> 00:12:35,030
+maybe you want to talk about warnings or
+
+367
+00:12:35,040 --> 00:12:38,230
+deprecations or whatever it is right so
+
+368
+00:12:38,240 --> 00:12:40,710
+if you are running a build right and I'm
+
+369
+00:12:40,720 --> 00:12:42,069
+just going to wait 2 minutes or 10
+
+370
+00:12:42,079 --> 00:12:43,750
+minutes or an hour for my build to
+
+371
+00:12:43,760 --> 00:12:45,269
+happen I'm not going to sit and watch
+
+372
+00:12:45,279 --> 00:12:47,990
+those logs go by right and I'm not going
+
+373
+00:12:48,000 --> 00:12:50,550
+to go proactively look for when that
+
+374
+00:12:50,560 --> 00:12:52,389
+happens right after an hour I'm not
+
+375
+00:12:52,399 --> 00:12:53,509
+going to go back and scroll through
+
+376
+00:12:53,519 --> 00:12:56,069
+every line looking for compiler warnings
+
+377
+00:12:56,079 --> 00:12:58,790
+I got a green light it passed right So
+
+378
+00:12:58,800 --> 00:13:00,550
+the real way to fix that is either make
+
+379
+00:13:00,560 --> 00:13:02,550
+the warnings errors, right? So that's
+
+380
+00:13:02,560 --> 00:13:04,069
+kind of like the hard heavy-handed
+
+381
+00:13:04,079 --> 00:13:06,470
+approach or have some system in place
+
+382
+00:13:06,480 --> 00:13:08,470
+where you're tracking the amount of
+
+383
+00:13:08,480 --> 00:13:10,629
+warnings you have now and then you're
+
+384
+00:13:10,639 --> 00:13:12,629
+reducing them, right? So you have to
+
+385
+00:13:12,639 --> 00:13:15,110
+have some system sitting on top that
+
+386
+00:13:15,120 --> 00:13:17,430
+looks for this. So say you have 100
+
+387
+00:13:17,440 --> 00:13:20,310
+compiler warnings today and by the end
+
+388
+00:13:20,320 --> 00:13:21,750
+of the next 3 months you want to get it
+
+389
+00:13:21,760 --> 00:13:24,470
+down to 10 or zero or whatever. So you
+
+390
+00:13:24,480 --> 00:13:26,150
+have to track that number, right? And
+
+391
+00:13:26,160 --> 00:13:27,829
+you have to watch it go down. So you
+
+392
+00:13:27,839 --> 00:13:29,190
+have to have some tooling that collects
+
+393
+00:13:29,200 --> 00:13:31,590
+that information and report on it and be
+
+394
+00:13:31,600 --> 00:13:33,430
+actionable on it because if nobody looks
+
+395
+00:13:33,440 --> 00:13:35,350
+for that data, nobody's going to act on
+
+396
+00:13:35,360 --> 00:13:37,829
+it. Yeah. And so have you seen anything
+
+397
+00:13:37,839 --> 00:13:40,150
+at the moment any teams any real
+
+398
+00:13:40,160 --> 00:13:41,750
+projects where people are doing this at
+
+399
+00:13:41,760 --> 00:13:43,430
+the right now? Have you experienced
+
+400
+00:13:43,440 --> 00:13:45,350
+anything like that? I think especially
+
+401
+00:13:45,360 --> 00:13:47,990
+in the case of flaky tests. So going
+
+402
+00:13:48,000 --> 00:13:50,150
+back to testing, I think that's a huge
+
+403
+00:13:50,160 --> 00:13:52,069
+problem. So it's a similar issue, right?
+
+404
+00:13:52,079 --> 00:13:55,030
+It's a giant time suck for some teams.
+
+405
+00:13:55,040 --> 00:13:57,269
+I've worked at shops where the flaky
+
+406
+00:13:57,279 --> 00:13:59,030
+test notification was an email that went
+
+407
+00:13:59,040 --> 00:14:00,870
+out to all of engineering. Well, that's
+
+408
+00:14:00,880 --> 00:14:02,550
+fine if there's like 10 of you. It's
+
+409
+00:14:02,560 --> 00:14:04,069
+probably less fine if there's hundreds
+
+410
+00:14:04,079 --> 00:14:06,230
+of you, right? Or thousands of you. That
+
+411
+00:14:06,240 --> 00:14:09,430
+system does not scale. So, the ability
+
+412
+00:14:09,440 --> 00:14:11,670
+to collect that information and act on
+
+413
+00:14:11,680 --> 00:14:13,910
+it is critical. So, you need to in the
+
+414
+00:14:13,920 --> 00:14:15,590
+flaky test, whatever your company wants
+
+415
+00:14:15,600 --> 00:14:17,670
+to do, whether it's move those tests
+
+416
+00:14:17,680 --> 00:14:20,790
+into quarantine, disable the tests,
+
+417
+00:14:20,800 --> 00:14:22,710
+assign somebody to fix the test,
+
+418
+00:14:22,720 --> 00:14:24,470
+whatever it is, right? rerun the test
+
+419
+00:14:24,480 --> 00:14:26,150
+potentially, right? If it's flaky, maybe
+
+420
+00:14:26,160 --> 00:14:27,829
+just rerun it a bunch of times and and
+
+421
+00:14:27,839 --> 00:14:30,310
+we'll pass. That's an okay stop gap, but
+
+422
+00:14:30,320 --> 00:14:32,389
+you need to have a way to both work
+
+423
+00:14:32,399 --> 00:14:34,150
+around these issues and to continue on
+
+424
+00:14:34,160 --> 00:14:37,430
+to improve. Okay. Now, also, as you
+
+425
+00:14:37,440 --> 00:14:39,269
+probably know, there is a lot of talking
+
+426
+00:14:39,279 --> 00:14:41,750
+about the use of AI in software
+
+427
+00:14:41,760 --> 00:14:44,470
+development. It seems that I mean, this
+
+428
+00:14:44,480 --> 00:14:47,189
+is the most discussed subject among
+
+429
+00:14:47,199 --> 00:14:49,670
+developers at the moment with all sorts
+
+430
+00:14:49,680 --> 00:14:51,829
+of opinions around it. uh something that
+
+431
+00:14:51,839 --> 00:14:53,990
+I think we can say is that the use of AI
+
+432
+00:14:54,000 --> 00:14:55,350
+during the day-to-day work actually
+
+433
+00:14:55,360 --> 00:14:57,350
+introduces some interesting challenges
+
+434
+00:14:57,360 --> 00:14:59,269
+in terms of observability in the tool
+
+435
+00:14:59,279 --> 00:15:02,310
+chain because now there is generated AI
+
+436
+00:15:02,320 --> 00:15:04,629
+code. So perhaps we need to know the
+
+437
+00:15:04,639 --> 00:15:06,870
+provenence maybe for security reasons or
+
+438
+00:15:06,880 --> 00:15:09,910
+other reasons and maybe copyrights who
+
+439
+00:15:09,920 --> 00:15:12,310
+knows but anyway in general what do you
+
+440
+00:15:12,320 --> 00:15:14,790
+think are the issues introduced by this
+
+441
+00:15:14,800 --> 00:15:17,829
+new tooling in this respect? Yeah, I
+
+442
+00:15:17,839 --> 00:15:18,949
+knew we were going to talk about AI,
+
+443
+00:15:18,959 --> 00:15:21,030
+right? Every conversation now has AI in
+
+444
+00:15:21,040 --> 00:15:22,389
+it. And like you said, love it or hate
+
+445
+00:15:22,399 --> 00:15:24,150
+it, I think it's here. It's not going
+
+446
+00:15:24,160 --> 00:15:26,870
+away. We have to get used to it. So, we
+
+447
+00:15:26,880 --> 00:15:28,230
+have to be aware of these types of
+
+448
+00:15:28,240 --> 00:15:30,069
+challenges. The Providence one is a
+
+449
+00:15:30,079 --> 00:15:31,430
+great one. So, where did this code come
+
+450
+00:15:31,440 --> 00:15:33,189
+from, right? So, there's a whole bunch
+
+451
+00:15:33,199 --> 00:15:35,990
+of tooling around sort of providence and
+
+452
+00:15:36,000 --> 00:15:37,829
+access stations that we could get into,
+
+453
+00:15:37,839 --> 00:15:39,670
+but that's one way to record where
+
+454
+00:15:39,680 --> 00:15:41,829
+information came from. But just the
+
+455
+00:15:41,839 --> 00:15:45,189
+sheer fact that more code is going to
+
+456
+00:15:45,199 --> 00:15:46,949
+enter their system means you have to
+
+457
+00:15:46,959 --> 00:15:48,949
+have smarter tools around it. Right? So
+
+458
+00:15:48,959 --> 00:15:50,949
+let's say you're using I don't know
+
+459
+00:15:50,959 --> 00:15:52,949
+copilot, right? So that's just helping
+
+460
+00:15:52,959 --> 00:15:54,790
+you write code. So you're the one
+
+461
+00:15:54,800 --> 00:15:57,110
+writing code. Copilot's helping you. We
+
+462
+00:15:57,120 --> 00:15:59,269
+have no information where that code came
+
+463
+00:15:59,279 --> 00:16:02,550
+from, right? But is copilot helping your
+
+464
+00:16:02,560 --> 00:16:05,030
+organization? I don't know. Right? You
+
+465
+00:16:05,040 --> 00:16:06,629
+can ask developers. They're like, "Yeah,
+
+466
+00:16:06,639 --> 00:16:08,389
+I like it." Right? But is it actually
+
+467
+00:16:08,399 --> 00:16:10,470
+helping you deliver features faster? You
+
+468
+00:16:10,480 --> 00:16:11,990
+have to measure something, right? Maybe
+
+469
+00:16:12,000 --> 00:16:13,749
+measure the number of features you push
+
+470
+00:16:13,759 --> 00:16:16,389
+to production or how often you have pull
+
+471
+00:16:16,399 --> 00:16:18,389
+requests, whatever it is. That's some
+
+472
+00:16:18,399 --> 00:16:20,470
+measure. So you need some tooling around
+
+473
+00:16:20,480 --> 00:16:22,710
+that to measure the productivity of that
+
+474
+00:16:22,720 --> 00:16:24,710
+tool for example. But what else I
+
+475
+00:16:24,720 --> 00:16:26,230
+mentioned that more code is coming into
+
+476
+00:16:26,240 --> 00:16:28,310
+the system, right? So that means we have
+
+477
+00:16:28,320 --> 00:16:30,470
+more code to compile. Going back to
+
+478
+00:16:30,480 --> 00:16:32,230
+warnings, maybe there's more warnings.
+
+479
+00:16:32,240 --> 00:16:34,230
+Testing becomes more important, right?
+
+480
+00:16:34,240 --> 00:16:36,550
+and then maybe even policies like so if
+
+481
+00:16:36,560 --> 00:16:39,189
+I'm generating code and generating my
+
+482
+00:16:39,199 --> 00:16:41,670
+tests what have I done right I haven't
+
+483
+00:16:41,680 --> 00:16:43,350
+actually done anything like I'm just
+
+484
+00:16:43,360 --> 00:16:44,870
+running some generated code and
+
+485
+00:16:44,880 --> 00:16:46,790
+generated tests those generated tests
+
+486
+00:16:46,800 --> 00:16:48,150
+aren't doing anything for me because
+
+487
+00:16:48,160 --> 00:16:49,749
+they were generated from the same source
+
+488
+00:16:49,759 --> 00:16:52,470
+that ran the tests on one hand it is
+
+489
+00:16:52,480 --> 00:16:54,150
+good because it's going to detect if it
+
+490
+00:16:54,160 --> 00:16:56,710
+changes the behavior in the future but I
+
+491
+00:16:56,720 --> 00:16:58,310
+don't know anyway I'm going to get into
+
+492
+00:16:58,320 --> 00:16:59,829
+some philosophical issues here in a
+
+493
+00:16:59,839 --> 00:17:02,470
+minute so I think AI adds a tremendous
+
+494
+00:17:02,480 --> 00:17:04,549
+amount of complexity
+
+495
+00:17:04,559 --> 00:17:06,630
+into our systems just from the sheer
+
+496
+00:17:06,640 --> 00:17:08,789
+volume it's going to add. So how can
+
+497
+00:17:08,799 --> 00:17:11,270
+observability help us dealing with this
+
+498
+00:17:11,280 --> 00:17:14,470
+complexity or at least understand what
+
+499
+00:17:14,480 --> 00:17:17,189
+is going on and decide if it is a good
+
+500
+00:17:17,199 --> 00:17:19,510
+thing or a bad thing depending on the
+
+501
+00:17:19,520 --> 00:17:21,510
+situation. Yeah. So again I think it
+
+502
+00:17:21,520 --> 00:17:24,549
+comes back to being able to track data
+
+503
+00:17:24,559 --> 00:17:27,189
+right so if your code base is growing
+
+504
+00:17:27,199 --> 00:17:28,789
+end over end your build times are going
+
+505
+00:17:28,799 --> 00:17:30,390
+to get longer. That's just how it works,
+
+506
+00:17:30,400 --> 00:17:32,150
+right? You have more code takes longer
+
+507
+00:17:32,160 --> 00:17:33,510
+to do whatever it is you're going to
+
+508
+00:17:33,520 --> 00:17:36,230
+test. So, you have to have some sort of
+
+509
+00:17:36,240 --> 00:17:38,789
+data around that to really look at and
+
+510
+00:17:38,799 --> 00:17:40,310
+figure out is this how we want to
+
+511
+00:17:40,320 --> 00:17:41,830
+structure our code. Now, if our code
+
+512
+00:17:41,840 --> 00:17:43,830
+base is growing, I don't know, a million
+
+513
+00:17:43,840 --> 00:17:46,070
+lines a year, whatever, 10,000 lines a
+
+514
+00:17:46,080 --> 00:17:47,750
+year, whatever that number is, is that
+
+515
+00:17:47,760 --> 00:17:50,150
+sustainable? Do I need to break up my
+
+516
+00:17:50,160 --> 00:17:52,310
+project into multiple projects? Spread
+
+517
+00:17:52,320 --> 00:17:53,990
+them across repositories, spread them
+
+518
+00:17:54,000 --> 00:17:56,310
+across teams, whatever it is. and you
+
+519
+00:17:56,320 --> 00:17:58,390
+still need data to make smart decisions
+
+520
+00:17:58,400 --> 00:18:00,390
+based on that, right? And maybe it's not
+
+521
+00:18:00,400 --> 00:18:01,990
+an issue, right? So that's another good
+
+522
+00:18:02,000 --> 00:18:03,590
+thing that data can provide you. So
+
+523
+00:18:03,600 --> 00:18:05,510
+maybe you are adding time, but you're
+
+524
+00:18:05,520 --> 00:18:07,270
+using other techniques like there's a
+
+525
+00:18:07,280 --> 00:18:09,190
+bunch of build acceleration techniques
+
+526
+00:18:09,200 --> 00:18:11,750
+where like build caching, compiler
+
+527
+00:18:11,760 --> 00:18:13,750
+avoidance, predictive test selection,
+
+528
+00:18:13,760 --> 00:18:15,430
+all these other types of techniques that
+
+529
+00:18:15,440 --> 00:18:16,950
+are out there that can speed up your
+
+530
+00:18:16,960 --> 00:18:19,669
+build. So maybe that increased amount of
+
+531
+00:18:19,679 --> 00:18:21,510
+code that you're adding doesn't actually
+
+532
+00:18:21,520 --> 00:18:23,990
+cause kind of a regress in the developer
+
+533
+00:18:24,000 --> 00:18:26,390
+experience. Do you think also that AI
+
+534
+00:18:26,400 --> 00:18:28,870
+can actually help as well with this with
+
+535
+00:18:28,880 --> 00:18:31,510
+observability or in the tool chain?
+
+536
+00:18:31,520 --> 00:18:32,950
+Yeah, I think there's a number of ways.
+
+537
+00:18:32,960 --> 00:18:35,029
+I think just the pattern matching alone
+
+538
+00:18:35,039 --> 00:18:37,750
+from AI does this failure look like this
+
+539
+00:18:37,760 --> 00:18:40,070
+failure or say does one failure look
+
+540
+00:18:40,080 --> 00:18:41,590
+like another failure and categorize
+
+541
+00:18:41,600 --> 00:18:43,990
+them. So in testing for example, if you
+
+542
+00:18:44,000 --> 00:18:46,549
+could lump test failures together, then
+
+543
+00:18:46,559 --> 00:18:48,230
+a developer could probably make really
+
+544
+00:18:48,240 --> 00:18:50,230
+informed decisions on which types of
+
+545
+00:18:50,240 --> 00:18:52,070
+tests are more important to fix first.
+
+546
+00:18:52,080 --> 00:18:53,830
+Now if those are flaky tests, that's one
+
+547
+00:18:53,840 --> 00:18:55,590
+thing. If there are test failures cuz I
+
+548
+00:18:55,600 --> 00:18:57,350
+made a code change, that might be a
+
+549
+00:18:57,360 --> 00:18:59,110
+different problem. But maybe it's an
+
+550
+00:18:59,120 --> 00:19:01,190
+infrastructural problem. So, a lot of
+
+551
+00:19:01,200 --> 00:19:02,390
+builds are really complex. They're
+
+552
+00:19:02,400 --> 00:19:04,310
+downloading things from various systems,
+
+553
+00:19:04,320 --> 00:19:06,070
+but the internet's flaky, right? It's
+
+554
+00:19:06,080 --> 00:19:07,830
+just how it is. There's always going to
+
+555
+00:19:07,840 --> 00:19:09,909
+be connection errors, servers are down,
+
+556
+00:19:09,919 --> 00:19:11,750
+whatever. So, there's probably a lot of
+
+557
+00:19:11,760 --> 00:19:14,870
+analytics that can happen just analyzing
+
+558
+00:19:14,880 --> 00:19:16,230
+are these types of problems
+
+559
+00:19:16,240 --> 00:19:18,710
+infrastructure problems? If so, that's
+
+560
+00:19:18,720 --> 00:19:20,230
+not a developer's problem. Maybe we can
+
+561
+00:19:20,240 --> 00:19:22,230
+automatically rerun a build for them.
+
+562
+00:19:22,240 --> 00:19:24,070
+Maybe we can signal, hey, we think this
+
+563
+00:19:24,080 --> 00:19:26,150
+is not your fault. Don't worry about
+
+564
+00:19:26,160 --> 00:19:27,830
+spending the next hour of your life
+
+565
+00:19:27,840 --> 00:19:29,110
+trying to figure out why it's your
+
+566
+00:19:29,120 --> 00:19:31,029
+problem. You are referring to things
+
+567
+00:19:31,039 --> 00:19:33,750
+like downloading some dependencies with
+
+568
+00:19:33,760 --> 00:19:35,909
+Maven or Gradle or something else that
+
+569
+00:19:35,919 --> 00:19:37,590
+could be subject to flakiness if you
+
+570
+00:19:37,600 --> 00:19:39,830
+have not cached them locally for example
+
+571
+00:19:39,840 --> 00:19:42,310
+things like this. Yes, absolutely. And
+
+572
+00:19:42,320 --> 00:19:44,150
+how we do CI sort of changed over the
+
+573
+00:19:44,160 --> 00:19:46,390
+last I since the last few years but over
+
+574
+00:19:46,400 --> 00:19:49,029
+the last 10 20 years anyway. So we used
+
+575
+00:19:49,039 --> 00:19:50,950
+to have these longunning agents. Now
+
+576
+00:19:50,960 --> 00:19:52,870
+everyone favors ephemeral builds, right?
+
+577
+00:19:52,880 --> 00:19:54,549
+So now we're downloading more of the
+
+578
+00:19:54,559 --> 00:19:56,549
+world on every build. And of course
+
+579
+00:19:56,559 --> 00:19:58,150
+there are caching techniques around
+
+580
+00:19:58,160 --> 00:20:00,950
+that, right? But again, observability
+
+581
+00:20:00,960 --> 00:20:03,350
+data, knowing how long your build takes,
+
+582
+00:20:03,360 --> 00:20:05,430
+knowing what portion of your build was
+
+583
+00:20:05,440 --> 00:20:07,350
+downloading dependencies might actually
+
+584
+00:20:07,360 --> 00:20:10,150
+be useful. So if you have a large
+
+585
+00:20:10,160 --> 00:20:12,310
+dependency download time of your every
+
+586
+00:20:12,320 --> 00:20:14,549
+build, maybe that's a signal that that
+
+587
+00:20:14,559 --> 00:20:16,710
+build isn't configured to use a
+
+588
+00:20:16,720 --> 00:20:19,029
+dependency cache or whatever. So, I know
+
+589
+00:20:19,039 --> 00:20:21,350
+GitHub and Jenkins have a cache system
+
+590
+00:20:21,360 --> 00:20:23,350
+they can use to save your dependencies.
+
+591
+00:20:23,360 --> 00:20:24,549
+There are other tools, like I said,
+
+592
+00:20:24,559 --> 00:20:26,630
+build caches and and things that work a
+
+593
+00:20:26,640 --> 00:20:27,669
+little different, but that's one
+
+594
+00:20:27,679 --> 00:20:30,310
+indication of having data helps you
+
+595
+00:20:30,320 --> 00:20:32,149
+pinpoint those projects that potentially
+
+596
+00:20:32,159 --> 00:20:34,710
+have problems. Okay. And have you seen
+
+597
+00:20:34,720 --> 00:20:37,110
+any teams doing that? Implementing some
+
+598
+00:20:37,120 --> 00:20:39,990
+observability for the AI they're using,
+
+599
+00:20:40,000 --> 00:20:41,990
+for example. Have you seen any? Yes. So,
+
+600
+00:20:42,000 --> 00:20:43,190
+we have a lot of customers that are
+
+601
+00:20:43,200 --> 00:20:45,350
+doing exactly that. Dependency download
+
+602
+00:20:45,360 --> 00:20:47,029
+time is a huge problem for a lot of our
+
+603
+00:20:47,039 --> 00:20:48,870
+customers for exactly what I just
+
+604
+00:20:48,880 --> 00:20:50,710
+mentioned. They were on Jenkins two
+
+605
+00:20:50,720 --> 00:20:52,470
+years ago where they had these really
+
+606
+00:20:52,480 --> 00:20:54,070
+long running agents and they switched to
+
+607
+00:20:54,080 --> 00:20:56,149
+ephemeral builds and look now their
+
+608
+00:20:56,159 --> 00:20:57,430
+builds are so much longer. What
+
+609
+00:20:57,440 --> 00:20:59,350
+happened? Why isn't the new system
+
+610
+00:20:59,360 --> 00:21:01,029
+working better than the old system?
+
+611
+00:21:01,039 --> 00:21:03,190
+Well, it ends up being because your
+
+612
+00:21:03,200 --> 00:21:05,029
+build actually changed. Now you're
+
+613
+00:21:05,039 --> 00:21:07,110
+downloading a bunch of things. or we had
+
+614
+00:21:07,120 --> 00:21:10,950
+one case where the network file storage
+
+615
+00:21:10,960 --> 00:21:13,430
+that the build agent was using was
+
+616
+00:21:13,440 --> 00:21:15,510
+slower than the previous system, right?
+
+617
+00:21:15,520 --> 00:21:17,270
+So, how do you track that? Right? The
+
+618
+00:21:17,280 --> 00:21:19,430
+dis IO is essentially slower. So,
+
+619
+00:21:19,440 --> 00:21:22,470
+without monitoring the dis IO, there's
+
+620
+00:21:22,480 --> 00:21:24,630
+no way a developer is going to know what
+
+621
+00:21:24,640 --> 00:21:26,149
+happened. First things, what's going to
+
+622
+00:21:26,159 --> 00:21:27,909
+happen is, well, I like the old system.
+
+623
+00:21:27,919 --> 00:21:29,430
+The new one sucks, right? Well, that's
+
+624
+00:21:29,440 --> 00:21:31,510
+not the true story, right? The new one
+
+625
+00:21:31,520 --> 00:21:33,270
+isn't configured the same way, so maybe
+
+626
+00:21:33,280 --> 00:21:36,070
+we should fix that. Yeah. Okay.
+
+627
+00:21:36,080 --> 00:21:38,149
+something again related maybe to AI
+
+628
+00:21:38,159 --> 00:21:40,070
+again we mentioned this the code
+
+629
+00:21:40,080 --> 00:21:41,830
+provenence but now with all these
+
+630
+00:21:41,840 --> 00:21:43,990
+developers using AI well according to
+
+631
+00:21:44,000 --> 00:21:47,590
+some surveys is like 90% of developers
+
+632
+00:21:47,600 --> 00:21:49,510
+in the world are using AI but I'm not
+
+633
+00:21:49,520 --> 00:21:50,950
+sure how much we can trust those numbers
+
+634
+00:21:50,960 --> 00:21:52,789
+because usually they come from companies
+
+635
+00:21:52,799 --> 00:21:54,789
+with an interest in the outcome but
+
+636
+00:21:54,799 --> 00:21:57,270
+there are still lots of developers using
+
+637
+00:21:57,280 --> 00:21:59,669
+AI assistant so how critical is called
+
+638
+00:21:59,679 --> 00:22:01,909
+provenance tracking in these tool chains
+
+639
+00:22:01,919 --> 00:22:05,190
+for you because of this usage I think
+
+640
+00:22:05,200 --> 00:22:06,630
+it's very critical. I think we're
+
+641
+00:22:06,640 --> 00:22:09,270
+starting to see more interest in the
+
+642
+00:22:09,280 --> 00:22:11,270
+open source community. I think that's
+
+643
+00:22:11,280 --> 00:22:12,710
+kind of where it's going to start
+
+644
+00:22:12,720 --> 00:22:15,190
+because as companies consume open
+
+645
+00:22:15,200 --> 00:22:16,470
+source, right? I don't know what
+
+646
+00:22:16,480 --> 00:22:18,070
+percentage it is. I think Tidelift put
+
+647
+00:22:18,080 --> 00:22:19,909
+out a report a few years ago, but it's
+
+648
+00:22:19,919 --> 00:22:21,830
+some insanely large percentage of your
+
+649
+00:22:21,840 --> 00:22:24,390
+applications are open source, right? So,
+
+650
+00:22:24,400 --> 00:22:26,870
+I think open source is also the area
+
+651
+00:22:26,880 --> 00:22:28,870
+that moves faster, adopts new
+
+652
+00:22:28,880 --> 00:22:30,470
+functionality faster. So what we're
+
+653
+00:22:30,480 --> 00:22:32,710
+seeing is I think open source
+
+654
+00:22:32,720 --> 00:22:34,710
+foundations are going to be more
+
+655
+00:22:34,720 --> 00:22:37,430
+interested in providence of source. So I
+
+656
+00:22:37,440 --> 00:22:38,870
+know for example when you bring a new
+
+657
+00:22:38,880 --> 00:22:40,789
+project to Apache right there's a big
+
+658
+00:22:40,799 --> 00:22:43,029
+audit as far as do we have the
+
+659
+00:22:43,039 --> 00:22:45,350
+capability of taking on the ownership of
+
+660
+00:22:45,360 --> 00:22:47,110
+this source. So that's I have some
+
+661
+00:22:47,120 --> 00:22:49,110
+source I'm bringing it one place but as
+
+662
+00:22:49,120 --> 00:22:50,950
+we're incrementally adding source
+
+663
+00:22:50,960 --> 00:22:52,789
+nobody's really doing anything. There
+
+664
+00:22:52,799 --> 00:22:54,789
+are a lot of snippet detection in a lot
+
+665
+00:22:54,799 --> 00:22:56,870
+of these tools out there but I think
+
+666
+00:22:56,880 --> 00:22:59,190
+they're questionable at best. So yeah.
+
+667
+00:22:59,200 --> 00:23:01,350
+So anyway, so I think we probably should
+
+668
+00:23:01,360 --> 00:23:04,390
+be doing more for tracking providence of
+
+669
+00:23:04,400 --> 00:23:06,630
+code from individual developers, from
+
+670
+00:23:06,640 --> 00:23:08,789
+AI, from systems, wherever it is.
+
+671
+00:23:08,799 --> 00:23:10,230
+Personally, I don't know of tools that
+
+672
+00:23:10,240 --> 00:23:12,710
+are doing that now. But I do know we're
+
+673
+00:23:12,720 --> 00:23:14,870
+starting to get into the world where
+
+674
+00:23:14,880 --> 00:23:16,710
+we're tracking the providence of where
+
+675
+00:23:16,720 --> 00:23:18,390
+things were created, right? Where things
+
+676
+00:23:18,400 --> 00:23:20,549
+were built. I don't think we're going to
+
+677
+00:23:20,559 --> 00:23:23,029
+get to the individual lines of code
+
+678
+00:23:23,039 --> 00:23:25,029
+until we've solved the output problem.
+
+679
+00:23:25,039 --> 00:23:26,630
+Well, hey guys, at some point we'll need
+
+680
+00:23:26,640 --> 00:23:28,390
+to get there because have you seen what
+
+681
+00:23:28,400 --> 00:23:29,830
+is happening also with some open source
+
+682
+00:23:29,840 --> 00:23:32,549
+software that some malicious actors hack
+
+683
+00:23:32,559 --> 00:23:34,950
+them like the SSH issue with adding
+
+684
+00:23:34,960 --> 00:23:38,390
+vulnerabilities. So probably some XC
+
+685
+00:23:38,400 --> 00:23:40,310
+utils I think those types of problems
+
+686
+00:23:40,320 --> 00:23:41,830
+are going to be bigger to deal with. So
+
+687
+00:23:41,840 --> 00:23:43,669
+there's some social engineering aspect
+
+688
+00:23:43,679 --> 00:23:46,630
+to that but just the increase amount of
+
+689
+00:23:46,640 --> 00:23:49,270
+code that's coming in from AI right good
+
+690
+00:23:49,280 --> 00:23:51,270
+or bad means that the volume of change
+
+691
+00:23:51,280 --> 00:23:53,909
+is happening quicker. So maybe you're,
+
+692
+00:23:53,919 --> 00:23:55,190
+you know, your open source project or
+
+693
+00:23:55,200 --> 00:23:56,710
+your corporate project is getting, I
+
+694
+00:23:56,720 --> 00:23:58,149
+don't know, 10 changes a week, right?
+
+695
+00:23:58,159 --> 00:23:59,750
+Just some random number. 10 changes a
+
+696
+00:23:59,760 --> 00:24:01,430
+week. That's a very reasonable number
+
+697
+00:24:01,440 --> 00:24:03,430
+where somebody, one person could sit
+
+698
+00:24:03,440 --> 00:24:05,830
+down and and review those code changes,
+
+699
+00:24:05,840 --> 00:24:07,110
+whatever. You know, you can you can
+
+700
+00:24:07,120 --> 00:24:09,110
+scale that by whatever you want. But as
+
+701
+00:24:09,120 --> 00:24:11,430
+soon as you, you know, 10x that number,
+
+702
+00:24:11,440 --> 00:24:14,310
+that problem gets much harder. And doing
+
+703
+00:24:14,320 --> 00:24:16,870
+thorough reviews of your code is harder.
+
+704
+00:24:16,880 --> 00:24:18,310
+So we're going to need better tooling
+
+705
+00:24:18,320 --> 00:24:21,110
+around, you know, quality gates. All of
+
+706
+00:24:21,120 --> 00:24:22,789
+these things need to be automated. The
+
+707
+00:24:22,799 --> 00:24:26,230
+human eyeball is probably less a factor
+
+708
+00:24:26,240 --> 00:24:27,990
+here and more a factor of is this code
+
+709
+00:24:28,000 --> 00:24:30,470
+readable not so much is it correct. And
+
+710
+00:24:30,480 --> 00:24:33,750
+now let's look into maybe how to improve
+
+711
+00:24:33,760 --> 00:24:35,750
+the observability in our tool chain. So
+
+712
+00:24:35,760 --> 00:24:38,070
+the first question I have is obviously
+
+713
+00:24:38,080 --> 00:24:40,390
+related to the business. Yeah, we say we
+
+714
+00:24:40,400 --> 00:24:42,310
+want to have better observability in our
+
+715
+00:24:42,320 --> 00:24:44,549
+tool chain and somebody from the
+
+716
+00:24:44,559 --> 00:24:46,950
+business side can say why this is going
+
+717
+00:24:46,960 --> 00:24:49,430
+to cost me money. what am I going to get
+
+718
+00:24:49,440 --> 00:24:52,310
+out of it? Yeah. So my response would be
+
+719
+00:24:52,320 --> 00:24:53,990
+why do we have observability in our
+
+720
+00:24:54,000 --> 00:24:56,070
+production applications right I mean the
+
+721
+00:24:56,080 --> 00:24:57,590
+answer that from the business side is
+
+722
+00:24:57,600 --> 00:24:59,909
+probably some sort of risk answer right
+
+723
+00:24:59,919 --> 00:25:02,390
+something goes down capacity planning
+
+724
+00:25:02,400 --> 00:25:04,549
+right we do capacity planning so things
+
+725
+00:25:04,559 --> 00:25:06,390
+don't go down right it all kind of comes
+
+726
+00:25:06,400 --> 00:25:08,549
+back to risk right something goes down
+
+727
+00:25:08,559 --> 00:25:10,070
+how long does it take to bring back up
+
+728
+00:25:10,080 --> 00:25:12,230
+so my troubleshooting window is smaller
+
+729
+00:25:12,240 --> 00:25:15,110
+so the same thing happens for our build
+
+730
+00:25:15,120 --> 00:25:17,830
+tools right so if something happens we
+
+731
+00:25:17,840 --> 00:25:20,149
+want that the resolution to that issue
+
+732
+00:25:20,159 --> 00:25:22,950
+to be shorter or again we want our
+
+733
+00:25:22,960 --> 00:25:24,950
+developer feedback cycles to be shorter
+
+734
+00:25:24,960 --> 00:25:26,870
+so we can be more productive and and
+
+735
+00:25:26,880 --> 00:25:28,710
+essentially being more productive faster
+
+736
+00:25:28,720 --> 00:25:31,029
+time to market I can increase the number
+
+737
+00:25:31,039 --> 00:25:32,710
+of features that I'm working on or my
+
+738
+00:25:32,720 --> 00:25:34,789
+team is working on that's the business
+
+739
+00:25:34,799 --> 00:25:38,310
+reason I think have you got any examples
+
+740
+00:25:38,320 --> 00:25:40,070
+from real projects about this as well
+
+741
+00:25:40,080 --> 00:25:42,310
+because I gradually just mentioned about
+
+742
+00:25:42,320 --> 00:25:44,230
+customers with the length of the builds
+
+743
+00:25:44,240 --> 00:25:46,710
+and this kind of stuff build time has
+
+744
+00:25:46,720 --> 00:25:48,070
+been our bread and butter I think that's
+
+745
+00:25:48,080 --> 00:25:50,070
+where our build acceleration technology
+
+746
+00:25:50,080 --> 00:25:52,070
+technologies has really been big for us.
+
+747
+00:25:52,080 --> 00:25:53,750
+But the only reason why they work is
+
+748
+00:25:53,760 --> 00:25:55,669
+because of the observability data,
+
+749
+00:25:55,679 --> 00:25:57,029
+right? So you want to find a bottleneck
+
+750
+00:25:57,039 --> 00:25:58,789
+in your build. Well, you need to monitor
+
+751
+00:25:58,799 --> 00:26:00,630
+and and have, you know, detailed
+
+752
+00:26:00,640 --> 00:26:02,470
+information about your build. But let's
+
+753
+00:26:02,480 --> 00:26:04,870
+just say we've had customers massively
+
+754
+00:26:04,880 --> 00:26:07,430
+overprovision build agents for example,
+
+755
+00:26:07,440 --> 00:26:10,149
+right? So I mentioned issues with disio,
+
+756
+00:26:10,159 --> 00:26:11,590
+right? But let's just say you're paying
+
+757
+00:26:11,600 --> 00:26:14,470
+for a cloud compute and your builds are
+
+758
+00:26:14,480 --> 00:26:17,269
+only using I don't know 10 25% of your
+
+759
+00:26:17,279 --> 00:26:19,830
+CPU, right? So you could probably save a
+
+760
+00:26:19,840 --> 00:26:22,149
+ton of money by using smaller build
+
+761
+00:26:22,159 --> 00:26:23,669
+agents assuming they're in the cloud,
+
+762
+00:26:23,679 --> 00:26:25,110
+right? If they're in somebody's closet
+
+763
+00:26:25,120 --> 00:26:26,630
+somewhere, you know, in your basement,
+
+764
+00:26:26,640 --> 00:26:28,789
+then that compute is already paid for.
+
+765
+00:26:28,799 --> 00:26:29,990
+But in the cloud, you're paying, you
+
+766
+00:26:30,000 --> 00:26:31,830
+know, per minute or or whatever. So
+
+767
+00:26:31,840 --> 00:26:33,909
+there's some serious gains to happen
+
+768
+00:26:33,919 --> 00:26:35,510
+there. But usually what happens is
+
+769
+00:26:35,520 --> 00:26:38,630
+nobody monitors that. So my bill is what
+
+770
+00:26:38,640 --> 00:26:40,230
+it is. I'm going to throw more hardware
+
+771
+00:26:40,240 --> 00:26:42,630
+at it to make it go faster. But, you
+
+772
+00:26:42,640 --> 00:26:45,510
+know, there's a I don't know, it's not
+
+773
+00:26:45,520 --> 00:26:48,390
+IObound or or or it's not a CPU bound or
+
+774
+00:26:48,400 --> 00:26:50,070
+maybe it is, but it's limited to one
+
+775
+00:26:50,080 --> 00:26:51,990
+thread, right? So, you know, I have four
+
+776
+00:26:52,000 --> 00:26:53,990
+CPUs on my system and I can only really
+
+777
+00:26:54,000 --> 00:26:55,909
+make use of one of them. So, I'm just
+
+778
+00:26:55,919 --> 00:26:57,510
+throwing dollars out the window. So,
+
+779
+00:26:57,520 --> 00:26:59,510
+we've seen a handful of cases like that.
+
+780
+00:26:59,520 --> 00:27:01,430
+And the opposite is true. So, we've seen
+
+781
+00:27:01,440 --> 00:27:03,750
+cases where customers are overutilized.
+
+782
+00:27:03,760 --> 00:27:05,750
+So, their agents are not provisioned big
+
+783
+00:27:05,760 --> 00:27:08,230
+enough. a few years ago when the Mac
+
+784
+00:27:08,240 --> 00:27:11,430
+switched to Apple silicone. So at Gradel
+
+785
+00:27:11,440 --> 00:27:13,430
+in-house, we did some some performance
+
+786
+00:27:13,440 --> 00:27:15,510
+benchmarks for for ourself using our own
+
+787
+00:27:15,520 --> 00:27:17,350
+product of course, but we found out that
+
+788
+00:27:17,360 --> 00:27:19,990
+our builds, you know, for Gradle build
+
+789
+00:27:20,000 --> 00:27:22,789
+tool and and de velocity were faster on
+
+790
+00:27:22,799 --> 00:27:24,870
+the Apple silicone max than the Intel
+
+791
+00:27:24,880 --> 00:27:26,870
+Max, right? And it was such a difference
+
+792
+00:27:26,880 --> 00:27:29,110
+where it actually made sense to buy
+
+793
+00:27:29,120 --> 00:27:31,350
+developers new laptops, right? Which
+
+794
+00:27:31,360 --> 00:27:32,710
+makes everybody happy, right? The
+
+795
+00:27:32,720 --> 00:27:34,230
+company's actually saving money. The
+
+796
+00:27:34,240 --> 00:27:36,470
+developers get a new flashy laptop. So,
+
+797
+00:27:36,480 --> 00:27:38,230
+it's a win-win all around. But again,
+
+798
+00:27:38,240 --> 00:27:40,070
+you can only do these things with data.
+
+799
+00:27:40,080 --> 00:27:42,149
+With data. Yeah. In your experience,
+
+800
+00:27:42,159 --> 00:27:43,909
+what are the considerations a team
+
+801
+00:27:43,919 --> 00:27:46,230
+should actually make to decide between
+
+802
+00:27:46,240 --> 00:27:49,029
+adding more observability to the tool
+
+803
+00:27:49,039 --> 00:27:52,390
+chain or simplifying the system they've
+
+804
+00:27:52,400 --> 00:27:54,870
+created because I guess the more complex
+
+805
+00:27:54,880 --> 00:27:56,630
+the system, the more observability you
+
+806
+00:27:56,640 --> 00:27:58,230
+need or the more complicated the tool
+
+807
+00:27:58,240 --> 00:27:59,909
+chain may be. But so, have you come
+
+808
+00:27:59,919 --> 00:28:02,470
+across situations where say, well, you
+
+809
+00:28:02,480 --> 00:28:04,389
+know what? Have you considered making a
+
+810
+00:28:04,399 --> 00:28:06,870
+simpler system that will give you a
+
+811
+00:28:06,880 --> 00:28:09,990
+better bang for the buck? I haven't, but
+
+812
+00:28:10,000 --> 00:28:11,510
+that's a great point. I know I talk
+
+813
+00:28:11,520 --> 00:28:12,870
+about this a lot when I talk about
+
+814
+00:28:12,880 --> 00:28:14,950
+choosing build tools. So, for folks not
+
+815
+00:28:14,960 --> 00:28:17,110
+in the Java world, I'm a Maven fan,
+
+816
+00:28:17,120 --> 00:28:19,029
+which is there's two big Java build
+
+817
+00:28:19,039 --> 00:28:20,870
+tools. There's Maven and Gradel. I'm a
+
+818
+00:28:20,880 --> 00:28:23,110
+big fan of the Maven tool, and then of
+
+819
+00:28:23,120 --> 00:28:24,789
+course, I work at the other company,
+
+820
+00:28:24,799 --> 00:28:26,389
+which is a very interesting mix, right?
+
+821
+00:28:26,399 --> 00:28:28,070
+So there's a lot of discussion around
+
+822
+00:28:28,080 --> 00:28:30,789
+about simplicity and speed and and which
+
+823
+00:28:30,799 --> 00:28:32,230
+one's better, which one makes you more
+
+824
+00:28:32,240 --> 00:28:33,590
+productive, which is great and
+
+825
+00:28:33,600 --> 00:28:35,830
+interesting, but I do think that's an
+
+826
+00:28:35,840 --> 00:28:37,990
+important thing to consider. I think our
+
+827
+00:28:38,000 --> 00:28:40,230
+build systems are really complex because
+
+828
+00:28:40,240 --> 00:28:42,310
+I can write code to do whatever I want,
+
+829
+00:28:42,320 --> 00:28:43,830
+right? It doesn't mean I always should
+
+830
+00:28:43,840 --> 00:28:45,830
+do that, right? So I think simplifying
+
+831
+00:28:45,840 --> 00:28:48,950
+your system is is in your best benefit,
+
+832
+00:28:48,960 --> 00:28:50,789
+but again, how do you know your change
+
+833
+00:28:50,799 --> 00:28:52,630
+made an impact, right? If you don't have
+
+834
+00:28:52,640 --> 00:28:54,870
+any data to start with and you make some
+
+835
+00:28:54,880 --> 00:28:56,630
+change, you're like it's better now.
+
+836
+00:28:56,640 --> 00:28:59,110
+Well, better than what right? So, you
+
+837
+00:28:59,120 --> 00:29:00,710
+should start with some observability
+
+838
+00:29:00,720 --> 00:29:02,310
+anyway. This is what you're saying
+
+839
+00:29:02,320 --> 00:29:03,590
+something, right? So, if you're going to
+
+840
+00:29:03,600 --> 00:29:05,590
+make a change, you know, even if it's
+
+841
+00:29:05,600 --> 00:29:07,510
+just doing some basic, you know, back of
+
+842
+00:29:07,520 --> 00:29:09,430
+the envelope benchmarks and then making
+
+843
+00:29:09,440 --> 00:29:11,350
+a change and then doing them again, I
+
+844
+00:29:11,360 --> 00:29:13,510
+still think that's a great win. I also
+
+845
+00:29:13,520 --> 00:29:15,350
+was thinking about things. Have you seen
+
+846
+00:29:15,360 --> 00:29:17,350
+that now there is many teams are moving
+
+847
+00:29:17,360 --> 00:29:19,269
+back from micros service based
+
+848
+00:29:19,279 --> 00:29:22,149
+architecture to monolith ones or
+
+849
+00:29:22,159 --> 00:29:24,310
+sometimes maybe still service based but
+
+850
+00:29:24,320 --> 00:29:26,070
+instead of having a gazillion of them
+
+851
+00:29:26,080 --> 00:29:28,149
+having three things I kind of reducing
+
+852
+00:29:28,159 --> 00:29:30,230
+the number and that of course reduces
+
+853
+00:29:30,240 --> 00:29:32,789
+the pipelines the build systems and and
+
+854
+00:29:32,799 --> 00:29:35,110
+everything else. So I was think also in
+
+855
+00:29:35,120 --> 00:29:37,029
+those terms as well. So there is a red
+
+856
+00:29:37,039 --> 00:29:39,830
+reduction of complexity not necessarily
+
+857
+00:29:39,840 --> 00:29:41,830
+compile time depending on how the
+
+858
+00:29:41,840 --> 00:29:44,070
+systems are written but right. So, I
+
+859
+00:29:44,080 --> 00:29:45,510
+know of a couple customers that have
+
+860
+00:29:45,520 --> 00:29:47,830
+more than 10,000 different repositories,
+
+861
+00:29:47,840 --> 00:29:49,590
+right? So, how do you manage that
+
+862
+00:29:49,600 --> 00:29:51,350
+without any kind of tooling? How do you
+
+863
+00:29:51,360 --> 00:29:53,269
+manage that? Take the simple case of
+
+864
+00:29:53,279 --> 00:29:55,830
+upgrading a component, whatever build
+
+865
+00:29:55,840 --> 00:29:57,350
+system you're into, you're all going to
+
+866
+00:29:57,360 --> 00:29:58,470
+have the same problems. You either want
+
+867
+00:29:58,480 --> 00:30:00,070
+to update a dependency, a runtime
+
+868
+00:30:00,080 --> 00:30:01,990
+library, you know, whatever. So, if I
+
+869
+00:30:02,000 --> 00:30:03,909
+want to update from some old version of
+
+870
+00:30:03,919 --> 00:30:05,909
+Java to a new version of Java, and I
+
+871
+00:30:05,919 --> 00:30:07,990
+have 10,000 repos, I don't know, let's
+
+872
+00:30:08,000 --> 00:30:10,870
+say 60% of them are Java, you know, 40%
+
+873
+00:30:10,880 --> 00:30:13,190
+are Node or whatever. So, first I need
+
+874
+00:30:13,200 --> 00:30:14,950
+to know which of those repos that affect
+
+875
+00:30:14,960 --> 00:30:17,269
+me, which ones are using the older
+
+876
+00:30:17,279 --> 00:30:19,669
+version, which ones are not using the
+
+877
+00:30:19,679 --> 00:30:21,430
+newer version, which ones are using, you
+
+878
+00:30:21,440 --> 00:30:23,350
+know, a version somewhere in the middle,
+
+879
+00:30:23,360 --> 00:30:24,870
+right? That maybe don't need attention
+
+880
+00:30:24,880 --> 00:30:27,110
+now, but they will next time I want to
+
+881
+00:30:27,120 --> 00:30:29,269
+make this change. But you can't manage
+
+882
+00:30:29,279 --> 00:30:31,190
+that that amount of code in that many
+
+883
+00:30:31,200 --> 00:30:33,029
+different places without some sort of
+
+884
+00:30:33,039 --> 00:30:35,190
+tooling. Again, you know, maybe in in
+
+885
+00:30:35,200 --> 00:30:37,590
+some cases it's some basic code scanning
+
+886
+00:30:37,600 --> 00:30:39,909
+in some inventory app that you run
+
+887
+00:30:39,919 --> 00:30:41,990
+inhouse, right? And that's fine, but
+
+888
+00:30:42,000 --> 00:30:44,870
+obviously I think tracking as you build
+
+889
+00:30:44,880 --> 00:30:47,029
+these things, each project gives you
+
+890
+00:30:47,039 --> 00:30:48,789
+better detailed information. You know,
+
+891
+00:30:48,799 --> 00:30:50,549
+you'll know how long it takes to to
+
+892
+00:30:50,559 --> 00:30:52,789
+build, where the dependencies come from,
+
+893
+00:30:52,799 --> 00:30:54,549
+which versions of all of the all of your
+
+894
+00:30:54,559 --> 00:30:56,470
+your tools you're using. It'll give you
+
+895
+00:30:56,480 --> 00:30:58,710
+a lot richer information where you can
+
+896
+00:30:58,720 --> 00:31:01,510
+improve this system. Yeah. Now, let's
+
+897
+00:31:01,520 --> 00:31:03,430
+say that company they decide somebody
+
+898
+00:31:03,440 --> 00:31:04,470
+decides, yeah, we need more
+
+899
+00:31:04,480 --> 00:31:06,549
+observability here. What are the
+
+900
+00:31:06,559 --> 00:31:08,389
+organizational and cultural changes
+
+901
+00:31:08,399 --> 00:31:10,710
+necessary to implement that? I tell you
+
+902
+00:31:10,720 --> 00:31:12,549
+what I'm thinking about. You see when I
+
+903
+00:31:12,559 --> 00:31:15,269
+work with uh companies very often I find
+
+904
+00:31:15,279 --> 00:31:17,430
+that when there are complex systems
+
+905
+00:31:17,440 --> 00:31:18,950
+maybe with many teams there are
+
+906
+00:31:18,960 --> 00:31:20,470
+situations where nobody looks at the
+
+907
+00:31:20,480 --> 00:31:22,310
+build and the broken tests something
+
+908
+00:31:22,320 --> 00:31:24,870
+breaks it's not my problem it's somebody
+
+909
+00:31:24,880 --> 00:31:27,190
+else's problem. So in those situations
+
+910
+00:31:27,200 --> 00:31:28,630
+you can have all the observability you
+
+911
+00:31:28,640 --> 00:31:31,669
+want but if nobody looks at the system
+
+912
+00:31:31,679 --> 00:31:33,430
+at the data and the information nothing
+
+913
+00:31:33,440 --> 00:31:35,430
+will happen. So in your experience, what
+
+914
+00:31:35,440 --> 00:31:37,990
+kind of changes have to happen in the
+
+915
+00:31:38,000 --> 00:31:41,350
+organization for this implementation of
+
+916
+00:31:41,360 --> 00:31:43,750
+more observability to succeed? I
+
+917
+00:31:43,760 --> 00:31:45,590
+definitely think there's a little bit of
+
+918
+00:31:45,600 --> 00:31:47,669
+education that needs to be involved. You
+
+919
+00:31:47,679 --> 00:31:49,029
+know, some developers are going to get
+
+920
+00:31:49,039 --> 00:31:51,190
+it, right? If I'm troubleshooting issue
+
+921
+00:31:51,200 --> 00:31:53,830
+and the more information I have, I know
+
+922
+00:31:53,840 --> 00:31:55,669
+that should right in theory make it
+
+923
+00:31:55,679 --> 00:31:57,350
+easier for me to troubleshoot an issue.
+
+924
+00:31:57,360 --> 00:32:00,630
+We've seen cases where the issue the
+
+925
+00:32:00,640 --> 00:32:02,470
+kind of enforcement of observability
+
+926
+00:32:02,480 --> 00:32:04,549
+comes from your CI team. So there's a
+
+927
+00:32:04,559 --> 00:32:06,630
+lot of bigger shops that as long as if
+
+928
+00:32:06,640 --> 00:32:08,789
+there's a CI issue, what happens is a
+
+929
+00:32:08,799 --> 00:32:10,149
+developer is like, oh, it's not my
+
+930
+00:32:10,159 --> 00:32:11,750
+problem. I'm going to open a ticket and
+
+931
+00:32:11,760 --> 00:32:14,070
+this central CI build tool team will
+
+932
+00:32:14,080 --> 00:32:15,750
+look at it, right? And they don't know
+
+933
+00:32:15,760 --> 00:32:17,990
+what to do unless it's uh some sort of
+
+934
+00:32:18,000 --> 00:32:19,909
+centralized common tooling problem.
+
+935
+00:32:19,919 --> 00:32:21,590
+There's nothing they can do about it. So
+
+936
+00:32:21,600 --> 00:32:23,830
+what they implemented is we have a
+
+937
+00:32:23,840 --> 00:32:25,430
+product called build scans but it's
+
+938
+00:32:25,440 --> 00:32:27,110
+essentially a detailed view of all of
+
+939
+00:32:27,120 --> 00:32:28,470
+the information that happened in your
+
+940
+00:32:28,480 --> 00:32:30,549
+build. So what they've done is they've
+
+941
+00:32:30,559 --> 00:32:32,470
+said you can't open a ticket with the
+
+942
+00:32:32,480 --> 00:32:34,950
+central team without this observability
+
+943
+00:32:34,960 --> 00:32:37,190
+data. But the fact that you have that
+
+944
+00:32:37,200 --> 00:32:39,350
+observability data means that someone
+
+945
+00:32:39,360 --> 00:32:41,029
+can probably look at it before sending
+
+946
+00:32:41,039 --> 00:32:43,110
+it to the CI team. So that was one way
+
+947
+00:32:43,120 --> 00:32:45,509
+that that other team kind of enforced
+
+948
+00:32:45,519 --> 00:32:48,070
+that the data exists you know for them
+
+949
+00:32:48,080 --> 00:32:50,149
+essentially but also because it exists
+
+950
+00:32:50,159 --> 00:32:52,310
+it makes it easier for the developer to
+
+951
+00:32:52,320 --> 00:32:54,149
+kind of self- select should I fix this
+
+952
+00:32:54,159 --> 00:32:57,029
+or is this somebody else's problem okay
+
+953
+00:32:57,039 --> 00:32:59,909
+and in terms of data so we have many
+
+954
+00:32:59,919 --> 00:33:02,149
+tools as we had observability how can we
+
+955
+00:33:02,159 --> 00:33:05,990
+avoid being submerged by deluge of data
+
+956
+00:33:06,000 --> 00:33:09,269
+so how do we select what to observe yeah
+
+957
+00:33:09,279 --> 00:33:11,110
+that's a great one part of me wants to
+
+958
+00:33:11,120 --> 00:33:13,509
+say just observe everything right and
+
+959
+00:33:13,519 --> 00:33:15,590
+then you can use that data as needed but
+
+960
+00:33:15,600 --> 00:33:16,950
+you know there's there's obviously cost
+
+961
+00:33:16,960 --> 00:33:19,430
+considerations timing considerations so
+
+962
+00:33:19,440 --> 00:33:21,909
+I would say start with the problems that
+
+963
+00:33:21,919 --> 00:33:23,830
+are bothering you the most right so
+
+964
+00:33:23,840 --> 00:33:25,110
+again we we start talking about
+
+965
+00:33:25,120 --> 00:33:27,350
+developer experience if feedback cycles
+
+966
+00:33:27,360 --> 00:33:29,269
+are the thing you want to improve then
+
+967
+00:33:29,279 --> 00:33:32,230
+obviously the timing of things is at the
+
+968
+00:33:32,240 --> 00:33:34,470
+forefront right so measure CI times
+
+969
+00:33:34,480 --> 00:33:36,389
+measure local developer time so builds
+
+970
+00:33:36,399 --> 00:33:38,470
+on local developer machines you can
+
+971
+00:33:38,480 --> 00:33:39,990
+measure how long it takes for something
+
+972
+00:33:40,000 --> 00:33:42,630
+to fail So obviously if your build's an
+
+973
+00:33:42,640 --> 00:33:44,950
+hour and most of your failures happen in
+
+974
+00:33:44,960 --> 00:33:46,630
+the first 30 seconds, that's really
+
+975
+00:33:46,640 --> 00:33:48,630
+good. That's probably an ideal case,
+
+976
+00:33:48,640 --> 00:33:50,070
+right? But that's kind of where you'd
+
+977
+00:33:50,080 --> 00:33:52,310
+want to be. So measuring the the basics
+
+978
+00:33:52,320 --> 00:33:54,070
+first and then you can do the simple
+
+979
+00:33:54,080 --> 00:33:55,350
+things like how often are your
+
+980
+00:33:55,360 --> 00:33:57,750
+developers running builds, right? So if
+
+981
+00:33:57,760 --> 00:33:59,750
+your build is an hour, you can only do
+
+982
+00:33:59,760 --> 00:34:01,909
+that a couple times a day. So if you can
+
+983
+00:34:01,919 --> 00:34:03,669
+shave, I don't know, 20 minutes off it,
+
+984
+00:34:03,679 --> 00:34:05,269
+maybe you can do three, four times a
+
+985
+00:34:05,279 --> 00:34:07,669
+day. So that'll improve productivity.
+
+986
+00:34:07,679 --> 00:34:09,909
+It'll improve throughput. It'll improve
+
+987
+00:34:09,919 --> 00:34:12,069
+your CI your CIQ time should go down
+
+988
+00:34:12,079 --> 00:34:13,909
+because your builds are smaller. There's
+
+989
+00:34:13,919 --> 00:34:16,470
+a lot of information just in that basic
+
+990
+00:34:16,480 --> 00:34:18,230
+measurement of time that will help
+
+991
+00:34:18,240 --> 00:34:20,230
+improve. And of course, you know, if you
+
+992
+00:34:20,240 --> 00:34:22,869
+want to get into kind of the security
+
+993
+00:34:22,879 --> 00:34:24,869
+angle, like really monitoring your
+
+994
+00:34:24,879 --> 00:34:26,310
+dependencies and those things, that's
+
+995
+00:34:26,320 --> 00:34:27,990
+obviously a bit more involved. But I
+
+996
+00:34:28,000 --> 00:34:29,829
+think starting with some of the basics
+
+997
+00:34:29,839 --> 00:34:32,230
+to just get an understanding of where
+
+998
+00:34:32,240 --> 00:34:34,869
+you're at is a win. But it's up to the
+
+999
+00:34:34,879 --> 00:34:36,869
+company like find your problem in focus
+
+1000
+00:34:36,879 --> 00:34:39,030
+on measuring that and then what's going
+
+1001
+00:34:39,040 --> 00:34:40,069
+to happen is you're going to have the
+
+1002
+00:34:40,079 --> 00:34:42,149
+aha moment or the that wasn't actually
+
+1003
+00:34:42,159 --> 00:34:43,909
+the problem it's this. But because
+
+1004
+00:34:43,919 --> 00:34:46,550
+you're starting from somewhere it's a
+
+1005
+00:34:46,560 --> 00:34:48,710
+lot easier to incrementally improve your
+
+1006
+00:34:48,720 --> 00:34:50,790
+position than than you know go from 0 to
+
+1007
+00:34:50,800 --> 00:34:54,310
+60. Okay let's say now okay the company
+
+1008
+00:34:54,320 --> 00:34:56,230
+sold they want to do this but and they
+
+1009
+00:34:56,240 --> 00:34:57,990
+have a green field project to start
+
+1010
+00:34:58,000 --> 00:35:00,470
+with. How can they start? So say in a
+
+1011
+00:35:00,480 --> 00:35:02,069
+green field project, how would you
+
+1012
+00:35:02,079 --> 00:35:04,470
+approach this adding observability to
+
+1013
+00:35:04,480 --> 00:35:07,030
+the tool chain? That's a good one. I
+
+1014
+00:35:07,040 --> 00:35:08,710
+think that might actually be harder
+
+1015
+00:35:08,720 --> 00:35:09,990
+because you don't have anything to
+
+1016
+00:35:10,000 --> 00:35:11,670
+compare it against, right? But it's also
+
+1017
+00:35:11,680 --> 00:35:13,589
+good because there's no preconceived
+
+1018
+00:35:13,599 --> 00:35:15,589
+notions of the types of data that you
+
+1019
+00:35:15,599 --> 00:35:16,870
+need, right? The problems that you're
+
+1020
+00:35:16,880 --> 00:35:18,870
+currently having. So again, I would
+
+1021
+00:35:18,880 --> 00:35:21,190
+start small, right? So instrument
+
+1022
+00:35:21,200 --> 00:35:23,430
+everything. So whatever tooling you're
+
+1023
+00:35:23,440 --> 00:35:25,109
+using that supports any kind of
+
+1024
+00:35:25,119 --> 00:35:27,750
+instrumentation or or data collection, I
+
+1025
+00:35:27,760 --> 00:35:29,829
+would do that. If you're a shop that
+
+1026
+00:35:29,839 --> 00:35:31,990
+uses some sort of logging service, you
+
+1027
+00:35:32,000 --> 00:35:34,550
+can even dump your builds into a logging
+
+1028
+00:35:34,560 --> 00:35:36,310
+system. That's still better than
+
+1029
+00:35:36,320 --> 00:35:38,630
+nothing. That probably gets expensive
+
+1030
+00:35:38,640 --> 00:35:41,270
+really quick. But I would say start
+
+1031
+00:35:41,280 --> 00:35:43,349
+start collecting data. I think you need
+
+1032
+00:35:43,359 --> 00:35:46,630
+to also make some sort of decisions on
+
+1033
+00:35:46,640 --> 00:35:48,470
+that data. So not just collect it, but
+
+1034
+00:35:48,480 --> 00:35:50,550
+also, you know, maybe some sort of
+
+1035
+00:35:50,560 --> 00:35:52,550
+alerting, right? So again, I keep
+
+1036
+00:35:52,560 --> 00:35:54,470
+beating the build time metric, but it's
+
+1037
+00:35:54,480 --> 00:35:56,150
+an easy one. Or or flaky test. Let's go
+
+1038
+00:35:56,160 --> 00:35:57,990
+back to flaky test. So percentage of
+
+1039
+00:35:58,000 --> 00:36:00,230
+flaky tests if that raises more than say
+
+1040
+00:36:00,240 --> 00:36:03,030
+2%. You need to alert somebody. So there
+
+1041
+00:36:03,040 --> 00:36:04,630
+needs to be some actionable event that
+
+1042
+00:36:04,640 --> 00:36:06,790
+happens. And if you're starting with a
+
+1043
+00:36:06,800 --> 00:36:08,950
+green field application, maybe that's a
+
+1044
+00:36:08,960 --> 00:36:11,430
+really really low threshold, right? And
+
+1045
+00:36:11,440 --> 00:36:13,349
+maybe it's always going to stay that way
+
+1046
+00:36:13,359 --> 00:36:14,790
+or there's always some inherent
+
+1047
+00:36:14,800 --> 00:36:17,270
+flakiness with systems now. But starting
+
+1048
+00:36:17,280 --> 00:36:19,589
+with a low number, being able to do some
+
+1049
+00:36:19,599 --> 00:36:20,870
+alerting, whatever it is, you know,
+
+1050
+00:36:20,880 --> 00:36:23,510
+create a Slackbot, create an email, open
+
+1051
+00:36:23,520 --> 00:36:25,589
+an issue automatically, whatever it is,
+
+1052
+00:36:25,599 --> 00:36:27,829
+assign the issue to somebody to fix
+
+1053
+00:36:27,839 --> 00:36:29,750
+right away. That way, the data that
+
+1054
+00:36:29,760 --> 00:36:31,430
+you're collecting is actionable and it's
+
+1055
+00:36:31,440 --> 00:36:34,630
+being used. And what about also you know
+
+1056
+00:36:34,640 --> 00:36:37,270
+even if there isn't a lot of data in
+
+1057
+00:36:37,280 --> 00:36:38,710
+addition to what you say actually an
+
+1058
+00:36:38,720 --> 00:36:40,870
+approach could be also a reason to do
+
+1059
+00:36:40,880 --> 00:36:43,349
+something from the beginning would be to
+
+1060
+00:36:43,359 --> 00:36:45,589
+set up the necessary infrastructure to
+
+1061
+00:36:45,599 --> 00:36:47,750
+actually being able to collect the data
+
+1062
+00:36:47,760 --> 00:36:49,349
+in the first place. That is what you
+
+1063
+00:36:49,359 --> 00:36:51,750
+said pretty much instrument every tool
+
+1064
+00:36:51,760 --> 00:36:53,589
+that has some gives you the possibility
+
+1065
+00:36:53,599 --> 00:36:55,510
+to add some instrumentation and
+
+1066
+00:36:55,520 --> 00:36:58,310
+collecting data just do that. So I would
+
+1067
+00:36:58,320 --> 00:36:59,750
+imagine that even if you don't use the
+
+1068
+00:36:59,760 --> 00:37:01,109
+data at the beginning, just having the
+
+1069
+00:37:01,119 --> 00:37:02,950
+infrastructure to collect it and put it
+
+1070
+00:37:02,960 --> 00:37:05,910
+somewhere could be useful. I agree the
+
+1071
+00:37:05,920 --> 00:37:07,750
+amount of learning that your team will
+
+1072
+00:37:07,760 --> 00:37:09,430
+gain. So whether it's your the
+
+1073
+00:37:09,440 --> 00:37:10,790
+development team working on the green
+
+1074
+00:37:10,800 --> 00:37:13,190
+field application, some centralized team
+
+1075
+00:37:13,200 --> 00:37:14,630
+that's supporting them with the
+
+1076
+00:37:14,640 --> 00:37:17,190
+observability infrastructure, it's a
+
+1077
+00:37:17,200 --> 00:37:20,790
+very lowrisk way to gain organizational
+
+1078
+00:37:20,800 --> 00:37:22,710
+knowledge around that and then start
+
+1079
+00:37:22,720 --> 00:37:24,310
+figuring out the questions you want to
+
+1080
+00:37:24,320 --> 00:37:25,990
+answer and then you could scale from
+
+1081
+00:37:26,000 --> 00:37:27,670
+that green field project to other
+
+1082
+00:37:27,680 --> 00:37:30,069
+projects. And then the other question is
+
+1083
+00:37:30,079 --> 00:37:32,470
+of course for for legacy systems which
+
+1084
+00:37:32,480 --> 00:37:34,150
+from your previous answers I would
+
+1085
+00:37:34,160 --> 00:37:36,230
+imagine that this is the easier part
+
+1086
+00:37:36,240 --> 00:37:37,910
+because you have data now or you know
+
+1087
+00:37:37,920 --> 00:37:40,230
+what to look for I think so I think you
+
+1088
+00:37:40,240 --> 00:37:42,470
+at least have some questions that you
+
+1089
+00:37:42,480 --> 00:37:45,030
+want answered right so usually is this
+
+1090
+00:37:45,040 --> 00:37:47,109
+thing slow or it I don't know that's a
+
+1091
+00:37:47,119 --> 00:37:48,790
+big one right so if you have again a
+
+1092
+00:37:48,800 --> 00:37:50,630
+million lines of code and is this thing
+
+1093
+00:37:50,640 --> 00:37:53,109
+slow the obvious answer is yes right why
+
+1094
+00:37:53,119 --> 00:37:54,790
+is it slow because it's a million lines
+
+1095
+00:37:54,800 --> 00:37:56,950
+of code right but that's not really like
+
+1096
+00:37:56,960 --> 00:37:58,950
+an actionable answer you can't well I'll
+
+1097
+00:37:58,960 --> 00:38:00,630
+just delete half the code you can't do
+
+1098
+00:38:00,640 --> 00:38:02,310
+that right but there are things you
+
+1099
+00:38:02,320 --> 00:38:04,150
+could do you know what percentage of the
+
+1100
+00:38:04,160 --> 00:38:06,710
+time is running tests it's probably a
+
+1101
+00:38:06,720 --> 00:38:09,510
+large portion but maybe linting is
+
+1102
+00:38:09,520 --> 00:38:12,150
+actually 5 minutes of that so I love
+
+1103
+00:38:12,160 --> 00:38:13,910
+linting I love all of these quality
+
+1104
+00:38:13,920 --> 00:38:16,069
+static analysis tools but a lot of them
+
+1105
+00:38:16,079 --> 00:38:18,550
+can be hooked up in your IDE right and
+
+1106
+00:38:18,560 --> 00:38:20,390
+so the incremental cost of running them
+
+1107
+00:38:20,400 --> 00:38:22,230
+is almost nothing right I type a line
+
+1108
+00:38:22,240 --> 00:38:24,150
+and instantly my IDE gives me a red
+
+1109
+00:38:24,160 --> 00:38:25,990
+squiggly line or or some warning or
+
+1110
+00:38:26,000 --> 00:38:28,470
+whatever so if that's the case if I'm
+
+1111
+00:38:28,480 --> 00:38:30,470
+already getting that feedback, then I
+
+1112
+00:38:30,480 --> 00:38:32,470
+probably don't need it when I run local
+
+1113
+00:38:32,480 --> 00:38:34,310
+builds, right? I probably do need it in
+
+1114
+00:38:34,320 --> 00:38:35,829
+CI to make sure those things don't
+
+1115
+00:38:35,839 --> 00:38:37,349
+actually happen and people aren't
+
+1116
+00:38:37,359 --> 00:38:39,430
+ignoring, you know, IDE warnings, but
+
+1117
+00:38:39,440 --> 00:38:40,870
+that could be 5 minutes off your build
+
+1118
+00:38:40,880 --> 00:38:42,870
+that you cut off. Now, 5 minutes over an
+
+1119
+00:38:42,880 --> 00:38:44,630
+hour, maybe that doesn't move the needle
+
+1120
+00:38:44,640 --> 00:38:46,150
+for you, but that is something, right?
+
+1121
+00:38:46,160 --> 00:38:47,910
+And and there's probably a lot of those
+
+1122
+00:38:47,920 --> 00:38:50,230
+types of events that happen that can be
+
+1123
+00:38:50,240 --> 00:38:52,470
+improved, you know, over time. But I
+
+1124
+00:38:52,480 --> 00:38:53,990
+guess that on the other hand in legacy
+
+1125
+00:38:54,000 --> 00:38:55,910
+systems depending what you're doing
+
+1126
+00:38:55,920 --> 00:38:57,910
+might be difficult to instrument the
+
+1127
+00:38:57,920 --> 00:39:00,550
+code and act on it as well because I'm
+
+1128
+00:39:00,560 --> 00:39:02,710
+thinking about for example security
+
+1129
+00:39:02,720 --> 00:39:05,750
+issues. It's like if you start looking
+
+1130
+00:39:05,760 --> 00:39:07,750
+for them and you never done that before,
+
+1131
+00:39:07,760 --> 00:39:09,270
+you may end up in a situation where you
+
+1132
+00:39:09,280 --> 00:39:11,190
+have a pile of them and you cannot
+
+1133
+00:39:11,200 --> 00:39:13,030
+really stop building your system until
+
+1134
+00:39:13,040 --> 00:39:14,630
+all of them are sold. So you need to
+
+1135
+00:39:14,640 --> 00:39:17,829
+have a prioritization of sorts.
+
+1136
+00:39:17,839 --> 00:39:19,430
+Absolutely. and and there's a handful of
+
+1137
+00:39:19,440 --> 00:39:21,430
+tools that will help with that for like
+
+1138
+00:39:21,440 --> 00:39:23,430
+security scanning specifically, right?
+
+1139
+00:39:23,440 --> 00:39:25,030
+But I think that's another one of those
+
+1140
+00:39:25,040 --> 00:39:27,349
+types of issues where you incrementally
+
+1141
+00:39:27,359 --> 00:39:29,349
+improve, right? So if you have a
+
+1142
+00:39:29,359 --> 00:39:31,589
+thousand security issues today, you want
+
+1143
+00:39:31,599 --> 00:39:32,710
+to make sure that number doesn't
+
+1144
+00:39:32,720 --> 00:39:34,230
+increase, right? And then and then
+
+1145
+00:39:34,240 --> 00:39:35,750
+hopefully, you know, you target that
+
+1146
+00:39:35,760 --> 00:39:38,150
+number and you can slowly drop it or
+
+1147
+00:39:38,160 --> 00:39:39,829
+quickly drop it would be better. But a
+
+1148
+00:39:39,839 --> 00:39:42,069
+lot of build systems are older systems,
+
+1149
+00:39:42,079 --> 00:39:44,470
+legacy systems are overly complex. You
+
+1150
+00:39:44,480 --> 00:39:46,230
+know, they've migrated between versions
+
+1151
+00:39:46,240 --> 00:39:48,310
+of tools. They're in states of
+
+1152
+00:39:48,320 --> 00:39:50,710
+migration, right? I know one system that
+
+1153
+00:39:50,720 --> 00:39:52,870
+I worked on a few years ago that was
+
+1154
+00:39:52,880 --> 00:39:54,870
+migrated from Ant. So in the Java world,
+
+1155
+00:39:54,880 --> 00:39:57,030
+Ant is this pretty legacy build tool.
+
+1156
+00:39:57,040 --> 00:39:58,390
+What happens with a lot of these
+
+1157
+00:39:58,400 --> 00:40:01,109
+migrations is it was migrated enough to
+
+1158
+00:40:01,119 --> 00:40:02,870
+work with a new system and then there's
+
+1159
+00:40:02,880 --> 00:40:05,030
+still a lot of tech debt, right? Or or
+
+1160
+00:40:05,040 --> 00:40:07,109
+build rot or tech debt that's in the
+
+1161
+00:40:07,119 --> 00:40:09,270
+system that was just never cleaned up.
+
+1162
+00:40:09,280 --> 00:40:11,190
+But it actually affects, you know, the
+
+1163
+00:40:11,200 --> 00:40:13,190
+performance of the system, how easy it
+
+1164
+00:40:13,200 --> 00:40:14,950
+is to add new tools. Again, if you
+
+1165
+00:40:14,960 --> 00:40:16,790
+wanted to add a new security scanner,
+
+1166
+00:40:16,800 --> 00:40:19,190
+even that becomes harder because, you
+
+1167
+00:40:19,200 --> 00:40:20,310
+know, there's always these special
+
+1168
+00:40:20,320 --> 00:40:22,310
+little edge cases around the tool. So,
+
+1169
+00:40:22,320 --> 00:40:23,430
+you know, going back to the
+
+1170
+00:40:23,440 --> 00:40:25,990
+simplification of our our systems, you
+
+1171
+00:40:26,000 --> 00:40:27,510
+know, there's a lot to be said for that,
+
+1172
+00:40:27,520 --> 00:40:30,150
+but just knowing where the complexity is
+
+1173
+00:40:30,160 --> 00:40:33,349
+again is still valuable information. And
+
+1174
+00:40:33,359 --> 00:40:35,829
+for teams that are new to tool chain
+
+1175
+00:40:35,839 --> 00:40:37,910
+observability, have you got any
+
+1176
+00:40:37,920 --> 00:40:40,710
+suggestions about metrics? First step
+
+1177
+00:40:40,720 --> 00:40:42,470
+matrix, you know, okay, we want to have
+
+1178
+00:40:42,480 --> 00:40:44,870
+some observability. what we start to
+
+1179
+00:40:44,880 --> 00:40:47,430
+look for. I think build time is the easy
+
+1180
+00:40:47,440 --> 00:40:50,310
+one. I think that's the one that is the
+
+1181
+00:40:50,320 --> 00:40:52,790
+easiest to comprehend for folks. And I
+
+1182
+00:40:52,800 --> 00:40:54,710
+know I keep saying it, but it's like
+
+1183
+00:40:54,720 --> 00:40:56,630
+test coverage, right? So, there's a lot
+
+1184
+00:40:56,640 --> 00:40:58,069
+of people who hate the test coverage
+
+1185
+00:40:58,079 --> 00:41:00,550
+metric because it can be abused or
+
+1186
+00:41:00,560 --> 00:41:02,710
+gamed, but I find it still a very
+
+1187
+00:41:02,720 --> 00:41:04,390
+valuable
+
+1188
+00:41:04,400 --> 00:41:06,390
+metric. Just, you know, you take it with
+
+1189
+00:41:06,400 --> 00:41:08,550
+a grain of salt. So again, take build
+
+1190
+00:41:08,560 --> 00:41:10,069
+time with a grain of salt for example,
+
+1191
+00:41:10,079 --> 00:41:12,069
+but it's a really easy one to measure
+
+1192
+00:41:12,079 --> 00:41:14,230
+and to improve and to know if there's a
+
+1193
+00:41:14,240 --> 00:41:16,390
+problem. So you know, there's a lot of
+
+1194
+00:41:16,400 --> 00:41:18,710
+science that that talks about context
+
+1195
+00:41:18,720 --> 00:41:20,309
+switching. So how long it takes your
+
+1196
+00:41:20,319 --> 00:41:22,390
+brain to to context switch. Basically,
+
+1197
+00:41:22,400 --> 00:41:24,470
+if your feedback cycle is over some
+
+1198
+00:41:24,480 --> 00:41:26,630
+number of minutes, it's actually it does
+
+1199
+00:41:26,640 --> 00:41:28,630
+you a disservice, right? So I think the
+
+1200
+00:41:28,640 --> 00:41:30,069
+science says it takes 10 minutes to
+
+1201
+00:41:30,079 --> 00:41:32,069
+context switch away from something to be
+
+1202
+00:41:32,079 --> 00:41:33,589
+productive again and then 10 minutes to
+
+1203
+00:41:33,599 --> 00:41:35,190
+switch back, right? So that's basically
+
+1204
+00:41:35,200 --> 00:41:37,270
+10 minutes of time. So if my build is
+
+1205
+00:41:37,280 --> 00:41:39,510
+say 20 minutes, right? That's probably
+
+1206
+00:41:39,520 --> 00:41:41,510
+the worst case scenario. So I start the
+
+1207
+00:41:41,520 --> 00:41:43,510
+build and what's going to happen is I
+
+1208
+00:41:43,520 --> 00:41:45,030
+know it's going to take 20 minutes. So
+
+1209
+00:41:45,040 --> 00:41:46,870
+I'm going to go check my email, right?
+
+1210
+00:41:46,880 --> 00:41:48,069
+And then it's going to take me 10
+
+1211
+00:41:48,079 --> 00:41:50,069
+minutes to kind of focus on my email. So
+
+1212
+00:41:50,079 --> 00:41:51,829
+that's an extra 10 minutes I wasted. And
+
+1213
+00:41:51,839 --> 00:41:53,589
+then eventually I'm going to come back
+
+1214
+00:41:53,599 --> 00:41:56,150
+to my build. And it failed. It failed,
+
+1215
+00:41:56,160 --> 00:41:57,670
+you know, whatever 6 minutes into the
+
+1216
+00:41:57,680 --> 00:41:59,349
+build. And I've been sitting on my
+
+1217
+00:41:59,359 --> 00:42:00,710
+hands, you know, you know, scrolling
+
+1218
+00:42:00,720 --> 00:42:02,950
+through my email for the last half hour.
+
+1219
+00:42:02,960 --> 00:42:04,790
+So I go back, I was like, "Oh, you know,
+
+1220
+00:42:04,800 --> 00:42:06,390
+it's some something silly like I missed
+
+1221
+00:42:06,400 --> 00:42:08,790
+the semicolon or or some silly change."
+
+1222
+00:42:08,800 --> 00:42:11,030
+I fix it and I start the whole process
+
+1223
+00:42:11,040 --> 00:42:13,270
+over again, right? So, you know, again,
+
+1224
+00:42:13,280 --> 00:42:15,030
+it took me a while to refocus my
+
+1225
+00:42:15,040 --> 00:42:18,069
+efforts. Anyway, those are all really
+
+1226
+00:42:18,079 --> 00:42:21,430
+bad behaviors, but needing to kind of
+
+1227
+00:42:21,440 --> 00:42:23,430
+think about that a little bit as we're
+
+1228
+00:42:23,440 --> 00:42:25,190
+thinking about improving feedback
+
+1229
+00:42:25,200 --> 00:42:27,030
+cycles, I do think is important. So, I
+
+1230
+00:42:27,040 --> 00:42:28,550
+think without any kind of measurements,
+
+1231
+00:42:28,560 --> 00:42:30,470
+you don't even know if you're at risk
+
+1232
+00:42:30,480 --> 00:42:32,150
+for that. So if all your feedback cycles
+
+1233
+00:42:32,160 --> 00:42:33,990
+are 30 seconds, right? Yeah, you can
+
+1234
+00:42:34,000 --> 00:42:35,750
+make it better, but that's really good.
+
+1235
+00:42:35,760 --> 00:42:38,470
+If your feedback times are are an hour,
+
+1236
+00:42:38,480 --> 00:42:40,630
+that's a huge problem. So I keep saying
+
+1237
+00:42:40,640 --> 00:42:42,470
+the same metric, but I think that's the
+
+1238
+00:42:42,480 --> 00:42:44,790
+big one in terms of implementing
+
+1239
+00:42:44,800 --> 00:42:46,470
+observability in the tool chain from an
+
+1240
+00:42:46,480 --> 00:42:48,870
+organizational perspective. What are the
+
+1241
+00:42:48,880 --> 00:42:50,790
+most common issues organizations
+
+1242
+00:42:50,800 --> 00:42:53,109
+encounter when trying to do that? I
+
+1243
+00:42:53,119 --> 00:42:54,550
+think it's somebody owning the tools
+
+1244
+00:42:54,560 --> 00:42:56,710
+that are around it, right? So if you
+
+1245
+00:42:56,720 --> 00:42:58,069
+have, you know, if you're more than one
+
+1246
+00:42:58,079 --> 00:43:00,230
+team or more than one product
+
+1247
+00:43:00,240 --> 00:43:01,910
+organization. So if you're you're a
+
+1248
+00:43:01,920 --> 00:43:03,670
+single product company, it's pretty easy
+
+1249
+00:43:03,680 --> 00:43:05,750
+to get things moving because everything
+
+1250
+00:43:05,760 --> 00:43:07,510
+revolves around one codebase or one
+
+1251
+00:43:07,520 --> 00:43:09,510
+product. So all of the teams are very
+
+1252
+00:43:09,520 --> 00:43:11,270
+very connected. But if you have kind of
+
+1253
+00:43:11,280 --> 00:43:13,109
+a centralized team that manages, I don't
+
+1254
+00:43:13,119 --> 00:43:15,030
+know, 10, 100, a thousand different
+
+1255
+00:43:15,040 --> 00:43:16,950
+projects, you know, those tools are
+
+1256
+00:43:16,960 --> 00:43:19,190
+usually owned by somebody else and
+
+1257
+00:43:19,200 --> 00:43:20,790
+whatever tool it is, you know, our tool,
+
+1258
+00:43:20,800 --> 00:43:22,630
+somebody else's tool, login collection,
+
+1259
+00:43:22,640 --> 00:43:25,109
+whatever it is. So just the amount of
+
+1260
+00:43:25,119 --> 00:43:27,109
+effort it takes is challenging for
+
+1261
+00:43:27,119 --> 00:43:28,550
+somebody. So a developer comes in and
+
+1262
+00:43:28,560 --> 00:43:30,790
+say hey this build is slow you know we
+
+1263
+00:43:30,800 --> 00:43:32,630
+should fix it and everyone's like yes we
+
+1264
+00:43:32,640 --> 00:43:34,710
+should right but they're like ah I don't
+
+1265
+00:43:34,720 --> 00:43:36,550
+really want to you know request the new
+
+1266
+00:43:36,560 --> 00:43:38,550
+infrastructure or deal with the other
+
+1267
+00:43:38,560 --> 00:43:40,550
+team they don't understand my problem
+
+1268
+00:43:40,560 --> 00:43:42,550
+and so I feel like you know there's
+
+1269
+00:43:42,560 --> 00:43:44,150
+probably some social issues here right
+
+1270
+00:43:44,160 --> 00:43:46,470
+and this isn't just for observability
+
+1271
+00:43:46,480 --> 00:43:48,230
+this is kind of any tool that will
+
+1272
+00:43:48,240 --> 00:43:49,910
+improve your life you know I know people
+
+1273
+00:43:49,920 --> 00:43:51,670
+who have a hard time getting an IDE
+
+1274
+00:43:51,680 --> 00:43:53,589
+license for the same reason which is
+
+1275
+00:43:53,599 --> 00:43:55,109
+mindboggling right you want to talk
+
+1276
+00:43:55,119 --> 00:43:57,349
+about a productivity tool your IDE is
+
+1277
+00:43:57,359 --> 00:43:59,910
+kind of where it starts. So, I feel like
+
+1278
+00:43:59,920 --> 00:44:01,510
+there's some of that that I feel like we
+
+1279
+00:44:01,520 --> 00:44:04,309
+need to get over as a as an industry,
+
+1280
+00:44:04,319 --> 00:44:06,710
+but also the knowledge I don't think is
+
+1281
+00:44:06,720 --> 00:44:08,790
+there. So, like like I said, I mentioned
+
+1282
+00:44:08,800 --> 00:44:11,430
+before. So, you wouldn't put a
+
+1283
+00:44:11,440 --> 00:44:12,790
+application in production without
+
+1284
+00:44:12,800 --> 00:44:14,069
+monitoring. Everybody just kind of
+
+1285
+00:44:14,079 --> 00:44:15,430
+assumes that, right? That's table
+
+1286
+00:44:15,440 --> 00:44:16,870
+stakes. I don't know. It's not shocking
+
+1287
+00:44:16,880 --> 00:44:18,630
+to anybody. If I came to you tomorrow
+
+1288
+00:44:18,640 --> 00:44:20,950
+and said, "Hey, I I've got this tool or
+
+1289
+00:44:20,960 --> 00:44:22,870
+this application we're going to deploy.
+
+1290
+00:44:22,880 --> 00:44:24,790
+My organization probably has, you know,
+
+1291
+00:44:24,800 --> 00:44:26,710
+documents laid out of how it's going to
+
+1292
+00:44:26,720 --> 00:44:28,470
+be monitored. We have playbooks, what
+
+1293
+00:44:28,480 --> 00:44:29,910
+whatever you want to call it. That's
+
+1294
+00:44:29,920 --> 00:44:31,670
+already all resolved, but we don't have
+
+1295
+00:44:31,680 --> 00:44:34,150
+any of that for build systems. So,
+
+1296
+00:44:34,160 --> 00:44:35,910
+there's a little bit of a an
+
+1297
+00:44:35,920 --> 00:44:37,349
+organizational learning curve to get
+
+1298
+00:44:37,359 --> 00:44:40,470
+there. So, how do you see the future of
+
+1299
+00:44:40,480 --> 00:44:41,990
+observability in the tool chain
+
+1300
+00:44:42,000 --> 00:44:43,670
+evolving?
+
+1301
+00:44:43,680 --> 00:44:45,589
+That's a great one. I think the
+
+1302
+00:44:45,599 --> 00:44:48,390
+importance of it is going to increase. I
+
+1303
+00:44:48,400 --> 00:44:51,589
+think from the angle of security
+
+1304
+00:44:51,599 --> 00:44:53,190
+perspective I think it's going to have a
+
+1305
+00:44:53,200 --> 00:44:56,950
+huge impact because you know the rise of
+
+1306
+00:44:56,960 --> 00:45:00,309
+SIG store salsa and toto all these other
+
+1307
+00:45:00,319 --> 00:45:02,550
+things are coming from different use
+
+1308
+00:45:02,560 --> 00:45:04,950
+cases of of getting data out of the
+
+1309
+00:45:04,960 --> 00:45:07,430
+system right so basically for for folks
+
+1310
+00:45:07,440 --> 00:45:09,030
+not in the aware you essentially have
+
+1311
+00:45:09,040 --> 00:45:11,270
+inputs and outputs into a system right
+
+1312
+00:45:11,280 --> 00:45:13,270
+and you want to know what those inputs
+
+1313
+00:45:13,280 --> 00:45:14,230
+are and you want to know what the
+
+1314
+00:45:14,240 --> 00:45:15,910
+outputs are and you want to make sure
+
+1315
+00:45:15,920 --> 00:45:17,589
+there's you know security in place
+
+1316
+00:45:17,599 --> 00:45:19,349
+Right? Like did this git commit actually
+
+1317
+00:45:19,359 --> 00:45:21,430
+come from I don't know GitHub? Was this
+
+1318
+00:45:21,440 --> 00:45:24,230
+thing that was built? Was my binary
+
+1319
+00:45:24,240 --> 00:45:26,870
+built on a machine that was that was
+
+1320
+00:45:26,880 --> 00:45:29,109
+approved and met some sort of criteria?
+
+1321
+00:45:29,119 --> 00:45:31,589
+Great. We have a a structure of defining
+
+1322
+00:45:31,599 --> 00:45:33,430
+that information, signing it, making it
+
+1323
+00:45:33,440 --> 00:45:35,829
+secure and and available. But that's
+
+1324
+00:45:35,839 --> 00:45:37,430
+very similar data, right? If you think
+
+1325
+00:45:37,440 --> 00:45:39,109
+about it, your build tools want to know
+
+1326
+00:45:39,119 --> 00:45:41,030
+the same types of things. What went into
+
+1327
+00:45:41,040 --> 00:45:42,630
+the system, what cames out. Those are
+
+1328
+00:45:42,640 --> 00:45:44,790
+the things you want to track. you could
+
+1329
+00:45:44,800 --> 00:45:46,870
+essentially define policies around all
+
+1330
+00:45:46,880 --> 00:45:49,270
+of that. So if you want to define a
+
+1331
+00:45:49,280 --> 00:45:51,430
+policy for your deployments, so your
+
+1332
+00:45:51,440 --> 00:45:53,589
+your production applications need to say
+
+1333
+00:45:53,599 --> 00:45:55,589
+we're only going to deploy things that
+
+1334
+00:45:55,599 --> 00:45:57,990
+were built on these approved systems.
+
+1335
+00:45:58,000 --> 00:45:59,030
+Well, then you need to have
+
+1336
+00:45:59,040 --> 00:46:01,190
+infrastructure in place and policies and
+
+1337
+00:46:01,200 --> 00:46:03,510
+tooling to know that all of that stuff
+
+1338
+00:46:03,520 --> 00:46:05,750
+actually happened, right? and and you
+
+1339
+00:46:05,760 --> 00:46:07,349
+need to have some alerting that when
+
+1340
+00:46:07,359 --> 00:46:10,309
+those policies are not met then your CI
+
+1341
+00:46:10,319 --> 00:46:12,309
+systems fail or what whatever it is to
+
+1342
+00:46:12,319 --> 00:46:14,790
+give feedback faster to developers. So I
+
+1343
+00:46:14,800 --> 00:46:15,990
+feel like there's going to be pressure
+
+1344
+00:46:16,000 --> 00:46:18,309
+from that angle too that are coming into
+
+1345
+00:46:18,319 --> 00:46:20,630
+the system as well as you know obviously
+
+1346
+00:46:20,640 --> 00:46:22,950
+productivity is a big one. Is there
+
+1347
+00:46:22,960 --> 00:46:24,710
+anything that we miss that you would
+
+1348
+00:46:24,720 --> 00:46:26,870
+like to add? I don't think so. I think
+
+1349
+00:46:26,880 --> 00:46:28,630
+the big thing for me again is we really
+
+1350
+00:46:28,640 --> 00:46:30,470
+need to start thinking about our tool
+
+1351
+00:46:30,480 --> 00:46:32,710
+chains as production systems, right?
+
+1352
+00:46:32,720 --> 00:46:34,309
+they're the production infrastructure
+
+1353
+00:46:34,319 --> 00:46:36,710
+for getting things to production. So
+
+1354
+00:46:36,720 --> 00:46:38,550
+when we start thinking about things that
+
+1355
+00:46:38,560 --> 00:46:41,349
+way, I feel like that removes a lot of
+
+1356
+00:46:41,359 --> 00:46:43,430
+the friction that we have or or how or
+
+1357
+00:46:43,440 --> 00:46:45,030
+at least frames how we think about the
+
+1358
+00:46:45,040 --> 00:46:46,790
+problem to begin with. That's a very
+
+1359
+00:46:46,800 --> 00:46:49,030
+good point. I agree with that. Okay,
+
+1360
+00:46:49,040 --> 00:46:51,190
+that was the last question. Thank you,
+
+1361
+00:46:51,200 --> 00:46:52,870
+Brian, for coming to the show. It's been
+
+1362
+00:46:52,880 --> 00:46:55,510
+a real pleasure. This is Jovann Brun for
+
+1363
+00:46:55,520 --> 00:46:57,349
+Software Engineering Radio. Thank you
+
+1364
+00:46:57,359 --> 00:47:00,309
+for listening. Thanks for having me.
+
+1365
+00:47:00,319 --> 00:47:01,990
+Thanks for listening to SE Radio, an
+
+1366
+00:47:02,000 --> 00:47:03,910
+educational program brought to you by it
+
+1367
+00:47:03,920 --> 00:47:06,069
+e software magazine. For more about the
+
+1368
+00:47:06,079 --> 00:47:07,910
+podcast, including other episodes, visit
+
+1369
+00:47:07,920 --> 00:47:11,270
+our website at se-radio.net.
+
+1370
+00:47:11,280 --> 00:47:13,030
+To provide feedback, you can comment on
+
+1371
+00:47:13,040 --> 00:47:14,950
+each episode on the website or reach us
+
+1372
+00:47:14,960 --> 00:47:17,589
+on LinkedIn, Facebook, Twitter, or
+
+1373
+00:47:17,599 --> 00:47:18,950
+through our Slack channel at
+
+1374
+00:47:18,960 --> 00:47:21,990
+seradio.slack.com.
+
+1375
+00:47:23,270 --> 00:47:23,280
+You can also email us at
+
+1376
+00:47:23,280 --> 00:47:26,630
+teamseradio.net.
+
+1377
+00:47:28,550 --> 00:47:28,560
+This and all other episodes of SE Radio
+
+1378
+00:47:28,560 --> 00:47:30,150
+is licensed under Creative Common
+
+1379
+00:47:30,160 --> 00:47:38,000
+License 2.5. Thanks for listening.

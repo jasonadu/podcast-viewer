@@ -1,0 +1,3711 @@
+1
+00:00:02,710 --> 00:00:02,720
+software engineering radio episode 9
+
+2
+00:00:02,720 --> 00:00:05,269
+remoting infrastructures part 1 and
+
+3
+00:00:05,279 --> 00:00:10,190
+listener feedback
+
+4
+00:00:26,150 --> 00:00:26,160
+[Music]
+
+5
+00:00:26,160 --> 00:00:28,759
+okay welcome to this new episode of
+
+6
+00:00:28,769 --> 00:00:31,759
+software engineering radio in this
+
+7
+00:00:31,769 --> 00:00:35,119
+episode Michele and Marcus will talk
+
+8
+00:00:35,129 --> 00:00:37,880
+about a panel language for implementing
+
+9
+00:00:37,890 --> 00:00:41,360
+remote communication frameworks a year
+
+10
+00:00:41,370 --> 00:00:44,899
+ago Michael Ovitz Doon and I wrote a
+
+11
+00:00:44,909 --> 00:00:46,369
+book on this topic it's called remoting
+
+12
+00:00:46,379 --> 00:00:49,130
+patterns and we basically cover the
+
+13
+00:00:49,140 --> 00:00:51,680
+patterns described in this book so the
+
+14
+00:00:51,690 --> 00:00:54,229
+idea is to explain how remoting
+
+15
+00:00:54,239 --> 00:00:56,360
+middleware things such as Carbaugh
+
+16
+00:00:56,370 --> 00:00:59,479
+dotnet remoting and web services how
+
+17
+00:00:59,489 --> 00:01:00,859
+they work internally and how they're
+
+18
+00:01:00,869 --> 00:01:04,219
+structured so why do you want to know
+
+19
+00:01:04,229 --> 00:01:07,609
+this you want to know this because it's
+
+20
+00:01:07,619 --> 00:01:10,100
+important to be able to use remote
+
+21
+00:01:10,110 --> 00:01:11,990
+communication middleware sensibly it's
+
+22
+00:01:12,000 --> 00:01:13,429
+important to understand principles
+
+23
+00:01:13,439 --> 00:01:15,410
+trade-offs and not just to know the
+
+24
+00:01:15,420 --> 00:01:17,600
+api's it's also important if you want to
+
+25
+00:01:17,610 --> 00:01:19,910
+optimize some of these middlewares if
+
+26
+00:01:19,920 --> 00:01:21,200
+you want to be able to set the right
+
+27
+00:01:21,210 --> 00:01:23,780
+parameters tune them and make sure you
+
+28
+00:01:23,790 --> 00:01:26,810
+can make performance optimized to use of
+
+29
+00:01:26,820 --> 00:01:28,910
+the middleware system and finally in
+
+30
+00:01:28,920 --> 00:01:31,160
+some circumstances you also have to
+
+31
+00:01:31,170 --> 00:01:33,789
+implement such a middleware yourself
+
+32
+00:01:33,799 --> 00:01:36,950
+because the available middleware systems
+
+33
+00:01:36,960 --> 00:01:38,870
+don't fulfill some non-functional
+
+34
+00:01:38,880 --> 00:01:40,459
+requirements for example if you're
+
+35
+00:01:40,469 --> 00:01:43,010
+deeply embedded and you don't have many
+
+36
+00:01:43,020 --> 00:01:45,010
+resources you might want to put your own
+
+37
+00:01:45,020 --> 00:01:48,469
+RPC broker infrastructure rank you have
+
+38
+00:01:48,479 --> 00:01:50,569
+to know how this looks like and the
+
+39
+00:01:50,579 --> 00:01:52,520
+patterns we are going to explain in this
+
+40
+00:01:52,530 --> 00:01:55,730
+episode will help you in doing so so the
+
+41
+00:01:55,740 --> 00:01:58,580
+need for remote communication and then
+
+42
+00:01:58,590 --> 00:02:00,620
+therefore the need for remote
+
+43
+00:02:00,630 --> 00:02:03,199
+communication middleware is motivated by
+
+44
+00:02:03,209 --> 00:02:05,359
+the existence of distributed computer
+
+45
+00:02:05,369 --> 00:02:08,870
+systems firstly because of remote user
+
+46
+00:02:08,880 --> 00:02:11,660
+interaction imagine you have a web
+
+47
+00:02:11,670 --> 00:02:13,790
+client and you need to interact with any
+
+48
+00:02:13,800 --> 00:02:17,300
+server web server secondly because of
+
+49
+00:02:17,310 --> 00:02:19,370
+system integration because you have
+
+50
+00:02:19,380 --> 00:02:22,070
+already multiple computers distributed
+
+51
+00:02:22,080 --> 00:02:24,980
+in a network and they need to exchange
+
+52
+00:02:24,990 --> 00:02:28,490
+data with each other and thirdly because
+
+53
+00:02:28,500 --> 00:02:30,559
+of non-functional requirements such as
+
+54
+00:02:30,569 --> 00:02:32,930
+scalability availability and fault
+
+55
+00:02:32,940 --> 00:02:35,390
+tolerance I'm sure there are even more
+
+56
+00:02:35,400 --> 00:02:38,060
+reasons imagine a web shop that gets
+
+57
+00:02:38,070 --> 00:02:39,860
+access by thousands of ng
+
+58
+00:02:39,870 --> 00:02:43,070
+users concurrently but only several
+
+59
+00:02:43,080 --> 00:02:45,289
+instances off the shop running at
+
+60
+00:02:45,299 --> 00:02:47,240
+separate computer might be able to
+
+61
+00:02:47,250 --> 00:02:49,759
+handle such a high load so this is
+
+62
+00:02:49,769 --> 00:02:52,309
+basically like a physical limit of that
+
+63
+00:02:52,319 --> 00:02:54,259
+one computer reaches and you need to
+
+64
+00:02:54,269 --> 00:02:57,550
+distribute it across multiple computers
+
+65
+00:02:57,560 --> 00:03:00,410
+so that you have also a higher
+
+66
+00:03:00,420 --> 00:03:03,770
+availability in case one fails the whole
+
+67
+00:03:03,780 --> 00:03:07,490
+webshop does not fail we already
+
+68
+00:03:07,500 --> 00:03:10,729
+mentioned the term middleware so we use
+
+69
+00:03:10,739 --> 00:03:13,250
+the term remote communication frameworks
+
+70
+00:03:13,260 --> 00:03:15,039
+or remote communication middleware
+
+71
+00:03:15,049 --> 00:03:17,920
+interchangeably so what is a middleware
+
+72
+00:03:17,930 --> 00:03:21,410
+the idea of middleware is that it sits
+
+73
+00:03:21,420 --> 00:03:24,289
+between the low level operating system
+
+74
+00:03:24,299 --> 00:03:26,180
+and in this case specifically networking
+
+75
+00:03:26,190 --> 00:03:28,430
+infrastructure and your application code
+
+76
+00:03:28,440 --> 00:03:31,759
+so it isolates the concern of remote
+
+77
+00:03:31,769 --> 00:03:34,160
+communication so it makes sure it
+
+78
+00:03:34,170 --> 00:03:36,860
+transmits requests it adapts your
+
+79
+00:03:36,870 --> 00:03:39,530
+specific interfaces to - to the
+
+80
+00:03:39,540 --> 00:03:43,280
+middleware so if you if you want to
+
+81
+00:03:43,290 --> 00:03:45,620
+write an application that that uses
+
+82
+00:03:45,630 --> 00:03:48,440
+distributed computing resources for the
+
+83
+00:03:48,450 --> 00:03:50,960
+reasons Michael just explained then a
+
+84
+00:03:50,970 --> 00:03:54,229
+middleware shields you from for most of
+
+85
+00:03:54,239 --> 00:03:56,330
+the details of this remote communication
+
+86
+00:03:56,340 --> 00:03:58,539
+and provides you a nice and easy to use
+
+87
+00:03:58,549 --> 00:04:02,720
+API to access the remote objects or
+
+88
+00:04:02,730 --> 00:04:05,780
+services so if we talk about remote
+
+89
+00:04:05,790 --> 00:04:06,770
+procedure calls
+
+90
+00:04:06,780 --> 00:04:09,140
+what is our PC after all I mean I've
+
+91
+00:04:09,150 --> 00:04:11,689
+heard about systems that use the
+
+92
+00:04:11,699 --> 00:04:13,699
+standard called Carbaugh what is CORBA
+
+93
+00:04:13,709 --> 00:04:16,009
+I've also heard people say carb is dead
+
+94
+00:04:16,019 --> 00:04:17,719
+can can you first of all maybe briefly
+
+95
+00:04:17,729 --> 00:04:19,729
+explain carbon and then and then in that
+
+96
+00:04:19,739 --> 00:04:21,979
+way explain what remote procedure call
+
+97
+00:04:21,989 --> 00:04:24,200
+middleware is yeah Kaba stands for the
+
+98
+00:04:24,210 --> 00:04:25,659
+common object request broker
+
+99
+00:04:25,669 --> 00:04:29,000
+architecture it's basically a set of
+
+100
+00:04:29,010 --> 00:04:33,469
+api's with semantics that got
+
+101
+00:04:33,479 --> 00:04:35,540
+standardized by the object management
+
+102
+00:04:35,550 --> 00:04:38,570
+group and for which you can have
+
+103
+00:04:38,580 --> 00:04:41,150
+multiple implementations different
+
+104
+00:04:41,160 --> 00:04:44,810
+vendors and open source communities have
+
+105
+00:04:44,820 --> 00:04:48,409
+provided implementations for carbon most
+
+106
+00:04:48,419 --> 00:04:50,839
+common order programming languages Java
+
+107
+00:04:50,849 --> 00:04:52,900
+and C++
+
+108
+00:04:52,910 --> 00:04:54,610
+there are also implementations in other
+
+109
+00:04:54,620 --> 00:04:56,620
+programming languages there are
+
+110
+00:04:56,630 --> 00:04:59,020
+eight-hour mappings COBOL mappings so
+
+111
+00:04:59,030 --> 00:05:02,670
+also languages that are not typically
+
+112
+00:05:02,680 --> 00:05:05,100
+thought of if you talk about mainstream
+
+113
+00:05:05,110 --> 00:05:08,020
+distributed systems right so carbon
+
+114
+00:05:08,030 --> 00:05:10,210
+isn't dead I guess it's just not hyped
+
+115
+00:05:10,220 --> 00:05:15,150
+anymore cava is today used in
+
+116
+00:05:15,160 --> 00:05:20,110
+applications servers as the working tier
+
+117
+00:05:20,120 --> 00:05:23,080
+doing all the remote communication
+
+118
+00:05:23,090 --> 00:05:28,060
+inside the application server Island
+
+119
+00:05:28,070 --> 00:05:30,970
+yeah also in the embedded world
+
+120
+00:05:30,980 --> 00:05:33,280
+I learned that because resources are
+
+121
+00:05:33,290 --> 00:05:34,810
+becoming a bit cheaper even in the
+
+122
+00:05:34,820 --> 00:05:37,510
+embedded world carbon-based embedded
+
+123
+00:05:37,520 --> 00:05:39,310
+systems are becoming more and more
+
+124
+00:05:39,320 --> 00:05:42,280
+ubiquitous yeah that's true and also the
+
+125
+00:05:42,290 --> 00:05:45,520
+call by implementations got more
+
+126
+00:05:45,530 --> 00:05:47,620
+lightweight there is also a minimum
+
+127
+00:05:47,630 --> 00:05:51,190
+cover specification so that Kaba today
+
+128
+00:05:51,200 --> 00:05:54,400
+is used more and more in the NetID world
+
+129
+00:05:54,410 --> 00:05:57,250
+as you said because of the resources but
+
+130
+00:05:57,260 --> 00:06:01,380
+also because of the higher level of
+
+131
+00:06:01,390 --> 00:06:03,790
+abstraction that got introduced in the
+
+132
+00:06:03,800 --> 00:06:08,140
+past four to five years so before we go
+
+133
+00:06:08,150 --> 00:06:11,020
+on and leave carbide behind for now one
+
+134
+00:06:11,030 --> 00:06:13,890
+last question and Kaba was intended as a
+
+135
+00:06:13,900 --> 00:06:16,630
+standard for interoperable middleware
+
+136
+00:06:16,640 --> 00:06:19,960
+did that materialized is one or able to
+
+137
+00:06:19,970 --> 00:06:22,780
+talk to another or yeah Kaaba has a
+
+138
+00:06:22,790 --> 00:06:26,380
+standardized protocol on the network on
+
+139
+00:06:26,390 --> 00:06:29,350
+the wire and there were first some
+
+140
+00:06:29,360 --> 00:06:32,020
+difficulties and the implementations
+
+141
+00:06:32,030 --> 00:06:35,200
+weren't so compatible in the first years
+
+142
+00:06:35,210 --> 00:06:38,230
+but in the past I would say five two to
+
+143
+00:06:38,240 --> 00:06:41,800
+eight years had been very compatible and
+
+144
+00:06:41,810 --> 00:06:46,090
+no issues regarding mismatches and the
+
+145
+00:06:46,100 --> 00:06:49,540
+protocol layer there are also other
+
+146
+00:06:49,550 --> 00:06:53,080
+approaches or other tools besides koruba
+
+147
+00:06:53,090 --> 00:06:55,450
+that are used for remote procedure call
+
+148
+00:06:55,460 --> 00:06:57,100
+middleware do you want to elaborate a
+
+149
+00:06:57,110 --> 00:06:58,810
+bit on them
+
+150
+00:06:58,820 --> 00:07:02,110
+besides Koba there is also is the
+
+151
+00:07:02,120 --> 00:07:04,499
+internet communication engine
+
+152
+00:07:04,509 --> 00:07:09,029
+which got created by Mickey Henning
+
+153
+00:07:09,039 --> 00:07:11,640
+there is also net remoting around
+
+154
+00:07:11,650 --> 00:07:15,989
+there's Java RMI around remote method
+
+155
+00:07:15,999 --> 00:07:21,589
+invocations and for web services
+
+156
+00:07:21,599 --> 00:07:26,249
+implementation we picked Apache axes for
+
+157
+00:07:26,259 --> 00:07:29,640
+example in our book Apache axis is a
+
+158
+00:07:29,650 --> 00:07:33,869
+framework for web service development so
+
+159
+00:07:33,879 --> 00:07:35,429
+one thing that's discussed by the
+
+160
+00:07:35,439 --> 00:07:37,320
+community in in this context is that
+
+161
+00:07:37,330 --> 00:07:39,540
+more or less web service is taking over
+
+162
+00:07:39,550 --> 00:07:41,459
+the remote procedure call middleware
+
+163
+00:07:41,469 --> 00:07:44,189
+world and I think a couple of things
+
+164
+00:07:44,199 --> 00:07:45,899
+have to be said for that first of all
+
+165
+00:07:45,909 --> 00:07:48,809
+not all web service communication has
+
+166
+00:07:48,819 --> 00:07:50,640
+remote procedure call semantics there
+
+167
+00:07:50,650 --> 00:07:53,579
+are explicitly two styles of doing web
+
+168
+00:07:53,589 --> 00:07:55,920
+services one is called RPC style and the
+
+169
+00:07:55,930 --> 00:07:59,219
+other is called document style where the
+
+170
+00:07:59,229 --> 00:08:02,279
+RPC style has this yeah we call a remote
+
+171
+00:08:02,289 --> 00:08:05,909
+method semantics or style and the
+
+172
+00:08:05,919 --> 00:08:08,179
+document centric or document style
+
+173
+00:08:08,189 --> 00:08:11,820
+basically assumes that you adapt a more
+
+174
+00:08:11,830 --> 00:08:13,980
+message oriented approach where you
+
+175
+00:08:13,990 --> 00:08:16,379
+exchange business documents or data
+
+176
+00:08:16,389 --> 00:08:21,329
+structures between peers so if we
+
+177
+00:08:21,339 --> 00:08:23,670
+discuss web services in this episode
+
+178
+00:08:23,680 --> 00:08:25,739
+we're basically talking about the RPC
+
+179
+00:08:25,749 --> 00:08:29,159
+style web services so our web service
+
+180
+00:08:29,169 --> 00:08:31,589
+going to replace all existing middleware
+
+181
+00:08:31,599 --> 00:08:35,579
+I think this is a highly emotional topic
+
+182
+00:08:35,589 --> 00:08:37,620
+and we don't want to go too far into it
+
+183
+00:08:37,630 --> 00:08:39,870
+but from our opinion I guess it's fair
+
+184
+00:08:39,880 --> 00:08:41,969
+to say that we don't think that it will
+
+185
+00:08:41,979 --> 00:08:43,800
+replace all kinds of middleware it's
+
+186
+00:08:43,810 --> 00:08:46,860
+more like an integration protocol for
+
+187
+00:08:46,870 --> 00:08:48,750
+systems using different middleware
+
+188
+00:08:48,760 --> 00:08:50,670
+systems for example if you have an
+
+189
+00:08:50,680 --> 00:08:53,879
+enterprise in which you use some kind of
+
+190
+00:08:53,889 --> 00:08:56,790
+tip code based integration software on
+
+191
+00:08:56,800 --> 00:08:59,100
+the one hand side and for example karma
+
+192
+00:08:59,110 --> 00:09:01,019
+in another system then you can use web
+
+193
+00:09:01,029 --> 00:09:02,660
+services to bridge the Interop
+
+194
+00:09:02,670 --> 00:09:05,280
+interoperability gaps between those two
+
+195
+00:09:05,290 --> 00:09:08,129
+systems despite all the improvements in
+
+196
+00:09:08,139 --> 00:09:10,290
+performance for web services it's still
+
+197
+00:09:10,300 --> 00:09:15,120
+true that the XML parsing and a creation
+
+198
+00:09:15,130 --> 00:09:18,110
+of XML data structures is much more
+
+199
+00:09:18,120 --> 00:09:20,989
+work for the computer it requires much
+
+200
+00:09:20,999 --> 00:09:23,329
+more computing resources than using
+
+201
+00:09:23,339 --> 00:09:26,929
+small tuned protocols like for example I
+
+202
+00:09:26,939 --> 00:09:29,929
+up one thing that hasn't been achieved
+
+203
+00:09:29,939 --> 00:09:32,749
+yet is that there is no standardization
+
+204
+00:09:32,759 --> 00:09:35,090
+of the programming interface yet so if
+
+205
+00:09:35,100 --> 00:09:36,980
+you implement a web service using the
+
+206
+00:09:36,990 --> 00:09:39,139
+exes framework and you want to use the
+
+207
+00:09:39,149 --> 00:09:40,790
+same web service implementation with
+
+208
+00:09:40,800 --> 00:09:43,309
+another framework then your
+
+209
+00:09:43,319 --> 00:09:46,309
+implementation might not be compatible
+
+210
+00:09:46,319 --> 00:09:47,929
+you might have to adapt your
+
+211
+00:09:47,939 --> 00:09:49,910
+implementation although for example in
+
+212
+00:09:49,920 --> 00:09:51,829
+Java world there is of course all those
+
+213
+00:09:51,839 --> 00:09:54,650
+standards J's are whatever that define
+
+214
+00:09:54,660 --> 00:09:56,239
+how those interfaces have to look like
+
+215
+00:09:56,249 --> 00:09:58,489
+at least in the Java world remote
+
+216
+00:09:58,499 --> 00:10:00,230
+procedure calls are not the only
+
+217
+00:10:00,240 --> 00:10:03,439
+paradigm for distributed computing there
+
+218
+00:10:03,449 --> 00:10:05,960
+are also other styles one is for example
+
+219
+00:10:05,970 --> 00:10:08,889
+shared repository having a database
+
+220
+00:10:08,899 --> 00:10:13,040
+where all the distributed peers access
+
+221
+00:10:13,050 --> 00:10:15,739
+the common data trigger each other to
+
+222
+00:10:15,749 --> 00:10:18,739
+exchange data to build a distributed
+
+223
+00:10:18,749 --> 00:10:22,069
+system there's also the paradigm of
+
+224
+00:10:22,079 --> 00:10:25,069
+streaming basically we do streaming
+
+225
+00:10:25,079 --> 00:10:28,009
+which is a different kind of interaction
+
+226
+00:10:28,019 --> 00:10:31,160
+besides remote procedure calls and
+
+227
+00:10:31,170 --> 00:10:32,900
+another one is messaging systems of
+
+228
+00:10:32,910 --> 00:10:35,059
+course messaging systems are primarily
+
+229
+00:10:35,069 --> 00:10:37,699
+used for large-scale integration of
+
+230
+00:10:37,709 --> 00:10:40,699
+really big systems for example the
+
+231
+00:10:40,709 --> 00:10:42,619
+worldwide hotel reservation system or
+
+232
+00:10:42,629 --> 00:10:44,569
+the flight booking system as far as I
+
+233
+00:10:44,579 --> 00:10:47,780
+know they're all message oriented so we
+
+234
+00:10:47,790 --> 00:10:49,790
+don't cover message oriented systems in
+
+235
+00:10:49,800 --> 00:10:52,610
+this episode and also not in our book
+
+236
+00:10:52,620 --> 00:10:55,460
+there is a good coverage of this in the
+
+237
+00:10:55,470 --> 00:10:57,860
+enterprise integration patterns by Bobby
+
+238
+00:10:57,870 --> 00:11:00,110
+Wolfe and Craig or Hopi and we're
+
+239
+00:11:00,120 --> 00:11:02,480
+planning to to get Lego on the line for
+
+240
+00:11:02,490 --> 00:11:03,829
+an interview so we can talk about
+
+241
+00:11:03,839 --> 00:11:07,309
+messaging systems in detail with with
+
+242
+00:11:07,319 --> 00:11:09,230
+Gregor who who really knows what what to
+
+243
+00:11:09,240 --> 00:11:12,439
+say about this topic some smaller issues
+
+244
+00:11:12,449 --> 00:11:14,389
+or some points we want to make however
+
+245
+00:11:14,399 --> 00:11:16,900
+is that messaging systems are always
+
+246
+00:11:16,910 --> 00:11:19,780
+asynchronous so there is usually no
+
+247
+00:11:19,790 --> 00:11:21,980
+association between a request and reply
+
+248
+00:11:21,990 --> 00:11:24,470
+so you send a message it's delivered
+
+249
+00:11:24,480 --> 00:11:26,629
+just like an internet maybe through
+
+250
+00:11:26,639 --> 00:11:29,059
+several intermediaries and once it
+
+251
+00:11:29,069 --> 00:11:31,490
+arrives at the target its
+
+252
+00:11:31,500 --> 00:11:32,690
+accepted by the target and the target
+
+253
+00:11:32,700 --> 00:11:35,680
+starts processing the message and maybe
+
+254
+00:11:35,690 --> 00:11:39,070
+it sends an answer so you have to be
+
+255
+00:11:39,080 --> 00:11:42,800
+prepared to receive the reply message
+
+256
+00:11:42,810 --> 00:11:46,040
+asynchronously so it basically requires
+
+257
+00:11:46,050 --> 00:11:48,710
+a different style of programming it's
+
+258
+00:11:48,720 --> 00:11:52,220
+also possible to simulate messaging
+
+259
+00:11:52,230 --> 00:11:54,380
+middleware on top of RPC style
+
+260
+00:11:54,390 --> 00:11:55,910
+middleware and the other way around you
+
+261
+00:11:55,920 --> 00:11:59,090
+can also implement an RPC style
+
+262
+00:11:59,100 --> 00:12:01,070
+middleware on top of a messaging
+
+263
+00:12:01,080 --> 00:12:03,770
+middleware one could argue that if you
+
+264
+00:12:03,780 --> 00:12:06,230
+run core bar over the Internet then it
+
+265
+00:12:06,240 --> 00:12:08,030
+is just what happens but it's probably
+
+266
+00:12:08,040 --> 00:12:10,340
+not a good idea to call IP a messaging
+
+267
+00:12:10,350 --> 00:12:12,950
+middleware so but it's usually better to
+
+268
+00:12:12,960 --> 00:12:14,720
+design a middleware from scratch as a
+
+269
+00:12:14,730 --> 00:12:16,640
+messaging system or an RPG style
+
+270
+00:12:16,650 --> 00:12:18,680
+middleware because the trade-offs and
+
+271
+00:12:18,690 --> 00:12:21,020
+the implementation patterns are quite
+
+272
+00:12:21,030 --> 00:12:24,110
+different when I get asked on when to
+
+273
+00:12:24,120 --> 00:12:26,720
+use a messaging system and when to use
+
+274
+00:12:26,730 --> 00:12:30,200
+an RPC style system it's always kind of
+
+275
+00:12:30,210 --> 00:12:31,160
+a tough question
+
+276
+00:12:31,170 --> 00:12:35,210
+one common guideline that I give is use
+
+277
+00:12:35,220 --> 00:12:37,910
+a messaging system in case you have an
+
+278
+00:12:37,920 --> 00:12:41,450
+event-driven application when you have
+
+279
+00:12:41,460 --> 00:12:43,700
+state machines driving the application
+
+280
+00:12:43,710 --> 00:12:47,720
+logic and use an RPC style communication
+
+281
+00:12:47,730 --> 00:12:50,960
+when you have to integrate the result
+
+282
+00:12:50,970 --> 00:12:55,130
+into your regular control flow so when
+
+283
+00:12:55,140 --> 00:12:57,770
+you for example have to fetch data from
+
+284
+00:12:57,780 --> 00:13:02,210
+a remote host and you need result
+
+285
+00:13:02,220 --> 00:13:04,550
+immediately for the next computation
+
+286
+00:13:04,560 --> 00:13:07,400
+step the different styles of programming
+
+287
+00:13:07,410 --> 00:13:09,470
+as I just said with the event-driven
+
+288
+00:13:09,480 --> 00:13:13,250
+versus regular control flow have an
+
+289
+00:13:13,260 --> 00:13:15,140
+influence on the programming model and
+
+290
+00:13:15,150 --> 00:13:18,410
+the architecture therefore the selection
+
+291
+00:13:18,420 --> 00:13:21,020
+of the middleware has an influence on
+
+292
+00:13:21,030 --> 00:13:24,770
+the architecture and vice versa so when
+
+293
+00:13:24,780 --> 00:13:28,400
+you plan a new system you should think
+
+294
+00:13:28,410 --> 00:13:30,410
+about the middleware carefully when
+
+295
+00:13:30,420 --> 00:13:33,140
+selecting the architecture it's not true
+
+296
+00:13:33,150 --> 00:13:35,960
+to say that you know like messaging
+
+297
+00:13:35,970 --> 00:13:38,600
+systems are only used in really big
+
+298
+00:13:38,610 --> 00:13:40,670
+enterprise systems they're also used in
+
+299
+00:13:40,680 --> 00:13:43,960
+those event-driven embedded systems
+
+300
+00:13:43,970 --> 00:13:47,750
+especially in unreliable environments
+
+301
+00:13:47,760 --> 00:13:51,080
+when the nodes the computing nodes could
+
+302
+00:13:51,090 --> 00:13:54,350
+easily fail our pc style programming can
+
+303
+00:13:54,360 --> 00:13:57,460
+get quite cumbersome because usage of
+
+304
+00:13:57,470 --> 00:14:00,920
+timeouts retrials and you need to cope
+
+305
+00:14:00,930 --> 00:14:03,230
+then typically in the application logic
+
+306
+00:14:03,240 --> 00:14:05,870
+with that and that can make the
+
+307
+00:14:05,880 --> 00:14:10,430
+application logic quite complex ok and
+
+308
+00:14:10,440 --> 00:14:12,020
+just to get some of the terms straight
+
+309
+00:14:12,030 --> 00:14:15,320
+if we say that we use messaging in
+
+310
+00:14:15,330 --> 00:14:17,420
+embedded systems and of course we don't
+
+311
+00:14:17,430 --> 00:14:19,400
+talk about those big big messaging
+
+312
+00:14:19,410 --> 00:14:23,270
+systems like TIBCO Enterprise or IBM's
+
+313
+00:14:23,280 --> 00:14:26,180
+MQ series it's just the same programming
+
+314
+00:14:26,190 --> 00:14:29,000
+style in that you exchange events or or
+
+315
+00:14:29,010 --> 00:14:30,620
+messages but of course the
+
+316
+00:14:30,630 --> 00:14:32,270
+implementation in embedded systems is
+
+317
+00:14:32,280 --> 00:14:34,640
+much much different from from those
+
+318
+00:14:34,650 --> 00:14:39,290
+enterprise grade systems just to make
+
+319
+00:14:39,300 --> 00:14:42,290
+sure it sits straight so so in in the
+
+320
+00:14:42,300 --> 00:14:43,850
+book and also in this in this discussion
+
+321
+00:14:43,860 --> 00:14:47,210
+here will shortly introduce patterns
+
+322
+00:14:47,220 --> 00:14:49,820
+that form a pattern language so we
+
+323
+00:14:49,830 --> 00:14:51,350
+talked already about patterns and
+
+324
+00:14:51,360 --> 00:14:53,090
+pattern languages in episode 1 of
+
+325
+00:14:53,100 --> 00:14:54,860
+software engineering radio as it happens
+
+326
+00:14:54,870 --> 00:14:58,900
+it result was also mihail and and me so
+
+327
+00:14:58,910 --> 00:15:02,090
+just to really briefly restate what what
+
+328
+00:15:02,100 --> 00:15:04,160
+a pattern languages so a pattern is
+
+329
+00:15:04,170 --> 00:15:06,950
+basically a proven solution for us for a
+
+330
+00:15:06,960 --> 00:15:09,080
+problem that happens all the time in a
+
+331
+00:15:09,090 --> 00:15:10,760
+certain context so if you want to build
+
+332
+00:15:10,770 --> 00:15:13,280
+middleware then there are a number of
+
+333
+00:15:13,290 --> 00:15:15,410
+problems that you will always have when
+
+334
+00:15:15,420 --> 00:15:18,290
+building middleware systems and our
+
+335
+00:15:18,300 --> 00:15:21,530
+patterns try to help you to to solve
+
+336
+00:15:21,540 --> 00:15:24,460
+those problems in a proven way and a
+
+337
+00:15:24,470 --> 00:15:27,890
+pattern language is basically a set of
+
+338
+00:15:27,900 --> 00:15:29,480
+related patterns that build on each
+
+339
+00:15:29,490 --> 00:15:32,930
+other in our case the pattern language
+
+340
+00:15:32,940 --> 00:15:36,230
+helps you to step-by-step build a
+
+341
+00:15:36,240 --> 00:15:39,040
+remoting middleware infrastructure and
+
+342
+00:15:39,050 --> 00:15:42,710
+so what we're going to do in the in the
+
+343
+00:15:42,720 --> 00:15:46,700
+next I don't know minutes hours is to
+
+344
+00:15:46,710 --> 00:15:49,190
+step through the patterns that that tell
+
+345
+00:15:49,200 --> 00:15:51,590
+you how to build a remote email where we
+
+346
+00:15:51,600 --> 00:15:54,650
+not only reverse-engineered the existing
+
+347
+00:15:54,660 --> 00:15:56,960
+implementations but Marcus was actually
+
+348
+00:15:56,970 --> 00:15:57,439
+involved
+
+349
+00:15:57,449 --> 00:15:59,030
+than several implementations of
+
+350
+00:15:59,040 --> 00:16:01,549
+communication middleware and I was for
+
+351
+00:16:01,559 --> 00:16:04,189
+example involved in the development of
+
+352
+00:16:04,199 --> 00:16:07,249
+the Ace or acaba implementation and
+
+353
+00:16:07,259 --> 00:16:10,129
+open-source implementation so that's
+
+354
+00:16:10,139 --> 00:16:12,409
+important to say that that patterns also
+
+355
+00:16:12,419 --> 00:16:14,269
+our patterns are not something we made
+
+356
+00:16:14,279 --> 00:16:16,429
+up but it's rather a combination of
+
+357
+00:16:16,439 --> 00:16:17,809
+reverse engineering in our own
+
+358
+00:16:17,819 --> 00:16:20,479
+experience and that makes patterns quite
+
+359
+00:16:20,489 --> 00:16:22,549
+useful because they are not nice
+
+360
+00:16:22,559 --> 00:16:24,859
+theories but they're rather proven
+
+361
+00:16:24,869 --> 00:16:28,849
+things from practical work so before we
+
+362
+00:16:28,859 --> 00:16:31,609
+actually look at the at our detailed
+
+363
+00:16:31,619 --> 00:16:33,889
+pattern language I think it's important
+
+364
+00:16:33,899 --> 00:16:36,199
+to to give the big picture and the big
+
+365
+00:16:36,209 --> 00:16:39,439
+picture for remoting middleware is that
+
+366
+00:16:39,449 --> 00:16:41,599
+it basically follows the broker pattern
+
+367
+00:16:41,609 --> 00:16:43,729
+the broker pattern is something that's
+
+368
+00:16:43,739 --> 00:16:45,379
+quite well known and has been explained
+
+369
+00:16:45,389 --> 00:16:47,479
+in poza one I guess and the pattern
+
+370
+00:16:47,489 --> 00:16:49,400
+oriented software architecture Volume
+
+371
+00:16:49,410 --> 00:16:51,739
+one book by Frank Bushman and and the
+
+372
+00:16:51,749 --> 00:16:56,629
+other folks from Siemens and so the
+
+373
+00:16:56,639 --> 00:16:58,369
+broker pattern works the following way
+
+374
+00:16:58,379 --> 00:17:00,739
+you call something on one side the
+
+375
+00:17:00,749 --> 00:17:03,049
+message is being intercepted it Specter
+
+376
+00:17:03,059 --> 00:17:05,120
+packaged into something that can be
+
+377
+00:17:05,130 --> 00:17:07,039
+transported over a network then it's
+
+378
+00:17:07,049 --> 00:17:08,480
+followed it over the network to the
+
+379
+00:17:08,490 --> 00:17:10,909
+machine or the process where the server
+
+380
+00:17:10,919 --> 00:17:13,069
+or the recipient of the message works
+
+381
+00:17:13,079 --> 00:17:15,319
+and over there the message in is
+
+382
+00:17:15,329 --> 00:17:17,419
+interpreted and the method is called on
+
+383
+00:17:17,429 --> 00:17:20,389
+the target object and then the same
+
+384
+00:17:20,399 --> 00:17:22,789
+thing works for the way back the return
+
+385
+00:17:22,799 --> 00:17:24,409
+value of the operation on the server
+
+386
+00:17:24,419 --> 00:17:26,870
+side is being packaged into something
+
+387
+00:17:26,880 --> 00:17:28,759
+that can be serialized over the network
+
+388
+00:17:28,769 --> 00:17:32,509
+protocol and it's delivered back to the
+
+389
+00:17:32,519 --> 00:17:34,730
+client where the middleware calls up
+
+390
+00:17:34,740 --> 00:17:36,379
+into the application layer and and and
+
+391
+00:17:36,389 --> 00:17:38,750
+returns the result and what we'll do in
+
+392
+00:17:38,760 --> 00:17:40,850
+the next episode is that we'll explain
+
+393
+00:17:40,860 --> 00:17:42,909
+how all this stuff works in detail
+
+394
+00:17:42,919 --> 00:17:46,009
+before we do that however we want to
+
+395
+00:17:46,019 --> 00:17:47,769
+spend the rest of this episode
+
+396
+00:17:47,779 --> 00:17:50,840
+discussing some of the listener feedback
+
+397
+00:17:50,850 --> 00:17:53,509
+we got for our previous couple of
+
+398
+00:17:53,519 --> 00:17:56,539
+episodes we've got a lot of very
+
+399
+00:17:56,549 --> 00:17:58,820
+positive feedback for our podcast so
+
+400
+00:17:58,830 --> 00:18:00,980
+first of all thanks to all of you who
+
+401
+00:18:00,990 --> 00:18:03,470
+gave us positive feedback about what we
+
+402
+00:18:03,480 --> 00:18:06,950
+do here I'm not gonna read all those
+
+403
+00:18:06,960 --> 00:18:09,049
+mails saying yeah this was good work and
+
+404
+00:18:09,059 --> 00:18:11,240
+this is great and go on like that
+
+405
+00:18:11,250 --> 00:18:12,860
+because I think there is no point in in
+
+406
+00:18:12,870 --> 00:18:14,380
+reading all the positive comments
+
+407
+00:18:14,390 --> 00:18:17,240
+however what I want to do is take a look
+
+408
+00:18:17,250 --> 00:18:18,890
+at some of the suggestions for
+
+409
+00:18:18,900 --> 00:18:22,340
+improvement and also look at some of the
+
+410
+00:18:22,350 --> 00:18:25,490
+more funny comments so some of the
+
+411
+00:18:25,500 --> 00:18:29,930
+emails were regarding the fact that we
+
+412
+00:18:29,940 --> 00:18:32,299
+do this podcast in English although all
+
+413
+00:18:32,309 --> 00:18:33,919
+of the members of the team are actually
+
+414
+00:18:33,929 --> 00:18:36,289
+German and so Patrick wrote to us I
+
+415
+00:18:36,299 --> 00:18:38,270
+think that's quite funny he says the
+
+416
+00:18:38,280 --> 00:18:39,590
+most of you are definitely the most
+
+417
+00:18:39,600 --> 00:18:41,390
+experienced an outstanding software
+
+418
+00:18:41,400 --> 00:18:43,279
+engineers in Germany why does this
+
+419
+00:18:43,289 --> 00:18:45,890
+podcast have to be in English it's
+
+420
+00:18:45,900 --> 00:18:47,779
+ridiculous can't you just be proud of
+
+421
+00:18:47,789 --> 00:18:49,070
+yourself and make this the first
+
+422
+00:18:49,080 --> 00:18:50,690
+professional and serious software
+
+423
+00:18:50,700 --> 00:18:52,250
+engineering podcast in German language
+
+424
+00:18:52,260 --> 00:18:55,730
+and actually it was my idea to do this
+
+425
+00:18:55,740 --> 00:18:58,039
+in English and not in German we really
+
+426
+00:18:58,049 --> 00:19:00,620
+want to get the word out worldwide and
+
+427
+00:19:00,630 --> 00:19:02,029
+actually this seems to work quite well
+
+428
+00:19:02,039 --> 00:19:03,680
+because if I take a look at the download
+
+429
+00:19:03,690 --> 00:19:08,149
+statistics we can see that probably 80%
+
+430
+00:19:08,159 --> 00:19:11,029
+of our listeners are actually actually
+
+431
+00:19:11,039 --> 00:19:12,380
+not from Germany and that's great
+
+432
+00:19:12,390 --> 00:19:16,250
+another email in that same vein is the
+
+433
+00:19:16,260 --> 00:19:18,440
+one from Sven he says when I listened to
+
+434
+00:19:18,450 --> 00:19:19,909
+the first episode I found it also
+
+435
+00:19:19,919 --> 00:19:21,529
+strange to hear an English spoken
+
+436
+00:19:21,539 --> 00:19:24,169
+podcast with German or Spanish dialect
+
+437
+00:19:24,179 --> 00:19:26,299
+sue Babbage is extra actually the
+
+438
+00:19:26,309 --> 00:19:27,980
+dialect that I speak if I speak German
+
+439
+00:19:27,990 --> 00:19:30,950
+and the funny thing is if I did this
+
+440
+00:19:30,960 --> 00:19:33,080
+thing in German I would probably have to
+
+441
+00:19:33,090 --> 00:19:35,630
+speak Swedish even more so you would
+
+442
+00:19:35,640 --> 00:19:36,919
+probably have a harder time
+
+443
+00:19:36,929 --> 00:19:39,110
+understanding it even if your for
+
+444
+00:19:39,120 --> 00:19:40,640
+example if you're from northern Germany
+
+445
+00:19:40,650 --> 00:19:44,270
+so those folks north of the mine in
+
+446
+00:19:44,280 --> 00:19:46,370
+Germany should actually be happy that
+
+447
+00:19:46,380 --> 00:19:48,820
+we'll do this in English another email
+
+448
+00:19:48,830 --> 00:19:52,610
+was also funny it's a content aside this
+
+449
+00:19:52,620 --> 00:19:54,620
+podcast is noteworthy because it is a
+
+450
+00:19:54,630 --> 00:19:56,570
+German podcast conducted in English
+
+451
+00:19:56,580 --> 00:19:58,970
+their intro and outro outro music
+
+452
+00:19:58,980 --> 00:20:03,039
+seems singularly singularly German and
+
+453
+00:20:03,049 --> 00:20:05,990
+so since I didn't know what singularly
+
+454
+00:20:06,000 --> 00:20:08,270
+German meant I wrote back to the sky and
+
+455
+00:20:08,280 --> 00:20:10,070
+email and we discussed a bit about the
+
+456
+00:20:10,080 --> 00:20:14,570
+music and so anyway so the music is
+
+457
+00:20:14,580 --> 00:20:16,760
+actually something we got several emails
+
+458
+00:20:16,770 --> 00:20:19,730
+about so if you like the the music or
+
+459
+00:20:19,740 --> 00:20:21,139
+the style of the music you might want to
+
+460
+00:20:21,149 --> 00:20:23,659
+check out Henning Pauly's website he has
+
+461
+00:20:23,669 --> 00:20:25,070
+a band called chain
+
+462
+00:20:25,080 --> 00:20:27,980
+and the intro and the outro is actually
+
+463
+00:20:27,990 --> 00:20:30,680
+from an album called chain dot exe so
+
+464
+00:20:30,690 --> 00:20:33,260
+that's even a bit geeky the the album
+
+465
+00:20:33,270 --> 00:20:34,700
+title but that's not the reason why we
+
+466
+00:20:34,710 --> 00:20:36,110
+chose it actually really liked the music
+
+467
+00:20:36,120 --> 00:20:40,160
+and so so that was our choice another
+
+468
+00:20:40,170 --> 00:20:42,320
+piece of feedback with regards to the
+
+469
+00:20:42,330 --> 00:20:43,880
+music that we got from several people
+
+470
+00:20:43,890 --> 00:20:46,730
+was that the music is too loud and yeah
+
+471
+00:20:46,740 --> 00:20:49,580
+we turned the volume down although I
+
+472
+00:20:49,590 --> 00:20:51,260
+like the music we'll turn we turn the
+
+473
+00:20:51,270 --> 00:20:53,420
+volume down so in this episode and also
+
+474
+00:20:53,430 --> 00:20:55,130
+in the two previous episodes you should
+
+475
+00:20:55,140 --> 00:20:56,630
+have noticed that the volume of the
+
+476
+00:20:56,640 --> 00:21:00,020
+music has been turned down another thing
+
+477
+00:21:00,030 --> 00:21:01,940
+that somebody mentioned on a block I
+
+478
+00:21:01,950 --> 00:21:04,010
+think is that the folks doing this
+
+479
+00:21:04,020 --> 00:21:06,650
+podcast are probably somewhat more from
+
+480
+00:21:06,660 --> 00:21:10,100
+the Java side of the fence I'm not sure
+
+481
+00:21:10,110 --> 00:21:11,930
+that there is a fence between Java
+
+482
+00:21:11,940 --> 00:21:16,340
+and.net developers but yes true most of
+
+483
+00:21:16,350 --> 00:21:18,260
+us have more experience in the Java
+
+484
+00:21:18,270 --> 00:21:21,110
+world so in situations where we have to
+
+485
+00:21:21,120 --> 00:21:22,910
+come up with a spontaneous example
+
+486
+00:21:22,920 --> 00:21:24,920
+usually it's probably going to be from
+
+487
+00:21:24,930 --> 00:21:26,900
+the Java well however we really try to
+
+488
+00:21:26,910 --> 00:21:29,270
+make this podcast not in any way it's
+
+489
+00:21:29,280 --> 00:21:31,580
+Java specific and we'll we'll make sure
+
+490
+00:21:31,590 --> 00:21:35,030
+that we cover net topics in in a in a
+
+491
+00:21:35,040 --> 00:21:37,730
+sense it or generally non Java topics in
+
+492
+00:21:37,740 --> 00:21:41,750
+the write proportional so we have an
+
+493
+00:21:41,760 --> 00:21:44,660
+interview with an interesting person
+
+494
+00:21:44,670 --> 00:21:47,120
+from the c-sharp community in
+
+495
+00:21:47,130 --> 00:21:49,820
+preparation and also we're planning to
+
+496
+00:21:49,830 --> 00:21:51,800
+do a lot in the functional scripting
+
+497
+00:21:51,810 --> 00:21:54,440
+languages area so yes we are somewhat
+
+498
+00:21:54,450 --> 00:21:57,860
+Java biased but we try to avoid making
+
+499
+00:21:57,870 --> 00:22:00,740
+this Java specific as good as we can
+
+500
+00:22:00,750 --> 00:22:02,240
+although sometimes it's gonna crawl
+
+501
+00:22:02,250 --> 00:22:05,060
+through there was also some other
+
+502
+00:22:05,070 --> 00:22:08,270
+feedback that basically addressed the
+
+503
+00:22:08,280 --> 00:22:11,300
+level of prerequisites of the experience
+
+504
+00:22:11,310 --> 00:22:13,790
+level that we assumed of our listeners
+
+505
+00:22:13,800 --> 00:22:17,060
+so one comment was that software
+
+506
+00:22:17,070 --> 00:22:19,250
+engineering radio will probably not be
+
+507
+00:22:19,260 --> 00:22:21,530
+of any real interest to anyone except
+
+508
+00:22:21,540 --> 00:22:24,290
+software developers and yes that's true
+
+509
+00:22:24,300 --> 00:22:26,450
+that's the whole point it's not going to
+
+510
+00:22:26,460 --> 00:22:28,400
+be interesting for anyone except
+
+511
+00:22:28,410 --> 00:22:30,440
+software developers and hopefully it
+
+512
+00:22:30,450 --> 00:22:32,030
+will be it will be interesting for
+
+513
+00:22:32,040 --> 00:22:34,580
+software developers the email went on or
+
+514
+00:22:34,590 --> 00:22:36,500
+actually was a blog statement so the the
+
+515
+00:22:36,510 --> 00:22:38,950
+blog statement went on
+
+516
+00:22:38,960 --> 00:22:41,450
+again it ends with this podcast is
+
+517
+00:22:41,460 --> 00:22:43,250
+definitely not for the software beginner
+
+518
+00:22:43,260 --> 00:22:46,340
+and yes this is true we try to address
+
+519
+00:22:46,350 --> 00:22:48,020
+what we call the professional software
+
+520
+00:22:48,030 --> 00:22:49,340
+developer so people who do have some
+
+521
+00:22:49,350 --> 00:22:52,340
+experience or who are studying computer
+
+522
+00:22:52,350 --> 00:22:53,780
+science or software engineering so
+
+523
+00:22:53,790 --> 00:22:55,580
+people who have experience on the other
+
+524
+00:22:55,590 --> 00:22:57,020
+hand we don't want to make this an
+
+525
+00:22:57,030 --> 00:22:59,120
+expert's podcast so that nobody
+
+526
+00:22:59,130 --> 00:23:01,400
+understands what we are talking about so
+
+527
+00:23:01,410 --> 00:23:02,960
+what's really important for us is that
+
+528
+00:23:02,970 --> 00:23:05,300
+you give us feedback not just on the
+
+529
+00:23:05,310 --> 00:23:07,220
+topics you'd like to hear but also on
+
+530
+00:23:07,230 --> 00:23:09,200
+the depth or the level of detail that
+
+531
+00:23:09,210 --> 00:23:11,480
+you think is useful please let us know
+
+532
+00:23:11,490 --> 00:23:13,280
+what you think and I'll make an
+
+533
+00:23:13,290 --> 00:23:16,280
+announcement on this and at the end of
+
+534
+00:23:16,290 --> 00:23:19,010
+the show so we'll have some we have some
+
+535
+00:23:19,020 --> 00:23:20,390
+prizes for people who give us feedback
+
+536
+00:23:20,400 --> 00:23:22,880
+so anyway let us know what you think
+
+537
+00:23:22,890 --> 00:23:25,460
+about the level of detail and we can
+
+538
+00:23:25,470 --> 00:23:29,530
+adjust the level I guess to some extent
+
+539
+00:23:29,540 --> 00:23:32,240
+another piece of feedback was with
+
+540
+00:23:32,250 --> 00:23:36,410
+regards to a discussion forum so on the
+
+541
+00:23:36,420 --> 00:23:38,690
+website we do have the facility for you
+
+542
+00:23:38,700 --> 00:23:40,310
+to leave comments that everybody can
+
+543
+00:23:40,320 --> 00:23:42,170
+read but the guy who wrote this mail
+
+544
+00:23:42,180 --> 00:23:43,640
+actually suggested that we'd have a
+
+545
+00:23:43,650 --> 00:23:46,100
+discussion forum now I'm not sure that
+
+546
+00:23:46,110 --> 00:23:48,730
+this is very useful there are many
+
+547
+00:23:48,740 --> 00:23:51,590
+discussion forums on the web and adding
+
+548
+00:23:51,600 --> 00:23:53,180
+another one is probably not very useful
+
+549
+00:23:53,190 --> 00:23:55,010
+because we wouldn't probably attract
+
+550
+00:23:55,020 --> 00:23:56,630
+many people from those well-established
+
+551
+00:23:56,640 --> 00:23:58,310
+discussion forums such as the
+
+552
+00:23:58,320 --> 00:24:00,620
+server-side comm and to some extent we
+
+553
+00:24:00,630 --> 00:24:02,270
+can also discuss using the comments
+
+554
+00:24:02,280 --> 00:24:04,700
+facility however if you think that a
+
+555
+00:24:04,710 --> 00:24:07,400
+kind of specific discussion forum with
+
+556
+00:24:07,410 --> 00:24:09,110
+replies and threads and all that stuff
+
+557
+00:24:09,120 --> 00:24:11,690
+is useful then please let us know and we
+
+558
+00:24:11,700 --> 00:24:18,950
+can we will see what we can do so this
+
+559
+00:24:18,960 --> 00:24:20,920
+was the kind of general feedback we got
+
+560
+00:24:20,930 --> 00:24:23,810
+let's now move on to some more specific
+
+561
+00:24:23,820 --> 00:24:26,330
+things in this case suggestions for
+
+562
+00:24:26,340 --> 00:24:32,330
+future episodes for example I don't know
+
+563
+00:24:32,340 --> 00:24:34,040
+how to pronounce this name I'll try
+
+564
+00:24:34,050 --> 00:24:37,430
+quiet Araki I don't know sorry if it was
+
+565
+00:24:37,440 --> 00:24:38,000
+wrong
+
+566
+00:24:38,010 --> 00:24:40,070
+hi there I love soft engineering radio
+
+567
+00:24:40,080 --> 00:24:41,810
+also my dear can you look into doing a
+
+568
+00:24:41,820 --> 00:24:43,610
+show about threaded application design
+
+569
+00:24:43,620 --> 00:24:45,680
+and some of the design methodologies
+
+570
+00:24:45,690 --> 00:24:47,720
+used in industry specifically I was
+
+571
+00:24:47,730 --> 00:24:49,760
+wondering how this address testing and
+
+572
+00:24:49,770 --> 00:24:52,340
+the time to release moving from Singh
+
+573
+00:24:52,350 --> 00:24:55,430
+threat to multi-threaded and yeah this
+
+574
+00:24:55,440 --> 00:24:56,900
+is actually a really important topic
+
+575
+00:24:56,910 --> 00:24:59,419
+concurrency in general and we're
+
+576
+00:24:59,429 --> 00:25:01,970
+currently preparing at least two or
+
+577
+00:25:01,980 --> 00:25:03,919
+three episodes on this topic starting
+
+578
+00:25:03,929 --> 00:25:06,320
+with the basics and then going to some
+
+579
+00:25:06,330 --> 00:25:09,440
+quite involved things with regards to
+
+580
+00:25:09,450 --> 00:25:12,380
+building scalable servers we also are
+
+581
+00:25:12,390 --> 00:25:17,870
+talking to luminary on this topic with
+
+582
+00:25:17,880 --> 00:25:20,299
+regards to giving us an interview you
+
+583
+00:25:20,309 --> 00:25:21,680
+might wonder why I'm not mentioning
+
+584
+00:25:21,690 --> 00:25:24,409
+names in advance now you know getting
+
+585
+00:25:24,419 --> 00:25:28,340
+some of those kind of celebrities in the
+
+586
+00:25:28,350 --> 00:25:31,130
+IT world for an interview is always some
+
+587
+00:25:31,140 --> 00:25:32,810
+of a problem not because they don't want
+
+588
+00:25:32,820 --> 00:25:34,460
+but because they have a very busy
+
+589
+00:25:34,470 --> 00:25:36,830
+schedule so what we are not going to do
+
+590
+00:25:36,840 --> 00:25:38,710
+is announce an interview with somebody
+
+591
+00:25:38,720 --> 00:25:42,140
+before we actually recall it it because
+
+592
+00:25:42,150 --> 00:25:44,060
+they can always things can go wrong and
+
+593
+00:25:44,070 --> 00:25:45,799
+timing doesn't work and all kinds of
+
+594
+00:25:45,809 --> 00:25:49,060
+things so we have an interesting guy
+
+595
+00:25:49,070 --> 00:25:53,210
+planned for the topic concurrency and as
+
+596
+00:25:53,220 --> 00:25:56,480
+soon as we have it in in the can
+
+597
+00:25:56,490 --> 00:25:58,370
+basically we'll let you know and we'll
+
+598
+00:25:58,380 --> 00:26:00,560
+announce it but until then we're not
+
+599
+00:26:00,570 --> 00:26:03,770
+going to mention names another guy his
+
+600
+00:26:03,780 --> 00:26:07,850
+name is Nanak also suggested a couple of
+
+601
+00:26:07,860 --> 00:26:10,760
+topics or a general areas of interest
+
+602
+00:26:10,770 --> 00:26:14,149
+one was to discuss experiences basically
+
+603
+00:26:14,159 --> 00:26:16,610
+so like what was the experience in
+
+604
+00:26:16,620 --> 00:26:18,860
+running a project for example using the
+
+605
+00:26:18,870 --> 00:26:21,529
+RUP process or doing extreme programming
+
+606
+00:26:21,539 --> 00:26:24,529
+or other metaphors or processes or
+
+607
+00:26:24,539 --> 00:26:27,169
+methodologies so not just explaining
+
+608
+00:26:27,179 --> 00:26:29,419
+principles of software engineering as we
+
+609
+00:26:29,429 --> 00:26:31,399
+do it right now but also Tegeler tech
+
+610
+00:26:31,409 --> 00:26:33,940
+look at more experience related tools
+
+611
+00:26:33,950 --> 00:26:37,039
+this also includes topics such as we
+
+612
+00:26:37,049 --> 00:26:39,320
+used this topic this tool on the project
+
+613
+00:26:39,330 --> 00:26:42,560
+and it was good or it was bad and also
+
+614
+00:26:42,570 --> 00:26:44,570
+in that same spirit interview Joe
+
+615
+00:26:44,580 --> 00:26:46,760
+developer and dojo architect and get
+
+616
+00:26:46,770 --> 00:26:49,580
+insights from those people about what
+
+617
+00:26:49,590 --> 00:26:51,470
+they found useful which principles they
+
+618
+00:26:51,480 --> 00:26:52,820
+found useful which tools they found
+
+619
+00:26:52,830 --> 00:26:55,159
+useful which methodologies and yes we'll
+
+620
+00:26:55,169 --> 00:26:57,560
+add these kinds of things however I
+
+621
+00:26:57,570 --> 00:27:00,110
+think we'll first cover some of the
+
+622
+00:27:00,120 --> 00:27:01,909
+principles and then later in later
+
+623
+00:27:01,919 --> 00:27:05,780
+episodes look more towards an experience
+
+624
+00:27:05,790 --> 00:27:06,170
+or
+
+625
+00:27:06,180 --> 00:27:08,620
+approach although we do have some
+
+626
+00:27:08,630 --> 00:27:11,240
+episodes in the pipeline that are more
+
+627
+00:27:11,250 --> 00:27:14,780
+experience oriented tools is somewhat of
+
+628
+00:27:14,790 --> 00:27:17,240
+a problem because if it's a commercial
+
+629
+00:27:17,250 --> 00:27:18,890
+tool and we say it's great then
+
+630
+00:27:18,900 --> 00:27:20,960
+everybody says they're getting paid for
+
+631
+00:27:20,970 --> 00:27:22,310
+that so it looked it sounds like
+
+632
+00:27:22,320 --> 00:27:24,650
+advertisement and if it's bad tool and
+
+633
+00:27:24,660 --> 00:27:26,240
+it's commercial we'll probably gonna get
+
+634
+00:27:26,250 --> 00:27:28,340
+problems and if it's a bad tool and it's
+
+635
+00:27:28,350 --> 00:27:29,960
+an open-source tool then we probably
+
+636
+00:27:29,970 --> 00:27:34,280
+start a flame war so mmm discussing
+
+637
+00:27:34,290 --> 00:27:37,010
+tools is somewhat of a a topic that has
+
+638
+00:27:37,020 --> 00:27:38,750
+to handle it has been handled with care
+
+639
+00:27:38,760 --> 00:27:40,550
+I'm not saying that we're never going to
+
+640
+00:27:40,560 --> 00:27:43,630
+do this for example in the model driven
+
+641
+00:27:43,640 --> 00:27:45,830
+episode I mentioned the open
+
+642
+00:27:45,840 --> 00:27:48,080
+architecture where code generator but
+
+643
+00:27:48,090 --> 00:27:50,780
+still tools is a delicate issue and I
+
+644
+00:27:50,790 --> 00:27:52,430
+mean I'm not saying we're going to
+
+645
+00:27:52,440 --> 00:27:53,960
+ignore it but let's see how this turns
+
+646
+00:27:53,970 --> 00:27:55,670
+out I'm not we're not certainly not
+
+647
+00:27:55,680 --> 00:27:57,410
+going to do two reviews or anything like
+
+648
+00:27:57,420 --> 00:28:01,820
+that so some more feedback on possible
+
+649
+00:28:01,830 --> 00:28:05,330
+topics from Jeremy from Israel he
+
+650
+00:28:05,340 --> 00:28:07,280
+suggests three topics one is
+
+651
+00:28:07,290 --> 00:28:09,800
+benchmarking how to test and measure and
+
+652
+00:28:09,810 --> 00:28:12,110
+how to see through the marketing fluff
+
+653
+00:28:12,120 --> 00:28:14,540
+in commercial benchmarks yeah certainly
+
+654
+00:28:14,550 --> 00:28:16,760
+an interesting topic I'm not sure we can
+
+655
+00:28:16,770 --> 00:28:18,590
+actually talk about about this topic so
+
+656
+00:28:18,600 --> 00:28:21,230
+we might have to find external people to
+
+657
+00:28:21,240 --> 00:28:23,480
+interview on this topic but yeah we will
+
+658
+00:28:23,490 --> 00:28:25,670
+we've put it into the pipeline the
+
+659
+00:28:25,680 --> 00:28:27,530
+second topic images aspect-oriented
+
+660
+00:28:27,540 --> 00:28:29,600
+programming and yes this is of course a
+
+661
+00:28:29,610 --> 00:28:31,640
+very big topic and we will definitely
+
+662
+00:28:31,650 --> 00:28:35,330
+cover it again we have a cool interview
+
+663
+00:28:35,340 --> 00:28:37,430
+in the pipeline so stay tuned I'm not
+
+664
+00:28:37,440 --> 00:28:39,770
+going to mention names but that's going
+
+665
+00:28:39,780 --> 00:28:40,610
+to be interesting
+
+666
+00:28:40,620 --> 00:28:43,700
+the third thing he mentions is building
+
+667
+00:28:43,710 --> 00:28:45,830
+highly scalable servers considerations
+
+668
+00:28:45,840 --> 00:28:48,530
+and threading models i/o patterns and
+
+669
+00:28:48,540 --> 00:28:50,930
+yeah as I said this is basically in the
+
+670
+00:28:50,940 --> 00:28:54,110
+spirit of the concurrency thing and we
+
+671
+00:28:54,120 --> 00:28:57,020
+will cover that in upcoming episodes
+
+672
+00:28:57,030 --> 00:28:59,990
+probably not too far from here and I
+
+673
+00:29:00,000 --> 00:29:03,860
+also have other interview folks talked
+
+674
+00:29:03,870 --> 00:29:06,110
+to with regards to building scalable
+
+675
+00:29:06,120 --> 00:29:08,420
+internet systems so we'll definitely
+
+676
+00:29:08,430 --> 00:29:11,540
+address those topics we also got
+
+677
+00:29:11,550 --> 00:29:13,820
+feedback from a guy called Charles weir
+
+678
+00:29:13,830 --> 00:29:15,650
+and that's interesting for several
+
+679
+00:29:15,660 --> 00:29:17,420
+reasons first of all I know Charles for
+
+680
+00:29:17,430 --> 00:29:18,650
+quite a while from the patterns
+
+681
+00:29:18,660 --> 00:29:20,000
+conferences and I have
+
+682
+00:29:20,010 --> 00:29:22,610
+quite some respect for him so getting
+
+683
+00:29:22,620 --> 00:29:26,000
+positive feedback from him is is really
+
+684
+00:29:26,010 --> 00:29:27,770
+encouraging he says this is good stuff
+
+685
+00:29:27,780 --> 00:29:29,780
+I've listened to the to the lot and have
+
+686
+00:29:29,790 --> 00:29:31,310
+picked up quite a bit thank you
+
+687
+00:29:31,320 --> 00:29:33,140
+so this is really cool and also what's
+
+688
+00:29:33,150 --> 00:29:35,180
+interesting is that he gives us feedback
+
+689
+00:29:35,190 --> 00:29:37,730
+almost like in those patterns Writers
+
+690
+00:29:37,740 --> 00:29:39,770
+Workshop so first he starts with things
+
+691
+00:29:39,780 --> 00:29:42,260
+he likes and then he gives us
+
+692
+00:29:42,270 --> 00:29:44,600
+suggestions for improvement so two of
+
+693
+00:29:44,610 --> 00:29:48,200
+the things he likes is one is relaxed
+
+694
+00:29:48,210 --> 00:29:50,420
+format conversation interview style so I
+
+695
+00:29:50,430 --> 00:29:52,070
+think it's really important that there
+
+696
+00:29:52,080 --> 00:29:53,870
+is not just one person rambling around
+
+697
+00:29:53,880 --> 00:29:56,450
+like I do now in the feedback but rather
+
+698
+00:29:56,460 --> 00:29:59,180
+that there is this kind of questions and
+
+699
+00:29:59,190 --> 00:30:00,500
+answer thing that makes it much more
+
+700
+00:30:00,510 --> 00:30:02,750
+lively and the other thing he says he
+
+701
+00:30:02,760 --> 00:30:04,370
+likes the music a lot and of course he
+
+702
+00:30:04,380 --> 00:30:06,350
+says it could be a little quieter so I
+
+703
+00:30:06,360 --> 00:30:08,210
+don't have to turn it down and yeah we
+
+704
+00:30:08,220 --> 00:30:08,690
+did that
+
+705
+00:30:08,700 --> 00:30:11,590
+and so now suggestions for improvement
+
+706
+00:30:11,600 --> 00:30:14,150
+he says perhaps a little more on the
+
+707
+00:30:14,160 --> 00:30:17,030
+examples and examples that are less meta
+
+708
+00:30:17,040 --> 00:30:20,780
+um so yeah as you will see at the end of
+
+709
+00:30:20,790 --> 00:30:23,810
+part 2 of the remoting episode we did
+
+710
+00:30:23,820 --> 00:30:25,700
+add example specifically in this case
+
+711
+00:30:25,710 --> 00:30:28,700
+the discussing korba and.net remoting so
+
+712
+00:30:28,710 --> 00:30:31,280
+yeah will will add some more stuff in
+
+713
+00:30:31,290 --> 00:30:35,630
+the example area another very specific
+
+714
+00:30:35,640 --> 00:30:36,980
+comment he makes and that's interesting
+
+715
+00:30:36,990 --> 00:30:38,630
+and I think you should you should take a
+
+716
+00:30:38,640 --> 00:30:40,850
+look at that and he says on a practical
+
+717
+00:30:40,860 --> 00:30:43,520
+note your number one episode on patterns
+
+718
+00:30:43,530 --> 00:30:44,450
+references
+
+719
+00:30:44,460 --> 00:30:47,060
+Linda's patterns Almanac this is now out
+
+720
+00:30:47,070 --> 00:30:49,310
+of print but she's handed the content to
+
+721
+00:30:49,320 --> 00:30:51,680
+me and I spent a happy few evenings
+
+722
+00:30:51,690 --> 00:30:54,020
+scripting with Perl to produce a web
+
+723
+00:30:54,030 --> 00:30:58,250
+version it's at HTTP wwe.com slash
+
+724
+00:30:58,260 --> 00:31:00,380
+almanaque I'll put the URL into the show
+
+725
+00:31:00,390 --> 00:31:03,380
+notes so if you're interested in the
+
+726
+00:31:03,390 --> 00:31:05,810
+software patterns Almanac and you can't
+
+727
+00:31:05,820 --> 00:31:07,190
+get it as a book anymore
+
+728
+00:31:07,200 --> 00:31:10,160
+take a look at the URL so there it is in
+
+729
+00:31:10,170 --> 00:31:12,290
+online form and thanks to Charles for
+
+730
+00:31:12,300 --> 00:31:14,360
+actually making it available online so
+
+731
+00:31:14,370 --> 00:31:17,030
+now let's move on to the feedback on
+
+732
+00:31:17,040 --> 00:31:21,140
+specific technical topics or content we
+
+733
+00:31:21,150 --> 00:31:23,930
+discussed the first thing I'd like to
+
+734
+00:31:23,940 --> 00:31:26,270
+mention is feedback on the dependency
+
+735
+00:31:26,280 --> 00:31:29,180
+management episode from hairstyle you
+
+736
+00:31:29,190 --> 00:31:31,760
+may remember this name from the post one
+
+737
+00:31:31,770 --> 00:31:33,520
+book he was one of the coop
+
+738
+00:31:33,530 --> 00:31:36,730
+one of the Siemens guys and he says that
+
+739
+00:31:36,740 --> 00:31:39,940
+in our dependencies episode we basically
+
+740
+00:31:39,950 --> 00:31:43,360
+mixed two kinds of dependencies and that
+
+741
+00:31:43,370 --> 00:31:48,150
+is public official dependencies and
+
+742
+00:31:48,160 --> 00:31:50,290
+implementation dependencies for example
+
+743
+00:31:50,300 --> 00:31:51,850
+if a component offers a certain
+
+744
+00:31:51,860 --> 00:31:55,150
+interface then this is obviously a
+
+745
+00:31:55,160 --> 00:31:57,790
+public contract so other components can
+
+746
+00:31:57,800 --> 00:31:58,390
+call it
+
+747
+00:31:58,400 --> 00:32:02,560
+however in for required dependencies
+
+748
+00:32:02,570 --> 00:32:04,600
+like this component needs this other
+
+749
+00:32:04,610 --> 00:32:06,820
+interface to work it's not that easy
+
+750
+00:32:06,830 --> 00:32:09,850
+there might be public dependencies that
+
+751
+00:32:09,860 --> 00:32:12,400
+would result from a context diagram so
+
+752
+00:32:12,410 --> 00:32:15,850
+like this component needs access to some
+
+753
+00:32:15,860 --> 00:32:17,530
+other component or some other interface
+
+754
+00:32:17,540 --> 00:32:18,790
+because the whole purpose of this
+
+755
+00:32:18,800 --> 00:32:20,800
+component is to do something with the
+
+756
+00:32:20,810 --> 00:32:22,720
+data from that other component so that
+
+757
+00:32:22,730 --> 00:32:25,540
+is also a public required interface
+
+758
+00:32:25,550 --> 00:32:28,480
+however there are also kind of in
+
+759
+00:32:28,490 --> 00:32:30,280
+official dependencies like for example
+
+760
+00:32:30,290 --> 00:32:32,860
+if a component needs a connection to a
+
+761
+00:32:32,870 --> 00:32:36,070
+database or other resources that are
+
+762
+00:32:36,080 --> 00:32:38,230
+specific to the implementation of the
+
+763
+00:32:38,240 --> 00:32:41,560
+component and that stuff is not the same
+
+764
+00:32:41,570 --> 00:32:43,810
+thing so yes there is a dependency and
+
+765
+00:32:43,820 --> 00:32:47,410
+you should make it explicit but it's
+
+766
+00:32:47,420 --> 00:32:50,200
+different from officially advertised use
+
+767
+00:32:50,210 --> 00:32:54,640
+case driven specific functionality
+
+768
+00:32:54,650 --> 00:32:57,820
+specific dependency so it's probably
+
+769
+00:32:57,830 --> 00:33:00,490
+good to distinguish between dependencies
+
+770
+00:33:00,500 --> 00:33:03,610
+that are important from a structural or
+
+771
+00:33:03,620 --> 00:33:05,440
+architectural point of view and the
+
+772
+00:33:05,450 --> 00:33:07,690
+other dependencies that result from an
+
+773
+00:33:07,700 --> 00:33:10,840
+implementation decision and as a
+
+774
+00:33:10,850 --> 00:33:12,250
+consequence you might need certain
+
+775
+00:33:12,260 --> 00:33:14,050
+dependencies so Michael is not just
+
+776
+00:33:14,060 --> 00:33:16,270
+suggesting to remove those dependencies
+
+777
+00:33:16,280 --> 00:33:19,060
+but rather to distinguish between those
+
+778
+00:33:19,070 --> 00:33:20,950
+dependencies that are intentional
+
+779
+00:33:20,960 --> 00:33:22,750
+because it's driven by what the
+
+780
+00:33:22,760 --> 00:33:25,330
+component has to do and others that are
+
+781
+00:33:25,340 --> 00:33:27,430
+accidental that are necessary as a
+
+782
+00:33:27,440 --> 00:33:29,650
+consequence of the specific way how we
+
+783
+00:33:29,660 --> 00:33:32,410
+implement the component and I think this
+
+784
+00:33:32,420 --> 00:33:34,210
+is a really really good point and we
+
+785
+00:33:34,220 --> 00:33:36,610
+completely missed it so take this to
+
+786
+00:33:36,620 --> 00:33:38,530
+heart and and consider that having those
+
+787
+00:33:38,540 --> 00:33:41,830
+two different kinds of two different
+
+788
+00:33:41,840 --> 00:33:44,860
+kinds of dependencies there was also
+
+789
+00:33:44,870 --> 00:33:47,160
+feedback on our
+
+790
+00:33:47,170 --> 00:33:50,400
+scripting languages episode from spin I
+
+791
+00:33:50,410 --> 00:33:52,620
+don't know which swen it just suspend
+
+792
+00:33:52,630 --> 00:33:54,810
+although you can catch all of the arrows
+
+793
+00:33:54,820 --> 00:33:57,390
+usually caught by a compiler with unit
+
+794
+00:33:57,400 --> 00:33:59,430
+tests it's a big difference to have the
+
+795
+00:33:59,440 --> 00:34:01,230
+arrows automatically show up as you type
+
+796
+00:34:01,240 --> 00:34:03,510
+like in modern Java IDs instead of
+
+797
+00:34:03,520 --> 00:34:05,850
+always running tests additionally I
+
+798
+00:34:05,860 --> 00:34:07,710
+think tool support in general is a very
+
+799
+00:34:07,720 --> 00:34:09,480
+important thing unless the language is
+
+800
+00:34:09,490 --> 00:34:11,550
+statically typed or the IDE memorizes
+
+801
+00:34:11,560 --> 00:34:13,440
+runtime types it's impossible to have
+
+802
+00:34:13,450 --> 00:34:14,909
+good refactoring and code completion
+
+803
+00:34:14,919 --> 00:34:17,250
+support isn't it so this might be a very
+
+804
+00:34:17,260 --> 00:34:21,960
+strong argument so first of all since
+
+805
+00:34:21,970 --> 00:34:25,580
+alex was the guy who basically
+
+806
+00:34:25,590 --> 00:34:28,040
+contributed the content for the
+
+807
+00:34:28,050 --> 00:34:30,649
+scripting episode I'll read his reply
+
+808
+00:34:30,659 --> 00:34:33,210
+thanks Sven yes you're absolutely right
+
+809
+00:34:33,220 --> 00:34:35,130
+full support is so much easier with
+
+810
+00:34:35,140 --> 00:34:36,870
+aesthetically typed languages and tool
+
+811
+00:34:36,880 --> 00:34:38,580
+support is one of the key performance
+
+812
+00:34:38,590 --> 00:34:41,310
+factors in my opinion now that I'm used
+
+813
+00:34:41,320 --> 00:34:43,500
+to refactoring browsers I really hate to
+
+814
+00:34:43,510 --> 00:34:46,680
+program to program without one of them
+
+815
+00:34:46,690 --> 00:34:48,870
+on the other hand I think it might also
+
+816
+00:34:48,880 --> 00:34:50,669
+be a problem that we are just too much
+
+817
+00:34:50,679 --> 00:34:53,040
+used to implement these tools the way we
+
+818
+00:34:53,050 --> 00:34:54,630
+implement them now dynamic languages
+
+819
+00:34:54,640 --> 00:34:57,750
+offer a lot of other possibilities there
+
+820
+00:34:57,760 --> 00:34:59,700
+for example for method completion
+
+821
+00:34:59,710 --> 00:35:00,450
+intelligence
+
+822
+00:35:00,460 --> 00:35:02,430
+you don't need an ast in a static
+
+823
+00:35:02,440 --> 00:35:04,080
+language you could also simply just
+
+824
+00:35:04,090 --> 00:35:06,240
+instantiate the object you need and ask
+
+825
+00:35:06,250 --> 00:35:08,820
+it for its method names this way things
+
+826
+00:35:08,830 --> 00:35:11,640
+might be a lot easier to implement then
+
+827
+00:35:11,650 --> 00:35:13,740
+with static languages but some
+
+828
+00:35:13,750 --> 00:35:16,110
+interesting developments in this area in
+
+829
+00:35:16,120 --> 00:35:18,660
+the next few years and different kinds
+
+830
+00:35:18,670 --> 00:35:21,240
+of ideas should show up actually to get
+
+831
+00:35:21,250 --> 00:35:23,280
+a hint take a look at the better
+
+832
+00:35:23,290 --> 00:35:25,140
+Smalltalk environment Smalltalk has the
+
+833
+00:35:25,150 --> 00:35:27,540
+same problems it's also dynamic and it
+
+834
+00:35:27,550 --> 00:35:29,250
+is not only the first factoring browser
+
+835
+00:35:29,260 --> 00:35:31,880
+implemented it's also very powerful one
+
+836
+00:35:31,890 --> 00:35:36,360
+so I also like to add one comment to
+
+837
+00:35:36,370 --> 00:35:40,710
+that and that is that maybe refactoring
+
+838
+00:35:40,720 --> 00:35:44,010
+support is something you don't miss much
+
+839
+00:35:44,020 --> 00:35:45,990
+if you work in dynamic languages I don't
+
+840
+00:35:46,000 --> 00:35:47,460
+have too much experience with languages
+
+841
+00:35:47,470 --> 00:35:51,650
+like Ruby or Python but what I hear from
+
+842
+00:35:51,660 --> 00:35:54,420
+other folks using these languages is
+
+843
+00:35:54,430 --> 00:35:56,280
+that they don't really miss the
+
+844
+00:35:56,290 --> 00:35:57,810
+refactoring support so there must be
+
+845
+00:35:57,820 --> 00:36:01,019
+something that that compensates for that
+
+846
+00:36:01,029 --> 00:36:04,169
+and let's simply maybe wait for the
+
+847
+00:36:04,179 --> 00:36:07,109
+episode with Alexander and Tom who will
+
+848
+00:36:07,119 --> 00:36:09,809
+discuss the experiences of a Java
+
+849
+00:36:09,819 --> 00:36:13,049
+programmer who transferred to using PI
+
+850
+00:36:13,059 --> 00:36:15,359
+Ruby in a project and let's ask him what
+
+851
+00:36:15,369 --> 00:36:18,569
+he thinks about that and other comments
+
+852
+00:36:18,579 --> 00:36:21,269
+wants ven makes is I'm really looking
+
+853
+00:36:21,279 --> 00:36:22,769
+forward to the next episodes on
+
+854
+00:36:22,779 --> 00:36:25,469
+programming languages especially the one
+
+855
+00:36:25,479 --> 00:36:27,359
+about the new c-sharp features I don't
+
+856
+00:36:27,369 --> 00:36:29,999
+know why he thinks we'll have an episode
+
+857
+00:36:30,009 --> 00:36:31,769
+about the new c-sharp features but
+
+858
+00:36:31,779 --> 00:36:33,959
+actually as I said before we have
+
+859
+00:36:33,969 --> 00:36:35,699
+something in the pipeline and we will
+
+860
+00:36:35,709 --> 00:36:39,689
+have an episode on c-sharp 3.0 one final
+
+861
+00:36:39,699 --> 00:36:42,630
+thing that I found on forum discussing
+
+862
+00:36:42,640 --> 00:36:44,489
+the Ruby programming language they
+
+863
+00:36:44,499 --> 00:36:46,169
+discuss our podcast and they think it's
+
+864
+00:36:46,179 --> 00:36:47,849
+great and stuff and then at the end they
+
+865
+00:36:47,859 --> 00:36:50,699
+say they all seem to like Ruby quite a
+
+866
+00:36:50,709 --> 00:36:53,849
+bit and so there is the question who is
+
+867
+00:36:53,859 --> 00:36:56,370
+the sponsor and how much they pay for
+
+868
+00:36:56,380 --> 00:36:59,279
+the words Ruby and rails and actually
+
+869
+00:36:59,289 --> 00:37:01,999
+nobody pays us there are no sponsors and
+
+870
+00:37:02,009 --> 00:37:04,349
+certainly nobody from the Ruby community
+
+871
+00:37:04,359 --> 00:37:06,839
+we just seem to like the language and
+
+872
+00:37:06,849 --> 00:37:10,069
+there's obviously no money in that so
+
+873
+00:37:10,079 --> 00:37:15,179
+this concludes our reader reader our
+
+874
+00:37:15,189 --> 00:37:17,130
+listener feedback I'm still used to
+
+875
+00:37:17,140 --> 00:37:18,870
+writing stuff and not to doing this
+
+876
+00:37:18,880 --> 00:37:21,870
+audio thing so this concludes our
+
+877
+00:37:21,880 --> 00:37:25,469
+listener feedback and we really want to
+
+878
+00:37:25,479 --> 00:37:27,269
+get more feedback from you I think this
+
+879
+00:37:27,279 --> 00:37:29,219
+feedback is really important and so to
+
+880
+00:37:29,229 --> 00:37:30,929
+encourage you to give us more feedback
+
+881
+00:37:30,939 --> 00:37:35,459
+we have a prize so and the idea is that
+
+882
+00:37:35,469 --> 00:37:37,739
+everybody who gives us feedback in the
+
+883
+00:37:37,749 --> 00:37:41,069
+way I'll just explain will enter into a
+
+884
+00:37:41,079 --> 00:37:44,809
+drawing where we'll give away a book and
+
+885
+00:37:44,819 --> 00:37:47,429
+since in this episode we're talking
+
+886
+00:37:47,439 --> 00:37:49,769
+about remoting infrastructures the book
+
+887
+00:37:49,779 --> 00:37:52,199
+will be the remoting patterns book
+
+888
+00:37:52,209 --> 00:37:55,589
+written by Michael Ovitz tune in myself
+
+889
+00:37:55,599 --> 00:37:59,399
+so this will be the prize and what
+
+890
+00:37:59,409 --> 00:38:00,839
+you'll have to do is you have to give us
+
+891
+00:38:00,849 --> 00:38:03,509
+feedback on the software engineering
+
+892
+00:38:03,519 --> 00:38:06,359
+radio podcast so you have to give us
+
+893
+00:38:06,369 --> 00:38:10,949
+feedback by let's think by April 15th
+
+894
+00:38:10,959 --> 00:38:14,640
+and the ideas that you give us feedback
+
+895
+00:38:14,650 --> 00:38:18,749
+either about three topics you'd like to
+
+896
+00:38:18,759 --> 00:38:22,019
+hear in upcoming episodes or feedback
+
+897
+00:38:22,029 --> 00:38:25,799
+about three things you liked or you
+
+898
+00:38:25,809 --> 00:38:28,890
+didn't like in the past so give us three
+
+899
+00:38:28,900 --> 00:38:30,839
+constructive points of free feedback and
+
+900
+00:38:30,849 --> 00:38:32,160
+you will enter into the drawing for the
+
+901
+00:38:32,170 --> 00:38:34,140
+remoting pattern spoken and of course
+
+902
+00:38:34,150 --> 00:38:36,359
+the way to contact us is either to write
+
+903
+00:38:36,369 --> 00:38:41,130
+an email to team @ s e- radio net or
+
+904
+00:38:41,140 --> 00:38:44,069
+just simply leave a comment on our
+
+905
+00:38:44,079 --> 00:38:46,890
+comments facility @ s e- radio dotnet
+
+906
+00:38:46,900 --> 00:38:49,440
+and make sure that you leave enough
+
+907
+00:38:49,450 --> 00:38:51,539
+information so we know who you are and
+
+908
+00:38:51,549 --> 00:38:53,700
+make sure you we can send you the book
+
+909
+00:38:53,710 --> 00:38:58,979
+assuming you're the winner right so I
+
+910
+00:38:58,989 --> 00:39:02,400
+think this finishes this Kombi episode
+
+911
+00:39:02,410 --> 00:39:06,089
+of remoting infrastructure's remoting
+
+912
+00:39:06,099 --> 00:39:08,759
+patterns part 1 and listener feedback
+
+913
+00:39:08,769 --> 00:39:10,890
+and we'll add this listener feedback
+
+914
+00:39:10,900 --> 00:39:14,459
+kind of thing occasionally to give you
+
+915
+00:39:14,469 --> 00:39:16,170
+feedback about the feedback we got from
+
+916
+00:39:16,180 --> 00:39:19,529
+you so thanks for listening and see you
+
+917
+00:39:19,539 --> 00:39:22,049
+next time when we discussed the second
+
+918
+00:39:22,059 --> 00:39:24,590
+part of the reloading infrastructure
+
+919
+00:39:24,600 --> 00:39:43,190
+[Music]
+
+920
+00:39:43,200 --> 00:39:45,839
+this was another episode of software
+
+921
+00:39:45,849 --> 00:39:48,210
+engineering radio the software
+
+922
+00:39:48,220 --> 00:39:49,980
+engineering radio team wants to thank
+
+923
+00:39:49,990 --> 00:39:52,260
+Henning poly for providing the music as
+
+924
+00:39:52,270 --> 00:39:54,720
+well as lips and comm for hosting in
+
+925
+00:39:54,730 --> 00:39:56,910
+bandwidth for more information on the
+
+926
+00:39:56,920 --> 00:40:00,120
+podcast past episodes and feedback go to
+
+927
+00:40:00,130 --> 00:40:02,920
+s e - radio dotnet
+
+928
+00:40:02,930 --> 00:40:12,600
+[Music]

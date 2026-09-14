@@ -1,0 +1,8191 @@
+1
+00:00:02,750 --> 00:00:02,760
+This is Software Engineering Radio, the
+
+2
+00:00:02,760 --> 00:00:04,790
+podcast for professional developers on
+
+3
+00:00:04,800 --> 00:00:07,790
+the web at se-radio.net.
+
+4
+00:00:07,800 --> 00:00:09,670
+SE Radio is brought to you by the IEEE
+
+5
+00:00:09,680 --> 00:00:11,830
+Computer Society and by IEEE Software
+
+6
+00:00:11,840 --> 00:00:13,590
+Magazine online at
+
+7
+00:00:13,600 --> 00:00:25,270
+computer.org/software.
+
+8
+00:00:26,990 --> 00:00:27,000
+Digital Ocean is the easiest cloud
+
+9
+00:00:27,000 --> 00:00:29,150
+platform to deploy, manage, and scale
+
+10
+00:00:29,160 --> 00:00:31,190
+applications of any size, removing
+
+11
+00:00:31,200 --> 00:00:32,790
+infrastructure friction and providing
+
+12
+00:00:32,800 --> 00:00:34,430
+predictability so developers and their
+
+13
+00:00:34,440 --> 00:00:36,790
+teams can deploy faster and focus on
+
+14
+00:00:36,800 --> 00:00:39,190
+building software that customers love.
+
+15
+00:00:39,200 --> 00:00:41,070
+Digital Ocean stands out from the crowd
+
+16
+00:00:41,080 --> 00:00:42,950
+due to its simplicity, high performance,
+
+17
+00:00:42,960 --> 00:00:44,990
+and no billing surprises.
+
+18
+00:00:45,000 --> 00:00:47,470
+Join a community of over 3.5 million
+
+19
+00:00:47,480 --> 00:00:49,870
+developers on Digital Ocean. Sign up
+
+20
+00:00:49,880 --> 00:00:58,350
+with a free credit at do.co/seradio.
+
+21
+00:01:00,270 --> 00:01:00,280
+Hello, this is Jeremy Jung for Software
+
+22
+00:01:00,280 --> 00:01:02,150
+Engineering Radio. Today, I'm speaking
+
+23
+00:01:02,160 --> 00:01:04,390
+with Derek Collison. Derek is the
+
+24
+00:01:04,400 --> 00:01:06,870
+creator of Cloud Foundry, NATS, and the
+
+25
+00:01:06,880 --> 00:01:09,550
+current founder and CEO of Synadia. He
+
+26
+00:01:09,560 --> 00:01:11,670
+previously worked at Tibco, Google,
+
+27
+00:01:11,680 --> 00:01:14,190
+VMware, and Apcera. For much of his
+
+28
+00:01:14,200 --> 00:01:15,830
+career, Derek has been involved in
+
+29
+00:01:15,840 --> 00:01:17,470
+building messaging infrastructure for
+
+30
+00:01:17,480 --> 00:01:18,950
+applications.
+
+31
+00:01:18,960 --> 00:01:20,470
+I'll be speaking with Derek about
+
+32
+00:01:20,480 --> 00:01:22,190
+different messaging patterns, how they
+
+33
+00:01:22,200 --> 00:01:24,230
+fit modern applications, and his latest
+
+34
+00:01:24,240 --> 00:01:25,870
+project, the open-source messaging
+
+35
+00:01:25,880 --> 00:01:28,390
+system NATS. Derek, welcome to Software
+
+36
+00:01:28,400 --> 00:01:30,190
+Engineering Radio. Thank you, Jeremy.
+
+37
+00:01:30,200 --> 00:01:32,710
+Great to be here. First, I'd like to
+
+38
+00:01:32,720 --> 00:01:34,550
+kind of have a baseline. Uh could you
+
+39
+00:01:34,560 --> 00:01:37,790
+define what a message queue is? I could,
+
+40
+00:01:37,800 --> 00:01:39,910
+uh and I will, um but I think everyone's
+
+41
+00:01:39,920 --> 00:01:41,990
+definition is is probably slightly
+
+42
+00:01:42,000 --> 00:01:43,270
+different, and it's evolved. I mean,
+
+43
+00:01:43,280 --> 00:01:46,110
+these have have existed uh for quite a a
+
+44
+00:01:46,120 --> 00:01:49,110
+long time. And it's the notion of if two
+
+45
+00:01:49,120 --> 00:01:51,190
+applications are trying to communicate,
+
+46
+00:01:51,200 --> 00:01:53,310
+and at least in the older days, a lot of
+
+47
+00:01:53,320 --> 00:01:55,150
+times they weren't online, you know, at
+
+48
+00:01:55,160 --> 00:01:56,990
+the same time, they wanted to kind of
+
+49
+00:01:57,000 --> 00:01:58,590
+package something up and say, "This is
+
+50
+00:01:58,600 --> 00:02:00,390
+what I want you to process." So, when
+
+51
+00:02:00,400 --> 00:02:02,630
+you come online, please come here, pull
+
+52
+00:02:02,640 --> 00:02:04,630
+this thing off of this queue, and go
+
+53
+00:02:04,640 --> 00:02:06,590
+ahead and process that. And and there
+
+54
+00:02:06,600 --> 00:02:08,990
+could be multiple ones of us, kind of
+
+55
+00:02:09,000 --> 00:02:10,749
+like in a McDonald's line, that are
+
+56
+00:02:10,759 --> 00:02:12,310
+pulling from the queue of of new
+
+57
+00:02:12,320 --> 00:02:14,070
+customers coming in. But, I think that's
+
+58
+00:02:14,080 --> 00:02:16,510
+kind of the basis of what the original
+
+59
+00:02:16,520 --> 00:02:18,190
+queuing structure was. And it goes way
+
+60
+00:02:18,200 --> 00:02:20,470
+back to computer science structures and
+
+61
+00:02:20,480 --> 00:02:22,430
+stuff. But, they started to use that
+
+62
+00:02:22,440 --> 00:02:25,710
+pattern as a way for different processes
+
+63
+00:02:25,720 --> 00:02:27,949
+uh to communicate. And sometimes you'll
+
+64
+00:02:27,959 --> 00:02:30,830
+hear the term uh message bus. Is the
+
+65
+00:02:30,840 --> 00:02:33,070
+message bus the same thing as a message
+
+66
+00:02:33,080 --> 00:02:34,750
+queue, or is that something built on top
+
+67
+00:02:34,760 --> 00:02:36,390
+of a queue? How how would you define a
+
+68
+00:02:36,400 --> 00:02:38,710
+message bus? Yeah, so in the in the late
+
+69
+00:02:38,720 --> 00:02:40,949
+'80s, I think there was a a different
+
+70
+00:02:40,959 --> 00:02:42,510
+pattern that started to emerge in
+
+71
+00:02:42,520 --> 00:02:45,550
+addition to uh queuing, and that was
+
+72
+00:02:45,560 --> 00:02:47,430
+traditionally called publish-subscribe.
+
+73
+00:02:47,440 --> 00:02:49,870
+And it was specifically trying to solve
+
+74
+00:02:49,880 --> 00:02:51,910
+problems for very specific verticals
+
+75
+00:02:51,920 --> 00:02:54,190
+where uh instead of having a pattern
+
+76
+00:02:54,200 --> 00:02:56,030
+where I was trying to tell a whole bunch
+
+77
+00:02:56,040 --> 00:02:58,190
+of people about some set of of
+
+78
+00:02:58,200 --> 00:02:59,870
+information, let's say. Say a stock
+
+79
+00:02:59,880 --> 00:03:02,630
+price. And in the times before
+
+80
+00:03:02,640 --> 00:03:04,070
+publish-subscribe actually became
+
+81
+00:03:04,080 --> 00:03:06,910
+popular, the notion of And again, for
+
+82
+00:03:06,920 --> 00:03:08,790
+for the audience, this was on very very
+
+83
+00:03:08,800 --> 00:03:10,350
+slow networks compared to what we have
+
+84
+00:03:10,360 --> 00:03:13,150
+today, even compared to let's say LTE on
+
+85
+00:03:13,160 --> 00:03:14,949
+your phone. The gist of it was is I
+
+86
+00:03:14,959 --> 00:03:16,990
+would call you first, say, "Hey, price
+
+87
+00:03:17,000 --> 00:03:18,550
+of IBM is this." Hang up the phone, and
+
+88
+00:03:18,560 --> 00:03:20,150
+then I would just go down the line. And
+
+89
+00:03:20,160 --> 00:03:21,630
+it started become obvious that the line
+
+90
+00:03:21,640 --> 00:03:23,310
+was getting longer and longer. Trading
+
+91
+00:03:23,320 --> 00:03:25,470
+was becoming more and more popular. And
+
+92
+00:03:25,480 --> 00:03:26,949
+that as things were starting to speed up
+
+93
+00:03:26,959 --> 00:03:28,830
+and and algorithms were starting to take
+
+94
+00:03:28,840 --> 00:03:30,990
+place of of doing trades on their own,
+
+95
+00:03:31,000 --> 00:03:32,350
+so to speak. It was the very very
+
+96
+00:03:32,360 --> 00:03:34,710
+beginning of that versus a human that
+
+97
+00:03:34,720 --> 00:03:36,030
+the person in the front of the line got
+
+98
+00:03:36,040 --> 00:03:37,550
+a huge advantage over the person at the
+
+99
+00:03:37,560 --> 00:03:39,590
+end of the line, right? And so, the the
+
+100
+00:03:39,600 --> 00:03:41,790
+gist of what was trying to be solved
+
+101
+00:03:41,800 --> 00:03:43,830
+there is instead of going from a
+
+102
+00:03:43,840 --> 00:03:45,470
+one-to-one communication and I keep
+
+103
+00:03:45,480 --> 00:03:46,949
+walking down the line of everybody who's
+
+104
+00:03:46,959 --> 00:03:49,670
+interested, we would turn that into a
+
+105
+00:03:49,680 --> 00:03:50,710
+radio your
+
+106
+00:03:50,720 --> 00:03:52,510
+You would tune in to let's say the price
+
+107
+00:03:52,520 --> 00:03:54,470
+of IBM, the stock ticker would say it
+
+108
+00:03:54,480 --> 00:03:55,950
+once and everyone would get it similar
+
+109
+00:03:55,960 --> 00:03:57,670
+to like the old school uh radio
+
+110
+00:03:57,680 --> 00:03:59,470
+broadcast, podcast like that. Although,
+
+111
+00:03:59,480 --> 00:04:02,110
+these are on demand. Um and so,
+
+112
+00:04:02,120 --> 00:04:03,710
+what happened was is you had this notion
+
+113
+00:04:03,720 --> 00:04:05,150
+of queuing, traditional queuing that
+
+114
+00:04:05,160 --> 00:04:07,310
+came out of uh you know,
+
+115
+00:04:07,320 --> 00:04:08,710
+deeply rooted in computer science
+
+116
+00:04:08,720 --> 00:04:10,710
+structures and is a communication medium
+
+117
+00:04:10,720 --> 00:04:13,790
+mostly dominated by IBM and MQ series,
+
+118
+00:04:13,800 --> 00:04:15,350
+but there were others. And then there
+
+119
+00:04:15,360 --> 00:04:17,630
+was companies starting to evolve into
+
+120
+00:04:17,640 --> 00:04:19,670
+publish subscribe systems. And so, now
+
+121
+00:04:19,680 --> 00:04:21,110
+suddenly had a queuing pattern and you
+
+122
+00:04:21,120 --> 00:04:22,590
+had a publish subscribe pattern. When
+
+123
+00:04:22,600 --> 00:04:24,790
+you combine those two in some form or
+
+124
+00:04:24,800 --> 00:04:27,270
+fashion, and then we have to throw in a
+
+125
+00:04:27,280 --> 00:04:28,909
+little bit of notion of of quality of
+
+126
+00:04:28,919 --> 00:04:31,030
+service. And And the two that you know,
+
+127
+00:04:31,040 --> 00:04:32,550
+there's three, but the two that most
+
+128
+00:04:32,560 --> 00:04:35,070
+people deal with is at most once,
+
+129
+00:04:35,080 --> 00:04:36,830
+meaning almost kind of like a fire and
+
+130
+00:04:36,840 --> 00:04:38,430
+forget. Kind of like the way your brain
+
+131
+00:04:38,440 --> 00:04:39,550
+works. I'm going to shoot it out there
+
+132
+00:04:39,560 --> 00:04:40,830
+and if you catch it, great. And if you
+
+133
+00:04:40,840 --> 00:04:42,470
+don't, well, maybe you'll get the next
+
+134
+00:04:42,480 --> 00:04:44,310
+one. And then of course, there is
+
+135
+00:04:44,320 --> 00:04:46,070
+quality of service where it's at least
+
+136
+00:04:46,080 --> 00:04:47,390
+once, meaning I'm going to hold on to
+
+137
+00:04:47,400 --> 00:04:49,110
+it. I might put it on disk. I'm going to
+
+138
+00:04:49,120 --> 00:04:50,870
+wait for you to come online. Again, like
+
+139
+00:04:50,880 --> 00:04:52,790
+in more of the batch processing days.
+
+140
+00:04:52,800 --> 00:04:54,670
+And so, when you looked at queuing
+
+141
+00:04:54,680 --> 00:04:57,270
+methodologies, queuing patterns, pub sub
+
+142
+00:04:57,280 --> 00:04:59,510
+patterns, multiple qualities of service
+
+143
+00:04:59,520 --> 00:05:01,350
+including the third, which is exactly
+
+144
+00:05:01,360 --> 00:05:03,350
+once, which is a whole other show
+
+145
+00:05:03,360 --> 00:05:05,550
+probably on its own. Kind of putting all
+
+146
+00:05:05,560 --> 00:05:07,150
+those together and saying, "Hey, we're
+
+147
+00:05:07,160 --> 00:05:08,630
+not going to have a lots of these, you
+
+148
+00:05:08,640 --> 00:05:09,909
+know, Jeremy's going to have his own,
+
+149
+00:05:09,919 --> 00:05:11,710
+Darrel's going to have his own."
+
+150
+00:05:11,720 --> 00:05:13,670
+An organization or or possibly even
+
+151
+00:05:13,680 --> 00:05:15,630
+company wide, we kind of say, "No, we
+
+152
+00:05:15,640 --> 00:05:17,830
+have one of these." And that's kind of
+
+153
+00:05:17,840 --> 00:05:19,350
+what was determined to be like the
+
+154
+00:05:19,360 --> 00:05:21,470
+enterprise service bus. And everyone
+
+155
+00:05:21,480 --> 00:05:23,230
+kind of plugged into it. Kind of like uh
+
+156
+00:05:23,240 --> 00:05:25,230
+your nervous system, you know, a spinal
+
+157
+00:05:25,240 --> 00:05:26,950
+cord, so to speak. And they became very
+
+158
+00:05:26,960 --> 00:05:28,990
+popular for a while. And they still
+
+159
+00:05:29,000 --> 00:05:31,670
+dominate as an abstract pattern that
+
+160
+00:05:31,680 --> 00:05:34,030
+feels like the right way to go even in
+
+161
+00:05:34,040 --> 00:05:36,190
+today's landscape, but I think uh the
+
+162
+00:05:36,200 --> 00:05:38,310
+landscape today has changed so much that
+
+163
+00:05:38,320 --> 00:05:40,710
+the at technology has to change quite a
+
+164
+00:05:40,720 --> 00:05:42,990
+bit. And I we've seen that I think with
+
+165
+00:05:43,000 --> 00:05:46,510
+with entrance into what was very much of
+
+166
+00:05:46,520 --> 00:05:48,910
+rooted technology that
+
+167
+00:05:48,920 --> 00:05:50,710
+some installations technologies have
+
+168
+00:05:50,720 --> 00:05:52,830
+lasted 20 30 years
+
+169
+00:05:52,840 --> 00:05:54,310
+and to new entrants into this, you know,
+
+170
+00:05:54,320 --> 00:05:55,870
+which might not sound new to the
+
+171
+00:05:55,880 --> 00:05:58,030
+audience, but for for the people who've
+
+172
+00:05:58,040 --> 00:05:59,790
+been doing messaging for multiple
+
+173
+00:05:59,800 --> 00:06:01,950
+decades or so, um you know, Kafka's kind
+
+174
+00:06:01,960 --> 00:06:04,030
+of a new way to look at at the problem
+
+175
+00:06:04,040 --> 00:06:06,310
+and I think it's got a lot of deserved
+
+176
+00:06:06,320 --> 00:06:08,070
+attention about thinking about the
+
+177
+00:06:08,080 --> 00:06:09,710
+problem in a different way. And so it's
+
+178
+00:06:09,720 --> 00:06:12,590
+introducing new patterns to those pub
+
+179
+00:06:12,600 --> 00:06:14,870
+sub queuing, request reply, and then the
+
+180
+00:06:14,880 --> 00:06:16,950
+qualities of service that kind of made
+
+181
+00:06:16,960 --> 00:06:19,430
+up the technologies of the past. I want
+
+182
+00:06:19,440 --> 00:06:21,390
+to make sure we sort of define some of
+
+183
+00:06:21,400 --> 00:06:23,070
+the terms you used there. You kind of
+
+184
+00:06:23,080 --> 00:06:25,870
+went into at most once delivery. I'm
+
+185
+00:06:25,880 --> 00:06:28,150
+assuming that means that the message
+
+186
+00:06:28,160 --> 00:06:30,950
+will get to the subscribers at at most
+
+187
+00:06:30,960 --> 00:06:33,110
+once, but it may not get there at all.
+
+188
+00:06:33,120 --> 00:06:33,950
+Is that correct?
+
+189
+00:06:33,960 --> 00:06:35,750
+Correct. Yes. It's like most people call
+
+190
+00:06:35,760 --> 00:06:37,310
+it a fire and forget model, meaning
+
+191
+00:06:37,320 --> 00:06:39,070
+whoever's producing the data fires it
+
+192
+00:06:39,080 --> 00:06:41,909
+off and if you're not online or you miss
+
+193
+00:06:41,919 --> 00:06:43,990
+it because of an interruption somehow,
+
+194
+00:06:44,000 --> 00:06:45,870
+um there will be no attempts at
+
+195
+00:06:45,880 --> 00:06:47,590
+redelivery.
+
+196
+00:06:47,600 --> 00:06:49,710
+And it's actually a pattern that most
+
+197
+00:06:49,720 --> 00:06:51,510
+people skip over, go, "Ooh, I don't want
+
+198
+00:06:51,520 --> 00:06:52,830
+that. I definitely want to go down the
+
+199
+00:06:52,840 --> 00:06:54,670
+line and look at these others." But as
+
+200
+00:06:54,680 --> 00:06:55,990
+you start looking at systems and
+
+201
+00:06:56,000 --> 00:06:58,550
+becoming very much distributed in terms
+
+202
+00:06:58,560 --> 00:07:00,909
+of how many moving pieces there are and
+
+203
+00:07:00,919 --> 00:07:02,070
+looking at how you would build
+
+204
+00:07:02,080 --> 00:07:04,310
+resiliency into these, they're actually
+
+205
+00:07:04,320 --> 00:07:06,310
+ones that dominate the architectures
+
+206
+00:07:06,320 --> 00:07:07,670
+that I've been using, including the one
+
+207
+00:07:07,680 --> 00:07:09,710
+I used to build Cloud Foundry, at least
+
+208
+00:07:09,720 --> 00:07:12,070
+the control plane for Cloud Foundry. So
+
+209
+00:07:12,080 --> 00:07:13,830
+hopefully the audience will will not
+
+210
+00:07:13,840 --> 00:07:16,950
+just skip over, you know, that and start
+
+211
+00:07:16,960 --> 00:07:19,470
+looking at at least once or exactly once
+
+212
+00:07:19,480 --> 00:07:21,350
+semantics because I think there's some
+
+213
+00:07:21,360 --> 00:07:23,470
+great use cases where it's simpler, it's
+
+214
+00:07:23,480 --> 00:07:25,830
+more resilient, more predictable, and
+
+215
+00:07:25,840 --> 00:07:27,950
+you get actually a more resilient system
+
+216
+00:07:27,960 --> 00:07:30,630
+from the outside than you might expect.
+
+217
+00:07:30,640 --> 00:07:32,750
+Mhm. And I think I want to come back to
+
+218
+00:07:32,760 --> 00:07:35,030
+this since with NATS I believe you made
+
+219
+00:07:35,040 --> 00:07:36,990
+the decision to have at most once
+
+220
+00:07:37,000 --> 00:07:38,790
+delivery. The other thing you had kind
+
+221
+00:07:38,800 --> 00:07:40,710
+of talked about with a message bus
+
+222
+00:07:40,720 --> 00:07:43,030
+versus a queue, so what makes something
+
+223
+00:07:43,040 --> 00:07:44,750
+a message bus specifically, as you said,
+
+224
+00:07:44,760 --> 00:07:47,510
+was the pub/sub capability. So, it's
+
+225
+00:07:47,520 --> 00:07:49,310
+being able to publish a message and have
+
+226
+00:07:49,320 --> 00:07:51,190
+multiple people receive it, whereas the
+
+227
+00:07:51,200 --> 00:07:53,870
+queue was people would be kind of in a
+
+228
+00:07:53,880 --> 00:07:55,950
+line and would remove things one at a
+
+229
+00:07:55,960 --> 00:07:58,430
+time and only one consumer would get
+
+230
+00:07:58,440 --> 00:07:59,910
+each item. Is that kind of the correct
+
+231
+00:07:59,920 --> 00:08:02,470
+distinction? Yeah, I think that's fair.
+
+232
+00:08:02,480 --> 00:08:04,630
+Where I think I I was trying to direct
+
+233
+00:08:04,640 --> 00:08:06,430
+the audiences is that there was a
+
+234
+00:08:06,440 --> 00:08:08,990
+traditional queuing product, like an IBM
+
+235
+00:08:09,000 --> 00:08:11,110
+MQ series that dominated the landscape.
+
+236
+00:08:11,120 --> 00:08:12,750
+And then there was pub/sub technologies
+
+237
+00:08:12,760 --> 00:08:14,230
+like Tibco's Rendezvous, and there was
+
+238
+00:08:14,240 --> 00:08:16,310
+others. And then all of a sudden Tibco
+
+239
+00:08:16,320 --> 00:08:17,670
+came out with an enterprise messaging
+
+240
+00:08:17,680 --> 00:08:20,150
+system that had pub/sub and it had
+
+241
+00:08:20,160 --> 00:08:22,470
+queuing and it had request reply. And I
+
+242
+00:08:22,480 --> 00:08:24,590
+think, although Tibco was not the only
+
+243
+00:08:24,600 --> 00:08:26,070
+vendor in the space, I think that kind
+
+244
+00:08:26,080 --> 00:08:27,750
+of rooted the definition of what an
+
+245
+00:08:27,760 --> 00:08:29,430
+enterprise service bus might look like.
+
+246
+00:08:29,440 --> 00:08:31,150
+It's combining multiple patterns,
+
+247
+00:08:31,160 --> 00:08:32,830
+combining multiple qualities of service
+
+248
+00:08:32,840 --> 00:08:34,550
+all into one thing.
+
+249
+00:08:34,560 --> 00:08:36,350
+So, it's one infrastructure piece, so to
+
+250
+00:08:36,360 --> 00:08:36,870
+speak,
+
+251
+00:08:36,880 --> 00:08:39,149
+Mhm. that your application could kind of
+
+252
+00:08:39,159 --> 00:08:41,230
+pick and choose which pattern, which
+
+253
+00:08:41,240 --> 00:08:43,310
+quality of service made the most sense
+
+254
+00:08:43,320 --> 00:08:45,829
+for the application itself. So, we've
+
+255
+00:08:45,839 --> 00:08:48,310
+got the queuing, we've got pub/sub, uh
+
+256
+00:08:48,320 --> 00:08:50,190
+we've got request reply.
+
+257
+00:08:50,200 --> 00:08:52,230
+Request reply is really no different
+
+258
+00:08:52,240 --> 00:08:54,870
+than an HTTP call to a REST endpoint,
+
+259
+00:08:54,880 --> 00:08:56,750
+that sort of thing. Is that right? Well,
+
+260
+00:08:56,760 --> 00:08:58,870
+well, yeah. In terms of of a messaging
+
+261
+00:08:58,880 --> 00:09:01,190
+pattern, it's doing request reply. It is
+
+262
+00:09:01,200 --> 00:09:03,829
+trying to dominate on the pattern of I'm
+
+263
+00:09:03,839 --> 00:09:05,270
+going to ask you, Jeremy, a question and
+
+264
+00:09:05,280 --> 00:09:06,590
+you're going to tell me the answer,
+
+265
+00:09:06,600 --> 00:09:09,190
+right? And you can look at that as RPC,
+
+266
+00:09:09,200 --> 00:09:12,190
+request reply is HTTP, right? HTTP is
+
+267
+00:09:12,200 --> 00:09:13,910
+fundamentally a request reply protocol.
+
+268
+00:09:13,920 --> 00:09:17,190
+Every time you send in a a request,
+
+269
+00:09:17,200 --> 00:09:19,710
+you're going to get a 200 or 404 or 500
+
+270
+00:09:19,720 --> 00:09:21,790
+or whatever back. Um so, yes, that's
+
+271
+00:09:21,800 --> 00:09:23,710
+exactly it. Where
+
+272
+00:09:23,720 --> 00:09:25,910
+I think we could get into a discussion
+
+273
+00:09:25,920 --> 00:09:27,110
+of
+
+274
+00:09:27,120 --> 00:09:29,670
+these patterns is is that I think modern
+
+275
+00:09:29,680 --> 00:09:33,590
+systems, you know, have different needs
+
+276
+00:09:33,600 --> 00:09:36,790
+and wants as you transition from idea to
+
+277
+00:09:36,800 --> 00:09:39,510
+development to production and then going
+
+278
+00:09:39,520 --> 00:09:41,150
+through all the other arms of production
+
+279
+00:09:41,160 --> 00:09:43,350
+so to say regulatory, security,
+
+280
+00:09:43,360 --> 00:09:46,310
+compliance, quality meaning the SLAs and
+
+281
+00:09:46,320 --> 00:09:47,390
+things
+
+282
+00:09:47,400 --> 00:09:49,430
+where all of a sudden that pattern if
+
+283
+00:09:49,440 --> 00:09:51,390
+it's if it's the only pattern that
+
+284
+00:09:51,400 --> 00:09:52,790
+exists
+
+285
+00:09:52,800 --> 00:09:55,390
+really limits the ability to allow
+
+286
+00:09:55,400 --> 00:09:58,190
+production to kind of get their job done
+
+287
+00:09:58,200 --> 00:10:00,830
+as well. And so we can get to this but
+
+288
+00:10:00,840 --> 00:10:03,070
+talking with or talking about NATS and
+
+289
+00:10:03,080 --> 00:10:05,190
+kind of the original design concepts of
+
+290
+00:10:05,200 --> 00:10:08,590
+NATS was is to be a a technology that
+
+291
+00:10:08,600 --> 00:10:11,430
+could go from idea and multiple patterns
+
+292
+00:10:11,440 --> 00:10:13,710
+but then you pick one as a development
+
+293
+00:10:13,720 --> 00:10:15,510
+methodology but then it doesn't limit
+
+294
+00:10:15,520 --> 00:10:17,950
+production. It doesn't limit, you know,
+
+295
+00:10:17,960 --> 00:10:19,470
+the quality of service of the system or
+
+296
+00:10:19,480 --> 00:10:21,510
+monitoring or again regulatory or
+
+297
+00:10:21,520 --> 00:10:24,350
+compliance or security teams and I think
+
+298
+00:10:24,360 --> 00:10:26,510
+that's really important in in modern
+
+299
+00:10:26,520 --> 00:10:28,950
+systems of it's not only that you start
+
+300
+00:10:28,960 --> 00:10:30,190
+at the beginning with a basket of
+
+301
+00:10:30,200 --> 00:10:31,470
+different patterns and qualities of
+
+302
+00:10:31,480 --> 00:10:33,510
+service. You have to realize that as a
+
+303
+00:10:33,520 --> 00:10:35,230
+developer you're picking one to get your
+
+304
+00:10:35,240 --> 00:10:37,310
+job done. But that doesn't mean that's
+
+305
+00:10:37,320 --> 00:10:39,310
+the only job that might need to be done
+
+306
+00:10:39,320 --> 00:10:41,110
+with those messages, right? That we're
+
+307
+00:10:41,120 --> 00:10:42,990
+sending back and forth. I think that's a
+
+308
+00:10:43,000 --> 00:10:44,829
+a really important concept that I tried
+
+309
+00:10:44,839 --> 00:10:46,150
+to
+
+310
+00:10:46,160 --> 00:10:48,829
+communicate with engineers that that I
+
+311
+00:10:48,839 --> 00:10:51,150
+come across and and are asking well how
+
+312
+00:10:51,160 --> 00:10:52,910
+would you approach this or how would you
+
+313
+00:10:52,920 --> 00:10:56,510
+do this? And you know, before before we
+
+314
+00:10:56,520 --> 00:10:58,270
+officially started the call it's it's
+
+315
+00:10:58,280 --> 00:11:00,430
+definitely not an IQ thing. It's a scars
+
+316
+00:11:00,440 --> 00:11:02,070
+on the back type of thing.
+
+317
+00:11:02,080 --> 00:11:03,590
+But with the right technology it's
+
+318
+00:11:03,600 --> 00:11:06,110
+amazing how many of the friction points
+
+319
+00:11:06,120 --> 00:11:08,829
+you can reduce so that you don't whiz
+
+320
+00:11:08,839 --> 00:11:10,230
+through development, feel really good
+
+321
+00:11:10,240 --> 00:11:11,790
+about yourself and it takes six months
+
+322
+00:11:11,800 --> 00:11:14,310
+to actually get it deployed out into to
+
+323
+00:11:14,320 --> 00:11:17,030
+production. Those types of of things. I
+
+324
+00:11:17,040 --> 00:11:19,150
+I think a lot of developers who are just
+
+325
+00:11:19,160 --> 00:11:22,350
+starting out when they want to talk to
+
+326
+00:11:22,360 --> 00:11:24,790
+applications they're thinking more of
+
+327
+00:11:24,800 --> 00:11:27,790
+HTTP based calls like SOAP or REST or
+
+328
+00:11:27,800 --> 00:11:30,630
+they're thinking gRPC and so all of
+
+329
+00:11:30,640 --> 00:11:33,550
+these are very request-reply oriented or
+
+330
+00:11:33,560 --> 00:11:36,790
+RPC oriented. Can you give some examples
+
+331
+00:11:36,800 --> 00:11:39,350
+of uh some common problems that can be
+
+332
+00:11:39,360 --> 00:11:41,310
+solved by using a different messaging
+
+333
+00:11:41,320 --> 00:11:44,110
+pattern? Sure. So,
+
+334
+00:11:44,120 --> 00:11:45,590
+for the audience, let's let's make sure
+
+335
+00:11:45,600 --> 00:11:47,590
+we're kind of on the same page. As a
+
+336
+00:11:47,600 --> 00:11:49,590
+developer picks a request-reply pattern,
+
+337
+00:11:49,600 --> 00:11:51,910
+which by the way still dominates, right?
+
+338
+00:11:51,920 --> 00:11:53,630
+I do believe apps are becoming more
+
+339
+00:11:53,640 --> 00:11:56,510
+sensitive to doing eventing and doing uh
+
+340
+00:11:56,520 --> 00:11:58,310
+telemetry data and things that might
+
+341
+00:11:58,320 --> 00:12:01,190
+look more like pub/sub or streaming,
+
+342
+00:12:01,200 --> 00:12:02,270
+like right where
+
+343
+00:12:02,280 --> 00:12:04,230
+if you're looking at Kafka as a
+
+344
+00:12:04,240 --> 00:12:06,550
+technology. Where I think the difference
+
+345
+00:12:06,560 --> 00:12:08,910
+comes in with something like NATS and
+
+346
+00:12:08,920 --> 00:12:10,310
+there's other technologies that do this
+
+347
+00:12:10,320 --> 00:12:12,790
+as well, is is that request-reply is a
+
+348
+00:12:12,800 --> 00:12:14,630
+first-class pattern.
+
+349
+00:12:14,640 --> 00:12:16,270
+It just happens to be implemented with
+
+350
+00:12:16,280 --> 00:12:18,390
+pub/sub underneath the covers. And so,
+
+351
+00:12:18,400 --> 00:12:20,270
+what that means is is that the developer
+
+352
+00:12:20,280 --> 00:12:22,230
+says, "Well, yeah, I'm I'm sending a
+
+353
+00:12:22,240 --> 00:12:23,790
+request to Jeremy and I'm getting an
+
+354
+00:12:23,800 --> 00:12:25,750
+answer back. That's what I have to do,
+
+355
+00:12:25,760 --> 00:12:27,830
+right? That's what I am tasked to do as
+
+356
+00:12:27,840 --> 00:12:29,630
+a as a developer or an our systems
+
+357
+00:12:29,640 --> 00:12:30,750
+engineer."
+
+358
+00:12:30,760 --> 00:12:32,070
+And that makes total sense and that
+
+359
+00:12:32,080 --> 00:12:34,829
+pattern should dominate still a lot of
+
+360
+00:12:34,839 --> 00:12:36,590
+the interactions, whether it's async or
+
+361
+00:12:36,600 --> 00:12:38,630
+not in inside the app of "Hey, I'm
+
+362
+00:12:38,640 --> 00:12:39,829
+asking a question. I need an answer
+
+363
+00:12:39,839 --> 00:12:42,070
+back." Where I think the difference in
+
+364
+00:12:42,080 --> 00:12:44,030
+the approach that we've taken
+
+365
+00:12:44,040 --> 00:12:47,230
+might come to light is you say, "Great.
+
+366
+00:12:47,240 --> 00:12:49,470
+I know where Jeremy is. I send him a
+
+367
+00:12:49,480 --> 00:12:51,710
+request. I get a response back.
+
+368
+00:12:51,720 --> 00:12:53,710
+You know, everyone is is happy." Now,
+
+369
+00:12:53,720 --> 00:12:54,990
+when we move to production, it's like,
+
+370
+00:12:55,000 --> 00:12:57,510
+"Okay, tell me where I can find Jeremy,
+
+371
+00:12:57,520 --> 00:12:59,190
+right?" So, there's an issue of I need
+
+372
+00:12:59,200 --> 00:13:00,990
+to find Jeremy. And by the way, I
+
+373
+00:13:01,000 --> 00:13:02,710
+probably am not only talking to Jeremy,
+
+374
+00:13:02,720 --> 00:13:04,390
+I might be talking to 10 other
+
+375
+00:13:04,400 --> 00:13:06,950
+applications. So, now as I move into
+
+376
+00:13:06,960 --> 00:13:07,950
+production, it's like, "Okay, I got to
+
+377
+00:13:07,960 --> 00:13:09,510
+know where they are." Of course,
+
+378
+00:13:09,520 --> 00:13:11,070
+production's going to say, "Well,
+
+379
+00:13:11,080 --> 00:13:14,350
+Jeremy's really fast, but you know, John
+
+380
+00:13:14,360 --> 00:13:15,750
+over here, he might be a little slow.
+
+381
+00:13:15,760 --> 00:13:17,110
+So, now all of a sudden we want more
+
+382
+00:13:17,120 --> 00:13:18,790
+than one John."
+
+383
+00:13:18,800 --> 00:13:20,630
+But we don't want Derek to change. So,
+
+384
+00:13:20,640 --> 00:13:22,110
+we're going to tell Derek not where John
+
+385
+00:13:22,120 --> 00:13:23,510
+is, but where a load balancer is. So,
+
+386
+00:13:23,520 --> 00:13:25,270
+now there's this new process running.
+
+387
+00:13:25,280 --> 00:13:26,710
+And I think the audience this these all
+
+388
+00:13:26,720 --> 00:13:28,110
+will sound very familiar, right? So now
+
+389
+00:13:28,120 --> 00:13:29,750
+I'm sending to a load balancer instead,
+
+390
+00:13:29,760 --> 00:13:31,590
+it picks one of the Johns.
+
+391
+00:13:31,600 --> 00:13:33,230
+It understands state affinity if need
+
+392
+00:13:33,240 --> 00:13:35,790
+be, XYZ returns back. Now suddenly we
+
+393
+00:13:35,800 --> 00:13:38,070
+didn't do that for you, Jeremy, but now
+
+394
+00:13:38,080 --> 00:13:39,510
+we want to. Jeremy's becoming really
+
+395
+00:13:39,520 --> 00:13:41,390
+popular. Now suddenly Derek, the app,
+
+396
+00:13:41,400 --> 00:13:42,510
+might have to change, at least my
+
+397
+00:13:42,520 --> 00:13:44,350
+configuration has changed.
+
+398
+00:13:44,360 --> 00:13:45,990
+Now suddenly somebody comes in and says,
+
+399
+00:13:46,000 --> 00:13:47,590
+well, here's what we really want. We
+
+400
+00:13:47,600 --> 00:13:49,310
+want to watch all requests from Derek to
+
+401
+00:13:49,320 --> 00:13:51,430
+Jeremy. Most people say, well, that's
+
+402
+00:13:51,440 --> 00:13:53,190
+that's easy. You log everything and then
+
+403
+00:13:53,200 --> 00:13:55,190
+you move the logs into Hadoop and then
+
+404
+00:13:55,200 --> 00:13:56,390
+you analyze them and all this other
+
+405
+00:13:56,400 --> 00:13:58,430
+stuff. You add a sidecar, you add a
+
+406
+00:13:58,440 --> 00:14:00,470
+proxy, you add this, you add that. And
+
+407
+00:14:00,480 --> 00:14:01,990
+what you're doing is is that you're
+
+408
+00:14:02,000 --> 00:14:04,390
+you're asking production, I think, and
+
+409
+00:14:04,400 --> 00:14:05,870
+production and SREs, by the way, are
+
+410
+00:14:05,880 --> 00:14:07,190
+very good at this these days. They're
+
+411
+00:14:07,200 --> 00:14:08,750
+like, okay, I kind of get how to do
+
+412
+00:14:08,760 --> 00:14:10,830
+this. I know what I'm doing, XYZ. Then
+
+413
+00:14:10,840 --> 00:14:12,110
+of course there's the whole security
+
+414
+00:14:12,120 --> 00:14:13,230
+demand, which is, well, how do I
+
+415
+00:14:13,240 --> 00:14:15,150
+identify Derek? How do I identify
+
+416
+00:14:15,160 --> 00:14:17,630
+Jeremy? Is it the developer's problem or
+
+417
+00:14:17,640 --> 00:14:19,350
+is it the production problem, systems
+
+418
+00:14:19,360 --> 00:14:20,950
+problem? And where we looked at
+
+419
+00:14:20,960 --> 00:14:23,510
+something like NATS was is that we
+
+420
+00:14:23,520 --> 00:14:26,310
+wanted to transition and have Derek, the
+
+421
+00:14:26,320 --> 00:14:28,470
+app, and Jeremy, the application, the
+
+422
+00:14:28,480 --> 00:14:30,670
+back-end service, let's say,
+
+423
+00:14:30,680 --> 00:14:32,829
+not change, not even really have to be
+
+424
+00:14:32,839 --> 00:14:34,790
+reconfigured, and can move all the way
+
+425
+00:14:34,800 --> 00:14:36,590
+through this. So what's happening is,
+
+426
+00:14:36,600 --> 00:14:38,790
+and again, this is just a
+
+427
+00:14:38,800 --> 00:14:41,710
+a distinction around the big theme that
+
+428
+00:14:41,720 --> 00:14:43,030
+I've always talked to people about,
+
+429
+00:14:43,040 --> 00:14:45,390
+which is never assume what the message
+
+430
+00:14:45,400 --> 00:14:47,150
+that you send today is going to be used
+
+431
+00:14:47,160 --> 00:14:48,470
+for tomorrow.
+
+432
+00:14:48,480 --> 00:14:49,790
+So our dominant pattern is I'm sending
+
+433
+00:14:49,800 --> 00:14:51,470
+Jeremy a message, I get a response back,
+
+434
+00:14:51,480 --> 00:14:54,110
+and that's totally okay.
+
+435
+00:14:54,120 --> 00:14:56,310
+Within NATS though, that's a pub/sub,
+
+436
+00:14:56,320 --> 00:14:58,230
+meaning that if someone wants to come on
+
+437
+00:14:58,240 --> 00:14:59,710
+and say, hey, I want to run three
+
+438
+00:14:59,720 --> 00:15:01,110
+Jeremys,
+
+439
+00:15:01,120 --> 00:15:02,630
+you, the original Jeremy, and me, the
+
+440
+00:15:02,640 --> 00:15:04,230
+original Derek, don't change at all. We
+
+441
+00:15:04,240 --> 00:15:06,110
+never even stop running.
+
+442
+00:15:06,120 --> 00:15:07,670
+So operations, there's no, you know,
+
+443
+00:15:07,680 --> 00:15:09,790
+reboot, restart, change configuration,
+
+444
+00:15:09,800 --> 00:15:11,070
+anything. We just start three more of
+
+445
+00:15:11,080 --> 00:15:12,750
+them. So now suddenly there's not a load
+
+446
+00:15:12,760 --> 00:15:14,150
+balancer, there's not something else to
+
+447
+00:15:14,160 --> 00:15:15,950
+manage. All sudden it just kind of
+
+448
+00:15:15,960 --> 00:15:17,230
+works, and all sudden we're doing load
+
+449
+00:15:17,240 --> 00:15:19,710
+balancing, and we can scale up and down
+
+450
+00:15:19,720 --> 00:15:21,390
+at will, not dropping messages, and all
+
+451
+00:15:21,400 --> 00:15:22,790
+that stuff.
+
+452
+00:15:22,800 --> 00:15:24,790
+If security comes along or quality of
+
+453
+00:15:24,800 --> 00:15:26,670
+service comes along, meaning
+
+454
+00:15:26,680 --> 00:15:29,030
+not a a piece of technology, but a group
+
+455
+00:15:29,040 --> 00:15:30,630
+that says, "Hey, we need to make sure
+
+456
+00:15:30,640 --> 00:15:32,510
+that when Derek asks Jeremy something
+
+457
+00:15:32,520 --> 00:15:34,710
+that wh- whoever's fault it is, you
+
+458
+00:15:34,720 --> 00:15:36,670
+know, has to be in and out, you know, in
+
+459
+00:15:36,680 --> 00:15:38,230
+100 milliseconds, 200 milliseconds,
+
+460
+00:15:38,240 --> 00:15:40,270
+right? Google had these hard and fast
+
+461
+00:15:40,280 --> 00:15:41,830
+numbers of the request hits the front
+
+462
+00:15:41,840 --> 00:15:43,350
+door and it's got to be going back out
+
+463
+00:15:43,360 --> 00:15:44,150
+in
+
+464
+00:15:44,160 --> 00:15:45,310
+when I was there it used to be 200
+
+465
+00:15:45,320 --> 00:15:47,550
+milliseconds, right? Uh it was kind of a
+
+466
+00:15:47,560 --> 00:15:49,790
+hard and fast rule. With a technology
+
+467
+00:15:49,800 --> 00:15:51,750
+like NATS, a group can come along and
+
+468
+00:15:51,760 --> 00:15:53,310
+measure that all day long and again, you
+
+469
+00:15:53,320 --> 00:15:54,630
+and I have never changed, we've never
+
+470
+00:15:54,640 --> 00:15:56,070
+stopped running, we've never stopped
+
+471
+00:15:56,080 --> 00:15:58,390
+doing anything. And so now what happens
+
+472
+00:15:58,400 --> 00:15:59,750
+is is you look and you say, "Hey,
+
+473
+00:15:59,760 --> 00:16:01,750
+there's a dominant request-reply pattern
+
+474
+00:16:01,760 --> 00:16:03,270
+in development." But as we move into
+
+475
+00:16:03,280 --> 00:16:05,030
+production, right, the fact that those
+
+476
+00:16:05,040 --> 00:16:07,470
+requests and responses are also pub/sub
+
+477
+00:16:07,480 --> 00:16:09,030
+means we can attach any number of
+
+478
+00:16:09,040 --> 00:16:10,790
+listeners. They can be normal, they can
+
+479
+00:16:10,800 --> 00:16:12,910
+be their own queue. You can do
+
+480
+00:16:12,920 --> 00:16:14,750
+request-reply, you can do pub/sub, you
+
+481
+00:16:14,760 --> 00:16:16,070
+can do queuing all with the same
+
+482
+00:16:16,080 --> 00:16:18,550
+substrate and it doesn't kind of
+
+483
+00:16:18,560 --> 00:16:20,350
+box you in and limit you and especially
+
+484
+00:16:20,360 --> 00:16:22,710
+doesn't make production become more
+
+485
+00:16:22,720 --> 00:16:25,110
+complex, lots of moving pieces, right?
+
+486
+00:16:25,120 --> 00:16:26,790
+Cuz in dev it's like this was easy. It
+
+487
+00:16:26,800 --> 00:16:28,750
+was me and Jeremy. And I'd send him a
+
+488
+00:16:28,760 --> 00:16:30,630
+question, he'd send me an answer. Then
+
+489
+00:16:30,640 --> 00:16:31,710
+in production you go, "Well, there's
+
+490
+00:16:31,720 --> 00:16:33,350
+eight different things running around
+
+491
+00:16:33,360 --> 00:16:35,310
+just trying to support that one pattern
+
+492
+00:16:35,320 --> 00:16:37,230
+to do load balancing and logging and
+
+493
+00:16:37,240 --> 00:16:40,350
+collection of logs and security and and
+
+494
+00:16:40,360 --> 00:16:41,870
+uh compliance.
+
+495
+00:16:41,880 --> 00:16:44,070
+And so what we've seen is is that we've
+
+496
+00:16:44,080 --> 00:16:47,790
+seen a you know, complex problem become
+
+497
+00:16:47,800 --> 00:16:49,110
+more and more complex as you move from
+
+498
+00:16:49,120 --> 00:16:50,870
+the dev pipelines throughout and we
+
+499
+00:16:50,880 --> 00:16:53,470
+don't think that necessarily has to be
+
+500
+00:16:53,480 --> 00:16:55,870
+the way it has to be. If I can try and
+
+501
+00:16:55,880 --> 00:16:58,110
+break it down here, often a developer
+
+502
+00:16:58,120 --> 00:17:00,870
+will start with a request-reply pattern
+
+503
+00:17:00,880 --> 00:17:03,790
+over say HTTP, but if they were to move
+
+504
+00:17:03,800 --> 00:17:07,189
+that to a message bus such as NATS, you
+
+505
+00:17:07,199 --> 00:17:10,429
+would be able to have the discovery of
+
+506
+00:17:10,439 --> 00:17:13,110
+the clients be a part of the message
+
+507
+00:17:13,120 --> 00:17:16,829
+bus. So, if I want to talk to a service,
+
+508
+00:17:16,839 --> 00:17:19,390
+I don't necessarily need to know the
+
+509
+00:17:19,400 --> 00:17:21,670
+address or the name of that service. I
+
+510
+00:17:21,680 --> 00:17:24,630
+can send a message to uh to NATS, and
+
+511
+00:17:24,640 --> 00:17:25,790
+that can get routed to the correct
+
+512
+00:17:25,800 --> 00:17:28,429
+client. As a part of NATS, you can also
+
+513
+00:17:28,439 --> 00:17:32,670
+have load balancing. So, if I have 10
+
+514
+00:17:32,680 --> 00:17:34,630
+instances of my service, let's say I
+
+515
+00:17:34,640 --> 00:17:37,110
+have a service that's going to process
+
+516
+00:17:37,120 --> 00:17:39,350
+or resize an image, when I make the
+
+517
+00:17:39,360 --> 00:17:41,910
+requests to have this image I send
+
+518
+00:17:41,920 --> 00:17:44,590
+resized, NATS can actually handle the
+
+519
+00:17:44,600 --> 00:17:46,470
+load balancing and pick a service to
+
+520
+00:17:46,480 --> 00:17:49,190
+talk to for me, rather than me
+
+521
+00:17:49,200 --> 00:17:52,030
+introducing something like say Nginx or
+
+522
+00:17:52,040 --> 00:17:55,070
+HAProxy to choose the service to talk
+
+523
+00:17:55,080 --> 00:17:57,070
+to. Correct. And then, you also
+
+524
+00:17:57,080 --> 00:17:59,750
+mentioned that it is a request-reply
+
+525
+00:17:59,760 --> 00:18:03,070
+pattern, but internally, it's actually
+
+526
+00:18:03,080 --> 00:18:05,310
+using uh publish and subscribe. So,
+
+527
+00:18:05,320 --> 00:18:06,270
+you're
+
+528
+00:18:06,280 --> 00:18:08,350
+publishing a message into this message
+
+529
+00:18:08,360 --> 00:18:10,910
+bus, so that other services that are not
+
+530
+00:18:10,920 --> 00:18:13,310
+necessarily the target or the ones that
+
+531
+00:18:13,320 --> 00:18:16,110
+would be performing the work, they can
+
+532
+00:18:16,120 --> 00:18:18,390
+listen in and log out the results
+
+533
+00:18:18,400 --> 00:18:20,910
+without changing the software that's
+
+534
+00:18:20,920 --> 00:18:22,590
+talking to one another. Did I break that
+
+535
+00:18:22,600 --> 00:18:24,310
+down correctly? No, that's exactly
+
+536
+00:18:24,320 --> 00:18:26,350
+right. And and from doing it so long, I
+
+537
+00:18:26,360 --> 00:18:28,190
+I skip uh some pieces sometimes,
+
+538
+00:18:28,200 --> 00:18:30,310
+specifically about you know, I'm not
+
+539
+00:18:30,320 --> 00:18:31,390
+tying
+
+540
+00:18:31,400 --> 00:18:34,550
+Jeremy per se with a messaging system to
+
+541
+00:18:34,560 --> 00:18:36,750
+a host name or an IP, or the IP of a
+
+542
+00:18:36,760 --> 00:18:38,230
+load balancer, whatever that is.
+
+543
+00:18:38,240 --> 00:18:40,310
+Mhm. And I think there's still a
+
+544
+00:18:40,320 --> 00:18:43,030
+tremendous amount of value
+
+545
+00:18:43,040 --> 00:18:45,830
+where I think the value has even become
+
+546
+00:18:45,840 --> 00:18:47,510
+more obvious,
+
+547
+00:18:47,520 --> 00:18:49,750
+is that it's not only I tie, uh you
+
+548
+00:18:49,760 --> 00:18:52,670
+know, addressing and discovery to DNS or
+
+549
+00:18:52,680 --> 00:18:54,830
+IPs or whatever like that. We're also
+
+550
+00:18:54,840 --> 00:18:56,550
+now tying identity, right? And that's
+
+551
+00:18:56,560 --> 00:18:58,150
+what people naturally think of as
+
+552
+00:18:58,160 --> 00:18:59,390
+identity.
+
+553
+00:18:59,400 --> 00:19:01,390
+But I think it's really time for for the
+
+554
+00:19:01,400 --> 00:19:03,990
+groups at large that are really kind of
+
+555
+00:19:04,000 --> 00:19:06,150
+pushing the envelope and innovating uh
+
+556
+00:19:06,160 --> 00:19:08,070
+around distributed systems,
+
+557
+00:19:08,080 --> 00:19:09,910
+microservices, whatever you might want
+
+558
+00:19:09,920 --> 00:19:11,230
+to call them,
+
+559
+00:19:11,240 --> 00:19:12,710
+that we might want to take a step back
+
+560
+00:19:12,720 --> 00:19:14,390
+and say, "Hey, is that really the right
+
+561
+00:19:14,400 --> 00:19:16,430
+way we want to go? Do we really want to
+
+562
+00:19:16,440 --> 00:19:18,990
+have communications tied to, you know,
+
+563
+00:19:19,000 --> 00:19:21,550
+IPs and identities and security and off
+
+564
+00:19:21,560 --> 00:19:25,430
+C and off and models tied to IPs?" And I
+
+565
+00:19:25,440 --> 00:19:27,670
+think most people say, "No."
+
+566
+00:19:27,680 --> 00:19:29,390
+But we still kind of do it that way even
+
+567
+00:19:29,400 --> 00:19:31,950
+though our vision, I think uh
+
+568
+00:19:31,960 --> 00:19:34,390
+collectively of the world is is that
+
+569
+00:19:34,400 --> 00:19:37,150
+you know, computers and servers and you
+
+570
+00:19:37,160 --> 00:19:38,750
+know, resources like memory and
+
+571
+00:19:38,760 --> 00:19:39,830
+networking and stuff like that are
+
+572
+00:19:39,840 --> 00:19:42,430
+becoming very ephemeral, very fungible.
+
+573
+00:19:42,440 --> 00:19:43,470
+And
+
+574
+00:19:43,480 --> 00:19:45,390
+if we're thinking about how we want to
+
+575
+00:19:45,400 --> 00:19:46,990
+design a system
+
+576
+00:19:47,000 --> 00:19:48,710
+we want to be able to just use whatever
+
+577
+00:19:48,720 --> 00:19:50,190
+we want to use and be able to carry
+
+578
+00:19:50,200 --> 00:19:51,870
+along our identity and the security
+
+579
+00:19:51,880 --> 00:19:54,110
+constructs. And of course, how the
+
+580
+00:19:54,120 --> 00:19:56,790
+communication fabric can work has to be
+
+581
+00:19:56,800 --> 00:19:58,790
+the same, but it doesn't matter which
+
+582
+00:19:58,800 --> 00:20:01,310
+machine I'm running on. And again, I
+
+583
+00:20:01,320 --> 00:20:02,710
+I've been doing this a long time. So, I
+
+584
+00:20:02,720 --> 00:20:04,110
+do remember the day where I could walk
+
+585
+00:20:04,120 --> 00:20:05,510
+in almost any
+
+586
+00:20:05,520 --> 00:20:08,790
+uh you know, data center for for uh at
+
+587
+00:20:08,800 --> 00:20:10,430
+the time our customer set I could walk
+
+588
+00:20:10,440 --> 00:20:13,110
+down the right you know, hallway uh our
+
+589
+00:20:13,120 --> 00:20:14,950
+right aisle but between the server,
+
+590
+00:20:14,960 --> 00:20:16,430
+stop, look down and go, "Our stuff's
+
+591
+00:20:16,440 --> 00:20:18,030
+running right there." And I actually
+
+592
+00:20:18,040 --> 00:20:19,710
+still even know the IP, you know, what
+
+593
+00:20:19,720 --> 00:20:21,550
+it's supposed to be. We don't live in
+
+594
+00:20:21,560 --> 00:20:22,950
+that world anymore, but we really
+
+595
+00:20:22,960 --> 00:20:26,110
+haven't unshackled ourselves from that's
+
+596
+00:20:26,120 --> 00:20:29,550
+still kind of a main way we we use or or
+
+597
+00:20:29,560 --> 00:20:31,750
+apply security of communications and
+
+598
+00:20:31,760 --> 00:20:33,750
+identity. And I think it's it's a good
+
+599
+00:20:33,760 --> 00:20:35,630
+time for us to kind of take a step back
+
+600
+00:20:35,640 --> 00:20:37,350
+as an industry and say
+
+601
+00:20:37,360 --> 00:20:39,070
+I don't think that's what we want. And
+
+602
+00:20:39,080 --> 00:20:40,710
+we're kind of in a transition period now
+
+603
+00:20:40,720 --> 00:20:43,190
+where we're starting to move away from
+
+604
+00:20:43,200 --> 00:20:45,110
+it, but we've still got that one kind of
+
+605
+00:20:45,120 --> 00:20:47,510
+of link that's kind of holding us down.
+
+606
+00:20:47,520 --> 00:20:49,430
+If you take a look at more of a
+
+607
+00:20:49,440 --> 00:20:51,870
+traditional design of an application,
+
+608
+00:20:51,880 --> 00:20:55,030
+you might have a load balancer, and that
+
+609
+00:20:55,040 --> 00:20:57,470
+load balancer needs to be aware of the
+
+610
+00:20:57,480 --> 00:21:00,150
+IPs of all the services that can feel
+
+611
+00:21:00,160 --> 00:21:02,110
+that request. And you're sort of saying
+
+612
+00:21:02,120 --> 00:21:05,790
+like, "Maybe maybe that's not the the
+
+613
+00:21:05,800 --> 00:21:08,030
+right place or the right abstraction.
+
+614
+00:21:08,040 --> 00:21:10,230
+Maybe this messaging bus should take
+
+615
+00:21:10,240 --> 00:21:13,190
+care of who you can communicate with
+
+616
+00:21:13,200 --> 00:21:16,030
+rather than having sort of these extra
+
+617
+00:21:16,040 --> 00:21:18,430
+pieces you bolt on in order to provide
+
+618
+00:21:18,440 --> 00:21:21,190
+things like service discovery or or
+
+619
+00:21:21,200 --> 00:21:23,310
+basically just finding clients.
+
+620
+00:21:23,320 --> 00:21:25,630
+May- maybe we're we're not building the
+
+621
+00:21:25,640 --> 00:21:27,230
+functionality in the right place. Is is
+
+622
+00:21:27,240 --> 00:21:30,030
+that your opinion? So, what I think we
+
+623
+00:21:30,040 --> 00:21:31,830
+need is is this communication
+
+624
+00:21:31,840 --> 00:21:33,510
+infrastructures like the cell towers.
+
+625
+00:21:33,520 --> 00:21:35,150
+They're just ubiquitous. They're all
+
+626
+00:21:35,160 --> 00:21:37,510
+around you and yet they carry amongst
+
+627
+00:21:37,520 --> 00:21:39,550
+them as soon as you hook up to one
+
+628
+00:21:39,560 --> 00:21:41,590
+you're allowed to have an identity and
+
+629
+00:21:41,600 --> 00:21:43,230
+allowed to have these messaging patterns
+
+630
+00:21:43,240 --> 00:21:44,670
+that you that you have. And the
+
+631
+00:21:44,680 --> 00:21:46,950
+messaging patterns follow you around.
+
+632
+00:21:46,960 --> 00:21:49,310
+The identity uh follows you around. The
+
+633
+00:21:49,320 --> 00:21:51,870
+identity might not be just one thing,
+
+634
+00:21:51,880 --> 00:21:53,630
+right? It might be this application
+
+635
+00:21:53,640 --> 00:21:55,430
+running on this hardware representing
+
+636
+00:21:55,440 --> 00:21:56,550
+Jeremy.
+
+637
+00:21:56,560 --> 00:21:59,270
+And that has security and identity and
+
+638
+00:21:59,280 --> 00:22:01,110
+authorization primitives that can move
+
+639
+00:22:01,120 --> 00:22:02,510
+freely and they're just they're not
+
+640
+00:22:02,520 --> 00:22:04,910
+centralized. It's totally decentralized.
+
+641
+00:22:04,920 --> 00:22:07,750
+Um very very um you know, distributed
+
+642
+00:22:07,760 --> 00:22:09,670
+and but ubiquitous. And I think in the
+
+643
+00:22:09,680 --> 00:22:11,750
+old days people go, "Oh, message bus. We
+
+644
+00:22:11,760 --> 00:22:14,350
+got to run one big thing or maybe two
+
+645
+00:22:14,360 --> 00:22:15,830
+big things." And
+
+646
+00:22:15,840 --> 00:22:18,910
+and active passive or active you know,
+
+647
+00:22:18,920 --> 00:22:21,470
+hot hot mode type type stuff. And I
+
+648
+00:22:21,480 --> 00:22:22,710
+think
+
+649
+00:22:22,720 --> 00:22:24,430
+my hope for the audience is to to not
+
+650
+00:22:24,440 --> 00:22:26,270
+think of it that way. To think of it as
+
+651
+00:22:26,280 --> 00:22:28,590
+a always on ubiquitous
+
+652
+00:22:28,600 --> 00:22:31,230
+um kind of like the cell tower signal um
+
+653
+00:22:31,240 --> 00:22:34,630
+that you can just use and all of the
+
+654
+00:22:34,640 --> 00:22:37,150
+the things that you care about are taken
+
+655
+00:22:37,160 --> 00:22:39,310
+care of you without having to deal with
+
+656
+00:22:39,320 --> 00:22:41,390
+or really interact with from a
+
+657
+00:22:41,400 --> 00:22:43,190
+perspective of identity, security,
+
+658
+00:22:43,200 --> 00:22:45,550
+authorization type stuff with this
+
+659
+00:22:45,560 --> 00:22:48,350
+communications provider, right? We don't
+
+660
+00:22:48,360 --> 00:22:50,630
+we don't necessarily worry about the
+
+661
+00:22:50,640 --> 00:22:53,830
+cell tower having to be aware of our
+
+662
+00:22:53,840 --> 00:22:55,510
+credentials to log in to Gmail, let's
+
+663
+00:22:55,520 --> 00:22:57,590
+say, right? Gmail handles that and we we
+
+664
+00:22:57,600 --> 00:22:59,710
+interact with Google to figure what that
+
+665
+00:22:59,720 --> 00:23:01,710
+looks like and what that means.
+
+666
+00:23:01,720 --> 00:23:04,030
+Um and so I think there's a really
+
+667
+00:23:04,040 --> 00:23:06,190
+interesting opportunity to think of
+
+668
+00:23:06,200 --> 00:23:09,190
+things that way. So,
+
+669
+00:23:09,200 --> 00:23:11,830
+not the old message bus, not not by any
+
+670
+00:23:11,840 --> 00:23:13,910
+stretch, but this notion that
+
+671
+00:23:13,920 --> 00:23:15,070
+these things are everywhere. Matter of
+
+672
+00:23:15,080 --> 00:23:16,870
+fact, I could be sitting here and typing
+
+673
+00:23:16,880 --> 00:23:18,590
+something and it says, "Oh, I found one
+
+674
+00:23:18,600 --> 00:23:20,430
+right in your house." Right? It's in
+
+675
+00:23:20,440 --> 00:23:22,510
+baked baked into your router for Comcast
+
+676
+00:23:22,520 --> 00:23:25,030
+or Xfinity or Spectrum or Charter or
+
+677
+00:23:25,040 --> 00:23:26,590
+what do you have at least, you know, in
+
+678
+00:23:26,600 --> 00:23:28,470
+the the United States.
+
+679
+00:23:28,480 --> 00:23:30,190
+Um, and it just works, right? It it
+
+680
+00:23:30,200 --> 00:23:31,510
+found it, it has a link to it, it's
+
+681
+00:23:31,520 --> 00:23:33,390
+secure by default, and all the semantics
+
+682
+00:23:33,400 --> 00:23:35,350
+of the app that was working when I was
+
+683
+00:23:35,360 --> 00:23:37,070
+at the office, I was in the data center,
+
+684
+00:23:37,080 --> 00:23:39,030
+I was in my car, it's doing the exact
+
+685
+00:23:39,040 --> 00:23:40,630
+same thing here,
+
+686
+00:23:40,640 --> 00:23:42,110
+but its point of entry is actually in
+
+687
+00:23:42,120 --> 00:23:43,470
+the house. So, if I'm actually talking
+
+688
+00:23:43,480 --> 00:23:45,190
+to something in the house, it actually
+
+689
+00:23:45,200 --> 00:23:46,790
+never leaves the house. Right? It
+
+690
+00:23:46,800 --> 00:23:48,030
+doesn't trombone all the way to the
+
+691
+00:23:48,040 --> 00:23:50,190
+cloud and come all the way back.
+
+692
+00:23:50,200 --> 00:23:51,510
+And I think that's a powerful way to
+
+693
+00:23:51,520 --> 00:23:53,830
+look at it if the technology
+
+694
+00:23:53,840 --> 00:23:55,830
+uh, supports a lot of those things, if
+
+695
+00:23:55,840 --> 00:23:57,790
+that makes sense. Yeah, it sounds like
+
+696
+00:23:57,800 --> 00:23:59,990
+traditional messaging buses are centered
+
+697
+00:24:00,000 --> 00:24:01,790
+around a small set of powerful servers,
+
+698
+00:24:01,800 --> 00:24:03,430
+so you could get a situation where you
+
+699
+00:24:03,440 --> 00:24:05,310
+want to talk to a service that's located
+
+700
+00:24:05,320 --> 00:24:07,270
+in the same building as you, but you
+
+701
+00:24:07,280 --> 00:24:08,670
+have to send a request all the way to
+
+702
+00:24:08,680 --> 00:24:10,190
+this server and then it has to come all
+
+703
+00:24:10,200 --> 00:24:11,950
+the way back to your building. But,
+
+704
+00:24:11,960 --> 00:24:14,150
+looking to the future, uh, NATS instance
+
+705
+00:24:14,160 --> 00:24:15,950
+is a single go binary, so you got
+
+706
+00:24:15,960 --> 00:24:17,510
+limited resource requirements, so you
+
+707
+00:24:17,520 --> 00:24:19,430
+can have these instances running all
+
+708
+00:24:19,440 --> 00:24:21,270
+over the place, maybe in your office or
+
+709
+00:24:21,280 --> 00:24:23,230
+your home. So, you send a request to
+
+710
+00:24:23,240 --> 00:24:24,590
+your local node and that could get
+
+711
+00:24:24,600 --> 00:24:25,950
+routed to the service in your own
+
+712
+00:24:25,960 --> 00:24:27,990
+building rather than going through this
+
+713
+00:24:28,000 --> 00:24:30,430
+long path. We've been discussing about
+
+714
+00:24:30,440 --> 00:24:33,150
+how I can talk to Derek service without
+
+715
+00:24:33,160 --> 00:24:34,630
+knowing anything about Derek. Like, I
+
+716
+00:24:34,640 --> 00:24:36,510
+don't need to know your IP, I don't need
+
+717
+00:24:36,520 --> 00:24:37,830
+to know your host name, that sort of
+
+718
+00:24:37,840 --> 00:24:40,790
+thing. And the primitive that's used in
+
+719
+00:24:40,800 --> 00:24:43,510
+messaging systems tends to be a subject
+
+720
+00:24:43,520 --> 00:24:46,030
+or a topic. Could you kind of go into
+
+721
+00:24:46,040 --> 00:24:48,470
+what that is and and how that's used to
+
+722
+00:24:48,480 --> 00:24:51,070
+find services? Traditionally, people
+
+723
+00:24:51,080 --> 00:24:53,150
+have either topics or subjects. They're
+
+724
+00:24:53,160 --> 00:24:55,710
+usually comprised of multiple tokens
+
+725
+00:24:55,720 --> 00:24:57,470
+with some sort of separator, either it's
+
+726
+00:24:57,480 --> 00:24:59,790
+a slash or I always use a dot just
+
+727
+00:24:59,800 --> 00:25:01,310
+because that's what I've always used
+
+728
+00:25:01,320 --> 00:25:03,390
+historically. So, it'd be something like
+
+729
+00:25:03,400 --> 00:25:07,870
+foo/bar, right? Or or Jeremy/ you know,
+
+730
+00:25:07,880 --> 00:25:09,630
+request one, request two, whatever those
+
+731
+00:25:09,640 --> 00:25:13,270
+are. And many systems allow
+
+732
+00:25:13,280 --> 00:25:15,790
+you to express interest in things and
+
+733
+00:25:15,800 --> 00:25:17,430
+group them with wild cards. And wild
+
+734
+00:25:17,440 --> 00:25:19,310
+cards just kind of mean uh it's kind of
+
+735
+00:25:19,320 --> 00:25:22,270
+like a regex if a very simplistic regex
+
+736
+00:25:22,280 --> 00:25:24,430
+where you say, "Oh, I'm interested in
+
+737
+00:25:24,440 --> 00:25:26,150
+everything Jeremy's doing. So, I want to
+
+738
+00:25:26,160 --> 00:25:28,190
+listen to Jeremy/stars
+
+739
+00:25:28,200 --> 00:25:30,630
+or Jeremy.stars is what we always use.
+
+740
+00:25:30,640 --> 00:25:32,550
+Does Does it usually matter?" And so,
+
+741
+00:25:32,560 --> 00:25:34,910
+most systems use that as our addressing
+
+742
+00:25:34,920 --> 00:25:37,950
+space. So, we can bunch of or clump a
+
+743
+00:25:37,960 --> 00:25:40,430
+whole bunch of things together on with
+
+744
+00:25:40,440 --> 00:25:42,870
+wild cards. And an example around that
+
+745
+00:25:42,880 --> 00:25:44,630
+that might make sense for the audience
+
+746
+00:25:44,640 --> 00:25:48,270
+is if I have uh Jeremy.some_action,
+
+747
+00:25:48,280 --> 00:25:49,270
+I don't know, uh
+
+748
+00:25:49,280 --> 00:25:52,030
+create.you_know.customer_id
+
+749
+00:25:52,040 --> 00:25:53,670
+is is kind of a subject that's being
+
+750
+00:25:53,680 --> 00:25:54,990
+thrown around either as an event or
+
+751
+00:25:55,000 --> 00:25:57,630
+whatever. And I say, "I want to watch
+
+752
+00:25:57,640 --> 00:26:00,990
+all new creations of of customers."
+
+753
+00:26:01,000 --> 00:26:02,070
+Right? And so, I don't want to have to
+
+754
+00:26:02,080 --> 00:26:03,350
+say I want to subscribe to
+
+755
+00:26:03,360 --> 00:26:05,430
+Jeremy.new_customer.
+
+756
+00:26:05,440 --> 00:26:06,790
+whatever that customer ID is. I don't
+
+757
+00:26:06,800 --> 00:26:08,350
+know what that is. But I could say dot
+
+758
+00:26:08,360 --> 00:26:09,550
+star.
+
+759
+00:26:09,560 --> 00:26:11,110
+Right? And so, then I actually get the
+
+760
+00:26:11,120 --> 00:26:13,030
+real subject, let's say customer number
+
+761
+00:26:13,040 --> 00:26:14,110
+22.
+
+762
+00:26:14,120 --> 00:26:15,670
+You know, I can see that, but my
+
+763
+00:26:15,680 --> 00:26:17,950
+subscription was just one. And and
+
+764
+00:26:17,960 --> 00:26:19,870
+subscriptions, by the way,
+
+765
+00:26:19,880 --> 00:26:21,590
+um I think a lot of the audience
+
+766
+00:26:21,600 --> 00:26:23,030
+probably knows this, but they form that
+
+767
+00:26:23,040 --> 00:26:24,670
+interest graph, which is extremely
+
+768
+00:26:24,680 --> 00:26:27,070
+dynamic. And something you know, I've
+
+769
+00:26:27,080 --> 00:26:29,790
+been working on for over 20 years now.
+
+770
+00:26:29,800 --> 00:26:31,630
+Uh and I still don't necessarily have it
+
+771
+00:26:31,640 --> 00:26:33,190
+where I like it, but to be able to
+
+772
+00:26:33,200 --> 00:26:35,030
+optimize that interest graph and how you
+
+773
+00:26:35,040 --> 00:26:37,510
+actually propagate that such that when
+
+774
+00:26:37,520 --> 00:26:39,070
+someone sends to it, I know they know
+
+775
+00:26:39,080 --> 00:26:41,470
+that has to get to me is kind of almost
+
+776
+00:26:41,480 --> 00:26:44,270
+a a an art form. Everyone thinks it's a
+
+777
+00:26:44,280 --> 00:26:46,030
+a weekend project, and I can promise you
+
+778
+00:26:46,040 --> 00:26:47,830
+it's not. But that's the general gist,
+
+779
+00:26:47,840 --> 00:26:48,910
+right? There's these topics, they're
+
+780
+00:26:48,920 --> 00:26:51,030
+made up of multiple tokens. Most people
+
+781
+00:26:51,040 --> 00:26:53,550
+put them in hierarchies. Most companies
+
+782
+00:26:53,560 --> 00:26:55,550
+that decide, "Hey, we're going to go on
+
+783
+00:26:55,560 --> 00:26:57,870
+all in on this and we really care about
+
+784
+00:26:57,880 --> 00:26:59,230
+this and we, you know, whether it's an
+
+785
+00:26:59,240 --> 00:27:00,790
+old school enterprise service bus or
+
+786
+00:27:00,800 --> 00:27:03,310
+maybe something newer."
+
+787
+00:27:03,320 --> 00:27:05,270
+They usually spend quite a bit of time
+
+788
+00:27:05,280 --> 00:27:07,750
+trying to map out what that
+
+789
+00:27:07,760 --> 00:27:09,150
+topic hierarchy or that subject
+
+790
+00:27:09,160 --> 00:27:10,710
+hierarchy looks like so that we don't
+
+791
+00:27:10,720 --> 00:27:13,110
+step on each other's toes 2 years down
+
+792
+00:27:13,120 --> 00:27:16,510
+the line. And so it's a a very large
+
+793
+00:27:16,520 --> 00:27:17,870
+um
+
+794
+00:27:17,880 --> 00:27:19,990
+design process on how to try to set
+
+795
+00:27:20,000 --> 00:27:22,710
+these these up and it's it it it in
+
+796
+00:27:22,720 --> 00:27:24,670
+itself is an art form that that I've
+
+797
+00:27:24,680 --> 00:27:28,110
+seen lots of people do and and engage in
+
+798
+00:27:28,120 --> 00:27:29,710
+and and some are better than others, but
+
+799
+00:27:29,720 --> 00:27:30,830
+it always
+
+800
+00:27:30,840 --> 00:27:32,390
+was kind of a pain point to saying, "We
+
+801
+00:27:32,400 --> 00:27:33,710
+want this,
+
+802
+00:27:33,720 --> 00:27:34,990
+you know, this technology that we can
+
+803
+00:27:35,000 --> 00:27:36,590
+communicate with all of these back end
+
+804
+00:27:36,600 --> 00:27:38,670
+services for our org, but there's this
+
+805
+00:27:38,680 --> 00:27:40,390
+exercise that we can't skip. We got to
+
+806
+00:27:40,400 --> 00:27:42,910
+kind of think up front so that Jeremy
+
+807
+00:27:42,920 --> 00:27:44,350
+doesn't accidentally pick a subject that
+
+808
+00:27:44,360 --> 00:27:46,190
+Derek was using or a topic that Derek
+
+809
+00:27:46,200 --> 00:27:47,270
+was using and all of a sudden we're
+
+810
+00:27:47,280 --> 00:27:49,750
+stepping on each other's toes." And this
+
+811
+00:27:49,760 --> 00:27:51,950
+sounds very similar to the problems that
+
+812
+00:27:51,960 --> 00:27:53,790
+developers face when they're building,
+
+813
+00:27:53,800 --> 00:27:57,070
+say, a REST API where they have to
+
+814
+00:27:57,080 --> 00:27:59,390
+decide what are my, you know, endpoints
+
+815
+00:27:59,400 --> 00:28:01,110
+going to be, what are the functions
+
+816
+00:28:01,120 --> 00:28:02,950
+you're going to be able to call, how to
+
+817
+00:28:02,960 --> 00:28:05,390
+name your subjects or your topics.
+
+818
+00:28:05,400 --> 00:28:07,270
+Uh sounds like the same kind of problem,
+
+819
+00:28:07,280 --> 00:28:09,510
+the same kind of art. It is. And so what
+
+820
+00:28:09,520 --> 00:28:11,550
+they do is they, you know, exactly.
+
+821
+00:28:11,560 --> 00:28:13,030
+You're exactly right meaning they'll
+
+822
+00:28:13,040 --> 00:28:15,390
+they'll pick, I call it the the bottom
+
+823
+00:28:15,400 --> 00:28:16,950
+part of the tree, you know, what the
+
+824
+00:28:16,960 --> 00:28:18,470
+nouns and verbs and how you want to put
+
+825
+00:28:18,480 --> 00:28:20,030
+those together. And then as you move
+
+826
+00:28:20,040 --> 00:28:22,390
+from dev to test to production, that
+
+827
+00:28:22,400 --> 00:28:24,670
+kind of prefix changes, you know, and
+
+828
+00:28:24,680 --> 00:28:26,950
+and you can envision that as a, "Oh, I
+
+829
+00:28:26,960 --> 00:28:29,430
+have a totally different, you know, host
+
+830
+00:28:29,440 --> 00:28:32,270
+URL for my REST service." Or it's the
+
+831
+00:28:32,280 --> 00:28:34,950
+same host URL, but I have a {slash}
+
+832
+00:28:34,960 --> 00:28:37,190
+Jeremy and Derek has {slash} Derek and
+
+833
+00:28:37,200 --> 00:28:38,750
+then we both have all the same verbs
+
+834
+00:28:38,760 --> 00:28:40,670
+potentially underneath. The same
+
+835
+00:28:40,680 --> 00:28:43,750
+exercise happens in in messaging systems
+
+836
+00:28:43,760 --> 00:28:46,590
+with with topic design or or or level
+
+837
+00:28:46,600 --> 00:28:50,430
+subject design.
+
+838
+00:28:52,070 --> 00:28:52,080
+Digital Ocean is the easiest cloud
+
+839
+00:28:52,080 --> 00:28:53,950
+platform to deploy, manage, and scale
+
+840
+00:28:53,960 --> 00:28:55,710
+applications of any size, removing
+
+841
+00:28:55,720 --> 00:28:57,630
+infrastructure friction, and providing
+
+842
+00:28:57,640 --> 00:28:59,430
+predictability. So, developers and their
+
+843
+00:28:59,440 --> 00:29:01,630
+teams can develop faster and focus on
+
+844
+00:29:01,640 --> 00:29:03,630
+building software that customers love.
+
+845
+00:29:03,640 --> 00:29:05,550
+With thousands of in-depth tutorials and
+
+846
+00:29:05,560 --> 00:29:07,070
+an active community, we provide the
+
+847
+00:29:07,080 --> 00:29:09,590
+support you need. Digital Ocean stands
+
+848
+00:29:09,600 --> 00:29:11,310
+out of the crowd due to its simplicity,
+
+849
+00:29:11,320 --> 00:29:12,710
+high performance, and no billing
+
+850
+00:29:12,720 --> 00:29:14,070
+surprises.
+
+851
+00:29:14,080 --> 00:29:15,710
+Try Digital Ocean for free at
+
+852
+00:29:15,720 --> 00:29:23,150
+do.co/seradio.
+
+853
+00:29:25,350 --> 00:29:25,360
+What are some common mistakes you see
+
+854
+00:29:25,360 --> 00:29:27,270
+people make when they're they're trying
+
+855
+00:29:27,280 --> 00:29:30,750
+to design their topics? It's either one
+
+856
+00:29:30,760 --> 00:29:32,190
+of two things. One is is they don't
+
+857
+00:29:32,200 --> 00:29:34,830
+think hard enough about it and they they
+
+858
+00:29:34,840 --> 00:29:36,310
+step on each other very early on the
+
+859
+00:29:36,320 --> 00:29:37,590
+cycle.
+
+860
+00:29:37,600 --> 00:29:39,350
+Or they think so hard about it that
+
+861
+00:29:39,360 --> 00:29:41,230
+they've made something that's so brittle
+
+862
+00:29:41,240 --> 00:29:43,510
+that is resistant to better ideas coming
+
+863
+00:29:43,520 --> 00:29:44,390
+in
+
+864
+00:29:44,400 --> 00:29:46,190
+down the line. Right? Say, "Ooh, well,
+
+865
+00:29:46,200 --> 00:29:47,390
+maybe if we had actually kind of
+
+866
+00:29:47,400 --> 00:29:49,110
+constructed the subject hierarchy this
+
+867
+00:29:49,120 --> 00:29:52,430
+way, right? We could have used certain
+
+868
+00:29:52,440 --> 00:29:54,430
+pieces of information from the subject,
+
+869
+00:29:54,440 --> 00:29:56,550
+you know, being able to uh separate
+
+870
+00:29:56,560 --> 00:29:58,990
+those message traffic patterns out. Um
+
+871
+00:29:59,000 --> 00:30:00,590
+but now we can't do it cuz we're locked
+
+872
+00:30:00,600 --> 00:30:02,750
+in and everyone says you can't change,
+
+873
+00:30:02,760 --> 00:30:04,830
+you know, any of this. So, it's it's
+
+874
+00:30:04,840 --> 00:30:06,030
+usually one or the other. They don't
+
+875
+00:30:06,040 --> 00:30:07,310
+think hard enough about it or they think
+
+876
+00:30:07,320 --> 00:30:09,030
+too hard about it. But again, I think
+
+877
+00:30:09,040 --> 00:30:11,030
+there's opportunities where
+
+878
+00:30:11,040 --> 00:30:12,550
+the way people think about these
+
+879
+00:30:12,560 --> 00:30:15,470
+problems can radically change. There's a
+
+880
+00:30:15,480 --> 00:30:17,390
+messaging standard called AMQP that
+
+881
+00:30:17,400 --> 00:30:19,870
+systems like ActiveMQ and RabbitMQ use
+
+882
+00:30:19,880 --> 00:30:21,750
+to send messages to one another, but I
+
+883
+00:30:21,760 --> 00:30:23,350
+noticed that the more recent systems
+
+884
+00:30:23,360 --> 00:30:25,550
+such as NATS, Google Cloud Pub/Sub, and
+
+885
+00:30:25,560 --> 00:30:27,470
+Amazon Simple Notification Service all
+
+886
+00:30:27,480 --> 00:30:29,350
+don't support this. Why do you believe
+
+887
+00:30:29,360 --> 00:30:30,790
+that is?
+
+888
+00:30:30,800 --> 00:30:32,350
+Sure. And I I I can't obviously speak
+
+889
+00:30:32,360 --> 00:30:34,030
+for any of the the cloud providers. I I
+
+890
+00:30:34,040 --> 00:30:36,590
+can give an opinion not on how they
+
+891
+00:30:36,600 --> 00:30:39,150
+implemented their tech.
+
+892
+00:30:39,160 --> 00:30:41,030
+In terms of the protocols,
+
+893
+00:30:41,040 --> 00:30:42,590
+you know, we could have a whole show on
+
+894
+00:30:42,600 --> 00:30:46,390
+on protocols. Um I was very aware and
+
+895
+00:30:46,400 --> 00:30:49,630
+understood why AMQP became, you know, it
+
+896
+00:30:49,640 --> 00:30:50,550
+was
+
+897
+00:30:50,560 --> 00:30:53,030
+not in any small part actual reaction to
+
+898
+00:30:53,040 --> 00:30:54,950
+Tipco, right? And and their pricing
+
+899
+00:30:54,960 --> 00:30:56,990
+model which was, you know, beyond my
+
+900
+00:30:57,000 --> 00:30:59,510
+control at the time. But machines are so
+
+901
+00:30:59,520 --> 00:31:01,230
+fast these days and networks are so
+
+902
+00:31:01,240 --> 00:31:02,390
+fast.
+
+903
+00:31:02,400 --> 00:31:03,950
+All of the
+
+904
+00:31:03,960 --> 00:31:05,230
+massive amounts of bending over
+
+905
+00:31:05,240 --> 00:31:07,230
+backwards trying to, you know, squeeze
+
+906
+00:31:07,240 --> 00:31:09,590
+everything out with binary protocols
+
+907
+00:31:09,600 --> 00:31:11,510
+doesn't buy you much. And what it does
+
+908
+00:31:11,520 --> 00:31:13,510
+is it it it it constrains your
+
+909
+00:31:13,520 --> 00:31:15,790
+ecosystem. Very much like Redis and
+
+910
+00:31:15,800 --> 00:31:18,550
+Salvatore is a a good friend of mine and
+
+911
+00:31:18,560 --> 00:31:20,030
+I really
+
+912
+00:31:20,040 --> 00:31:21,950
+I've always been a huge fan of his and
+
+913
+00:31:21,960 --> 00:31:23,590
+what he's done
+
+914
+00:31:23,600 --> 00:31:25,470
+almost single-handedly, you know, with
+
+915
+00:31:25,480 --> 00:31:27,670
+with Redis. And so when him and I worked
+
+916
+00:31:27,680 --> 00:31:30,230
+at VMware together,
+
+917
+00:31:30,240 --> 00:31:33,350
+I said, Redis is a text-based protocol.
+
+918
+00:31:33,360 --> 00:31:34,790
+And he goes, yeah, he goes, I can make
+
+919
+00:31:34,800 --> 00:31:36,150
+it a binary, it won't make a difference.
+
+920
+00:31:36,160 --> 00:31:38,350
+Now, Redis is all request reply or most
+
+921
+00:31:38,360 --> 00:31:40,070
+of it's request reply. You can pipeline
+
+922
+00:31:40,080 --> 00:31:42,350
+and do things to speed stuff up. But for
+
+923
+00:31:42,360 --> 00:31:44,350
+NATS, when when I went and said I want
+
+924
+00:31:44,360 --> 00:31:46,550
+to build something just for me,
+
+925
+00:31:46,560 --> 00:31:48,270
+it's not going to bend over backwards,
+
+926
+00:31:48,280 --> 00:31:49,190
+it's not going to have all these
+
+927
+00:31:49,200 --> 00:31:50,790
+features, it's going to protect itself
+
+928
+00:31:50,800 --> 00:31:54,150
+at all cost. I just run a server and 90%
+
+929
+00:31:54,160 --> 00:31:55,470
+of the time that's all I have to do, no
+
+930
+00:31:55,480 --> 00:31:57,310
+config, it just figures stuff out. This
+
+931
+00:31:57,320 --> 00:31:59,510
+was almost 10 years ago. And it just
+
+932
+00:31:59,520 --> 00:32:01,630
+does everything is pub/sub and I can
+
+933
+00:32:01,640 --> 00:32:03,190
+layer on request reply and queuing and
+
+934
+00:32:03,200 --> 00:32:04,150
+I'm done.
+
+935
+00:32:04,160 --> 00:32:07,030
+And and what I did was I just didn't
+
+936
+00:32:07,040 --> 00:32:08,390
+have a lot of time, believe it or not,
+
+937
+00:32:08,400 --> 00:32:10,510
+to build this thing for for Cloud
+
+938
+00:32:10,520 --> 00:32:11,950
+Foundry. So the very first thing I did
+
+939
+00:32:11,960 --> 00:32:14,030
+was a protocol parser that was actually
+
+940
+00:32:14,040 --> 00:32:16,550
+just regexes in Ruby, believe it or not.
+
+941
+00:32:16,560 --> 00:32:18,350
+But it could do 150,000 messages a
+
+942
+00:32:18,360 --> 00:32:20,150
+second, which at the time was pretty
+
+943
+00:32:20,160 --> 00:32:23,070
+cool. Now, of course, you know, the the
+
+944
+00:32:23,080 --> 00:32:25,350
+NATS server has been written in Go since
+
+945
+00:32:25,360 --> 00:32:28,030
+0.52 of the Go language. You know, a
+
+946
+00:32:28,040 --> 00:32:30,030
+modern iMac now can do probably upwards
+
+947
+00:32:30,040 --> 00:32:32,310
+of 80 million messages a second with
+
+948
+00:32:32,320 --> 00:32:34,150
+NATS.
+
+949
+00:32:34,160 --> 00:32:35,470
+And we've never changed the text
+
+950
+00:32:35,480 --> 00:32:36,510
+protocol.
+
+951
+00:32:36,520 --> 00:32:37,670
+So
+
+952
+00:32:37,680 --> 00:32:38,870
+does it matter? You know, the the
+
+953
+00:32:38,880 --> 00:32:40,950
+protocol design is is an art form and I
+
+954
+00:32:40,960 --> 00:32:43,670
+still love it at at one level. Um but
+
+955
+00:32:43,680 --> 00:32:45,590
+what we did with NATS is is that because
+
+956
+00:32:45,600 --> 00:32:48,030
+the protocol is not only text-based, but
+
+957
+00:32:48,040 --> 00:32:50,110
+it's extremely simple. There's only a
+
+958
+00:32:50,120 --> 00:32:52,510
+handful of verbs that you need to know
+
+959
+00:32:52,520 --> 00:32:54,550
+to build your own client. And so our
+
+960
+00:32:54,560 --> 00:32:56,550
+ecosystem now is not constrained by the
+
+961
+00:32:56,560 --> 00:32:59,030
+only way a client can be born is if
+
+962
+00:32:59,040 --> 00:33:00,950
+somebody from the core team decides to
+
+963
+00:33:00,960 --> 00:33:04,030
+build one. We have a amazing ecosystem
+
+964
+00:33:04,040 --> 00:33:06,030
+of clients that you know, we never wrote
+
+965
+00:33:06,040 --> 00:33:07,830
+a single line of code for that people
+
+966
+00:33:07,840 --> 00:33:09,910
+can do and I think it's based on that
+
+967
+00:33:09,920 --> 00:33:11,710
+simplicity and the fact that it's as
+
+968
+00:33:11,720 --> 00:33:13,790
+text-based can get them started very
+
+969
+00:33:13,800 --> 00:33:15,710
+quickly, if that makes sense. When
+
+970
+00:33:15,720 --> 00:33:17,550
+architecting an application, you often
+
+971
+00:33:17,560 --> 00:33:19,430
+have a lot of moving parts. You were
+
+972
+00:33:19,440 --> 00:33:21,630
+talking about services communicating via
+
+973
+00:33:21,640 --> 00:33:24,870
+HTTP, and we recently did a show on load
+
+974
+00:33:24,880 --> 00:33:27,430
+balancing with HAProxy, as well as one
+
+975
+00:33:27,440 --> 00:33:30,030
+on service meshes with Istio, which uses
+
+976
+00:33:30,040 --> 00:33:31,630
+Envoy for its service proxy
+
+977
+00:33:31,640 --> 00:33:33,630
+functionality. It sounds like what
+
+978
+00:33:33,640 --> 00:33:35,230
+you're saying is
+
+979
+00:33:35,240 --> 00:33:38,350
+because these pieces can be complex and
+
+980
+00:33:38,360 --> 00:33:40,630
+may require a lot of ops work to keep
+
+981
+00:33:40,640 --> 00:33:43,030
+running, it might actually make more
+
+982
+00:33:43,040 --> 00:33:44,830
+sense to, rather than use all these
+
+983
+00:33:44,840 --> 00:33:47,230
+different pieces, to use a messaging
+
+984
+00:33:47,240 --> 00:33:49,190
+system like NATS, which can handle the
+
+985
+00:33:49,200 --> 00:33:51,230
+routing, the service discovery, the load
+
+986
+00:33:51,240 --> 00:33:53,790
+balancing, and be designed in such a way
+
+987
+00:33:53,800 --> 00:33:55,910
+that the ops overhead is very low. Is
+
+988
+00:33:55,920 --> 00:33:57,950
+that sort of what you have in mind?
+
+989
+00:33:57,960 --> 00:34:00,230
+Yeah, and exactly. And the the only
+
+990
+00:34:00,240 --> 00:34:01,510
+thing I would add on to that, and again,
+
+991
+00:34:01,520 --> 00:34:03,270
+this is kind of that aha moment that
+
+992
+00:34:03,280 --> 00:34:06,110
+that we had, was when we designed the
+
+993
+00:34:06,120 --> 00:34:08,070
+secure multi-tenancy, right? Think of
+
+994
+00:34:08,080 --> 00:34:10,149
+that as like a container for for
+
+995
+00:34:10,159 --> 00:34:11,909
+communications, messaging communications
+
+996
+00:34:11,919 --> 00:34:13,990
+for digital system service devices. When
+
+997
+00:34:14,000 --> 00:34:16,470
+we designed it, it was to power a global
+
+998
+00:34:16,480 --> 00:34:18,350
+utility, to power, you know, a single
+
+999
+00:34:18,360 --> 00:34:21,750
+URL that everyone could um tap into and
+
+1000
+00:34:21,760 --> 00:34:23,590
+use and and feel like they're they're
+
+1001
+00:34:23,600 --> 00:34:25,750
+isolated. It's it's their own container,
+
+1002
+00:34:25,760 --> 00:34:28,190
+their own sandbox, meaning Jeremy, you
+
+1003
+00:34:28,200 --> 00:34:30,149
+get a sandbox, right? And you every
+
+1004
+00:34:30,159 --> 00:34:32,030
+message you send, regardless of how you
+
+1005
+00:34:32,040 --> 00:34:33,750
+address it, topic, subject, whatever
+
+1006
+00:34:33,760 --> 00:34:34,990
+that is,
+
+1007
+00:34:35,000 --> 00:34:37,550
+only the people that are also in your
+
+1008
+00:34:37,560 --> 00:34:39,230
+container, your namespace, whatever you
+
+1009
+00:34:39,240 --> 00:34:40,470
+want to call that. Uh we call them
+
+1010
+00:34:40,480 --> 00:34:42,070
+accounts. Um
+
+1011
+00:34:42,080 --> 00:34:44,350
+uh can see any of those messages.
+
+1012
+00:34:44,360 --> 00:34:46,350
+And again, earlier in the the the talk,
+
+1013
+00:34:46,360 --> 00:34:47,869
+I talked about but I want to promote
+
+1014
+00:34:47,879 --> 00:34:48,909
+sharing.
+
+1015
+00:34:48,919 --> 00:34:50,510
+Where the massive opportunities and
+
+1016
+00:34:50,520 --> 00:34:52,149
+power of
+
+1017
+00:34:52,159 --> 00:34:53,550
+the World Wide Web and the internet and
+
+1018
+00:34:53,560 --> 00:34:55,230
+the global cellular network have really
+
+1019
+00:34:55,240 --> 00:34:57,510
+rooted on is is that if we wanted to
+
+1020
+00:34:57,520 --> 00:34:59,550
+talk, we didn't have to do anything
+
+1021
+00:34:59,560 --> 00:35:01,510
+besides start talking, right? We were
+
+1022
+00:35:01,520 --> 00:35:03,390
+already kind of connected.
+
+1023
+00:35:03,400 --> 00:35:05,830
+And so we did that and we we designed
+
+1024
+00:35:05,840 --> 00:35:07,670
+this notion of saying, well, you have
+
+1025
+00:35:07,680 --> 00:35:08,790
+your own little sandbox and you
+
+1026
+00:35:08,800 --> 00:35:10,310
+communicate in there.
+
+1027
+00:35:10,320 --> 00:35:12,310
+And you control everything in that
+
+1028
+00:35:12,320 --> 00:35:13,470
+sandbox.
+
+1029
+00:35:13,480 --> 00:35:15,070
+And you can import things into that
+
+1030
+00:35:15,080 --> 00:35:17,350
+sandbox. So I could import, you know,
+
+1031
+00:35:17,360 --> 00:35:18,830
+Derek and he has a service and I can
+
+1032
+00:35:18,840 --> 00:35:20,110
+send him a request to it and he sends
+
+1033
+00:35:20,120 --> 00:35:22,150
+me, you know, what's 1 + 1 and I'll send
+
+1034
+00:35:22,160 --> 00:35:23,710
+you two back. You know, very simplistic,
+
+1035
+00:35:23,720 --> 00:35:25,070
+but for for the sake of the
+
+1036
+00:35:25,080 --> 00:35:26,310
+conversation. And you've imported that
+
+1037
+00:35:26,320 --> 00:35:27,830
+into your sandbox and you put it
+
+1038
+00:35:27,840 --> 00:35:29,430
+anywhere you wanted to.
+
+1039
+00:35:29,440 --> 00:35:31,670
+You meaning you control that. So now, if
+
+1040
+00:35:31,680 --> 00:35:33,990
+if the audience remembers back to the,
+
+1041
+00:35:34,000 --> 00:35:36,150
+you know, big grand design of subject
+
+1042
+00:35:36,160 --> 00:35:37,870
+spaces and topic spaces and people
+
+1043
+00:35:37,880 --> 00:35:39,830
+either did too little or too much, now
+
+1044
+00:35:39,840 --> 00:35:41,430
+suddenly it's now there is no design
+
+1045
+00:35:41,440 --> 00:35:43,390
+stuff. You can actually say, okay, I
+
+1046
+00:35:43,400 --> 00:35:45,190
+have internally in my little sandbox for
+
+1047
+00:35:45,200 --> 00:35:47,150
+Jeremy, I have this one subject and I
+
+1048
+00:35:47,160 --> 00:35:48,230
+have this other subject and then I'm
+
+1049
+00:35:48,240 --> 00:35:49,550
+importing Derek and it's on {slash}
+
+1050
+00:35:49,560 --> 00:35:51,270
+Derek request.
+
+1051
+00:35:51,280 --> 00:35:53,070
+And you define that. It does not matter
+
+1052
+00:35:53,080 --> 00:35:54,830
+what you call it. It's your world,
+
+1053
+00:35:54,840 --> 00:35:55,750
+right?
+
+1054
+00:35:55,760 --> 00:35:58,350
+And that's how you import things. Now,
+
+1055
+00:35:58,360 --> 00:35:59,870
+eventually you kind of go, "Ooh, I
+
+1056
+00:35:59,880 --> 00:36:02,510
+finished. I want to put my service or
+
+1057
+00:36:02,520 --> 00:36:04,310
+this stream out to the world. So I'm
+
+1058
+00:36:04,320 --> 00:36:06,710
+going to now export it, right? So I'm
+
+1059
+00:36:06,720 --> 00:36:08,070
+exporting this thing and you might need
+
+1060
+00:36:08,080 --> 00:36:09,390
+permission and that's okay. You'll
+
+1061
+00:36:09,400 --> 00:36:10,550
+figure out how to get permission from
+
+1062
+00:36:10,560 --> 00:36:12,510
+me. But now all of a sudden what we what
+
+1063
+00:36:12,520 --> 00:36:13,910
+we've realized is that people who were
+
+1064
+00:36:13,920 --> 00:36:16,390
+designing these systems, and again, they
+
+1065
+00:36:16,400 --> 00:36:17,750
+went through a pattern. We want to
+
+1066
+00:36:17,760 --> 00:36:19,150
+innovate. We want a new tech. We don't
+
+1067
+00:36:19,160 --> 00:36:20,750
+want the old stuff. Let's pick something
+
+1068
+00:36:20,760 --> 00:36:23,270
+new. Let's do POCs. Let's try not to be
+
+1069
+00:36:23,280 --> 00:36:25,190
+a silo. Let's set up a big service. Wow,
+
+1070
+00:36:25,200 --> 00:36:26,990
+that really didn't turn out the way we
+
+1071
+00:36:27,000 --> 00:36:28,870
+wanted to. Crap, let's go back to the
+
+1072
+00:36:28,880 --> 00:36:30,110
+silos.
+
+1073
+00:36:30,120 --> 00:36:32,030
+When they look at something like NATS,
+
+1074
+00:36:32,040 --> 00:36:34,350
+which again is is exist today now with
+
+1075
+00:36:34,360 --> 00:36:36,790
+these technologies, they go, I just
+
+1076
+00:36:36,800 --> 00:36:38,830
+click a button and you have your sandbox
+
+1077
+00:36:38,840 --> 00:36:40,430
+in less than 2 milliseconds cuz I don't
+
+1078
+00:36:40,440 --> 00:36:42,470
+care what you do on it. And if you want
+
+1079
+00:36:42,480 --> 00:36:43,990
+to start importing stuff, let's say from
+
+1080
+00:36:44,000 --> 00:36:45,950
+Derek, that's between you and Derek. I
+
+1081
+00:36:45,960 --> 00:36:48,470
+don't care as a company organization dev
+
+1082
+00:36:48,480 --> 00:36:49,990
+test prod even. It really doesn't
+
+1083
+00:36:50,000 --> 00:36:51,190
+matter.
+
+1084
+00:36:51,200 --> 00:36:52,670
+As soon as Jeremy goes, okay, I'm ready
+
+1085
+00:36:52,680 --> 00:36:53,990
+to export.
+
+1086
+00:36:54,000 --> 00:36:55,470
+We've had multiple users and customers
+
+1087
+00:36:55,480 --> 00:36:57,550
+now go, this is perfect cuz that is your
+
+1088
+00:36:57,560 --> 00:36:59,350
+defined interface. That's your
+
+1089
+00:36:59,360 --> 00:37:02,110
+microservice. That's exactly what that
+
+1090
+00:37:02,120 --> 00:37:04,190
+is. It's It's how I would import it, how
+
+1091
+00:37:04,200 --> 00:37:05,230
+I would send a request, what the
+
+1092
+00:37:05,240 --> 00:37:06,710
+response looks like. All of that's kind
+
+1093
+00:37:06,720 --> 00:37:08,830
+of captured in that very simple
+
+1094
+00:37:08,840 --> 00:37:10,830
+primitive of and I wish I was smarter
+
+1095
+00:37:10,840 --> 00:37:14,430
+than than than our design, you know, was
+
+1096
+00:37:14,440 --> 00:37:15,830
+just to make sure that they're isolated
+
+1097
+00:37:15,840 --> 00:37:17,910
+by default. Everyone's like, that's
+
+1098
+00:37:17,920 --> 00:37:19,550
+perfect. I don't have to design subject
+
+1099
+00:37:19,560 --> 00:37:22,470
+spaces because I can export it as
+
+1100
+00:37:22,480 --> 00:37:24,990
+{slash} Jeremy one and Derek can import
+
+1101
+00:37:25,000 --> 00:37:26,870
+it as {slash} Jeremy's cool service
+
+1102
+00:37:26,880 --> 00:37:29,830
+{slash} request 45 or whatever. Or
+
+1103
+00:37:29,840 --> 00:37:31,070
+stream, you might be a really cool
+
+1104
+00:37:31,080 --> 00:37:33,030
+stream that I want to import from you,
+
+1105
+00:37:33,040 --> 00:37:35,110
+you know, the like events and and data
+
+1106
+00:37:35,120 --> 00:37:37,670
+and and streaming data type stuff. And
+
+1107
+00:37:37,680 --> 00:37:39,870
+the cool thing is is that when you get
+
+1108
+00:37:39,880 --> 00:37:41,390
+to that point and and we're watching
+
+1109
+00:37:41,400 --> 00:37:43,310
+customers go, this is great. Every
+
+1110
+00:37:43,320 --> 00:37:45,830
+little business function, microservice,
+
+1111
+00:37:45,840 --> 00:37:46,870
+or whatever, they get their own little
+
+1112
+00:37:46,880 --> 00:37:48,870
+sandbox. They import whatever they need
+
+1113
+00:37:48,880 --> 00:37:50,270
+to get their job done and then once
+
+1114
+00:37:50,280 --> 00:37:51,430
+they're ready to export their own
+
+1115
+00:37:51,440 --> 00:37:53,190
+version of our, you know, our cool
+
+1116
+00:37:53,200 --> 00:37:55,230
+streamer service, they do an export,
+
+1117
+00:37:55,240 --> 00:37:56,510
+there's an audit real quick from
+
+1118
+00:37:56,520 --> 00:37:58,710
+security and stuff. And what happened in
+
+1119
+00:37:58,720 --> 00:38:01,150
+in so many of these customers already is
+
+1120
+00:38:01,160 --> 00:38:02,590
+the security team comes in and they
+
+1121
+00:38:02,600 --> 00:38:04,350
+usually have a look on their face like,
+
+1122
+00:38:04,360 --> 00:38:06,350
+this isn't going to go well for you.
+
+1123
+00:38:06,360 --> 00:38:08,310
+And they look at the tech and they go,
+
+1124
+00:38:08,320 --> 00:38:10,190
+huh. They actually thought really hard
+
+1125
+00:38:10,200 --> 00:38:13,230
+about secure by default, no private keys
+
+1126
+00:38:13,240 --> 00:38:14,710
+or passwords are ever given to the
+
+1127
+00:38:14,720 --> 00:38:16,950
+system whatsoever. We anonymize
+
+1128
+00:38:16,960 --> 00:38:19,470
+requests, so I know I got a request from
+
+1129
+00:38:19,480 --> 00:38:20,990
+someone who's authorized, but I have no
+
+1130
+00:38:21,000 --> 00:38:22,790
+clue who it was from.
+
+1131
+00:38:22,800 --> 00:38:24,950
+Those types of things keep reducing that
+
+1132
+00:38:24,960 --> 00:38:26,390
+friction point that I was talking about,
+
+1133
+00:38:26,400 --> 00:38:28,310
+not only from a dev perspective, but ops
+
+1134
+00:38:28,320 --> 00:38:29,950
+and security and regulatory and things
+
+1135
+00:38:29,960 --> 00:38:32,590
+like that. And again, I wish I was smart
+
+1136
+00:38:32,600 --> 00:38:34,510
+enough to know that this was was coming,
+
+1137
+00:38:34,520 --> 00:38:37,030
+but it's essentially defining the way
+
+1138
+00:38:37,040 --> 00:38:39,310
+communications work in this new world
+
+1139
+00:38:39,320 --> 00:38:40,430
+where there's service meshes and
+
+1140
+00:38:40,440 --> 00:38:43,030
+microservices, but in a very different,
+
+1141
+00:38:43,040 --> 00:38:44,990
+simple, secure by default way.
+
+1142
+00:38:45,000 --> 00:38:46,750
+Hopefully, that makes sense. I want to
+
+1143
+00:38:46,760 --> 00:38:49,310
+make sure I understand the way that
+
+1144
+00:38:49,320 --> 00:38:52,190
+you're using subjects or topics in this
+
+1145
+00:38:52,200 --> 00:38:55,390
+design. You were describing how you
+
+1146
+00:38:55,400 --> 00:38:57,350
+would have a subject and it could be
+
+1147
+00:38:57,360 --> 00:38:59,670
+Derek/image
+
+1148
+00:38:59,680 --> 00:39:03,070
+service/two or something like that. And
+
+1149
+00:39:03,080 --> 00:39:05,590
+you said that you have sort of your
+
+1150
+00:39:05,600 --> 00:39:07,190
+private, I don't know if you would call
+
+1151
+00:39:07,200 --> 00:39:09,430
+it a name space, but you have like the
+
+1152
+00:39:09,440 --> 00:39:12,910
+names that your system understands, but
+
+1153
+00:39:12,920 --> 00:39:15,750
+somebody who wants to talk to that
+
+1154
+00:39:15,760 --> 00:39:18,830
+service, they would be able to import
+
+1155
+00:39:18,840 --> 00:39:20,870
+that subject or that topic with a
+
+1156
+00:39:20,880 --> 00:39:22,630
+different name. I was kind of trying to
+
+1157
+00:39:22,640 --> 00:39:24,790
+follow how exactly that worked. No,
+
+1158
+00:39:24,800 --> 00:39:27,150
+that's exactly right. Meaning, when we
+
+1159
+00:39:27,160 --> 00:39:29,430
+give you that sandbox of communications,
+
+1160
+00:39:29,440 --> 00:39:31,150
+you control everything that's in that
+
+1161
+00:39:31,160 --> 00:39:32,590
+sandbox, not just the stuff you're
+
+1162
+00:39:32,600 --> 00:39:34,910
+designing, but the things you import.
+
+1163
+00:39:34,920 --> 00:39:37,750
+And so, let's say I have, so, you know,
+
+1164
+00:39:37,760 --> 00:39:40,230
+imageprocessor.request,
+
+1165
+00:39:40,240 --> 00:39:41,950
+whatever that is. And I just call it
+
+1166
+00:39:41,960 --> 00:39:44,270
+ip.req. I like little short things. So,
+
+1167
+00:39:44,280 --> 00:39:45,790
+that's all I call it and and I'm
+
+1168
+00:39:45,800 --> 00:39:46,750
+running. And I want to go into
+
+1169
+00:39:46,760 --> 00:39:48,310
+production. I say I'm going to export
+
+1170
+00:39:48,320 --> 00:39:51,110
+this thing. Production says, "Okay, we
+
+1171
+00:39:51,120 --> 00:39:53,870
+don't care where you are running this
+
+1172
+00:39:53,880 --> 00:39:55,390
+because when Jeremy comes along and
+
+1173
+00:39:55,400 --> 00:39:56,910
+says, "Hey, show me the list of stuff
+
+1174
+00:39:56,920 --> 00:39:59,070
+that's available." Oh, Derek has this
+
+1175
+00:39:59,080 --> 00:40:01,310
+cool service called, whatever, but it
+
+1176
+00:40:01,320 --> 00:40:03,150
+has a description, it has, you know,
+
+1177
+00:40:03,160 --> 00:40:05,670
+open API link that shows that it's the
+
+1178
+00:40:05,680 --> 00:40:07,230
+request looks like this, response looks
+
+1179
+00:40:07,240 --> 00:40:08,750
+like this. And you go, "Great. I'm going
+
+1180
+00:40:08,760 --> 00:40:10,230
+to import this." He needs permission,
+
+1181
+00:40:10,240 --> 00:40:12,070
+he's going to give me a token that
+
+1182
+00:40:12,080 --> 00:40:13,750
+allows me to do it. But when you import
+
+1183
+00:40:13,760 --> 00:40:15,430
+it, you put it wherever you want. So,
+
+1184
+00:40:15,440 --> 00:40:17,630
+you could pick whatever subject you want
+
+1185
+00:40:17,640 --> 00:40:19,870
+inside of your sandbox
+
+1186
+00:40:19,880 --> 00:40:22,190
+and you send a request to that subject
+
+1187
+00:40:22,200 --> 00:40:24,350
+and I magically get it on mine. But,
+
+1188
+00:40:24,360 --> 00:40:25,910
+it's totally secure. It's always
+
+1189
+00:40:25,920 --> 00:40:27,670
+buttoned down. It's always auditable.
+
+1190
+00:40:27,680 --> 00:40:29,390
+It's always, you know, all these things.
+
+1191
+00:40:29,400 --> 00:40:31,550
+And then, of course, I get it. I see it.
+
+1192
+00:40:31,560 --> 00:40:34,070
+And you sent the reply subject to me.
+
+1193
+00:40:34,080 --> 00:40:36,190
+But, this reply subject isn't the one
+
+1194
+00:40:36,200 --> 00:40:37,750
+you sent and it's totally anonymous to
+
+1195
+00:40:37,760 --> 00:40:39,190
+me. I've no clue what it is. But, when I
+
+1196
+00:40:39,200 --> 00:40:41,270
+send the message the response to that,
+
+1197
+00:40:41,280 --> 00:40:43,110
+you get the answer.
+
+1198
+00:40:43,120 --> 00:40:45,470
+And so, now the these groups, again,
+
+1199
+00:40:45,480 --> 00:40:46,710
+whether it's a serverless or
+
+1200
+00:40:46,720 --> 00:40:48,790
+microservices or just an org, they
+
+1201
+00:40:48,800 --> 00:40:50,190
+control everything in their sandbox. So,
+
+1202
+00:40:50,200 --> 00:40:51,310
+now all of a sudden, instead of having
+
+1203
+00:40:51,320 --> 00:40:54,390
+that 4-day long topic / subject design
+
+1204
+00:40:54,400 --> 00:40:56,590
+session, it's like we can sit around at
+
+1205
+00:40:56,600 --> 00:40:58,470
+lunch and figure out and and make these
+
+1206
+00:40:58,480 --> 00:41:00,350
+very, very short. We don't have to have
+
+1207
+00:41:00,360 --> 00:41:01,470
+like a
+
+1208
+00:41:01,480 --> 00:41:03,270
+I'm not picking on Java, but like a Java
+
+1209
+00:41:03,280 --> 00:41:05,150
+variable name that's camel case and has
+
+1210
+00:41:05,160 --> 00:41:07,190
+eight eight humps, you know, and it goes
+
+1211
+00:41:07,200 --> 00:41:09,190
+takes up 40 characters or whatever. And
+
+1212
+00:41:09,200 --> 00:41:10,750
+so, now all of a sudden, it's extremely
+
+1213
+00:41:10,760 --> 00:41:12,510
+simple. And what's interesting as an
+
+1214
+00:41:12,520 --> 00:41:13,870
+observer
+
+1215
+00:41:13,880 --> 00:41:16,470
+an observer looking at you and I
+
+1216
+00:41:16,480 --> 00:41:18,470
+they can easily say, "Oh, Derek depends
+
+1217
+00:41:18,480 --> 00:41:19,870
+on these three things cuz those are what
+
+1218
+00:41:19,880 --> 00:41:21,910
+he imports. And Jeremy depends on Derek
+
+1219
+00:41:21,920 --> 00:41:23,750
+cuz he's importing his service."
+
+1220
+00:41:23,760 --> 00:41:25,390
+And Jeremy can run anywhere he wants, as
+
+1221
+00:41:25,400 --> 00:41:27,230
+many of them as he wants. Derek can run
+
+1222
+00:41:27,240 --> 00:41:29,310
+anywhere he wants, as many as he wants.
+
+1223
+00:41:29,320 --> 00:41:31,910
+But, it's locked down meaning we know
+
+1224
+00:41:31,920 --> 00:41:33,670
+that someone who's sending the request
+
+1225
+00:41:33,680 --> 00:41:36,710
+is authorized by the Jeremy sandbox, the
+
+1226
+00:41:36,720 --> 00:41:38,470
+account that has users that have their
+
+1227
+00:41:38,480 --> 00:41:39,470
+own permissions. So, you might have
+
+1228
+00:41:39,480 --> 00:41:41,910
+users that can send to the service and
+
+1229
+00:41:41,920 --> 00:41:44,110
+others that can't. So, all of this stuff
+
+1230
+00:41:44,120 --> 00:41:45,630
+just kind of works together and it's
+
+1231
+00:41:45,640 --> 00:41:48,230
+easy. And it's by default. It's not like
+
+1232
+00:41:48,240 --> 00:41:49,510
+you have to go into ops and say, "Well,
+
+1233
+00:41:49,520 --> 00:41:51,470
+how long is it going to take you to bolt
+
+1234
+00:41:51,480 --> 00:41:53,110
+this stuff on and make it secure and
+
+1235
+00:41:53,120 --> 00:41:55,150
+understand TLS or whatever that that
+
+1236
+00:41:55,160 --> 00:41:57,350
+construct is and then prod has to do all
+
+1237
+00:41:57,360 --> 00:41:59,270
+this other stuff." It's No, my
+
+1238
+00:41:59,280 --> 00:42:01,190
+development from day one, the very first
+
+1239
+00:42:01,200 --> 00:42:03,870
+message I sent was already secured. We
+
+1240
+00:42:03,880 --> 00:42:05,310
+haven't got there yet, but we also
+
+1241
+00:42:05,320 --> 00:42:08,070
+believe that if we could say a user of
+
+1242
+00:42:08,080 --> 00:42:09,430
+the system says,
+
+1243
+00:42:09,440 --> 00:42:11,110
+"I actually want I want this system like
+
+1244
+00:42:11,120 --> 00:42:12,990
+a zero trust system. I don't want to
+
+1245
+00:42:13,000 --> 00:42:15,190
+trust it at all.
+
+1246
+00:42:15,200 --> 00:42:16,750
+Of course, it might not route my message
+
+1247
+00:42:16,760 --> 00:42:18,350
+where I want, but also, no matter what
+
+1248
+00:42:18,360 --> 00:42:20,310
+I'm sending it, it cannot compromise me
+
+1249
+00:42:20,320 --> 00:42:22,190
+or understand anything about what I'm
+
+1250
+00:42:22,200 --> 00:42:23,990
+doing. And we're not there yet, but
+
+1251
+00:42:24,000 --> 00:42:26,470
+we're closer than people might think.
+
+1252
+00:42:26,480 --> 00:42:28,430
+And so, then if you combine these
+
+1253
+00:42:28,440 --> 00:42:30,110
+accounts in your own little sandbox, you
+
+1254
+00:42:30,120 --> 00:42:31,430
+manage everything inside there, so it
+
+1255
+00:42:31,440 --> 00:42:33,470
+makes it very easy. And then there's
+
+1256
+00:42:33,480 --> 00:42:35,110
+there's these things, exports and
+
+1257
+00:42:35,120 --> 00:42:37,550
+imports, to define how we talk between
+
+1258
+00:42:37,560 --> 00:42:39,710
+those interfaces, let's say, right?
+
+1259
+00:42:39,720 --> 00:42:41,430
+And then you look at this notion of, oh,
+
+1260
+00:42:41,440 --> 00:42:43,510
+and I can use a global utility, any
+
+1261
+00:42:43,520 --> 00:42:45,590
+cloud provider just works. Same URL will
+
+1262
+00:42:45,600 --> 00:42:48,510
+pin you to the AWS East region, cuz
+
+1263
+00:42:48,520 --> 00:42:50,510
+that's where you're you're running. And
+
+1264
+00:42:50,520 --> 00:42:53,350
+if I want, I can run a server that has a
+
+1265
+00:42:53,360 --> 00:42:55,710
+little server, you know, a NAT server,
+
+1266
+00:42:55,720 --> 00:42:57,110
+same as the other ones, but again, you
+
+1267
+00:42:57,120 --> 00:42:58,950
+start up, it starts up instantly, no
+
+1268
+00:42:58,960 --> 00:43:01,950
+config or extremely low config, and it
+
+1269
+00:43:01,960 --> 00:43:03,910
+can transparently
+
+1270
+00:43:03,920 --> 00:43:06,390
+join this global network in a way that
+
+1271
+00:43:06,400 --> 00:43:08,390
+it's zero-trust. So, I can be talking to
+
+1272
+00:43:08,400 --> 00:43:10,030
+my own little server in my data center,
+
+1273
+00:43:10,040 --> 00:43:11,990
+but then I got to reach across to, let's
+
+1274
+00:43:12,000 --> 00:43:14,150
+say, Europe and talk to Germany. It just
+
+1275
+00:43:14,160 --> 00:43:15,870
+all works. It's all secure. It's all
+
+1276
+00:43:15,880 --> 00:43:17,270
+auditable. It can be even run in
+
+1277
+00:43:17,280 --> 00:43:19,470
+zero-trust mode. That, I think, makes
+
+1278
+00:43:19,480 --> 00:43:21,750
+people think a lot differently about how
+
+1279
+00:43:21,760 --> 00:43:23,070
+they might solve the problem. The
+
+1280
+00:43:23,080 --> 00:43:24,230
+problems aren't necessarily different,
+
+1281
+00:43:24,240 --> 00:43:25,550
+right? We're still trying to decompose
+
+1282
+00:43:25,560 --> 00:43:27,790
+software systems, make lots of little
+
+1283
+00:43:27,800 --> 00:43:29,350
+pieces, but we just don't want the lots
+
+1284
+00:43:29,360 --> 00:43:32,350
+of little pieces to be painful to stand
+
+1285
+00:43:32,360 --> 00:43:34,750
+up, to develop, to
+
+1286
+00:43:34,760 --> 00:43:36,550
+operate and maintain, right? But if it's
+
+1287
+00:43:36,560 --> 00:43:38,630
+easy to do that, it makes sense, right?
+
+1288
+00:43:38,640 --> 00:43:40,230
+Do lots of little pieces and then, you
+
+1289
+00:43:40,240 --> 00:43:41,150
+know,
+
+1290
+00:43:41,160 --> 00:43:42,910
+uh of course, there is a a systems
+
+1291
+00:43:42,920 --> 00:43:44,150
+engineering component where you're like,
+
+1292
+00:43:44,160 --> 00:43:46,430
+yeah, you we should combine these for
+
+1293
+00:43:46,440 --> 00:43:48,150
+mostly latency reasons, right? We want
+
+1294
+00:43:48,160 --> 00:43:50,470
+the experience is that you get it in
+
+1295
+00:43:50,480 --> 00:43:53,110
+10 milliseconds, not 180, because it's
+
+1296
+00:43:53,120 --> 00:43:55,390
+five microservices talking over HTTP
+
+1297
+00:43:55,400 --> 00:43:57,630
+through load balancers, ping-ponging
+
+1298
+00:43:57,640 --> 00:43:59,510
+back and forth, right? And I think
+
+1299
+00:43:59,520 --> 00:44:02,070
+eventually, you have to pay the piper,
+
+1300
+00:44:02,080 --> 00:44:04,030
+um and I think a lot of these
+
+1301
+00:44:04,040 --> 00:44:06,190
+microservice service mesh technologies,
+
+1302
+00:44:06,200 --> 00:44:08,830
+where the complexity is just so high,
+
+1303
+00:44:08,840 --> 00:44:09,870
+eventually people are going to say,
+
+1304
+00:44:09,880 --> 00:44:11,790
+"Hey, is there something simpler,
+
+1305
+00:44:11,800 --> 00:44:13,030
+you know, that that that we can
+
+1306
+00:44:13,040 --> 00:44:15,150
+potentially use?" And we hope we might
+
+1307
+00:44:15,160 --> 00:44:17,310
+be a part of that story.
+
+1308
+00:44:17,320 --> 00:44:20,630
+Hoping that making the communication be
+
+1309
+00:44:20,640 --> 00:44:24,510
+this solved problem, uh the security,
+
+1310
+00:44:24,520 --> 00:44:27,350
+multi-tenancy, the sharing, have that be
+
+1311
+00:44:27,360 --> 00:44:29,470
+handled, and that way you can think
+
+1312
+00:44:29,480 --> 00:44:31,910
+differently about how you design your
+
+1313
+00:44:31,920 --> 00:44:34,070
+services where you don't have to worry
+
+1314
+00:44:34,080 --> 00:44:35,830
+about the complexity of adding an
+
+1315
+00:44:35,840 --> 00:44:37,790
+additional service, and you're kind of
+
+1316
+00:44:37,800 --> 00:44:39,070
+talking about the latency that might
+
+1317
+00:44:39,080 --> 00:44:41,910
+come in as you you bring in the load
+
+1318
+00:44:41,920 --> 00:44:43,670
+balancer and go through HTTP and all
+
+1319
+00:44:43,680 --> 00:44:46,070
+these different pieces. Um how this may
+
+1320
+00:44:46,080 --> 00:44:48,990
+hopefully encourage you to
+
+1321
+00:44:49,000 --> 00:44:51,190
+design your applications differently.
+
+1322
+00:44:51,200 --> 00:44:53,270
+Yeah, and and to be quite frank with
+
+1323
+00:44:53,280 --> 00:44:54,350
+with you and the audience, you know,
+
+1324
+00:44:54,360 --> 00:44:56,390
+when we were looking at where are the
+
+1325
+00:44:56,400 --> 00:44:58,430
+potential business models for something
+
+1326
+00:44:58,440 --> 00:45:02,270
+like NATS, um one is you know, oh, we
+
+1327
+00:45:02,280 --> 00:45:04,310
+could run it as a service. But that was
+
+1328
+00:45:04,320 --> 00:45:07,030
+a a a massive failure. And and the
+
+1329
+00:45:07,040 --> 00:45:08,470
+reason it was a massive failure is if
+
+1330
+00:45:08,480 --> 00:45:10,870
+you are truly treating it as a silo
+
+1331
+00:45:10,880 --> 00:45:13,430
+technology just for you,
+
+1332
+00:45:13,440 --> 00:45:16,390
+running NATS is usually you click a
+
+1333
+00:45:16,400 --> 00:45:19,070
+button or run a Docker image, and
+
+1334
+00:45:19,080 --> 00:45:23,670
+we have a lot of users who really love
+
+1335
+00:45:23,680 --> 00:45:25,310
+the technology and and love how
+
+1336
+00:45:25,320 --> 00:45:27,070
+responsive we are,
+
+1337
+00:45:27,080 --> 00:45:28,230
+but they're not going to pay for us to
+
+1338
+00:45:28,240 --> 00:45:29,350
+run it cuz they just run it. They don't
+
+1339
+00:45:29,360 --> 00:45:31,150
+even monitor it. You know, one of our
+
+1340
+00:45:31,160 --> 00:45:32,470
+customers said, "Well, we have these
+
+1341
+00:45:32,480 --> 00:45:33,950
+major events every 2 years, and that's
+
+1342
+00:45:33,960 --> 00:45:35,950
+when we decide if we want to upgrade or
+
+1343
+00:45:35,960 --> 00:45:36,910
+not."
+
+1344
+00:45:36,920 --> 00:45:38,910
+And I said, "So, you don't even monitor
+
+1345
+00:45:38,920 --> 00:45:40,470
+it? You don't even" They go, "Nope. It
+
+1346
+00:45:40,480 --> 00:45:42,310
+just sits there. Never It just works.
+
+1347
+00:45:42,320 --> 00:45:44,150
+You know, we like that." But for us,
+
+1348
+00:45:44,160 --> 00:45:46,630
+that presented a a massive thought
+
+1349
+00:45:46,640 --> 00:45:48,950
+exercise challenge around, well, they
+
+1350
+00:45:48,960 --> 00:45:50,270
+don't want to pay for support cuz it's
+
+1351
+00:45:50,280 --> 00:45:52,110
+so easy, and they don't want to pay us
+
+1352
+00:45:52,120 --> 00:45:54,510
+to run it as a singleton.
+
+1353
+00:45:54,520 --> 00:45:56,430
+Is there any opportunity around software
+
+1354
+00:45:56,440 --> 00:45:58,150
+that's just easy
+
+1355
+00:45:58,160 --> 00:46:00,830
+to to generate a business around? And
+
+1356
+00:46:00,840 --> 00:46:02,070
+but I wouldn't go back on that. In other
+
+1357
+00:46:02,080 --> 00:46:03,190
+words, I wouldn't go back and try to
+
+1358
+00:46:03,200 --> 00:46:06,110
+make it more complex and and bug you so
+
+1359
+00:46:06,120 --> 00:46:07,190
+that you're going to
+
+1360
+00:46:07,200 --> 00:46:09,110
+uh pay me. And so, you know, the the
+
+1361
+00:46:09,120 --> 00:46:10,510
+team that kind of maintains it, we're
+
+1362
+00:46:10,520 --> 00:46:12,470
+not a large team, but we have
+
+1363
+00:46:12,480 --> 00:46:13,710
+a lot of people who've been doing this
+
+1364
+00:46:13,720 --> 00:46:15,630
+stuff for a long time, and they take an
+
+1365
+00:46:15,640 --> 00:46:17,350
+incredible amount of pride in the fact
+
+1366
+00:46:17,360 --> 00:46:19,750
+that it just works, and it's really easy
+
+1367
+00:46:19,760 --> 00:46:21,910
+both to start, you know,
+
+1368
+00:46:21,920 --> 00:46:23,710
+I put up a demo server about 4 years
+
+1369
+00:46:23,720 --> 00:46:25,350
+ago, and it still runs, and we see
+
+1370
+00:46:25,360 --> 00:46:27,070
+people use it all the time. So, our
+
+1371
+00:46:27,080 --> 00:46:29,750
+getting started thing is take a client,
+
+1372
+00:46:29,760 --> 00:46:31,950
+which are very small, you know, we
+
+1373
+00:46:31,960 --> 00:46:33,790
+I think we do 34 languages now,
+
+1374
+00:46:33,800 --> 00:46:35,390
+something like that. And if you want,
+
+1375
+00:46:35,400 --> 00:46:36,750
+just point to the demo server and knock
+
+1376
+00:46:36,760 --> 00:46:38,710
+yourself out. And they go, "Okay, well,
+
+1377
+00:46:38,720 --> 00:46:39,830
+what if I want to run my own server?"
+
+1378
+00:46:39,840 --> 00:46:42,230
+It's like, "Well, just now Docker is so
+
+1379
+00:46:42,240 --> 00:46:43,750
+ubiquitous from a
+
+1380
+00:46:43,760 --> 00:46:45,350
+development uh you know, on most
+
+1381
+00:46:45,360 --> 00:46:46,790
+people's machines." It's like, "Well, we
+
+1382
+00:46:46,800 --> 00:46:48,070
+have a Docker image, so you can just
+
+1383
+00:46:48,080 --> 00:46:49,910
+kind of go Docker run this." And they
+
+1384
+00:46:49,920 --> 00:46:51,550
+go, "Perfect." And then we never hear
+
+1385
+00:46:51,560 --> 00:46:52,750
+from them again.
+
+1386
+00:46:52,760 --> 00:46:54,710
+You know, or we hear from them in far
+
+1387
+00:46:54,720 --> 00:46:56,230
+and between, like months, and they go,
+
+1388
+00:46:56,240 --> 00:46:57,270
+"Okay, now I want to run a small
+
+1389
+00:46:57,280 --> 00:46:59,110
+cluster." It's like, "Okay, here's, you
+
+1390
+00:46:59,120 --> 00:47:01,030
+know, uh the Docker command, or here's
+
+1391
+00:47:01,040 --> 00:47:02,550
+the NATS operator, or here's how you
+
+1392
+00:47:02,560 --> 00:47:04,390
+might do it, you know." And again, they
+
+1393
+00:47:04,400 --> 00:47:05,990
+go, "Wow, this is so easy." And we're
+
+1394
+00:47:06,000 --> 00:47:08,150
+like, "Good, that's that's
+
+1395
+00:47:08,160 --> 00:47:09,630
+that's what we want, but we also think
+
+1396
+00:47:09,640 --> 00:47:11,710
+that's what we want to see in stuff that
+
+1397
+00:47:11,720 --> 00:47:13,750
+we use, too. It's not only easy to get
+
+1398
+00:47:13,760 --> 00:47:15,390
+started, it's easy at the end of the day
+
+1399
+00:47:15,400 --> 00:47:17,110
+running something in production, and
+
+1400
+00:47:17,120 --> 00:47:19,550
+that's not a that's not always a trivial
+
+1401
+00:47:19,560 --> 00:47:21,790
+thing to try to hit on all of those
+
+1402
+00:47:21,800 --> 00:47:24,470
+cylinders, and we are by far from from
+
+1403
+00:47:24,480 --> 00:47:25,870
+perfect, and there's a lot of other
+
+1404
+00:47:25,880 --> 00:47:27,390
+great tech out there that does it better
+
+1405
+00:47:27,400 --> 00:47:29,510
+than us, but we think the trends are
+
+1406
+00:47:29,520 --> 00:47:32,150
+going to be moving towards, you know, I
+
+1407
+00:47:32,160 --> 00:47:33,590
+want to think about the problem in the
+
+1408
+00:47:33,600 --> 00:47:35,950
+same way, but give me the tools and
+
+1409
+00:47:35,960 --> 00:47:37,830
+technologies that are that are vastly
+
+1410
+00:47:37,840 --> 00:47:39,310
+simpler. They don't make my life more
+
+1411
+00:47:39,320 --> 00:47:41,670
+complex and add more complexity. If
+
+1412
+00:47:41,680 --> 00:47:44,430
+somebody was building an application,
+
+1413
+00:47:44,440 --> 00:47:46,750
+and the the example I want to use
+
+1414
+00:47:46,760 --> 00:47:48,750
+because I believe you you did a lot of
+
+1415
+00:47:48,760 --> 00:47:51,550
+work with financial systems at Tibco.
+
+1416
+00:47:51,560 --> 00:47:54,030
+Let Let's say I had a a trading system,
+
+1417
+00:47:54,040 --> 00:47:57,990
+and I wanted to receive uh live prices,
+
+1418
+00:47:58,000 --> 00:48:00,110
+so like my my clients are kind of
+
+1419
+00:48:00,120 --> 00:48:02,510
+getting the updates of the the different
+
+1420
+00:48:02,520 --> 00:48:03,830
+stock tickers.
+
+1421
+00:48:03,840 --> 00:48:06,350
+And I want to be able to store a history
+
+1422
+00:48:06,360 --> 00:48:07,950
+of, you know, all the prices of all
+
+1423
+00:48:07,960 --> 00:48:09,630
+these stocks.
+
+1424
+00:48:09,640 --> 00:48:11,830
+And, um, and I want clients to be able
+
+1425
+00:48:11,840 --> 00:48:15,150
+to to buy or sell, and they need to be
+
+1426
+00:48:15,160 --> 00:48:17,070
+able to not have like duplicate
+
+1427
+00:48:17,080 --> 00:48:20,430
+operations or or lost orders. So, I kind
+
+1428
+00:48:20,440 --> 00:48:22,390
+of wanted to see like
+
+1429
+00:48:22,400 --> 00:48:25,310
+how would you build a system around that
+
+1430
+00:48:25,320 --> 00:48:29,430
+given the sort of features that NATS has
+
+1431
+00:48:29,440 --> 00:48:31,310
+and the features that it doesn't have.
+
+1432
+00:48:31,320 --> 00:48:33,030
+Like, for example, how,
+
+1433
+00:48:33,040 --> 00:48:35,390
+um, you've described how NATS has
+
+1434
+00:48:35,400 --> 00:48:37,910
+exactly once delivery, or sorry, not
+
+1435
+00:48:37,920 --> 00:48:39,750
+exactly once. Um,
+
+1436
+00:48:39,760 --> 00:48:41,350
+at most once delivery. So, there's no
+
+1437
+00:48:41,360 --> 00:48:43,550
+guarantee that like my order would get
+
+1438
+00:48:43,560 --> 00:48:45,830
+to, um, you know, the exchange, things
+
+1439
+00:48:45,840 --> 00:48:47,870
+like that. So, if you could maybe kind
+
+1440
+00:48:47,880 --> 00:48:50,990
+of walk through that. Sure. And just as
+
+1441
+00:48:51,000 --> 00:48:52,470
+of note in the
+
+1442
+00:48:52,480 --> 00:48:54,470
+you know, early, mid, late '90s, those
+
+1443
+00:48:54,480 --> 00:48:56,670
+systems cost tens of millions of
+
+1444
+00:48:56,680 --> 00:49:00,230
+dollars. So, we'll try to walk through
+
+1445
+00:49:00,240 --> 00:49:01,990
+Yeah, you've essentially just defined a
+
+1446
+00:49:02,000 --> 00:49:04,150
+a full-on trading desk, uh, and and
+
+1447
+00:49:04,160 --> 00:49:06,510
+developing software for that was, uh,
+
+1448
+00:49:06,520 --> 00:49:08,710
+paid very handsomely at, uh, I still
+
+1449
+00:49:08,720 --> 00:49:11,350
+think to to this day. So, there would be
+
+1450
+00:49:11,360 --> 00:49:13,190
+the notion of, you know, there's a
+
+1451
+00:49:13,200 --> 00:49:16,030
+stream now. Uh, we call them Uh, by the
+
+1452
+00:49:16,040 --> 00:49:19,550
+way, NATS, um, as a a project, uh,
+
+1453
+00:49:19,560 --> 00:49:21,710
+includes both at most once and at least
+
+1454
+00:49:21,720 --> 00:49:23,590
+once. But, I call it Stan. Most people
+
+1455
+00:49:23,600 --> 00:49:25,310
+know it as NATS streaming, which gives
+
+1456
+00:49:25,320 --> 00:49:27,030
+does give you at least once. But, the
+
+1457
+00:49:27,040 --> 00:49:29,110
+way we would do the the the stock quote
+
+1458
+00:49:29,120 --> 00:49:32,790
+part would be we're just sending out,
+
+1459
+00:49:32,800 --> 00:49:35,790
+you know, on, let's say, nyse.whatever
+
+1460
+00:49:35,800 --> 00:49:36,910
+the ticker symbol is and
+
+1461
+00:49:36,920 --> 00:49:39,350
+nasdaq.tickersymbol. And, uh, we have
+
+1462
+00:49:39,360 --> 00:49:40,510
+our own account that we talked about
+
+1463
+00:49:40,520 --> 00:49:42,430
+before.
+
+1464
+00:49:42,440 --> 00:49:45,150
+We export those two. And you can import
+
+1465
+00:49:45,160 --> 00:49:46,390
+them, but you need an authorization
+
+1466
+00:49:46,400 --> 00:49:48,270
+token for us. And that's all handled and
+
+1467
+00:49:48,280 --> 00:49:50,230
+easy. Just make sure that I will
+
+1468
+00:49:50,240 --> 00:49:52,950
+authorize Jeremy to receive the Nasdaq
+
+1469
+00:49:52,960 --> 00:49:55,910
+ticker. So, me myself
+
+1470
+00:49:55,920 --> 00:49:57,110
+because of the way networks are and
+
+1471
+00:49:57,120 --> 00:49:59,390
+they're fairly efficient is I would not
+
+1472
+00:49:59,400 --> 00:50:01,310
+make it anything but at most once. It's
+
+1473
+00:50:01,320 --> 00:50:03,110
+fire and forget. If you miss it, you
+
+1474
+00:50:03,120 --> 00:50:05,430
+probably want the newest one when you
+
+1475
+00:50:05,440 --> 00:50:08,110
+come back online, not spend 10 seconds
+
+1476
+00:50:08,120 --> 00:50:09,350
+going through all the old ones. I think
+
+1477
+00:50:09,360 --> 00:50:10,350
+that's an anti-pattern.
+
+1478
+00:50:10,360 --> 00:50:11,950
+So, that would be fire and forget to all
+
+1479
+00:50:11,960 --> 00:50:13,710
+of the clients. Okay.
+
+1480
+00:50:13,720 --> 00:50:15,950
+because again semantically, do you want
+
+1481
+00:50:15,960 --> 00:50:17,630
+me to give you every update or you want
+
+1482
+00:50:17,640 --> 00:50:19,350
+the you want to know at this point in
+
+1483
+00:50:19,360 --> 00:50:21,190
+time I'm connected, I have a green dot
+
+1484
+00:50:21,200 --> 00:50:23,310
+meaning I'm I'm good, and I know that
+
+1485
+00:50:23,320 --> 00:50:25,710
+Google's price is this or Tesla's price
+
+1486
+00:50:25,720 --> 00:50:27,470
+is this. But, I would put it in its own
+
+1487
+00:50:27,480 --> 00:50:29,190
+account. That means Jeremy, as you're
+
+1488
+00:50:29,200 --> 00:50:30,710
+importing it, you have to get
+
+1489
+00:50:30,720 --> 00:50:32,510
+permission. So, we know there's that
+
+1490
+00:50:32,520 --> 00:50:34,390
+security piece there that you are
+
+1491
+00:50:34,400 --> 00:50:36,070
+allowed to do it. By the way, these
+
+1492
+00:50:36,080 --> 00:50:40,630
+security things are JWTs, ED25519 keys,
+
+1493
+00:50:40,640 --> 00:50:42,710
+have expirations. They have all these
+
+1494
+00:50:42,720 --> 00:50:44,350
+things that people want from a security
+
+1495
+00:50:44,360 --> 00:50:46,190
+and production side, and you as the
+
+1496
+00:50:46,200 --> 00:50:47,190
+developer don't have to think about
+
+1497
+00:50:47,200 --> 00:50:49,110
+that. Just It all is there, just works.
+
+1498
+00:50:49,120 --> 00:50:50,590
+So, now you can import it. Knock
+
+1499
+00:50:50,600 --> 00:50:53,270
+yourself out. Now, let's say you,
+
+1500
+00:50:53,280 --> 00:50:55,550
+Jeremy, also want to save all of this
+
+1501
+00:50:55,560 --> 00:50:57,110
+stuff. And you want to have your own
+
+1502
+00:50:57,120 --> 00:50:58,430
+kind of historical stuff cuz you might
+
+1503
+00:50:58,440 --> 00:51:00,990
+want to start looking through it and
+
+1504
+00:51:01,000 --> 00:51:02,630
+analyzing it, maybe putting some machine
+
+1505
+00:51:02,640 --> 00:51:04,070
+learning on it, you know, maybe trying
+
+1506
+00:51:04,080 --> 00:51:05,630
+to start a hedge fund. So, what I would
+
+1507
+00:51:05,640 --> 00:51:07,190
+say there is is once that stream
+
+1508
+00:51:07,200 --> 00:51:10,550
+actually enters into your
+
+1509
+00:51:10,560 --> 00:51:12,750
+sandbox, your your account, that you
+
+1510
+00:51:12,760 --> 00:51:15,110
+will have your own NAT streaming system,
+
+1511
+00:51:15,120 --> 00:51:16,790
+which you can think of it like Kafka,
+
+1512
+00:51:16,800 --> 00:51:19,750
+right? It just stores a a serialized log
+
+1513
+00:51:19,760 --> 00:51:21,550
+of of messages, and then you would store
+
+1514
+00:51:21,560 --> 00:51:22,910
+them that way, and you can retrieve them
+
+1515
+00:51:22,920 --> 00:51:24,590
+through STAN 2 say, "Ooh, I want to
+
+1516
+00:51:24,600 --> 00:51:25,750
+create a new application. I want to
+
+1517
+00:51:25,760 --> 00:51:27,230
+start from the beginning of time." Or I
+
+1518
+00:51:27,240 --> 00:51:28,950
+want to start an hour ago. Or I only
+
+1519
+00:51:28,960 --> 00:51:31,470
+want to see Tesla stock or or Google
+
+1520
+00:51:31,480 --> 00:51:34,230
+stock. And you can do all of that by,
+
+1521
+00:51:34,240 --> 00:51:35,870
+you know, running this service inside of
+
+1522
+00:51:35,880 --> 00:51:37,190
+of your account for the ones that you're
+
+1523
+00:51:37,200 --> 00:51:39,030
+saving. For the trading desk, meaning
+
+1524
+00:51:39,040 --> 00:51:40,950
+you want to do a
+
+1525
+00:51:40,960 --> 00:51:42,630
+trade, let's say. Again, there's some
+
+1526
+00:51:42,640 --> 00:51:43,870
+interesting
+
+1527
+00:51:43,880 --> 00:51:45,190
+ways to approach the problem. But, in
+
+1528
+00:51:45,200 --> 00:51:48,110
+general, you want to import a service
+
+1529
+00:51:48,120 --> 00:51:50,030
+that if you send a request to, you get
+
+1530
+00:51:50,040 --> 00:51:51,790
+an answer back saying, "Got you. You're
+
+1531
+00:51:51,800 --> 00:51:54,470
+good." right? I I I sold your Tesla
+
+1532
+00:51:54,480 --> 00:51:56,070
+shares or I sold your Google shares or
+
+1533
+00:51:56,080 --> 00:51:57,390
+bought Apple for you, whatever those
+
+1534
+00:51:57,400 --> 00:51:58,430
+things are.
+
+1535
+00:51:58,440 --> 00:52:01,030
+And again, just knowing that these
+
+1536
+00:52:01,040 --> 00:52:03,510
+things cost tens and you know, even more
+
+1537
+00:52:03,520 --> 00:52:05,550
+sometimes, millions of dollars in the
+
+1538
+00:52:05,560 --> 00:52:07,950
+path to design, today if I was using
+
+1539
+00:52:07,960 --> 00:52:10,190
+that to do that, again, most people
+
+1540
+00:52:10,200 --> 00:52:11,630
+would say, "Aha, now I know you're going
+
+1541
+00:52:11,640 --> 00:52:13,990
+to have to use at least one semantics
+
+1542
+00:52:14,000 --> 00:52:16,870
+here." And I say, "Actually, I don't.
+
+1543
+00:52:16,880 --> 00:52:19,150
+I'm sending a request reply."
+
+1544
+00:52:19,160 --> 00:52:20,470
+Right, Jeremy? You're sending a request
+
+1545
+00:52:20,480 --> 00:52:22,070
+me saying, "Please sell this and let me
+
+1546
+00:52:22,080 --> 00:52:24,550
+know if you're good to go." Now, I could
+
+1547
+00:52:24,560 --> 00:52:26,030
+do something where I put it in a
+
+1548
+00:52:26,040 --> 00:52:28,750
+database or I mark it somewhere else
+
+1549
+00:52:28,760 --> 00:52:30,310
+because the trade settlement and the
+
+1550
+00:52:30,320 --> 00:52:32,670
+execution happens asynchronously, right?
+
+1551
+00:52:32,680 --> 00:52:33,830
+Meaning, I'll tell you, "Okay, I got
+
+1552
+00:52:33,840 --> 00:52:36,110
+your order." and then I'll ping you back
+
+1553
+00:52:36,120 --> 00:52:37,870
+later when it's actually, you know,
+
+1554
+00:52:37,880 --> 00:52:40,790
+finalized. And then this used to be T3,
+
+1555
+00:52:40,800 --> 00:52:42,310
+T plus 3, but now it's T plus 1, I
+
+1556
+00:52:42,320 --> 00:52:44,070
+think, or maybe even less. Meaning, the
+
+1557
+00:52:44,080 --> 00:52:45,470
+official settlement takes a day and
+
+1558
+00:52:45,480 --> 00:52:47,230
+you'll get a email or whatever. But
+
+1559
+00:52:47,240 --> 00:52:49,990
+again, I probably wouldn't use something
+
+1560
+00:52:50,000 --> 00:52:53,310
+like a a Kafka or even NAT streaming
+
+1561
+00:52:53,320 --> 00:52:55,110
+to send that request because you want an
+
+1562
+00:52:55,120 --> 00:52:57,350
+answer back and you're online, right?
+
+1563
+00:52:57,360 --> 00:52:59,430
+You're you're there. And adding some of
+
+1564
+00:52:59,440 --> 00:53:00,950
+that sometimes is an anti-pattern,
+
+1565
+00:53:00,960 --> 00:53:02,270
+especially if you're always doing
+
+1566
+00:53:02,280 --> 00:53:03,750
+request reply.
+
+1567
+00:53:03,760 --> 00:53:05,590
+And and you can think of this as, you
+
+1568
+00:53:05,600 --> 00:53:07,870
+know, people kind of look at me and I've
+
+1569
+00:53:07,880 --> 00:53:09,990
+had people, you know, and and this is
+
+1570
+00:53:10,000 --> 00:53:12,030
+their earnest, you know, honest opinion.
+
+1571
+00:53:12,040 --> 00:53:13,190
+They're like, "Derek, you just don't
+
+1572
+00:53:13,200 --> 00:53:14,590
+know what you're talking about." But
+
+1573
+00:53:14,600 --> 00:53:15,790
+I've kind of have done this for a long
+
+1574
+00:53:15,800 --> 00:53:18,590
+time and I always say, "Look at the web.
+
+1575
+00:53:18,600 --> 00:53:21,150
+If you click on please deposit 100 bucks
+
+1576
+00:53:21,160 --> 00:53:23,470
+into my Wells Fargo account." And all of
+
+1577
+00:53:23,480 --> 00:53:25,310
+a sudden the page goes blank. What do
+
+1578
+00:53:25,320 --> 00:53:27,310
+you do? And I say, "What you don't do is
+
+1579
+00:53:27,320 --> 00:53:28,830
+you don't walk away."
+
+1580
+00:53:28,840 --> 00:53:30,870
+Right? You go uh reload, reload, then
+
+1581
+00:53:30,880 --> 00:53:32,190
+you might check your balance, see if it
+
+1582
+00:53:32,200 --> 00:53:33,910
+had appeared. If it didn't appear, you
+
+1583
+00:53:33,920 --> 00:53:36,430
+do it again, right? And so I I believe
+
+1584
+00:53:36,440 --> 00:53:38,030
+in those types of patterns. Surface that
+
+1585
+00:53:38,040 --> 00:53:40,110
+stuff. Law of leaky abstraction and
+
+1586
+00:53:40,120 --> 00:53:41,350
+things like that. Some of the worst
+
+1587
+00:53:41,360 --> 00:53:45,150
+system outages I've ever seen in my
+
+1588
+00:53:45,160 --> 00:53:47,510
+career, believe or not, are from a
+
+1589
+00:53:47,520 --> 00:53:50,030
+message being re-delivered because you
+
+1590
+00:53:50,040 --> 00:53:51,710
+told the system hold on to this and make
+
+1591
+00:53:51,720 --> 00:53:53,830
+sure Derek gets it. But Derek, meaning
+
+1592
+00:53:53,840 --> 00:53:54,870
+me,
+
+1593
+00:53:54,880 --> 00:53:56,870
+it had no semantic meaning outside of
+
+1594
+00:53:56,880 --> 00:53:59,310
+let's say 5 minutes. But you were you
+
+1595
+00:53:59,320 --> 00:54:00,830
+got you you delivered it to me an hour
+
+1596
+00:54:00,840 --> 00:54:02,430
+later and I just puked. Right. You know,
+
+1597
+00:54:02,440 --> 00:54:04,070
+the whole system cascaded down type of
+
+1598
+00:54:04,080 --> 00:54:05,150
+type of deal.
+
+1599
+00:54:05,160 --> 00:54:06,670
+And so a lot of times those things you
+
+1600
+00:54:06,680 --> 00:54:08,350
+think it's like, oh, I absolutely need
+
+1601
+00:54:08,360 --> 00:54:10,670
+this, you know. I absolutely need, you
+
+1602
+00:54:10,680 --> 00:54:12,550
+know, not only at least once, I need
+
+1603
+00:54:12,560 --> 00:54:13,870
+exactly once, I need distributed
+
+1604
+00:54:13,880 --> 00:54:15,590
+transactions. And what we've seen with
+
+1605
+00:54:15,600 --> 00:54:16,910
+modern systems is they're going away
+
+1606
+00:54:16,920 --> 00:54:18,470
+from that complexity.
+
+1607
+00:54:18,480 --> 00:54:19,830
+Cuz a lot of times when something goes
+
+1608
+00:54:19,840 --> 00:54:21,510
+wrong, you still don't know necessarily
+
+1609
+00:54:21,520 --> 00:54:22,870
+what to do.
+
+1610
+00:54:22,880 --> 00:54:24,510
+You only know that if it says it's good,
+
+1611
+00:54:24,520 --> 00:54:26,670
+everything was good and you're usually
+
+1612
+00:54:26,680 --> 00:54:28,830
+very, very slow. You can't handle a lot
+
+1613
+00:54:28,840 --> 00:54:31,070
+of those things at all. We we had a
+
+1614
+00:54:31,080 --> 00:54:33,310
+customer who who was trying to project
+
+1615
+00:54:33,320 --> 00:54:36,070
+out 5 years in terms of load and and
+
+1616
+00:54:36,080 --> 00:54:38,630
+they wanted exactly once messaging and
+
+1617
+00:54:38,640 --> 00:54:39,910
+distributed transactions. So the
+
+1618
+00:54:39,920 --> 00:54:41,830
+messages What that means is the messages
+
+1619
+00:54:41,840 --> 00:54:44,070
+are coordinated with another resource,
+
+1620
+00:54:44,080 --> 00:54:46,270
+uh like a database through a uh formal
+
+1621
+00:54:46,280 --> 00:54:48,590
+protocol, uh usually XA.
+
+1622
+00:54:48,600 --> 00:54:50,430
+And we did it and we implemented it and
+
+1623
+00:54:50,440 --> 00:54:52,070
+I looked at the person I said, I promise
+
+1624
+00:54:52,080 --> 00:54:53,830
+you you'll ask me you'll come back and
+
+1625
+00:54:53,840 --> 00:54:55,950
+not use this, you know, in a short
+
+1626
+00:54:55,960 --> 00:54:58,470
+period of time. Um and they did. And we
+
+1627
+00:54:58,480 --> 00:55:00,190
+came back and we said, we would do a
+
+1628
+00:55:00,200 --> 00:55:03,430
+model where we would use at least once,
+
+1629
+00:55:03,440 --> 00:55:04,710
+uh meaning we're going to try to deliver
+
+1630
+00:55:04,720 --> 00:55:07,190
+this thing, you know, short TTLs, the
+
+1631
+00:55:07,200 --> 00:55:09,110
+ability to dedupe, uh and then
+
+1632
+00:55:09,120 --> 00:55:10,990
+compensating transactions. No XA type
+
+1633
+00:55:11,000 --> 00:55:13,150
+stuff, but we can compensate meaning if
+
+1634
+00:55:13,160 --> 00:55:15,230
+we got the message and we tried to do
+
+1635
+00:55:15,240 --> 00:55:16,710
+the database, but it failed, we'd know
+
+1636
+00:55:16,720 --> 00:55:18,510
+how to kind of unroll that, right?
+
+1637
+00:55:18,520 --> 00:55:20,350
+Anyway, long story short, that system
+
+1638
+00:55:20,360 --> 00:55:23,870
+now has been running 23 years. And so,
+
+1639
+00:55:23,880 --> 00:55:25,630
+it was a lot simpler. It wasn't what
+
+1640
+00:55:25,640 --> 00:55:27,950
+they thought they they wanted, but they
+
+1641
+00:55:27,960 --> 00:55:29,150
+said it was one of the best investments
+
+1642
+00:55:29,160 --> 00:55:31,470
+they ever made because of the longevity
+
+1643
+00:55:31,480 --> 00:55:32,750
+they got out of the system. Now, of
+
+1644
+00:55:32,760 --> 00:55:34,190
+course, they tweaked it and upgraded it
+
+1645
+00:55:34,200 --> 00:55:36,390
+and made, you know, more machines, more
+
+1646
+00:55:36,400 --> 00:55:38,470
+powerful machines, of course. But for
+
+1647
+00:55:38,480 --> 00:55:41,230
+something to run that long, you know, is
+
+1648
+00:55:41,240 --> 00:55:43,510
+that's that's I like that. That gives me
+
+1649
+00:55:43,520 --> 00:55:46,710
+a great amount of satisfaction as a a a
+
+1650
+00:55:46,720 --> 00:55:48,790
+technology person. But again, all of the
+
+1651
+00:55:48,800 --> 00:55:49,830
+things that the
+
+1652
+00:55:49,840 --> 00:55:51,430
+customer thought they needed to solve
+
+1653
+00:55:51,440 --> 00:55:53,790
+the problem really turned out not to be.
+
+1654
+00:55:53,800 --> 00:55:54,870
+And so that's how I do that. So we've
+
+1655
+00:55:54,880 --> 00:55:57,030
+got the stream, but it's not a stream,
+
+1656
+00:55:57,040 --> 00:55:58,750
+it's a fire and forget into Jeremy for
+
+1657
+00:55:58,760 --> 00:56:00,550
+the the stock quotes, but it's
+
+1658
+00:56:00,560 --> 00:56:02,630
+authorized, so you know who So you can
+
+1659
+00:56:02,640 --> 00:56:03,990
+audit and say, "I know exactly who's
+
+1660
+00:56:04,000 --> 00:56:05,790
+allowed to watch the Nasdaq ticker
+
+1661
+00:56:05,800 --> 00:56:08,630
+symbol, right?" And who's not. Um I mean
+
+1662
+00:56:08,640 --> 00:56:09,950
+I can charge them for or I can
+
+1663
+00:56:09,960 --> 00:56:12,390
+internally bill them for it. You on your
+
+1664
+00:56:12,400 --> 00:56:14,510
+own, regardless of what I'm doing, can
+
+1665
+00:56:14,520 --> 00:56:16,430
+keep a stream of all of those, process
+
+1666
+00:56:16,440 --> 00:56:18,590
+them at will, any way you want. And then
+
+1667
+00:56:18,600 --> 00:56:20,590
+of course doing the trades themselves, I
+
+1668
+00:56:20,600 --> 00:56:22,950
+would not say put this in a messaging
+
+1669
+00:56:22,960 --> 00:56:25,110
+system and it's the one that guarantees
+
+1670
+00:56:25,120 --> 00:56:27,230
+that the order gets processed. It's
+
+1671
+00:56:27,240 --> 00:56:29,190
+you send me a request, I stamp it in
+
+1672
+00:56:29,200 --> 00:56:31,470
+whatever a database or whatever. I I I I
+
+1673
+00:56:31,480 --> 00:56:32,870
+don't believe in
+
+1674
+00:56:32,880 --> 00:56:34,670
+putting everything into like a message
+
+1675
+00:56:34,680 --> 00:56:37,070
+stream. That's not my my go-to
+
+1676
+00:56:37,080 --> 00:56:38,950
+architecture, but I mean databases have
+
+1677
+00:56:38,960 --> 00:56:40,110
+been around a long they work, they're
+
+1678
+00:56:40,120 --> 00:56:41,550
+good, you know. So whack in the
+
+1679
+00:56:41,560 --> 00:56:43,030
+database, but once that's done then I
+
+1680
+00:56:43,040 --> 00:56:44,430
+send you an okay going, "Hey, you're
+
+1681
+00:56:44,440 --> 00:56:46,630
+good to go. I have your order." And that
+
+1682
+00:56:46,640 --> 00:56:48,270
+might take, you know, tens of
+
+1683
+00:56:48,280 --> 00:56:49,790
+milliseconds, hundreds of milliseconds,
+
+1684
+00:56:49,800 --> 00:56:51,710
+hopefully if it's a well-designed back
+
+1685
+00:56:51,720 --> 00:56:53,790
+end. But on the messaging front, because
+
+1686
+00:56:53,800 --> 00:56:55,150
+you're doing request reply, I don't need
+
+1687
+00:56:55,160 --> 00:56:57,870
+anything except at most once. And so
+
+1688
+00:56:57,880 --> 00:57:00,750
+you something like, you know, the the
+
+1689
+00:57:00,760 --> 00:57:02,310
+global utility or whatever that is
+
+1690
+00:57:02,320 --> 00:57:04,710
+secure and you can do it a zero trust.
+
+1691
+00:57:04,720 --> 00:57:06,790
+I'm just asking the messaging system to
+
+1692
+00:57:06,800 --> 00:57:09,710
+give me identity and securely, you know,
+
+1693
+00:57:09,720 --> 00:57:12,270
+deliver a message to the trading desk,
+
+1694
+00:57:12,280 --> 00:57:13,590
+wherever that is, and it can keep
+
+1695
+00:57:13,600 --> 00:57:14,990
+changing and it doesn't matter. And you
+
+1696
+00:57:15,000 --> 00:57:16,590
+can keep moving, right? You got your
+
+1697
+00:57:16,600 --> 00:57:18,030
+laptop in Europe, now you're back in
+
+1698
+00:57:18,040 --> 00:57:19,390
+North America.
+
+1699
+00:57:19,400 --> 00:57:21,190
+And so that's
+
+1700
+00:57:21,200 --> 00:57:22,110
+very
+
+1701
+00:57:22,120 --> 00:57:24,270
+quick nutshell of of how I would
+
+1702
+00:57:24,280 --> 00:57:25,830
+approach that today. And what I think
+
+1703
+00:57:25,840 --> 00:57:27,390
+the audience will be surprised at is is
+
+1704
+00:57:27,400 --> 00:57:30,470
+that I didn't say, you know, at at once
+
+1705
+00:57:30,480 --> 00:57:32,150
+and exactly once
+
+1706
+00:57:32,160 --> 00:57:33,630
+very many times.
+
+1707
+00:57:33,640 --> 00:57:34,910
+I did the thing if you want to save them
+
+1708
+00:57:34,920 --> 00:57:36,910
+up for yourself and replay them,
+
+1709
+00:57:36,920 --> 00:57:38,470
+then I need some sort of persistence
+
+1710
+00:57:38,480 --> 00:57:40,310
+level and the ability to kind of of get
+
+1711
+00:57:40,320 --> 00:57:42,590
+those things back. But beyond that, you
+
+1712
+00:57:42,600 --> 00:57:44,430
+wouldn't need it, in my opinion. As a
+
+1713
+00:57:44,440 --> 00:57:46,630
+sort of break it down in terms of the
+
+1714
+00:57:46,640 --> 00:57:48,790
+messaging patterns used to receive the
+
+1715
+00:57:48,800 --> 00:57:52,070
+live prices, you would use the at most
+
+1716
+00:57:52,080 --> 00:57:55,070
+once delivery of pub/sub because you can
+
+1717
+00:57:55,080 --> 00:57:56,630
+send it to, you know, hundreds,
+
+1718
+00:57:56,640 --> 00:57:58,990
+thousands of clients. And if they
+
+1719
+00:57:59,000 --> 00:58:01,230
+millions and if they they miss some,
+
+1720
+00:58:01,240 --> 00:58:03,230
+it's okay because they probably just
+
+1721
+00:58:03,240 --> 00:58:05,150
+want to see whatever's the last one. So
+
+1722
+00:58:05,160 --> 00:58:06,790
+if they dropped like, you know, 10 of
+
+1723
+00:58:06,800 --> 00:58:08,790
+them in between, it's fine. Well, it's
+
+1724
+00:58:08,800 --> 00:58:10,070
+not only just fine, it's actually
+
+1725
+00:58:10,080 --> 00:58:11,910
+better. And again, you you have to
+
+1726
+00:58:11,920 --> 00:58:14,230
+think, what do I actually want to see if
+
+1727
+00:58:14,240 --> 00:58:16,350
+I know So I want to see if I'm I think
+
+1728
+00:58:16,360 --> 00:58:18,270
+I'm connected, obviously. And if I'm
+
+1729
+00:58:18,280 --> 00:58:19,790
+connected, I better see what the exact
+
+1730
+00:58:19,800 --> 00:58:21,790
+price is now, not what it was 5 minutes
+
+1731
+00:58:21,800 --> 00:58:25,470
+ago. Right. And to have the history of
+
+1732
+00:58:25,480 --> 00:58:28,030
+the prices of these these stocks, you
+
+1733
+00:58:28,040 --> 00:58:30,910
+would make use of NATS streaming. And we
+
+1734
+00:58:30,920 --> 00:58:32,990
+we had a show on
+
+1735
+00:58:33,000 --> 00:58:34,550
+streaming architecture before, and we've
+
+1736
+00:58:34,560 --> 00:58:36,830
+also had a show on Kafka before. And
+
+1737
+00:58:36,840 --> 00:58:39,390
+basically, all of these messages of the
+
+1738
+00:58:39,400 --> 00:58:41,430
+different prices, they would be stored
+
+1739
+00:58:41,440 --> 00:58:44,070
+within NATS. And if a client at a later
+
+1740
+00:58:44,080 --> 00:58:45,910
+point decided they wanted to get a graph
+
+1741
+00:58:45,920 --> 00:58:48,910
+of the history, they could replay the
+
+1742
+00:58:48,920 --> 00:58:50,990
+messages that are stored in the stream
+
+1743
+00:58:51,000 --> 00:58:53,430
+to get the history. And then finally for
+
+1744
+00:58:53,440 --> 00:58:57,470
+the the buying and the selling orders,
+
+1745
+00:58:57,480 --> 00:58:59,470
+they could use the request reply
+
+1746
+00:58:59,480 --> 00:59:00,750
+functionality
+
+1747
+00:59:00,760 --> 00:59:04,470
+of NATS. And because it's at most once
+
+1748
+00:59:04,480 --> 00:59:05,990
+delivery,
+
+1749
+00:59:06,000 --> 00:59:09,110
+if a client sends the request and they
+
+1750
+00:59:09,120 --> 00:59:11,030
+don't get a response back, then the
+
+1751
+00:59:11,040 --> 00:59:14,390
+client can assume that their order was
+
+1752
+00:59:14,400 --> 00:59:16,430
+not processed and the application can
+
+1753
+00:59:16,440 --> 00:59:18,270
+have the responsibility of making the
+
+1754
+00:59:18,280 --> 00:59:21,230
+request again, rather than having that
+
+1755
+00:59:21,240 --> 00:59:23,470
+sort of be handled by the messaging
+
+1756
+00:59:23,480 --> 00:59:25,110
+system itself.
+
+1757
+00:59:25,120 --> 00:59:26,830
+Almost correct. If you don't get
+
+1758
+00:59:26,840 --> 00:59:28,870
+anything back, you don't really know
+
+1759
+00:59:28,880 --> 00:59:29,550
+what happened.
+
+1760
+00:59:29,560 --> 00:59:31,230
+Okay. If you get something back, you
+
+1761
+00:59:31,240 --> 00:59:32,470
+either know it has succeeded or it
+
+1762
+00:59:32,480 --> 00:59:33,590
+failed.
+
+1763
+00:59:33,600 --> 00:59:35,070
+But again, I think the application and
+
+1764
+00:59:35,080 --> 00:59:36,630
+again, I would ask the audience to put
+
+1765
+00:59:36,640 --> 00:59:37,990
+their selves in front of their browser
+
+1766
+00:59:38,000 --> 00:59:40,030
+doing online banking. What are the
+
+1767
+00:59:40,040 --> 00:59:41,830
+patterns that you're doing, right? So,
+
+1768
+00:59:41,840 --> 00:59:44,150
+if you get the I click on it and I got
+
+1769
+00:59:44,160 --> 00:59:45,750
+an error back from Wells Fargo, you know
+
+1770
+00:59:45,760 --> 00:59:47,110
+what that means. If you click and you
+
+1771
+00:59:47,120 --> 00:59:48,670
+say it's deposited, you also know what
+
+1772
+00:59:48,680 --> 00:59:51,430
+that means. If the page just goes blank,
+
+1773
+00:59:51,440 --> 00:59:53,470
+you have to deal with that. What do you
+
+1774
+00:59:53,480 --> 00:59:55,430
+do, right? And and that what I think
+
+1775
+00:59:55,440 --> 00:59:59,070
+should be managed inside of applications
+
+1776
+00:59:59,080 --> 01:00:00,790
+because again, you're just removing
+
+1777
+01:00:00,800 --> 01:00:02,030
+yourself. So, what happens if the
+
+1778
+01:00:02,040 --> 01:00:05,030
+messaging system blows up or or doesn't
+
+1779
+01:00:05,040 --> 01:00:06,830
+respond to you? It's the same thing. You
+
+1780
+01:00:06,840 --> 01:00:08,950
+have to do the same exact, you know,
+
+1781
+01:00:08,960 --> 01:00:10,830
+error handling, failure scenario
+
+1782
+01:00:10,840 --> 01:00:12,670
+handling as if you just sent it all the
+
+1783
+01:00:12,680 --> 01:00:14,070
+way to the trading desk. Now, of course,
+
+1784
+01:00:14,080 --> 01:00:15,510
+if the trading desk isn't online and
+
+1785
+01:00:15,520 --> 01:00:16,830
+it's the middle of the night, let's say,
+
+1786
+01:00:16,840 --> 01:00:18,710
+and it's old school,
+
+1787
+01:00:18,720 --> 01:00:20,230
+you might use something like not
+
+1788
+01:00:20,240 --> 01:00:22,230
+streaming or Kafka to say, "No, save
+
+1789
+01:00:22,240 --> 01:00:23,430
+this and deliver it to them when they
+
+1790
+01:00:23,440 --> 01:00:24,710
+come online."
+
+1791
+01:00:24,720 --> 01:00:27,070
+But in today's world, that is the
+
+1792
+01:00:27,080 --> 01:00:28,430
+exception these days. I mean,
+
+1793
+01:00:28,440 --> 01:00:30,190
+everything's online all the time and you
+
+1794
+01:00:30,200 --> 01:00:32,550
+know I'm talking directly to them even
+
+1795
+01:00:32,560 --> 01:00:34,110
+if it's not trading hours. They will
+
+1796
+01:00:34,120 --> 01:00:35,670
+say, "Got it, put it in the database,
+
+1797
+01:00:35,680 --> 01:00:36,670
+you're good."
+
+1798
+01:00:36,680 --> 01:00:38,350
+You know, hopefully that makes sense to
+
+1799
+01:00:38,360 --> 01:00:40,830
+the audience. So, we we've moved to more
+
+1800
+01:00:40,840 --> 01:00:43,670
+of an online, real-time, but there is
+
+1801
+01:00:43,680 --> 01:00:45,710
+the need for these higher qualities of
+
+1802
+01:00:45,720 --> 01:00:47,630
+service and saving things and maybe
+
+1803
+01:00:47,640 --> 01:00:50,070
+replaying them for analysis or or
+
+1804
+01:00:50,080 --> 01:00:51,390
+machine learning or data lakes or
+
+1805
+01:00:51,400 --> 01:00:52,670
+business analytics, you know, Hadoop
+
+1806
+01:00:52,680 --> 01:00:55,150
+type stuff. I do believe those exist for
+
+1807
+01:00:55,160 --> 01:00:57,790
+sure, but I usually see them as as kind
+
+1808
+01:00:57,800 --> 01:00:59,790
+of a hey, let's plug this thing in and
+
+1809
+01:00:59,800 --> 01:01:01,630
+not affect anything that's going on and
+
+1810
+01:01:01,640 --> 01:01:03,710
+start taking advantage of this, not
+
+1811
+01:01:03,720 --> 01:01:05,270
+making it I'm just trying to send a
+
+1812
+01:01:05,280 --> 01:01:06,950
+request to Jeremy. Why are you making me
+
+1813
+01:01:06,960 --> 01:01:09,150
+use all this crazy complex stuff? It's
+
+1814
+01:01:09,160 --> 01:01:11,390
+slow. I can send 40 messages a second or
+
+1815
+01:01:11,400 --> 01:01:13,150
+whatever and the latency is really bad
+
+1816
+01:01:13,160 --> 01:01:15,550
+and you know, so it almost becomes an
+
+1817
+01:01:15,560 --> 01:01:18,110
+anti-pattern if you start there, but you
+
+1818
+01:01:18,120 --> 01:01:19,430
+should also pick a technology that
+
+1819
+01:01:19,440 --> 01:01:21,230
+allows you to grow and add these things
+
+1820
+01:01:21,240 --> 01:01:23,190
+on without ever changing or perturbing
+
+1821
+01:01:23,200 --> 01:01:25,870
+what already exists. My last question
+
+1822
+01:01:25,880 --> 01:01:27,990
+would be related to the the streaming
+
+1823
+01:01:28,000 --> 01:01:30,070
+functionality of NATS.
+
+1824
+01:01:30,080 --> 01:01:31,790
+There's a lot of listeners who I'm sure
+
+1825
+01:01:31,800 --> 01:01:34,550
+are familiar with Kafka to be used as an
+
+1826
+01:01:34,560 --> 01:01:37,670
+event store. What kind of niche does
+
+1827
+01:01:37,680 --> 01:01:40,430
+NATS fill in comparison to Kafka? Is is
+
+1828
+01:01:40,440 --> 01:01:42,390
+it the simpler deployment or are there
+
+1829
+01:01:42,400 --> 01:01:44,110
+things that are in Kafka that are not in
+
+1830
+01:01:44,120 --> 01:01:45,830
+NATS? Like how would someone make that
+
+1831
+01:01:45,840 --> 01:01:47,670
+decision? Yeah.
+
+1832
+01:01:47,680 --> 01:01:50,710
+Yeah, so we're seeing a a tremendous
+
+1833
+01:01:50,720 --> 01:01:53,350
+uptake, believe it or not, um where
+
+1834
+01:01:53,360 --> 01:01:54,910
+there is a need for something like
+
+1835
+01:01:54,920 --> 01:01:56,190
+streaming, but they want something
+
+1836
+01:01:56,200 --> 01:01:59,150
+that's very easy to set up, develop
+
+1837
+01:01:59,160 --> 01:02:01,630
+against, and run in production. And so,
+
+1838
+01:02:01,640 --> 01:02:03,830
+we've seen quite a few opportunities
+
+1839
+01:02:03,840 --> 01:02:05,910
+where um there is a large presence of
+
+1840
+01:02:05,920 --> 01:02:07,830
+Kafka, but they want, you know, an
+
+1841
+01:02:07,840 --> 01:02:10,270
+additional and technology that might be
+
+1842
+01:02:10,280 --> 01:02:11,750
+a little bit lighter weight, but is
+
+1843
+01:02:11,760 --> 01:02:14,150
+still as performant and still as fast,
+
+1844
+01:02:14,160 --> 01:02:15,950
+and still can store as much data type
+
+1845
+01:02:15,960 --> 01:02:17,710
+stuff. And so, we've seen a tremendous
+
+1846
+01:02:17,720 --> 01:02:20,870
+amount of inbound interest that way. We
+
+1847
+01:02:20,880 --> 01:02:22,590
+don't have the ecosystem that Kafka
+
+1848
+01:02:22,600 --> 01:02:23,790
+does. We don't have all of the
+
+1849
+01:02:23,800 --> 01:02:24,950
+connectors, they're all the different
+
+1850
+01:02:24,960 --> 01:02:26,350
+subsystems.
+
+1851
+01:02:26,360 --> 01:02:28,390
+And we don't have the the things that
+
+1852
+01:02:28,400 --> 01:02:29,750
+that companies like Confluent do where
+
+1853
+01:02:29,760 --> 01:02:32,430
+they have like KSQL. Um but for me, if
+
+1854
+01:02:32,440 --> 01:02:33,830
+you're trying to do something like SQL,
+
+1855
+01:02:33,840 --> 01:02:36,310
+then that exists. Dig into database and
+
+1856
+01:02:36,320 --> 01:02:37,990
+you've got SQL. You've got real SQL. You
+
+1857
+01:02:38,000 --> 01:02:41,030
+don't need um something that's built on
+
+1858
+01:02:41,040 --> 01:02:43,550
+top of of something else. So, we've seen
+
+1859
+01:02:43,560 --> 01:02:45,750
+a lot of and conversations, meaning
+
+1860
+01:02:45,760 --> 01:02:49,030
+Kafka and NATS streaming and NATS as
+
+1861
+01:02:49,040 --> 01:02:50,270
+kind of a
+
+1862
+01:02:50,280 --> 01:02:52,230
+a supplementary or or additional
+
+1863
+01:02:52,240 --> 01:02:54,190
+technology. And so, to that end, we've
+
+1864
+01:02:54,200 --> 01:02:55,910
+actually started, and we've been known
+
+1865
+01:02:55,920 --> 01:02:57,750
+as NATS for about 6 months, designing
+
+1866
+01:02:57,760 --> 01:02:59,590
+kind of the successor to streaming. But
+
+1867
+01:02:59,600 --> 01:03:01,310
+it's still philosophically going to hold
+
+1868
+01:03:01,320 --> 01:03:03,070
+on to those, how do we even make it
+
+1869
+01:03:03,080 --> 01:03:04,750
+simpler from a development standpoint,
+
+1870
+01:03:04,760 --> 01:03:06,510
+but have the multiple patterns, make it
+
+1871
+01:03:06,520 --> 01:03:08,950
+closer to NATS core, but it is secured
+
+1872
+01:03:08,960 --> 01:03:10,470
+by default. It does understand all the
+
+1873
+01:03:10,480 --> 01:03:12,310
+NATS 2.0 stuff like accounts and
+
+1874
+01:03:12,320 --> 01:03:14,870
+sandboxes and sharing and all that other
+
+1875
+01:03:14,880 --> 01:03:16,350
+stuff. And so, we're really excited
+
+1876
+01:03:16,360 --> 01:03:18,990
+about that and where that's going. Um
+
+1877
+01:03:19,000 --> 01:03:20,390
+but we believe
+
+1878
+01:03:20,400 --> 01:03:23,950
+operational ease, maintenance, scaling,
+
+1879
+01:03:23,960 --> 01:03:26,430
+um secure by default, multi-tenancy,
+
+1880
+01:03:26,440 --> 01:03:28,510
+secure multi-tenancy by default,
+
+1881
+01:03:28,520 --> 01:03:29,990
+multiple message patterns, multiple
+
+1882
+01:03:30,000 --> 01:03:33,350
+QoS's, but in extremely simple, don't
+
+1883
+01:03:33,360 --> 01:03:35,430
+need to read much, you know, I I
+
+1884
+01:03:35,440 --> 01:03:37,670
+it we are not like this, but this is our
+
+1885
+01:03:37,680 --> 01:03:40,270
+goal, which was the early days when when
+
+1886
+01:03:40,280 --> 01:03:42,470
+Jobs returned Apple and there was no
+
+1887
+01:03:42,480 --> 01:03:44,030
+manual. So, a lot of the stuff you did,
+
+1888
+01:03:44,040 --> 01:03:44,910
+you would open it up and it would be
+
+1889
+01:03:44,920 --> 01:03:47,670
+like step one, step two, step three,
+
+1890
+01:03:47,680 --> 01:03:49,550
+step four, and you're done. That's a you
+
+1891
+01:03:49,560 --> 01:03:51,630
+know, no one can do that as well as as
+
+1892
+01:03:51,640 --> 01:03:53,670
+they did, per se, but that's kind of our
+
+1893
+01:03:53,680 --> 01:03:55,910
+goal, which is how do we make this drop
+
+1894
+01:03:55,920 --> 01:03:58,990
+dead easy from a day one development
+
+1895
+01:03:59,000 --> 01:04:00,430
+through production, through all of the
+
+1896
+01:04:00,440 --> 01:04:02,910
+other things that compromise production.
+
+1897
+01:04:02,920 --> 01:04:04,870
+And we think there's a massive market
+
+1898
+01:04:04,880 --> 01:04:06,990
+for for that to combine that with
+
+1899
+01:04:07,000 --> 01:04:10,070
+larger, maybe technologies like you
+
+1900
+01:04:10,080 --> 01:04:11,790
+know, Kafka and then Hadoop and then the
+
+1901
+01:04:11,800 --> 01:04:13,750
+new machine learning and serverless and
+
+1902
+01:04:13,760 --> 01:04:15,950
+all these other things. And uh we
+
+1903
+01:04:15,960 --> 01:04:17,950
+especially think for for serverless and
+
+1904
+01:04:17,960 --> 01:04:19,350
+being able to say this thing can be
+
+1905
+01:04:19,360 --> 01:04:20,710
+running anywhere. We want to run it in
+
+1906
+01:04:20,720 --> 01:04:22,470
+an instant, but we also still want
+
+1907
+01:04:22,480 --> 01:04:24,630
+security and all these other things.
+
+1908
+01:04:24,640 --> 01:04:26,110
+Uh again, most people are saying we're
+
+1909
+01:04:26,120 --> 01:04:27,070
+trying to figure out how to spin this
+
+1910
+01:04:27,080 --> 01:04:28,470
+thing up as fast as possible, but you're
+
+1911
+01:04:28,480 --> 01:04:31,710
+still connecting to it through HTTP. And
+
+1912
+01:04:31,720 --> 01:04:33,750
+uh we do have a bunch of serverless
+
+1913
+01:04:33,760 --> 01:04:36,110
+function technologies out there that
+
+1914
+01:04:36,120 --> 01:04:37,870
+that that we work with that they are
+
+1915
+01:04:37,880 --> 01:04:40,230
+using NATS and NATS streaming to power
+
+1916
+01:04:40,240 --> 01:04:43,350
+those and they're starting to see uh a
+
+1917
+01:04:43,360 --> 01:04:44,790
+good amount of uptake. And again, it's
+
+1918
+01:04:44,800 --> 01:04:45,750
+not
+
+1919
+01:04:45,760 --> 01:04:48,190
+as much something that we, the NATS
+
+1920
+01:04:48,200 --> 01:04:50,070
+team, are doing, per se. I think it's
+
+1921
+01:04:50,080 --> 01:04:52,870
+the the market in general going, "Hey,
+
+1922
+01:04:52,880 --> 01:04:54,710
+we want to look at these things cuz
+
+1923
+01:04:54,720 --> 01:04:55,790
+they're different, make us think
+
+1924
+01:04:55,800 --> 01:04:57,110
+differently, and we're innovating, but
+
+1925
+01:04:57,120 --> 01:04:58,310
+we also want something that's just
+
+1926
+01:04:58,320 --> 01:04:59,910
+simple and just works."
+
+1927
+01:04:59,920 --> 01:05:01,150
+And so, we're starting to see a lot of
+
+1928
+01:05:01,160 --> 01:05:03,110
+people keep saying that we came to you
+
+1929
+01:05:03,120 --> 01:05:04,990
+because we just need something that is
+
+1930
+01:05:05,000 --> 01:05:07,950
+simple and works. And um so, that's what
+
+1931
+01:05:07,960 --> 01:05:09,630
+we're going to keep pushing for. I want
+
+1932
+01:05:09,640 --> 01:05:12,070
+to close out and ask you, are there any
+
+1933
+01:05:12,080 --> 01:05:13,950
+questions you think I should have asked
+
+1934
+01:05:13,960 --> 01:05:15,510
+or something you would just like to say
+
+1935
+01:05:15,520 --> 01:05:17,390
+to our audience? No, I think they they
+
+1936
+01:05:17,400 --> 01:05:19,470
+were all great. I really appreciate the
+
+1937
+01:05:19,480 --> 01:05:21,150
+time. I know
+
+1938
+01:05:21,160 --> 01:05:24,950
+uh we've gone long, um but uh this is um
+
+1939
+01:05:24,960 --> 01:05:26,990
+this pattern is very common. Meaning
+
+1940
+01:05:27,000 --> 01:05:29,310
+I've I've done a lot of these with
+
+1941
+01:05:29,320 --> 01:05:31,270
+customers and they go, "We'll allocate
+
+1942
+01:05:31,280 --> 01:05:34,230
+about 2 hours." The the the most extreme
+
+1943
+01:05:34,240 --> 01:05:37,270
+case was it went for a day and a half.
+
+1944
+01:05:37,280 --> 01:05:39,590
+It's it's an amazing topic to explore
+
+1945
+01:05:39,600 --> 01:05:42,030
+and see how we've moved, not just us as
+
+1946
+01:05:42,040 --> 01:05:44,110
+a technology, but just in general.
+
+1947
+01:05:44,120 --> 01:05:45,630
+And to talk about where we think things
+
+1948
+01:05:45,640 --> 01:05:48,190
+are going and how we can meet and and
+
+1949
+01:05:48,200 --> 01:05:50,430
+drive some of those uh those
+
+1950
+01:05:50,440 --> 01:05:52,750
+innovations, um but to get something
+
+1951
+01:05:52,760 --> 01:05:53,870
+that's
+
+1952
+01:05:53,880 --> 01:05:55,510
+you know, a common communication thing,
+
+1953
+01:05:55,520 --> 01:05:57,110
+it's secure by default, it's not a lot
+
+1954
+01:05:57,120 --> 01:05:59,230
+of, you know, pain to get it to be
+
+1955
+01:05:59,240 --> 01:06:01,150
+secure, right? Um
+
+1956
+01:06:01,160 --> 01:06:03,510
+it has these notions of these containers
+
+1957
+01:06:03,520 --> 01:06:05,870
+and sandboxes, but also promote sharing
+
+1958
+01:06:05,880 --> 01:06:07,750
+in a secure way, and you know, a lot of
+
+1959
+01:06:07,760 --> 01:06:10,070
+people have really the light bulb goes
+
+1960
+01:06:10,080 --> 01:06:12,190
+off very fast for them, faster than I've
+
+1961
+01:06:12,200 --> 01:06:14,430
+seen before. I've had technologies
+
+1962
+01:06:14,440 --> 01:06:16,630
+before where I would be talking for
+
+1963
+01:06:16,640 --> 01:06:17,950
+years
+
+1964
+01:06:17,960 --> 01:06:19,550
+to to customers trying to say, "No, this
+
+1965
+01:06:19,560 --> 01:06:20,950
+is a better way maybe to look at this
+
+1966
+01:06:20,960 --> 01:06:22,950
+problem." And what I think I'm seeing
+
+1967
+01:06:22,960 --> 01:06:24,910
+here is is that the market's figuring
+
+1968
+01:06:24,920 --> 01:06:27,630
+that out for themselves, and it makes my
+
+1969
+01:06:27,640 --> 01:06:29,710
+job trying to say what we've done about
+
+1970
+01:06:29,720 --> 01:06:31,430
+it or what we think
+
+1971
+01:06:31,440 --> 01:06:33,550
+about things and where they're going a
+
+1972
+01:06:33,560 --> 01:06:35,110
+lot easier. And it's been really
+
+1973
+01:06:35,120 --> 01:06:36,830
+exciting for me, you know, but I I've
+
+1974
+01:06:36,840 --> 01:06:38,630
+been doing this for quite a long time,
+
+1975
+01:06:38,640 --> 01:06:40,190
+but seeing the customers kind of go,
+
+1976
+01:06:40,200 --> 01:06:41,630
+"Oh, wait a minute, we could think of
+
+1977
+01:06:41,640 --> 01:06:43,230
+it, you know, like this." The again,
+
+1978
+01:06:43,240 --> 01:06:45,550
+having their own Tesla moment uh is
+
+1979
+01:06:45,560 --> 01:06:48,870
+really exciting for not only us and and
+
+1980
+01:06:48,880 --> 01:06:50,750
+and uh you know, being the the NATS core
+
+1981
+01:06:50,760 --> 01:06:53,110
+team, but the whole ecosystem and
+
+1982
+01:06:53,120 --> 01:06:54,510
+and just technology in general. It's
+
+1983
+01:06:54,520 --> 01:06:56,710
+it's really exciting to be able to see
+
+1984
+01:06:56,720 --> 01:06:59,670
+all of the changes that are going on and
+
+1985
+01:06:59,680 --> 01:07:01,430
+and realize that the next 10 years will
+
+1986
+01:07:01,440 --> 01:07:03,470
+probably eclipse the last 50, right? In
+
+1987
+01:07:03,480 --> 01:07:06,790
+terms of progress across the board, and
+
+1988
+01:07:06,800 --> 01:07:07,470
+uh
+
+1989
+01:07:07,480 --> 01:07:09,710
+uh yeah, we just want to be uh a teeny
+
+1990
+01:07:09,720 --> 01:07:11,790
+little piece of that if possible. Yeah,
+
+1991
+01:07:11,800 --> 01:07:13,310
+I think, you know, as a developer,
+
+1992
+01:07:13,320 --> 01:07:16,350
+there's there's so many things for
+
+1993
+01:07:16,360 --> 01:07:19,150
+people to learn and if we could at least
+
+1994
+01:07:19,160 --> 01:07:20,870
+cut down on some of it, you know, from
+
+1995
+01:07:20,880 --> 01:07:22,150
+the ops perspective, from the
+
+1996
+01:07:22,160 --> 01:07:23,990
+development perspective, I think that's
+
+1997
+01:07:24,000 --> 01:07:26,270
+a win for everyone. So, that's exciting.
+
+1998
+01:07:26,280 --> 01:07:28,070
+How can people follow you on the
+
+1999
+01:07:28,080 --> 01:07:30,830
+internet? Uh so, Twitter, Derek
+
+2000
+01:07:30,840 --> 01:07:34,230
+Collison, d e r e k c o l l i s o n,
+
+2001
+01:07:34,240 --> 01:07:35,790
+Derek@nats.io
+
+2002
+01:07:35,800 --> 01:07:37,510
+if you want to send me an email. Nats.io
+
+2003
+01:07:37,520 --> 01:07:39,030
+will get you to like our Slack channels
+
+2004
+01:07:39,040 --> 01:07:41,070
+and Google Groups and uh
+
+2005
+01:07:41,080 --> 01:07:43,110
+I think we have about 1,500 people on
+
+2006
+01:07:43,120 --> 01:07:46,910
+Slack or so. So, we're vastly not known,
+
+2007
+01:07:46,920 --> 01:07:49,270
+but the people who do know us are very
+
+2008
+01:07:49,280 --> 01:07:50,990
+passionate like we are about the tech
+
+2009
+01:07:51,000 --> 01:07:53,230
+and how you apply it. Um so, come join
+
+2010
+01:07:53,240 --> 01:07:55,150
+us, ask us questions,
+
+2011
+01:07:55,160 --> 01:07:56,270
+um send me an email if you want
+
+2012
+01:07:56,280 --> 01:07:58,310
+directly, tell me what I'm wrong about.
+
+2013
+01:07:58,320 --> 01:08:00,590
+Um no problems whatsoever and and again,
+
+2014
+01:08:00,600 --> 01:08:02,350
+thank you, Jeremy. I really appreciate
+
+2015
+01:08:02,360 --> 01:08:04,310
+the the time. Yeah, this has been a a
+
+2016
+01:08:04,320 --> 01:08:06,310
+fantastic discussion. Thank you so much
+
+2017
+01:08:06,320 --> 01:08:07,950
+for coming on the show, Derek. This is
+
+2018
+01:08:07,960 --> 01:08:09,470
+Jeremy Jung for Software Engineering
+
+2019
+01:08:09,480 --> 01:08:12,830
+Radio. Thank you for listening.
+
+2020
+01:08:14,590 --> 01:08:14,600
+Digital Ocean is the easiest cloud
+
+2021
+01:08:14,600 --> 01:08:16,749
+platform to deploy, manage, and scale
+
+2022
+01:08:16,759 --> 01:08:18,749
+applications of any size, removing
+
+2023
+01:08:18,759 --> 01:08:20,390
+infrastructure friction and providing
+
+2024
+01:08:20,400 --> 01:08:22,030
+predictability so developers and their
+
+2025
+01:08:22,040 --> 01:08:24,349
+teams can deploy faster and focus on
+
+2026
+01:08:24,359 --> 01:08:26,749
+building software that customers love.
+
+2027
+01:08:26,759 --> 01:08:28,630
+Digital Ocean stands out from the crowd
+
+2028
+01:08:28,640 --> 01:08:30,510
+due to its simplicity, high performance,
+
+2029
+01:08:30,520 --> 01:08:32,590
+and no billing surprises.
+
+2030
+01:08:32,600 --> 01:08:35,030
+Join a community of over 3.5 million
+
+2031
+01:08:35,040 --> 01:08:37,430
+developers on Digital Ocean. Sign up
+
+2032
+01:08:37,440 --> 01:08:48,269
+with a free credit at do.co/seradio.
+
+2033
+01:08:49,630 --> 01:08:49,640
+Thanks for listening to SE Radio, an
+
+2034
+01:08:49,640 --> 01:08:51,269
+educational program brought to you by
+
+2035
+01:08:51,279 --> 01:08:53,710
+IEEE Software Magazine. For more about
+
+2036
+01:08:53,720 --> 01:08:55,390
+the podcast, including other episodes,
+
+2037
+01:08:55,400 --> 01:08:59,230
+visit our website at se-radio.net.
+
+2038
+01:08:59,240 --> 01:09:00,749
+To provide feedback, you can comment on
+
+2039
+01:09:00,759 --> 01:09:02,749
+each episode on the website or reach us
+
+2040
+01:09:02,759 --> 01:09:05,430
+on LinkedIn, Facebook, Twitter, or
+
+2041
+01:09:05,440 --> 01:09:06,670
+through our Slack channel at
+
+2042
+01:09:06,680 --> 01:09:09,910
+SE-Radio.slack.com.
+
+2043
+01:09:11,070 --> 01:09:11,080
+You can also email us at
+
+2044
+01:09:11,080 --> 01:09:14,510
+team@se-radio.net.
+
+2045
+01:09:16,349 --> 01:09:16,359
+This and all other episodes of SE-Radio
+
+2046
+01:09:16,359 --> 01:09:17,910
+is licensed under Creative Commons
+
+2047
+01:09:17,920 --> 01:09:19,990
+License 2.5.
+
+2048
+01:09:20,000 --> 01:09:22,759
+Thanks for listening.

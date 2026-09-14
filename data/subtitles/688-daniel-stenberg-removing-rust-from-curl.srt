@@ -1,0 +1,6159 @@
+1
+00:00:00,950 --> 00:00:00,960
+[Music]
+
+2
+00:00:00,960 --> 00:00:03,030
+This is software engineering radio, the
+
+3
+00:00:03,040 --> 00:00:04,950
+podcast for professional developers on
+
+4
+00:00:04,960 --> 00:00:07,909
+the web at se-radio.net.
+
+5
+00:00:07,919 --> 00:00:09,910
+SE radio is brought to you by the ITE
+
+6
+00:00:09,920 --> 00:00:12,070
+computer society and by it e software
+
+7
+00:00:12,080 --> 00:00:13,830
+magazine online at
+
+8
+00:00:13,840 --> 00:00:15,800
+computer.org/software.
+
+9
+00:00:15,810 --> 00:00:19,109
+[Music]
+
+10
+00:00:19,119 --> 00:00:21,029
+Welcome to Software Engineering Radio.
+
+11
+00:00:21,039 --> 00:00:22,950
+I'm your host Gavin Henry and today my
+
+12
+00:00:22,960 --> 00:00:25,670
+guest is Daniel Stenberg. Daniel is a
+
+13
+00:00:25,680 --> 00:00:27,589
+Swedish internet protocol expert and
+
+14
+00:00:27,599 --> 00:00:29,830
+developer who has participated in and
+
+15
+00:00:29,840 --> 00:00:32,229
+worked with open-source software for 30
+
+16
+00:00:32,239 --> 00:00:34,310
+years. He is most known for being the
+
+17
+00:00:34,320 --> 00:00:35,990
+founder and lead developer of the curl
+
+18
+00:00:36,000 --> 00:00:38,310
+project, one of the world's most widely
+
+19
+00:00:38,320 --> 00:00:40,549
+used software components. He also
+
+20
+00:00:40,559 --> 00:00:42,310
+participates in protocol development
+
+21
+00:00:42,320 --> 00:00:45,030
+within the IETF and has authored books
+
+22
+00:00:45,040 --> 00:00:48,150
+on curl, open-source, HTTP version two
+
+23
+00:00:48,160 --> 00:00:50,389
+and three and more. Requent public
+
+24
+00:00:50,399 --> 00:00:53,350
+speaker, Daniel is employed by Wolf SSL.
+
+25
+00:00:53,360 --> 00:00:54,950
+Daniel, welcome back to Software
+
+26
+00:00:54,960 --> 00:00:56,470
+Engineering Radio. Is there anything I
+
+27
+00:00:56,480 --> 00:00:57,830
+missed in your bio that you'd like to
+
+28
+00:00:57,840 --> 00:00:58,310
+add?
+
+29
+00:00:58,320 --> 00:00:59,830
+&gt;&gt; I don't think so. I think that covers
+
+30
+00:00:59,840 --> 00:01:01,430
+pretty much what I do.
+
+31
+00:01:01,440 --> 00:01:02,630
+&gt;&gt; Yeah, it's always very impressive
+
+32
+00:01:02,640 --> 00:01:04,310
+reading that out for you. I like it.
+
+33
+00:01:04,320 --> 00:01:05,030
+&gt;&gt; Thank you.
+
+34
+00:01:05,040 --> 00:01:07,910
+&gt;&gt; So, today our show is called Daniel
+
+35
+00:01:07,920 --> 00:01:10,630
+Stenberg on removing rust from curl. So,
+
+36
+00:01:10,640 --> 00:01:11,990
+what I want the listeners to get out
+
+37
+00:01:12,000 --> 00:01:14,630
+from this hopefully is to understand why
+
+38
+00:01:14,640 --> 00:01:16,630
+you wanted to bring rust into the
+
+39
+00:01:16,640 --> 00:01:18,870
+project. how you brought rust into the
+
+40
+00:01:18,880 --> 00:01:21,910
+curl project to understand why you I'm
+
+41
+00:01:21,920 --> 00:01:23,190
+going to use the word aband in the
+
+42
+00:01:23,200 --> 00:01:25,670
+attempt but decided not to do it. Same
+
+43
+00:01:25,680 --> 00:01:28,870
+same and what the future holds and then
+
+44
+00:01:28,880 --> 00:01:31,190
+hopefully help everyone understand the
+
+45
+00:01:31,200 --> 00:01:32,550
+lessons learned so if someone else
+
+46
+00:01:32,560 --> 00:01:34,630
+attempts or if you come back to it we're
+
+47
+00:01:34,640 --> 00:01:37,670
+all much wiser for the process. So let's
+
+48
+00:01:37,680 --> 00:01:39,670
+lay some foundation and remind our
+
+49
+00:01:39,680 --> 00:01:42,710
+listeners what curl is. I think you're
+
+50
+00:01:42,720 --> 00:01:44,069
+probably the best person to answer that
+
+51
+00:01:44,079 --> 00:01:44,550
+Daniel.
+
+52
+00:01:44,560 --> 00:01:46,789
+&gt;&gt; I'm not sure I'm the best one. I I
+
+53
+00:01:46,799 --> 00:01:48,630
+struggle sometimes to explain it but I
+
+54
+00:01:48,640 --> 00:01:50,469
+guess it depends on well what you know
+
+55
+00:01:50,479 --> 00:01:52,230
+and what you understand about things but
+
+56
+00:01:52,240 --> 00:01:54,789
+curl is a command line tool and a
+
+57
+00:01:54,799 --> 00:01:57,749
+library for doing network transfers
+
+58
+00:01:57,759 --> 00:02:01,190
+really internet transfers using URLs so
+
+59
+00:02:01,200 --> 00:02:03,429
+it's most widely known then for doing
+
+60
+00:02:03,439 --> 00:02:07,030
+HTTP and HTTPS but it supports 28
+
+61
+00:02:07,040 --> 00:02:10,550
+different URL schemes so including email
+
+62
+00:02:10,560 --> 00:02:15,270
+protocols IMAP SMTP 3 and FTP and SFTP
+
+63
+00:02:15,280 --> 00:02:19,350
+and SCP P. So it has a lot of transfer
+
+64
+00:02:19,360 --> 00:02:21,910
+protocols and I could also just
+
+65
+00:02:21,920 --> 00:02:23,830
+continue. So the command line tool is
+
+66
+00:02:23,840 --> 00:02:27,430
+often what developers think about when I
+
+67
+00:02:27,440 --> 00:02:30,710
+say curl. But of course lib curl is the
+
+68
+00:02:30,720 --> 00:02:32,710
+most widely used component which is
+
+69
+00:02:32,720 --> 00:02:34,550
+that's the library that is embedded and
+
+70
+00:02:34,560 --> 00:02:37,589
+used by millions and billions of devices
+
+71
+00:02:37,599 --> 00:02:39,830
+that are then doing internet transfers
+
+72
+00:02:39,840 --> 00:02:43,430
+using lib curl. So one very important
+
+73
+00:02:43,440 --> 00:02:45,990
+key factor with curl is stability,
+
+74
+00:02:46,000 --> 00:02:48,550
+security and in particular then AI and
+
+75
+00:02:48,560 --> 00:02:51,670
+API stability that we provide solid and
+
+76
+00:02:51,680 --> 00:02:54,949
+stable way to use it basically forever
+
+77
+00:02:54,959 --> 00:02:57,030
+so that all our users in the world can
+
+78
+00:02:57,040 --> 00:02:59,430
+just upgrade to the latest curl without
+
+79
+00:02:59,440 --> 00:03:01,750
+having the pain of adjusting things in
+
+80
+00:03:01,760 --> 00:03:03,350
+the AI or API.
+
+81
+00:03:03,360 --> 00:03:05,030
+&gt;&gt; It takes a lot of effort, a lot of
+
+82
+00:03:05,040 --> 00:03:07,270
+testing, a lot of work.
+
+83
+00:03:07,280 --> 00:03:09,910
+&gt;&gt; It does indeed. You said it's used in
+
+84
+00:03:09,920 --> 00:03:12,070
+billions of devices. Do you have a top
+
+85
+00:03:12,080 --> 00:03:13,910
+five list of where you know it's used
+
+86
+00:03:13,920 --> 00:03:15,430
+just to help listeners
+
+87
+00:03:15,440 --> 00:03:18,390
+&gt;&gt; by volume? I think nothing compares to
+
+88
+00:03:18,400 --> 00:03:21,030
+the mobile phones and tablets. So it's
+
+89
+00:03:21,040 --> 00:03:24,229
+an embedded component in iOS and in
+
+90
+00:03:24,239 --> 00:03:26,229
+Android. So it's basically on every
+
+91
+00:03:26,239 --> 00:03:29,270
+smartphone and every tablet that exists
+
+92
+00:03:29,280 --> 00:03:31,670
+and that's what 7 billion devices or
+
+93
+00:03:31,680 --> 00:03:32,390
+something.
+
+94
+00:03:32,400 --> 00:03:34,149
+&gt;&gt; Yeah. I was going to ask how many users
+
+95
+00:03:34,159 --> 00:03:35,750
+does it have but that answers that
+
+96
+00:03:35,760 --> 00:03:36,390
+question.
+
+97
+00:03:36,400 --> 00:03:38,550
+&gt;&gt; Yeah. So basically I tend to avoid the
+
+98
+00:03:38,560 --> 00:03:40,470
+word users then because it's a little
+
+99
+00:03:40,480 --> 00:03:43,190
+bit weird since it's a library. So it's
+
+100
+00:03:43,200 --> 00:03:45,270
+getting used by others. So it's not
+
+101
+00:03:45,280 --> 00:03:47,830
+really users but embedded in different
+
+102
+00:03:47,840 --> 00:03:50,149
+tools and applications. And the fun part
+
+103
+00:03:50,159 --> 00:03:52,070
+about it being used in all these mobile
+
+104
+00:03:52,080 --> 00:03:54,550
+phones is also that lib curl is a
+
+105
+00:03:54,560 --> 00:03:57,190
+library right used embedded in these
+
+106
+00:03:57,200 --> 00:03:59,270
+mobile phone operating systems but they
+
+107
+00:03:59,280 --> 00:04:02,550
+don't expose the API to applications. So
+
+108
+00:04:02,560 --> 00:04:05,429
+a lot of apps ship and bundle their own
+
+109
+00:04:05,439 --> 00:04:08,309
+copy of lib curl. So typical phone today
+
+110
+00:04:08,319 --> 00:04:10,789
+you have multiple installations of curl
+
+111
+00:04:10,799 --> 00:04:12,630
+actually because a lot of high volume
+
+112
+00:04:12,640 --> 00:04:15,110
+apps also ship it and bundle it because
+
+113
+00:04:15,120 --> 00:04:16,469
+they want to use it but they can't
+
+114
+00:04:16,479 --> 00:04:19,749
+access it from the OS level. So in a
+
+115
+00:04:19,759 --> 00:04:21,990
+typical phone with a lot of apps you
+
+116
+00:04:22,000 --> 00:04:24,310
+have maybe five or 10 installations of
+
+117
+00:04:24,320 --> 00:04:25,110
+curl.
+
+118
+00:04:25,120 --> 00:04:27,110
+&gt;&gt; Oh wow. Yeah. I was going to mention
+
+119
+00:04:27,120 --> 00:04:29,990
+that I just bought the Nintendo Switch 2
+
+120
+00:04:30,000 --> 00:04:31,749
+and someone listed curl in the credits
+
+121
+00:04:31,759 --> 00:04:33,909
+to that as well. So obviously Nintendo
+
+122
+00:04:33,919 --> 00:04:34,469
+use it.
+
+123
+00:04:34,479 --> 00:04:36,550
+&gt;&gt; All game consoles have it embedded as
+
+124
+00:04:36,560 --> 00:04:37,030
+well.
+
+125
+00:04:37,040 --> 00:04:39,510
+&gt;&gt; And do you get support from those guys
+
+126
+00:04:39,520 --> 00:04:41,990
+in any shape or form? Android, Apple,
+
+127
+00:04:42,000 --> 00:04:43,909
+Google, Nintendo. Are you not allowed to
+
+128
+00:04:43,919 --> 00:04:44,310
+say?
+
+129
+00:04:44,320 --> 00:04:46,950
+&gt;&gt; The standard answer is no, I don't. So I
+
+130
+00:04:46,960 --> 00:04:50,390
+have a few customers. Is actually a few.
+
+131
+00:04:50,400 --> 00:04:53,189
+So it's far too few than I would prefer.
+
+132
+00:04:53,199 --> 00:04:55,430
+So most users like these big ones,
+
+133
+00:04:55,440 --> 00:04:56,710
+they're just using the open source
+
+134
+00:04:56,720 --> 00:04:58,629
+version for free and seem to be happy
+
+135
+00:04:58,639 --> 00:05:00,870
+with that. I try to get as many as
+
+136
+00:05:00,880 --> 00:05:02,550
+possible to actually pay for support and
+
+137
+00:05:02,560 --> 00:05:04,950
+help them use curl properly so that they
+
+138
+00:05:04,960 --> 00:05:07,029
+can sponsor me for my maintenance and
+
+139
+00:05:07,039 --> 00:05:09,270
+ongoing work. And not only me, of
+
+140
+00:05:09,280 --> 00:05:10,550
+course, the rest of the team as well,
+
+141
+00:05:10,560 --> 00:05:12,469
+but it's a hard sell sometimes.
+
+142
+00:05:12,479 --> 00:05:14,790
+&gt;&gt; And how many in the team do you have
+
+143
+00:05:14,800 --> 00:05:16,070
+full-time or volunteer?
+
+144
+00:05:16,080 --> 00:05:18,629
+&gt;&gt; I'm the only one that is full-time, so
+
+145
+00:05:18,639 --> 00:05:21,350
+it's a small team. It just blows my mind
+
+146
+00:05:21,360 --> 00:05:23,670
+when people actually explain, you know,
+
+147
+00:05:23,680 --> 00:05:26,150
+critical software, critical internet
+
+148
+00:05:26,160 --> 00:05:28,310
+software like this and it's just a
+
+149
+00:05:28,320 --> 00:05:30,469
+person or a couple of people. Nobody
+
+150
+00:05:30,479 --> 00:05:31,909
+really understands that, do they? Unless
+
+151
+00:05:31,919 --> 00:05:33,830
+they're in the open source world. That's
+
+152
+00:05:33,840 --> 00:05:36,629
+true. And also, it sort of just suffers
+
+153
+00:05:36,639 --> 00:05:39,350
+a little bit from the classical economic
+
+154
+00:05:39,360 --> 00:05:41,350
+terms that if they don't have to pay,
+
+155
+00:05:41,360 --> 00:05:43,670
+they prefer not to pay. So all of these
+
+156
+00:05:43,680 --> 00:05:45,670
+companies, they they don't have to pay.
+
+157
+00:05:45,680 --> 00:05:48,150
+So they mostly just don't. Even though
+
+158
+00:05:48,160 --> 00:05:50,790
+maybe morally or something they should
+
+159
+00:05:50,800 --> 00:05:52,629
+or could but they will.
+
+160
+00:05:52,639 --> 00:05:54,150
+&gt;&gt; Yeah, I think they assume that someone
+
+161
+00:05:54,160 --> 00:05:56,390
+is and that's nobody actually asked that
+
+162
+00:05:56,400 --> 00:05:58,550
+question. I don't know. Okay. So, I
+
+163
+00:05:58,560 --> 00:06:00,629
+reached out to you because I read a blog
+
+164
+00:06:00,639 --> 00:06:03,990
+post December last year, so 6 months ago
+
+165
+00:06:04,000 --> 00:06:06,870
+or so, called dropping hyper. Now, cuz
+
+166
+00:06:06,880 --> 00:06:08,230
+I'm in the Rust world and I've done
+
+167
+00:06:08,240 --> 00:06:10,230
+quite a few shows on Rust, I know what
+
+168
+00:06:10,240 --> 00:06:13,189
+hyper is. Could you tell me what hyper
+
+169
+00:06:13,199 --> 00:06:15,749
+is before I move on to the next stage?
+
+170
+00:06:15,759 --> 00:06:18,950
+Yeah. So, Hyper is well close to the lib
+
+171
+00:06:18,960 --> 00:06:21,110
+curl alternative in the Rust world. It
+
+172
+00:06:21,120 --> 00:06:26,150
+is a HTTP and HTTPS library for Rust.
+
+173
+00:06:26,160 --> 00:06:27,749
+Well, I think that pretty much sums it
+
+174
+00:06:27,759 --> 00:06:30,710
+up. So, it's an API to do HTTP in
+
+175
+00:06:30,720 --> 00:06:31,670
+different ways.
+
+176
+00:06:31,680 --> 00:06:34,070
+&gt;&gt; So, the background here is I'll
+
+177
+00:06:34,080 --> 00:06:36,150
+summarize of what I understand, but you
+
+178
+00:06:36,160 --> 00:06:37,749
+can correct me obviously. So
+
+179
+00:06:37,759 --> 00:06:40,230
+historically there is or was memory
+
+180
+00:06:40,240 --> 00:06:42,870
+related issues and bugs that come up and
+
+181
+00:06:42,880 --> 00:06:45,749
+the driving force was to bring a memory
+
+182
+00:06:45,759 --> 00:06:49,110
+safe language or version of the HTTP
+
+183
+00:06:49,120 --> 00:06:52,469
+library in to curl. Is that correct or
+
+184
+00:06:52,479 --> 00:06:55,029
+&gt;&gt; Yeah, exactly. Curl is written in C,
+
+185
+00:06:55,039 --> 00:06:57,430
+right? It's from the '9s. So it's one of
+
+186
+00:06:57,440 --> 00:06:59,589
+these old classical styles of open
+
+187
+00:06:59,599 --> 00:07:01,749
+source projects. So it's written in C.
+
+188
+00:07:01,759 --> 00:07:03,830
+is unsafe and we certainly have our
+
+189
+00:07:03,840 --> 00:07:06,790
+share of memory related security issues
+
+190
+00:07:06,800 --> 00:07:10,309
+over time and curl also has this backend
+
+191
+00:07:10,319 --> 00:07:12,550
+system which means that when you build
+
+192
+00:07:12,560 --> 00:07:14,230
+curl you pretty much decide which
+
+193
+00:07:14,240 --> 00:07:16,309
+backends you want and all those backends
+
+194
+00:07:16,319 --> 00:07:17,830
+are powered by different third party
+
+195
+00:07:17,840 --> 00:07:19,749
+libraries. So for example, if you want
+
+196
+00:07:19,759 --> 00:07:22,550
+TLS support, that TLS is provided by an
+
+197
+00:07:22,560 --> 00:07:24,469
+external library that someone else wrote
+
+198
+00:07:24,479 --> 00:07:26,309
+that with an interface and typically
+
+199
+00:07:26,319 --> 00:07:28,629
+with an allow difference. You can select
+
+200
+00:07:28,639 --> 00:07:30,550
+which TLS library you want to support
+
+201
+00:07:30,560 --> 00:07:32,309
+and so on. And we have different back
+
+202
+00:07:32,319 --> 00:07:35,029
+ends for SSH and content encoding and
+
+203
+00:07:35,039 --> 00:07:37,670
+different parts IDN and name resolving
+
+204
+00:07:37,680 --> 00:07:40,309
+so on. So it is sort of in the nature
+
+205
+00:07:40,319 --> 00:07:43,189
+already that curl offers a selection of
+
+206
+00:07:43,199 --> 00:07:45,029
+different backends when you build it. So
+
+207
+00:07:45,039 --> 00:07:47,510
+the idea was then so curl is written in
+
+208
+00:07:47,520 --> 00:07:50,710
+C maybe we should try to make the final
+
+209
+00:07:50,720 --> 00:07:54,309
+build use more memory safe code and by
+
+210
+00:07:54,319 --> 00:07:56,309
+memory safe than being using libraries
+
+211
+00:07:56,319 --> 00:07:58,710
+written for example in rust. Rust is
+
+212
+00:07:58,720 --> 00:08:00,550
+probably the most suitable replacement
+
+213
+00:08:00,560 --> 00:08:02,309
+when it comes to this. So this was
+
+214
+00:08:02,319 --> 00:08:04,230
+actually then a sponsored thing from
+
+215
+00:08:04,240 --> 00:08:07,510
+ISRG in their Proximo project. ISRJ
+
+216
+00:08:07,520 --> 00:08:09,270
+being the team behind let's encrypt
+
+217
+00:08:09,280 --> 00:08:11,589
+right and they have this ongoing project
+
+218
+00:08:11,599 --> 00:08:15,830
+to replace memory unsafe projects with
+
+219
+00:08:15,840 --> 00:08:18,150
+safe projects pretty much rewriting
+
+220
+00:08:18,160 --> 00:08:20,869
+things from unsafe languages into Rust.
+
+221
+00:08:20,879 --> 00:08:22,950
+So they sponsored this. So the idea was
+
+222
+00:08:22,960 --> 00:08:25,990
+then that we would introduce a new HTTP
+
+223
+00:08:26,000 --> 00:08:28,150
+back end in curl that would be powered
+
+224
+00:08:28,160 --> 00:08:30,710
+by hyper the Rust library. So by
+
+225
+00:08:30,720 --> 00:08:33,909
+building curl with this HTTP back end,
+
+226
+00:08:33,919 --> 00:08:36,389
+we would get a build that would then use
+
+227
+00:08:36,399 --> 00:08:38,870
+more memory safe code than we would
+
+228
+00:08:38,880 --> 00:08:41,269
+otherwise have. But it was then an
+
+229
+00:08:41,279 --> 00:08:42,709
+optional build, right? So you could
+
+230
+00:08:42,719 --> 00:08:45,750
+either use the native C version or use
+
+231
+00:08:45,760 --> 00:08:47,829
+the hyper powered version.
+
+232
+00:08:47,839 --> 00:08:49,590
+&gt;&gt; Yeah. So just to summarize, you've got
+
+233
+00:08:49,600 --> 00:08:52,470
+the curl project that can offer 28
+
+234
+00:08:52,480 --> 00:08:54,550
+different protocols depending on what
+
+235
+00:08:54,560 --> 00:08:56,389
+you configure when you're compiling it
+
+236
+00:08:56,399 --> 00:08:58,150
+or what's available on the operating
+
+237
+00:08:58,160 --> 00:09:00,310
+system or the build environment. Those
+
+238
+00:09:00,320 --> 00:09:02,710
+protocols will then have a back end. So
+
+239
+00:09:02,720 --> 00:09:04,310
+say you did well, we're talking about
+
+240
+00:09:04,320 --> 00:09:06,949
+HTTP. So HTTP we could opt to use the
+
+241
+00:09:06,959 --> 00:09:09,269
+original one in curl and C or another
+
+242
+00:09:09,279 --> 00:09:11,110
+one if there's one there. And the same
+
+243
+00:09:11,120 --> 00:09:13,750
+for like TLS, you could use different
+
+244
+00:09:13,760 --> 00:09:15,990
+libraries to provide that protocol
+
+245
+00:09:16,000 --> 00:09:17,750
+capability. Exactly.
+
+246
+00:09:17,760 --> 00:09:19,350
+&gt;&gt; Because traditionally you've had a lot
+
+247
+00:09:19,360 --> 00:09:21,990
+of memory safety issues. Rust was the
+
+248
+00:09:22,000 --> 00:09:24,070
+current offering today that would make
+
+249
+00:09:24,080 --> 00:09:26,710
+sense to bring in and obviously a
+
+250
+00:09:26,720 --> 00:09:29,430
+rewrite in Rust as the as the term is or
+
+251
+00:09:29,440 --> 00:09:31,750
+rewriting anything would just be insane.
+
+252
+00:09:31,760 --> 00:09:34,310
+So doing it bit by bit like this is the
+
+253
+00:09:34,320 --> 00:09:36,949
+exactly it's pretty much the only viable
+
+254
+00:09:36,959 --> 00:09:39,110
+way forward to introduce more memory
+
+255
+00:09:39,120 --> 00:09:41,829
+safety that it is to use more and more
+
+256
+00:09:41,839 --> 00:09:43,590
+alternative backends and backends
+
+257
+00:09:43,600 --> 00:09:45,990
+written in memory safe languages. So
+
+258
+00:09:46,000 --> 00:09:47,910
+that was sort of the idea that we would
+
+259
+00:09:47,920 --> 00:09:50,710
+then do it this way or we did it too. So
+
+260
+00:09:50,720 --> 00:09:52,230
+it was more than an idea. It was
+
+261
+00:09:52,240 --> 00:09:54,550
+actually also made a reality.
+
+262
+00:09:54,560 --> 00:09:56,870
+&gt;&gt; And how did you decide was hyper like
+
+263
+00:09:56,880 --> 00:09:58,949
+the number one rust offering or did you
+
+264
+00:09:58,959 --> 00:10:00,550
+have some criteria? Could you give us
+
+265
+00:10:00,560 --> 00:10:01,990
+some examples around that thought
+
+266
+00:10:02,000 --> 00:10:02,710
+process?
+
+267
+00:10:02,720 --> 00:10:05,030
+&gt;&gt; Oh, it was actually not that much of a
+
+268
+00:10:05,040 --> 00:10:07,190
+thought process because well I'm not
+
+269
+00:10:07,200 --> 00:10:09,590
+that much into the Rust ecosystem and
+
+270
+00:10:09,600 --> 00:10:11,829
+the Rust world really. So I actually
+
+271
+00:10:11,839 --> 00:10:13,829
+went pretty much with the suggestions
+
+272
+00:10:13,839 --> 00:10:17,030
+from the ISRG people. So Josh and the
+
+273
+00:10:17,040 --> 00:10:18,949
+guys there and I talked to Sean
+
+274
+00:10:18,959 --> 00:10:20,870
+MacArthur who's the lead maintainer of
+
+275
+00:10:20,880 --> 00:10:23,350
+Hyper. So it was actually a pretty quick
+
+276
+00:10:23,360 --> 00:10:26,310
+process that we deemed it seemed like a
+
+277
+00:10:26,320 --> 00:10:28,949
+suitable library to use and at the
+
+278
+00:10:28,959 --> 00:10:30,550
+appropriate level sort of the
+
+279
+00:10:30,560 --> 00:10:32,949
+abstraction level in the stack. So we
+
+280
+00:10:32,959 --> 00:10:35,990
+deemed it a suitable thing to build on
+
+281
+00:10:36,000 --> 00:10:37,190
+and with.
+
+282
+00:10:37,200 --> 00:10:38,870
+&gt;&gt; Okay. So you had guidance. What does
+
+283
+00:10:38,880 --> 00:10:42,550
+that stand for? internet something ISR
+
+284
+00:10:42,560 --> 00:10:45,750
+&gt;&gt; Internet Security Research Group. I
+
+285
+00:10:45,760 --> 00:10:47,430
+think it's something you more or less
+
+286
+00:10:47,440 --> 00:10:49,829
+nonsensical. Well, it's they they let's
+
+287
+00:10:49,839 --> 00:10:51,509
+encrypt that's what they did.
+
+288
+00:10:51,519 --> 00:10:51,829
+&gt;&gt; Yeah,
+
+289
+00:10:51,839 --> 00:10:53,670
+&gt;&gt; they created I think it's a foundation
+
+290
+00:10:53,680 --> 00:10:55,430
+or something. It's a nonprofit something
+
+291
+00:10:55,440 --> 00:10:56,310
+isrg.
+
+292
+00:10:56,320 --> 00:10:58,150
+&gt;&gt; Cool. And they sort of gave guidance on
+
+293
+00:10:58,160 --> 00:10:58,870
+that and
+
+294
+00:10:58,880 --> 00:11:00,630
+&gt;&gt; Exactly. And they sponsored this work,
+
+295
+00:11:00,640 --> 00:11:02,470
+right? So, we sort of back and forth a
+
+296
+00:11:02,480 --> 00:11:04,550
+bit on exactly their idea and my idea
+
+297
+00:11:04,560 --> 00:11:06,069
+and how we could make that a reality.
+
+298
+00:11:06,079 --> 00:11:07,990
+And then I talked a lot with Sean as
+
+299
+00:11:08,000 --> 00:11:10,550
+well. And Sean's the maintainer of or
+
+300
+00:11:10,560 --> 00:11:11,030
+the
+
+301
+00:11:11,040 --> 00:11:12,470
+&gt;&gt; hyper. Yeah, hyper.
+
+302
+00:11:12,480 --> 00:11:14,470
+&gt;&gt; Yeah, exactly. Because when I started
+
+303
+00:11:14,480 --> 00:11:16,550
+this, so curl is written in C, right?
+
+304
+00:11:16,560 --> 00:11:19,670
+And hyper is written in Rust. And while
+
+305
+00:11:19,680 --> 00:11:22,470
+there is a way, and this was years ago
+
+306
+00:11:22,480 --> 00:11:24,310
+we started this. So I needed a way then
+
+307
+00:11:24,320 --> 00:11:26,870
+to interface Hyper using C. So I needed
+
+308
+00:11:26,880 --> 00:11:29,110
+a glue layer to make sure that we could
+
+309
+00:11:29,120 --> 00:11:31,509
+use Hyper properly from C. And that
+
+310
+00:11:31,519 --> 00:11:33,750
+didn't exist back then in Hyper. So I
+
+311
+00:11:33,760 --> 00:11:35,670
+had a lot of back and forth with Sean
+
+312
+00:11:35,680 --> 00:11:38,470
+about that and creating that while doing
+
+313
+00:11:38,480 --> 00:11:40,630
+this work in curl. So it was a lot of we
+
+314
+00:11:40,640 --> 00:11:42,550
+had to do the work in several different
+
+315
+00:11:42,560 --> 00:11:43,670
+places actually.
+
+316
+00:11:43,680 --> 00:11:45,509
+&gt;&gt; Yeah. So it wasn't just here's a Rust
+
+317
+00:11:45,519 --> 00:11:47,030
+library that has a form function
+
+318
+00:11:47,040 --> 00:11:49,350
+interface ready for C to use on the
+
+319
+00:11:49,360 --> 00:11:50,710
+shelf and you just grabbed it. There was
+
+320
+00:11:50,720 --> 00:11:51,990
+a lot more to it.
+
+321
+00:11:52,000 --> 00:11:55,110
+&gt;&gt; Exactly. It was pretty early work in
+
+322
+00:11:55,120 --> 00:11:57,430
+doing this. So there was a lot of moving
+
+323
+00:11:57,440 --> 00:11:59,990
+pieces actually that had to be done to
+
+324
+00:12:00,000 --> 00:12:01,110
+make it work.
+
+325
+00:12:01,120 --> 00:12:03,990
+&gt;&gt; Yeah. And the FFI sort of landscape has
+
+326
+00:12:04,000 --> 00:12:05,509
+improved quite a lot in the past 5
+
+327
+00:12:05,519 --> 00:12:06,629
+years, hasn't it? Cuz I'm using it
+
+328
+00:12:06,639 --> 00:12:08,150
+myself in another project.
+
+329
+00:12:08,160 --> 00:12:10,069
+&gt;&gt; Yes, exactly. It has certainly improved
+
+330
+00:12:10,079 --> 00:12:12,389
+since we're also using I mean since I
+
+331
+00:12:12,399 --> 00:12:13,670
+mentioned all these different backends,
+
+332
+00:12:13,680 --> 00:12:16,069
+you can still build curl with other rust
+
+333
+00:12:16,079 --> 00:12:17,910
+back ends. So we support rustles for
+
+334
+00:12:17,920 --> 00:12:20,790
+example the TLS version from Rust and we
+
+335
+00:12:20,800 --> 00:12:24,069
+support key which is a HTP3 and quick
+
+336
+00:12:24,079 --> 00:12:26,870
+library that's also written in Rust. So
+
+337
+00:12:26,880 --> 00:12:28,949
+there's still ways to build curl with
+
+338
+00:12:28,959 --> 00:12:31,350
+Rust powered backends. So I'm still
+
+339
+00:12:31,360 --> 00:12:33,190
+slight and touching the word that world
+
+340
+00:12:33,200 --> 00:12:33,829
+still.
+
+341
+00:12:33,839 --> 00:12:35,670
+&gt;&gt; Oh, so it's just hyper that you removed
+
+342
+00:12:35,680 --> 00:12:37,110
+which provides the
+
+343
+00:12:37,120 --> 00:12:39,269
+&gt;&gt; Exactly. So we didn't actually remove
+
+344
+00:12:39,279 --> 00:12:41,829
+all the ways to do Rust. We removed
+
+345
+00:12:41,839 --> 00:12:44,230
+Hyper and Hyper was actually the only
+
+346
+00:12:44,240 --> 00:12:46,310
+HTTP back end. The other ones I
+
+347
+00:12:46,320 --> 00:12:48,790
+mentioned now are TLS backend. It's a TS
+
+348
+00:12:48,800 --> 00:12:51,030
+back end and an HTTP3 back end. So
+
+349
+00:12:51,040 --> 00:12:53,750
+different places they glue in into the
+
+350
+00:12:53,760 --> 00:12:54,230
+stack.
+
+351
+00:12:54,240 --> 00:12:56,230
+&gt;&gt; So Hyper was HTTP2.
+
+352
+00:12:56,240 --> 00:12:57,350
+&gt;&gt; HTTP one and two.
+
+353
+00:12:57,360 --> 00:12:59,190
+&gt;&gt; Oh, one and two. Yeah, forget about one.
+
+354
+00:12:59,200 --> 00:13:01,350
+And because it was funded by them and
+
+355
+00:13:01,360 --> 00:13:03,990
+they gave you guidance helped not have
+
+356
+00:13:04,000 --> 00:13:05,350
+to make a lot of decisions with what
+
+357
+00:13:05,360 --> 00:13:06,949
+you're picking. So you didn't have to
+
+358
+00:13:06,959 --> 00:13:09,110
+start protocol parcel from scratch in
+
+359
+00:13:09,120 --> 00:13:09,750
+Rust.
+
+360
+00:13:09,760 --> 00:13:12,069
+&gt;&gt; Exactly. Because that was really never a
+
+361
+00:13:12,079 --> 00:13:14,470
+good idea. So because that's quite a lot
+
+362
+00:13:14,480 --> 00:13:16,389
+of work and I'm not really a Rust guy
+
+363
+00:13:16,399 --> 00:13:18,470
+myself. So I wouldn't be a suitable
+
+364
+00:13:18,480 --> 00:13:20,790
+person to write it in Rust anyway. And
+
+365
+00:13:20,800 --> 00:13:22,790
+by using something that was already
+
+366
+00:13:22,800 --> 00:13:25,590
+there, proven working and everything, it
+
+367
+00:13:25,600 --> 00:13:27,750
+was I would say it's what is pretty
+
+368
+00:13:27,760 --> 00:13:29,750
+suitable option to go with.
+
+369
+00:13:29,760 --> 00:13:31,430
+&gt;&gt; Yeah, cuz as I understand it, when
+
+370
+00:13:31,440 --> 00:13:33,590
+you're talking about bringing Rust in or
+
+371
+00:13:33,600 --> 00:13:36,470
+rewriting Rust or porting to Rust, the
+
+372
+00:13:36,480 --> 00:13:38,150
+options would be what you've done. You
+
+373
+00:13:38,160 --> 00:13:40,949
+bring in something established or you
+
+374
+00:13:40,959 --> 00:13:43,430
+port the C code. You look at the C code
+
+375
+00:13:43,440 --> 00:13:45,030
+on one screen and on the other screen
+
+376
+00:13:45,040 --> 00:13:48,710
+you're rewriting that C rust which it
+
+377
+00:13:48,720 --> 00:13:50,310
+does work and it kind of doesn't.
+
+378
+00:13:50,320 --> 00:13:52,310
+There's the rust a dramatic way which
+
+379
+00:13:52,320 --> 00:13:53,829
+I've done a show on that by the way.
+
+380
+00:13:53,839 --> 00:13:56,230
+Most of my year has been spent on rust
+
+381
+00:13:56,240 --> 00:13:58,069
+stuff. So I'll just list a couple of
+
+382
+00:13:58,079 --> 00:13:59,990
+shows for the listeners. The latest one
+
+383
+00:14:00,000 --> 00:14:03,189
+was show 672 on rust in production with
+
+384
+00:14:03,199 --> 00:14:06,790
+Luca 670 with Matias on prototyping in
+
+385
+00:14:06,800 --> 00:14:08,550
+Rust which was really enjoyable. And
+
+386
+00:14:08,560 --> 00:14:13,110
+then we did show 659 on idiomatic Rust.
+
+387
+00:14:13,120 --> 00:14:14,310
+So there are some other ones for people
+
+388
+00:14:14,320 --> 00:14:17,430
+to listen to. Anyway, so creating it
+
+389
+00:14:17,440 --> 00:14:19,910
+from scratch or porting your C code to a
+
+390
+00:14:19,920 --> 00:14:23,350
+Rust equivalent was just insane. And
+
+391
+00:14:23,360 --> 00:14:25,189
+just to close off this section before we
+
+392
+00:14:25,199 --> 00:14:27,670
+move on to the actual process of what
+
+393
+00:14:27,680 --> 00:14:30,069
+you did, how do you see most of the
+
+394
+00:14:30,079 --> 00:14:32,629
+memory related issues in curl? Is it in
+
+395
+00:14:32,639 --> 00:14:35,509
+your implementation of the HTTP spec or
+
+396
+00:14:35,519 --> 00:14:36,870
+is it just spread across different
+
+397
+00:14:36,880 --> 00:14:38,710
+backends and different integrations?
+
+398
+00:14:38,720 --> 00:14:40,870
+Where do you see the most pain? That's a
+
+399
+00:14:40,880 --> 00:14:43,590
+really good question. I actually don't
+
+400
+00:14:43,600 --> 00:14:46,230
+think I've had them mostly in the HTTP
+
+401
+00:14:46,240 --> 00:14:48,470
+related parsing code. So it wasn't
+
+402
+00:14:48,480 --> 00:14:50,470
+really addressing where I think I had
+
+403
+00:14:50,480 --> 00:14:52,230
+the most. But it's really hard to find
+
+404
+00:14:52,240 --> 00:14:54,069
+that pattern, right? Where do we do the
+
+405
+00:14:54,079 --> 00:14:56,310
+most mistakes and how do we fix them? So
+
+406
+00:14:56,320 --> 00:14:58,310
+typically when we get security problems,
+
+407
+00:14:58,320 --> 00:15:00,870
+we of course try to see the pattern and
+
+408
+00:15:00,880 --> 00:15:02,470
+see what we can learn from that and what
+
+409
+00:15:02,480 --> 00:15:04,069
+we can do to avoid them in the future
+
+410
+00:15:04,079 --> 00:15:06,389
+and so on. But they tend to be spread
+
+411
+00:15:06,399 --> 00:15:08,710
+out in different ways. But also we have
+
+412
+00:15:08,720 --> 00:15:11,189
+al over the last I would say maybe even
+
+413
+00:15:11,199 --> 00:15:13,430
+10 years we have done several different
+
+414
+00:15:13,440 --> 00:15:16,470
+things internally in curl sort of to
+
+415
+00:15:16,480 --> 00:15:19,829
+make it harder to do those mistakes we
+
+416
+00:15:19,839 --> 00:15:21,750
+sometimes did in the past. So I also
+
+417
+00:15:21,760 --> 00:15:23,590
+think that there are many ways that we
+
+418
+00:15:23,600 --> 00:15:26,150
+can actually just write better C to
+
+419
+00:15:26,160 --> 00:15:28,150
+avoid some of those mistakes. So there
+
+420
+00:15:28,160 --> 00:15:29,509
+are many different things that are
+
+421
+00:15:29,519 --> 00:15:30,870
+happening at the same time. So at the
+
+422
+00:15:30,880 --> 00:15:32,790
+same time we tried to maybe introduce
+
+423
+00:15:32,800 --> 00:15:35,269
+more Rust code. We also made sure that
+
+424
+00:15:35,279 --> 00:15:38,550
+we did better C code and avoided some
+
+425
+00:15:38,560 --> 00:15:41,350
+things that obviously things that were a
+
+426
+00:15:41,360 --> 00:15:44,550
+little too easy for us to do wrong and
+
+427
+00:15:44,560 --> 00:15:47,269
+insert mistakes with. So nowadays we
+
+428
+00:15:47,279 --> 00:15:49,269
+sort of introduce more internal helper
+
+429
+00:15:49,279 --> 00:15:51,590
+functions and rules on how to do things
+
+430
+00:15:51,600 --> 00:15:54,710
+just to avoid the risk of mistakes more.
+
+431
+00:15:54,720 --> 00:15:56,389
+&gt;&gt; Yeah. Trying to centralize where you do
+
+432
+00:15:56,399 --> 00:15:57,670
+some of the risky things.
+
+433
+00:15:57,680 --> 00:15:59,990
+&gt;&gt; Exactly. For example, like that. Yes. I
+
+434
+00:16:00,000 --> 00:16:02,069
+follow your blog and whenever you're
+
+435
+00:16:02,079 --> 00:16:03,990
+doing stuff on LinkedIn or what have you
+
+436
+00:16:04,000 --> 00:16:05,509
+and I think there was a bug that was
+
+437
+00:16:05,519 --> 00:16:06,949
+like 20 years old or something, wasn't
+
+438
+00:16:06,959 --> 00:16:08,389
+there that came out of nowhere because
+
+439
+00:16:08,399 --> 00:16:10,629
+it was some obscure usage. So there's
+
+440
+00:16:10,639 --> 00:16:12,150
+always stuff lying around.
+
+441
+00:16:12,160 --> 00:16:15,430
+&gt;&gt; Yes. Yes. Security is really hard.
+
+442
+00:16:15,440 --> 00:16:17,829
+&gt;&gt; Yes. And saw your post about I'll put
+
+443
+00:16:17,839 --> 00:16:21,269
+this in the show notes about all the new
+
+444
+00:16:21,279 --> 00:16:23,189
+AI stuff coming through reporting
+
+445
+00:16:23,199 --> 00:16:25,829
+security memory issues. That's all just
+
+446
+00:16:25,839 --> 00:16:28,150
+made well it doesn't make sense. the
+
+447
+00:16:28,160 --> 00:16:30,310
+stuff that is getting submitted
+
+448
+00:16:30,320 --> 00:16:31,749
+&gt;&gt; doesn't relate to the code.
+
+449
+00:16:31,759 --> 00:16:32,310
+&gt;&gt; Yeah.
+
+450
+00:16:32,320 --> 00:16:33,749
+&gt;&gt; But on the flip side, maybe there's
+
+451
+00:16:33,759 --> 00:16:34,949
+something there that can do some
+
+452
+00:16:34,959 --> 00:16:36,949
+analysis to try and find some type of
+
+453
+00:16:36,959 --> 00:16:39,030
+correlation. But I think we've kind of
+
+454
+00:16:39,040 --> 00:16:40,470
+lost the trust on some of that at the
+
+455
+00:16:40,480 --> 00:16:41,910
+moment. So there's a bit of work to be
+
+456
+00:16:41,920 --> 00:16:42,629
+done there.
+
+457
+00:16:42,639 --> 00:16:44,870
+&gt;&gt; Oh yes. Yeah. Of course, the dream is
+
+458
+00:16:44,880 --> 00:16:47,430
+that these tools should be able to find
+
+459
+00:16:47,440 --> 00:16:50,069
+problems because in theory they should,
+
+460
+00:16:50,079 --> 00:16:52,470
+but I think we have more work to do
+
+461
+00:16:52,480 --> 00:16:54,470
+before they can do that reliably. Yeah,
+
+462
+00:16:54,480 --> 00:16:56,230
+I always imagine them just kind of
+
+463
+00:16:56,240 --> 00:16:58,230
+walking through your code, running some
+
+464
+00:16:58,240 --> 00:17:00,470
+tests, generating fuzz tests, doing all
+
+465
+00:17:00,480 --> 00:17:02,710
+the stuff that we all hear every day,
+
+466
+00:17:02,720 --> 00:17:04,150
+and then it just gives you a nice little
+
+467
+00:17:04,160 --> 00:17:05,590
+summary report saying, "Oh, by the way,
+
+468
+00:17:05,600 --> 00:17:07,029
+we just did this weird thing and found
+
+469
+00:17:07,039 --> 00:17:08,710
+this." You're like, "Oh, thanks." But
+
+470
+00:17:08,720 --> 00:17:10,470
+yeah, I don't know, a wee bit away from
+
+471
+00:17:10,480 --> 00:17:11,029
+that.
+
+472
+00:17:11,039 --> 00:17:12,150
+&gt;&gt; Yes.
+
+473
+00:17:12,160 --> 00:17:14,949
+&gt;&gt; So, let's move on then. So, just to
+
+474
+00:17:14,959 --> 00:17:17,429
+close that off, Hyper is the sort of
+
+475
+00:17:17,439 --> 00:17:20,069
+most popular established, not the only
+
+476
+00:17:20,079 --> 00:17:21,750
+one, but the one that you were advised
+
+477
+00:17:21,760 --> 00:17:23,829
+to play with. You didn't start from
+
+478
+00:17:23,839 --> 00:17:26,150
+scratch cuz that would be insane. And
+
+479
+00:17:26,160 --> 00:17:28,549
+this part of bringing Rust in wasn't
+
+480
+00:17:28,559 --> 00:17:30,789
+trying to solve the most or a really
+
+481
+00:17:30,799 --> 00:17:32,950
+common memory related issue. It's just
+
+482
+00:17:32,960 --> 00:17:34,710
+something that was the right way to
+
+483
+00:17:34,720 --> 00:17:35,350
+start.
+
+484
+00:17:35,360 --> 00:17:37,750
+&gt;&gt; Exactly. And the idea was then so I mean
+
+485
+00:17:37,760 --> 00:17:39,270
+since we already had this concept of
+
+486
+00:17:39,280 --> 00:17:41,190
+different backends, this would be one
+
+487
+00:17:41,200 --> 00:17:42,630
+more way to just bring in another
+
+488
+00:17:42,640 --> 00:17:45,190
+backend and then replacing native code
+
+489
+00:17:45,200 --> 00:17:47,510
+and we could then in theory introduce
+
+490
+00:17:47,520 --> 00:17:49,669
+even more backends in the future, right?
+
+491
+00:17:49,679 --> 00:17:52,150
+replace more parts of curl by creating
+
+492
+00:17:52,160 --> 00:17:54,390
+new backends that would be written in
+
+493
+00:17:54,400 --> 00:17:58,470
+Rust. So in theory that could over time
+
+494
+00:17:58,480 --> 00:18:00,870
+be more or less that rewrite to Rust
+
+495
+00:18:00,880 --> 00:18:02,789
+that I wouldn't do but it would be
+
+496
+00:18:02,799 --> 00:18:05,110
+another way to do it by just replacing
+
+497
+00:18:05,120 --> 00:18:07,590
+component by component over a long
+
+498
+00:18:07,600 --> 00:18:10,310
+period of time. So is this the only bit
+
+499
+00:18:10,320 --> 00:18:13,029
+of Rust that So we've got the backends
+
+500
+00:18:13,039 --> 00:18:15,270
+that implement the protocol that you're
+
+501
+00:18:15,280 --> 00:18:17,270
+providing because this has been pulled
+
+502
+00:18:17,280 --> 00:18:19,750
+out. Is it only the curl implementation
+
+503
+00:18:19,760 --> 00:18:21,430
+that's left or is there other one?
+
+504
+00:18:21,440 --> 00:18:21,830
+&gt;&gt; Yes.
+
+505
+00:18:21,840 --> 00:18:22,230
+&gt;&gt; Yeah.
+
+506
+00:18:22,240 --> 00:18:24,870
+&gt;&gt; So basically I created this HTTP the
+
+507
+00:18:24,880 --> 00:18:26,950
+notion of an HTTP back end. It didn't
+
+508
+00:18:26,960 --> 00:18:29,590
+exist before this. So I created it on
+
+509
+00:18:29,600 --> 00:18:31,909
+the behalf of being so that I could use
+
+510
+00:18:31,919 --> 00:18:34,630
+hyper for it hyper or native. And then
+
+511
+00:18:34,640 --> 00:18:37,110
+when I removed the hyper approach there
+
+512
+00:18:37,120 --> 00:18:39,669
+was no other backend. So I b pretty much
+
+513
+00:18:39,679 --> 00:18:41,990
+closed that door and now we don't have
+
+514
+00:18:42,000 --> 00:18:44,470
+any HTTP back end anymore. We just have
+
+515
+00:18:44,480 --> 00:18:46,789
+the native code for it. Yeah, I think I
+
+516
+00:18:46,799 --> 00:18:49,190
+read the removal history in your get
+
+517
+00:18:49,200 --> 00:18:51,750
+repo where you closed all the options.
+
+518
+00:18:51,760 --> 00:18:54,710
+&gt;&gt; I also think part of the lesson by the
+
+519
+00:18:54,720 --> 00:18:57,270
+whole hyper journey and adventure part
+
+520
+00:18:57,280 --> 00:18:59,750
+of the lesson there is how we should do
+
+521
+00:18:59,760 --> 00:19:02,230
+such an HTTP back end the next time we
+
+522
+00:19:02,240 --> 00:19:04,390
+try it. So I think it was a little bit
+
+523
+00:19:04,400 --> 00:19:07,190
+weirdly done and I think that's also one
+
+524
+00:19:07,200 --> 00:19:09,110
+reason sort of why I removed it
+
+525
+00:19:09,120 --> 00:19:11,270
+completely instead of leaving it open
+
+526
+00:19:11,280 --> 00:19:13,270
+for a potential future. So it wasn't
+
+527
+00:19:13,280 --> 00:19:15,029
+really done the best way and we have
+
+528
+00:19:15,039 --> 00:19:17,590
+since remodeled internals and actually
+
+529
+00:19:17,600 --> 00:19:20,310
+improved a lot of things refactoring the
+
+530
+00:19:20,320 --> 00:19:22,390
+internals of curl and lib curl. So I
+
+531
+00:19:22,400 --> 00:19:24,390
+think the next time we try to do an HTTP
+
+532
+00:19:24,400 --> 00:19:26,390
+back end we're in a much better position
+
+533
+00:19:26,400 --> 00:19:28,390
+and we have more knowledge and we would
+
+534
+00:19:28,400 --> 00:19:30,630
+do it slightly different and in a better
+
+535
+00:19:30,640 --> 00:19:32,870
+way that would sort of hook into curl in
+
+536
+00:19:32,880 --> 00:19:35,990
+a more futurep proof and less hacky way.
+
+537
+00:19:36,000 --> 00:19:38,549
+&gt;&gt; Yeah, I guess it's not a standard back
+
+538
+00:19:38,559 --> 00:19:40,789
+end that you're doing a protocol for. So
+
+539
+00:19:40,799 --> 00:19:43,430
+that sort of journey from the core of
+
+540
+00:19:43,440 --> 00:19:46,470
+lib curl to calling the backend hooks or
+
+541
+00:19:46,480 --> 00:19:47,909
+however you do it would have been
+
+542
+00:19:47,919 --> 00:19:49,750
+completely different and brand new.
+
+543
+00:19:49,760 --> 00:19:51,750
+&gt;&gt; Exactly. Because we learned a lot from
+
+544
+00:19:51,760 --> 00:19:54,150
+doing this and now we know more.
+
+545
+00:19:54,160 --> 00:19:56,150
+&gt;&gt; Yeah. So it's not a failure. It's just a
+
+546
+00:19:56,160 --> 00:19:57,190
+learning process.
+
+547
+00:19:57,200 --> 00:19:58,310
+&gt;&gt; Yes. Absolutely.
+
+548
+00:19:58,320 --> 00:20:00,390
+&gt;&gt; Okay. That brings us nicely on to
+
+549
+00:20:00,400 --> 00:20:02,630
+actually adding Rust. So having done
+
+550
+00:20:02,640 --> 00:20:04,390
+this myself, I have a bit of an idea,
+
+551
+00:20:04,400 --> 00:20:06,470
+but I just want to paint a picture of
+
+552
+00:20:06,480 --> 00:20:08,950
+what it was like before you even did
+
+553
+00:20:08,960 --> 00:20:11,590
+this. So normally when you configure
+
+554
+00:20:11,600 --> 00:20:13,510
+it's an auto toolsbased project. So
+
+555
+00:20:13,520 --> 00:20:16,070
+that's your configure make test. Is that
+
+556
+00:20:16,080 --> 00:20:16,870
+correct?
+
+557
+00:20:16,880 --> 00:20:17,909
+&gt;&gt; Yeah, pretty much.
+
+558
+00:20:17,919 --> 00:20:19,750
+&gt;&gt; And you have a CMake option as well, do
+
+559
+00:20:19,760 --> 00:20:20,150
+you?
+
+560
+00:20:20,160 --> 00:20:22,549
+&gt;&gt; Yes. Yeah, it's pretty much on par. So
+
+561
+00:20:22,559 --> 00:20:24,870
+you can select whichever version.
+
+562
+00:20:24,880 --> 00:20:26,630
+&gt;&gt; Yeah. So you're doing the configuration
+
+563
+00:20:26,640 --> 00:20:28,390
+part, running your configure script. So
+
+564
+00:20:28,400 --> 00:20:30,310
+we'll stick with auto tools. You might
+
+565
+00:20:30,320 --> 00:20:33,110
+do d-help and see how you build things,
+
+566
+00:20:33,120 --> 00:20:35,110
+what options you doing. And at that
+
+567
+00:20:35,120 --> 00:20:37,430
+point 2020, there was nothing in the
+
+568
+00:20:37,440 --> 00:20:39,990
+configure AC script that lets you detect
+
+569
+00:20:40,000 --> 00:20:42,070
+what's there, what's built. Nothing to
+
+570
+00:20:42,080 --> 00:20:44,789
+say build this or that. That's correct.
+
+571
+00:20:44,799 --> 00:20:45,190
+Yeah,
+
+572
+00:20:45,200 --> 00:20:46,070
+&gt;&gt; exactly.
+
+573
+00:20:46,080 --> 00:20:48,630
+&gt;&gt; Cool. So then there is no variable set
+
+574
+00:20:48,640 --> 00:20:50,870
+to then act on to say right use this
+
+575
+00:20:50,880 --> 00:20:52,870
+code instead of that code or compile
+
+576
+00:20:52,880 --> 00:20:55,350
+this code or that back end or check Rust
+
+577
+00:20:55,360 --> 00:20:58,230
+is installed or all the Rust ecosystem
+
+578
+00:20:58,240 --> 00:20:59,990
+is available. Correct.
+
+579
+00:21:00,000 --> 00:21:00,630
+&gt;&gt; Exactly.
+
+580
+00:21:00,640 --> 00:21:02,230
+&gt;&gt; Yeah. So really ground zero.
+
+581
+00:21:02,240 --> 00:21:04,789
+&gt;&gt; Yes. So how did you start this process
+
+582
+00:21:04,799 --> 00:21:06,630
+and can you give us an example of what
+
+583
+00:21:06,640 --> 00:21:08,789
+that look time period what bits you
+
+584
+00:21:08,799 --> 00:21:10,070
+tackle first
+
+585
+00:21:10,080 --> 00:21:11,029
+&gt;&gt; if you can remember
+
+586
+00:21:11,039 --> 00:21:12,789
+&gt;&gt; whenever I want to start to support
+
+587
+00:21:12,799 --> 00:21:15,510
+something new like this I typically just
+
+588
+00:21:15,520 --> 00:21:18,149
+I start with making sure that we can
+
+589
+00:21:18,159 --> 00:21:20,950
+detect it with configure so then I add
+
+590
+00:21:20,960 --> 00:21:23,029
+my configure rules first so that you
+
+591
+00:21:23,039 --> 00:21:26,470
+could add the d-with hyper and provide
+
+592
+00:21:26,480 --> 00:21:28,950
+the installation path pretty much like
+
+593
+00:21:28,960 --> 00:21:31,830
+whatever since we can support again you
+
+594
+00:21:31,840 --> 00:21:33,350
+can build with different backends. So
+
+595
+00:21:33,360 --> 00:21:35,430
+the same way you would decide other
+
+596
+00:21:35,440 --> 00:21:37,590
+backends with the configure line, you
+
+597
+00:21:37,600 --> 00:21:39,350
+would decide this back end. So you would
+
+598
+00:21:39,360 --> 00:21:41,830
+specify I want to use hyper. Hyper is
+
+599
+00:21:41,840 --> 00:21:44,310
+installed here and then I would provide
+
+600
+00:21:44,320 --> 00:21:46,549
+the proper configure magic so that it
+
+601
+00:21:46,559 --> 00:21:48,549
+would detect that hyper actually exists.
+
+602
+00:21:48,559 --> 00:21:51,669
+It is the proper version and then I made
+
+603
+00:21:51,679 --> 00:21:53,669
+sure that you would build with it.
+
+604
+00:21:53,679 --> 00:21:55,510
+That's the easy part, right? That just
+
+605
+00:21:55,520 --> 00:21:57,270
+making sure that the library is there
+
+606
+00:21:57,280 --> 00:21:58,630
+and can be used.
+
+607
+00:21:58,640 --> 00:22:00,549
+&gt;&gt; So how would you do that with Rust?
+
+608
+00:22:00,559 --> 00:22:02,230
+Would you need to create a little rush
+
+609
+00:22:02,240 --> 00:22:05,270
+program and then add the hyper module or
+
+610
+00:22:05,280 --> 00:22:07,270
+&gt;&gt; No, pretty much since we need the FFI
+
+611
+00:22:07,280 --> 00:22:09,430
+version or a it wasn't even the
+
+612
+00:22:09,440 --> 00:22:12,789
+generated FFI. It was some glue library
+
+613
+00:22:12,799 --> 00:22:15,590
+that Sean created first. So pretty much
+
+614
+00:22:15,600 --> 00:22:18,230
+I don't actually interface the hyper
+
+615
+00:22:18,240 --> 00:22:21,110
+library directly. I interface the little
+
+616
+00:22:21,120 --> 00:22:24,390
+glue library or wrapper library called
+
+617
+00:22:24,400 --> 00:22:26,310
+something else. And that's the library I
+
+618
+00:22:26,320 --> 00:22:27,669
+check for because that's the library
+
+619
+00:22:27,679 --> 00:22:29,909
+written with a C interface. And so I
+
+620
+00:22:29,919 --> 00:22:31,990
+just pretty much make sure that I can
+
+621
+00:22:32,000 --> 00:22:33,590
+find that library, link with that
+
+622
+00:22:33,600 --> 00:22:35,669
+library, and I can find a symbol in
+
+623
+00:22:35,679 --> 00:22:37,990
+there and I can link with it that I deem
+
+624
+00:22:38,000 --> 00:22:39,669
+it suitable and working.
+
+625
+00:22:39,679 --> 00:22:40,870
+&gt;&gt; Yeah, that's what I've done in my
+
+626
+00:22:40,880 --> 00:22:43,190
+project. And just I'll explain how I
+
+627
+00:22:43,200 --> 00:22:44,870
+understand it. And I think that's how
+
+628
+00:22:44,880 --> 00:22:46,710
+you've done it. So when you build a Rust
+
+629
+00:22:46,720 --> 00:22:50,310
+project, you tell the cargo or the Rust
+
+630
+00:22:50,320 --> 00:22:52,310
+ecosystem to build that as either a
+
+631
+00:22:52,320 --> 00:22:54,230
+static or shared library. It's not going
+
+632
+00:22:54,240 --> 00:22:56,310
+to be a binary and then install that
+
+633
+00:22:56,320 --> 00:22:57,990
+somewhere. And that's what you're trying
+
+634
+00:22:58,000 --> 00:22:59,909
+to detect, isn't it? and then saying
+
+635
+00:22:59,919 --> 00:23:01,350
+this function should be available
+
+636
+00:23:01,360 --> 00:23:02,710
+through that library
+
+637
+00:23:02,720 --> 00:23:04,549
+&gt;&gt; and then yeah that means it's installed
+
+638
+00:23:04,559 --> 00:23:06,390
+&gt;&gt; and then I make it just a set of define
+
+639
+00:23:06,400 --> 00:23:07,830
+for that and then in the build I can
+
+640
+00:23:07,840 --> 00:23:09,909
+just use an if defaf if this is
+
+641
+00:23:09,919 --> 00:23:12,470
+available use this code and if it's not
+
+642
+00:23:12,480 --> 00:23:14,789
+available use the other code yeah cool
+
+643
+00:23:14,799 --> 00:23:16,230
+that's how I understand it and hopefully
+
+644
+00:23:16,240 --> 00:23:18,470
+the listeners get that so yeah I mean
+
+645
+00:23:18,480 --> 00:23:21,029
+rust can be built into a library and
+
+646
+00:23:21,039 --> 00:23:23,909
+offer a foreign function interface for C
+
+647
+00:23:23,919 --> 00:23:26,789
+code I fi and that's what you're doing
+
+648
+00:23:26,799 --> 00:23:28,870
+&gt;&gt; yeah and then it was just a matter you
+
+649
+00:23:28,880 --> 00:23:30,549
+know, splitting up the code in a
+
+650
+00:23:30,559 --> 00:23:32,950
+suitable way. Sort of what can hyper
+
+651
+00:23:32,960 --> 00:23:35,029
+provide and make sure that I would
+
+652
+00:23:35,039 --> 00:23:36,789
+abstract it in a way so that I would
+
+653
+00:23:36,799 --> 00:23:39,590
+either use the native code or the hyper
+
+654
+00:23:39,600 --> 00:23:41,830
+library to do things. Setting up a
+
+655
+00:23:41,840 --> 00:23:43,909
+request, adding headers, parsing
+
+656
+00:23:43,919 --> 00:23:45,990
+headers, all that stuff you do with
+
+657
+00:23:46,000 --> 00:23:48,630
+HTTP, which actually is quite a lot.
+
+658
+00:23:48,640 --> 00:23:51,190
+&gt;&gt; And did you as far as the core was
+
+659
+00:23:51,200 --> 00:23:53,430
+concerned, it's just a C library you're
+
+660
+00:23:53,440 --> 00:23:54,870
+using. You didn't have to think about
+
+661
+00:23:54,880 --> 00:23:56,470
+how Rust did something or
+
+662
+00:23:56,480 --> 00:23:57,990
+&gt;&gt; Exactly. That's kind of the beauty of
+
+663
+00:23:58,000 --> 00:24:00,149
+it. I didn't have to think about it as
+
+664
+00:24:00,159 --> 00:24:03,430
+Rust at all. I just have an API and
+
+665
+00:24:03,440 --> 00:24:05,830
+that's just an API I get to use and it
+
+666
+00:24:05,840 --> 00:24:08,470
+doesn't matter how it's powered, right?
+
+667
+00:24:08,480 --> 00:24:09,830
+Which language is written in or
+
+668
+00:24:09,840 --> 00:24:12,310
+anything. I just have an API to use and
+
+669
+00:24:12,320 --> 00:24:12,870
+call.
+
+670
+00:24:12,880 --> 00:24:14,230
+&gt;&gt; It could have been any language really,
+
+671
+00:24:14,240 --> 00:24:16,470
+but we wanted RS because of the
+
+672
+00:24:16,480 --> 00:24:18,630
+&gt;&gt; Exactly. It doesn't or it didn't matter
+
+673
+00:24:18,640 --> 00:24:20,470
+to me, right? Whatever language it is
+
+674
+00:24:20,480 --> 00:24:21,830
+written in, it doesn't matter. I have an
+
+675
+00:24:21,840 --> 00:24:24,630
+API which with a documented behavior and
+
+676
+00:24:24,640 --> 00:24:26,630
+expected outcome and an input and
+
+677
+00:24:26,640 --> 00:24:28,310
+everything. So I would just use that.
+
+678
+00:24:28,320 --> 00:24:30,549
+And of course one of the challenges for
+
+679
+00:24:30,559 --> 00:24:33,590
+us then me and Sean from the hyper side
+
+680
+00:24:33,600 --> 00:24:36,230
+is that this was early days then for the
+
+681
+00:24:36,240 --> 00:24:39,430
+FFI things and me using hyper from a C
+
+682
+00:24:39,440 --> 00:24:41,510
+program. So most of this stuff didn't
+
+683
+00:24:41,520 --> 00:24:42,950
+actually exist. It wasn't really
+
+684
+00:24:42,960 --> 00:24:45,350
+documented. So we had to have a lot of
+
+685
+00:24:45,360 --> 00:24:48,149
+interactions for me to understand how to
+
+686
+00:24:48,159 --> 00:24:49,990
+use it. And one of the challenges
+
+687
+00:24:50,000 --> 00:24:52,149
+actually in general when it comes to
+
+688
+00:24:52,159 --> 00:24:55,510
+using Rust from C all these FFI things
+
+689
+00:24:55,520 --> 00:24:57,269
+is that most of the documentation even
+
+690
+00:24:57,279 --> 00:24:59,590
+though Rust provides this as a sort of a
+
+691
+00:24:59,600 --> 00:25:02,230
+fairly convenient way to generate code
+
+692
+00:25:02,240 --> 00:25:04,230
+so that you can use it from C is that
+
+693
+00:25:04,240 --> 00:25:05,990
+most of the documentation written for
+
+694
+00:25:06,000 --> 00:25:08,630
+these Rust libraries. They're written
+
+695
+00:25:08,640 --> 00:25:11,350
+for Rust consumers right users quite
+
+696
+00:25:11,360 --> 00:25:13,990
+naturally. But it makes it complicated
+
+697
+00:25:14,000 --> 00:25:16,230
+when you're not using the Rust API.
+
+698
+00:25:16,240 --> 00:25:19,430
+you're using this FFI API from C because
+
+699
+00:25:19,440 --> 00:25:22,149
+then you end up in a weird middle land.
+
+700
+00:25:22,159 --> 00:25:23,750
+You have to read a Rust documentation,
+
+701
+00:25:23,760 --> 00:25:25,590
+but it's not that way. It's actually
+
+702
+00:25:25,600 --> 00:25:27,590
+exposed to me because I'm using the C
+
+703
+00:25:27,600 --> 00:25:28,310
+API.
+
+704
+00:25:28,320 --> 00:25:31,029
+&gt;&gt; Yeah. Normally the sort of standard way
+
+705
+00:25:31,039 --> 00:25:33,750
+to do this is you create a Rust create
+
+706
+00:25:33,760 --> 00:25:37,830
+and it's got a suffix of - CIS. So Sys,
+
+707
+00:25:37,840 --> 00:25:39,750
+that's the bit that links to the C
+
+708
+00:25:39,760 --> 00:25:42,870
+library. And then you've got a nice Rust
+
+709
+00:25:42,880 --> 00:25:45,909
+idomatic crate that links to this SIS
+
+710
+00:25:45,919 --> 00:25:48,230
+thing. So you're hiding all the C stuff.
+
+711
+00:25:48,240 --> 00:25:50,310
+&gt;&gt; Exactly. But the documentation
+
+712
+00:25:50,320 --> 00:25:52,710
+&gt;&gt; Yeah. The way you do it is you've got to
+
+713
+00:25:52,720 --> 00:25:54,789
+generate the library and then all the
+
+714
+00:25:54,799 --> 00:25:57,430
+Rust doc things are documenting the
+
+715
+00:25:57,440 --> 00:25:59,430
+symbols and the function calls and the
+
+716
+00:25:59,440 --> 00:26:02,310
+return types cuz it's strongly typed on
+
+717
+00:26:02,320 --> 00:26:04,470
+the Rust side. And I don't think that
+
+718
+00:26:04,480 --> 00:26:06,390
+has an automate way to do it. Maybe
+
+719
+00:26:06,400 --> 00:26:09,350
+through buying gen and lipsy that offer
+
+720
+00:26:09,360 --> 00:26:11,110
+those things the other way. You said
+
+721
+00:26:11,120 --> 00:26:14,070
+that Sean So Hyper was just Rust, wasn't
+
+722
+00:26:14,080 --> 00:26:16,549
+it? It just was a library for Rust. It
+
+723
+00:26:16,559 --> 00:26:18,390
+didn't have anything built to generate
+
+724
+00:26:18,400 --> 00:26:19,669
+the C build.
+
+725
+00:26:19,679 --> 00:26:22,230
+&gt;&gt; No, but it was already in their plans.
+
+726
+00:26:22,240 --> 00:26:24,310
+So I really didn't sort of push for
+
+727
+00:26:24,320 --> 00:26:26,390
+anything they hadn't already intended to
+
+728
+00:26:26,400 --> 00:26:28,390
+do or it was just that they hadn't done
+
+729
+00:26:28,400 --> 00:26:30,549
+it yet. So I was pretty much the first
+
+730
+00:26:30,559 --> 00:26:32,470
+user of it. So did you have to work
+
+731
+00:26:32,480 --> 00:26:35,590
+together to create function names that
+
+732
+00:26:35,600 --> 00:26:37,430
+would be available through the library
+
+733
+00:26:37,440 --> 00:26:39,350
+version of hyper the C library version
+
+734
+00:26:39,360 --> 00:26:41,029
+that you would call or
+
+735
+00:26:41,039 --> 00:26:43,510
+&gt;&gt; yes because since it didn't exist so
+
+736
+00:26:43,520 --> 00:26:45,590
+they pretty much had to go through it
+
+737
+00:26:45,600 --> 00:26:47,269
+one by one and make sure that I could
+
+738
+00:26:47,279 --> 00:26:49,430
+access it from C and provide the
+
+739
+00:26:49,440 --> 00:26:51,750
+documentation for the C angle which is
+
+740
+00:26:51,760 --> 00:26:53,590
+an interesting challenge right and I
+
+741
+00:26:53,600 --> 00:26:55,190
+think that was one of the bigger
+
+742
+00:26:55,200 --> 00:26:57,190
+challenges in general when it comes to
+
+743
+00:26:57,200 --> 00:27:00,070
+doing this is as in this middle land
+
+744
+00:27:00,080 --> 00:27:03,269
+when there has to the C library or C
+
+745
+00:27:03,279 --> 00:27:05,990
+interface to access from the C code that
+
+746
+00:27:06,000 --> 00:27:07,990
+would then reach into the Rust code. It
+
+747
+00:27:08,000 --> 00:27:09,830
+means that you have to have someone that
+
+748
+00:27:09,840 --> 00:27:11,510
+is actually interested and knowledgeable
+
+749
+00:27:11,520 --> 00:27:14,950
+in both languages in that middle land to
+
+750
+00:27:14,960 --> 00:27:16,789
+understand it and be interested enough
+
+751
+00:27:16,799 --> 00:27:19,029
+to work with it and write the
+
+752
+00:27:19,039 --> 00:27:20,230
+documentation and provide the
+
+753
+00:27:20,240 --> 00:27:21,990
+functionality necessary for this to
+
+754
+00:27:22,000 --> 00:27:22,950
+actually work.
+
+755
+00:27:22,960 --> 00:27:24,870
+&gt;&gt; Yeah, because it's like it's double the
+
+756
+00:27:24,880 --> 00:27:26,710
+work, isn't it? cuz you've got to design
+
+757
+00:27:26,720 --> 00:27:28,870
+the rust function. Then you've got to
+
+758
+00:27:28,880 --> 00:27:31,269
+say on that rust function the standard
+
+759
+00:27:31,279 --> 00:27:33,909
+way we do it in curl I'm just guessing
+
+760
+00:27:33,919 --> 00:27:36,870
+here you've got to return a x success or
+
+761
+00:27:36,880 --> 00:27:39,510
+an exit failure or a pointer to an error
+
+762
+00:27:39,520 --> 00:27:42,149
+code or both you know saying right if
+
+763
+00:27:42,159 --> 00:27:44,070
+it's a nonzero return then you know
+
+764
+00:27:44,080 --> 00:27:45,990
+what's that so there's loads of things
+
+765
+00:27:46,000 --> 00:27:47,510
+to think once you've actually written
+
+766
+00:27:47,520 --> 00:27:49,190
+well how is it called and how are we
+
+767
+00:27:49,200 --> 00:27:49,909
+going to provide
+
+768
+00:27:49,919 --> 00:27:50,390
+&gt;&gt; yep
+
+769
+00:27:50,400 --> 00:27:53,510
+&gt;&gt; what curl needs and you lose a lot of
+
+770
+00:27:53,520 --> 00:27:56,230
+rust's main features you know the rich
+
+771
+00:27:56,240 --> 00:27:58,070
+error codes you can get and all those
+
+772
+00:27:58,080 --> 00:27:59,909
+types of things cuz you're squashing it
+
+773
+00:27:59,919 --> 00:28:02,710
+down to a one or a zero or a pointer.
+
+774
+00:28:02,720 --> 00:28:04,310
+&gt;&gt; Yeah, exactly. So, it has to be sort of
+
+775
+00:28:04,320 --> 00:28:07,430
+translated into the C world somehow.
+
+776
+00:28:07,440 --> 00:28:09,909
+&gt;&gt; And we've already said this was opt in.
+
+777
+00:28:09,919 --> 00:28:12,070
+Can you recall what issues you
+
+778
+00:28:12,080 --> 00:28:14,549
+immediately saw as Sean was working on
+
+779
+00:28:14,559 --> 00:28:15,990
+this interface layer or
+
+780
+00:28:16,000 --> 00:28:18,389
+&gt;&gt; Well, I think one of the primary first
+
+781
+00:28:18,399 --> 00:28:21,029
+things that we struggled with was the
+
+782
+00:28:21,039 --> 00:28:23,350
+inherent as sync nature at least that
+
+783
+00:28:23,360 --> 00:28:25,510
+hyper is written in. So that it made the
+
+784
+00:28:25,520 --> 00:28:28,950
+API quite unorthodox when it comes to
+
+785
+00:28:28,960 --> 00:28:32,389
+how normally C interfaces work because
+
+786
+00:28:32,399 --> 00:28:33,990
+they have a completely different
+
+787
+00:28:34,000 --> 00:28:35,909
+approach to how things work internally
+
+788
+00:28:35,919 --> 00:28:38,470
+and how they were exposed. So it was a
+
+789
+00:28:38,480 --> 00:28:40,070
+steep learning curve for me to
+
+790
+00:28:40,080 --> 00:28:42,470
+understand how to actually even use the
+
+791
+00:28:42,480 --> 00:28:45,669
+API. But that was more of a just getting
+
+792
+00:28:45,679 --> 00:28:48,389
+to know how things actually work. I
+
+793
+00:28:48,399 --> 00:28:50,470
+guess that just comes with the territory
+
+794
+00:28:50,480 --> 00:28:52,870
+when you have to use a library that is
+
+795
+00:28:52,880 --> 00:28:55,029
+fairly rich in features and you have to
+
+796
+00:28:55,039 --> 00:28:56,630
+integrate it. One of the biggest
+
+797
+00:28:56,640 --> 00:28:58,389
+challenges for me in general when doing
+
+798
+00:28:58,399 --> 00:29:00,549
+this is that we have a pretty extensive
+
+799
+00:29:00,559 --> 00:29:02,549
+test suite in curl and it's getting you
+
+800
+00:29:02,559 --> 00:29:05,190
+know increasingly more and more tests
+
+801
+00:29:05,200 --> 00:29:07,190
+over time. One of the things we do in
+
+802
+00:29:07,200 --> 00:29:09,269
+the test suite is that when we for
+
+803
+00:29:09,279 --> 00:29:13,190
+example verify HTTP HTTP1 when we do a
+
+804
+00:29:13,200 --> 00:29:15,590
+request with curl we verify that the
+
+805
+00:29:15,600 --> 00:29:18,470
+outgoing request is exactly as expected
+
+806
+00:29:18,480 --> 00:29:20,549
+you know every bite in the request has a
+
+807
+00:29:20,559 --> 00:29:22,950
+specific uh value it's supposed to be
+
+808
+00:29:22,960 --> 00:29:25,430
+right so a outgoing request we know that
+
+809
+00:29:25,440 --> 00:29:27,909
+if it's 120 bytes we know we can compare
+
+810
+00:29:27,919 --> 00:29:30,310
+it all those 120 bytes should be exactly
+
+811
+00:29:30,320 --> 00:29:32,470
+like this and the same way when we get a
+
+812
+00:29:32,480 --> 00:29:34,389
+response from the server the server
+
+813
+00:29:34,399 --> 00:29:36,870
+sends back a response That might be I
+
+814
+00:29:36,880 --> 00:29:38,470
+don't know how many bytes but all those
+
+815
+00:29:38,480 --> 00:29:41,190
+bytes should match exactly when we
+
+816
+00:29:41,200 --> 00:29:43,269
+download it exactly as the server sent
+
+817
+00:29:43,279 --> 00:29:46,230
+it or as the as curl saved it. That
+
+818
+00:29:46,240 --> 00:29:47,830
+actually introduced quite a lot of
+
+819
+00:29:47,840 --> 00:29:50,149
+interesting challenges because hyper has
+
+820
+00:29:50,159 --> 00:29:53,990
+a different approach to how they expose
+
+821
+00:29:54,000 --> 00:29:57,190
+HTTP details. So suddenly it was not at
+
+822
+00:29:57,200 --> 00:29:59,669
+all that as easy to do the test cases
+
+823
+00:29:59,679 --> 00:30:01,909
+the way we had done it for decades
+
+824
+00:30:01,919 --> 00:30:04,630
+because hyperexposed it differently. So
+
+825
+00:30:04,640 --> 00:30:06,470
+was already there was a challenge to
+
+826
+00:30:06,480 --> 00:30:08,710
+make sure that how do we verify that a
+
+827
+00:30:08,720 --> 00:30:10,630
+transfer done with the native code is
+
+828
+00:30:10,640 --> 00:30:13,510
+identical to a transfer done with hyper.
+
+829
+00:30:13,520 --> 00:30:16,070
+&gt;&gt; Yeah. So you haven't got that safety net
+
+830
+00:30:16,080 --> 00:30:18,149
+to fall back on to just if that test
+
+831
+00:30:18,159 --> 00:30:19,750
+fails, you know, you've not done
+
+832
+00:30:19,760 --> 00:30:21,350
+something right, you've actually got to
+
+833
+00:30:21,360 --> 00:30:23,430
+change the contract between
+
+834
+00:30:23,440 --> 00:30:27,110
+&gt;&gt; Yeah. So part of our first sort of steps
+
+835
+00:30:27,120 --> 00:30:29,350
+into making sure that this would work,
+
+836
+00:30:29,360 --> 00:30:32,870
+it was that we had to ask Sean to do
+
+837
+00:30:32,880 --> 00:30:35,350
+several different changes to Hyper so
+
+838
+00:30:35,360 --> 00:30:37,990
+that it would provide data in a more
+
+839
+00:30:38,000 --> 00:30:40,470
+curl like way so that we could actually
+
+840
+00:30:40,480 --> 00:30:42,149
+use it in the test suite and make sure
+
+841
+00:30:42,159 --> 00:30:44,789
+that the requests were not completely
+
+842
+00:30:44,799 --> 00:30:47,110
+identical but almost identical.
+
+843
+00:30:47,120 --> 00:30:48,710
+identical enough so that we could
+
+844
+00:30:48,720 --> 00:30:50,549
+actually tweak the test suite a little
+
+845
+00:30:50,559 --> 00:30:52,310
+bit so that we could run tests and make
+
+846
+00:30:52,320 --> 00:30:54,470
+sure that they actually work exactly the
+
+847
+00:30:54,480 --> 00:30:55,029
+same.
+
+848
+00:30:55,039 --> 00:30:58,789
+&gt;&gt; So to interface the C to the async hyper
+
+849
+00:30:58,799 --> 00:31:00,470
+which I'm not sure if you if it used
+
+850
+00:31:00,480 --> 00:31:01,510
+Tokyo or
+
+851
+00:31:01,520 --> 00:31:02,549
+&gt;&gt; it does I think
+
+852
+00:31:02,559 --> 00:31:04,710
+&gt;&gt; so is that a ton of callbacks you have
+
+853
+00:31:04,720 --> 00:31:07,029
+to do and wait for the reply or
+
+854
+00:31:07,039 --> 00:31:09,669
+&gt;&gt; No, I think they hide the call backs. So
+
+855
+00:31:09,679 --> 00:31:12,310
+they do the call backs. It means that
+
+856
+00:31:12,320 --> 00:31:14,070
+you do a lot of things but you don't get
+
+857
+00:31:14,080 --> 00:31:16,630
+to answer. I mean you sort of start an
+
+858
+00:31:16,640 --> 00:31:18,389
+operation but you don't get the answer
+
+859
+00:31:18,399 --> 00:31:20,710
+to the operation now. It just you know
+
+860
+00:31:20,720 --> 00:31:22,470
+returns okay but it hasn't actually
+
+861
+00:31:22,480 --> 00:31:24,389
+performed it yet. So you have to call it
+
+862
+00:31:24,399 --> 00:31:26,310
+again later to know if it went okay or
+
+863
+00:31:26,320 --> 00:31:29,029
+not in a way that was you know when you
+
+864
+00:31:29,039 --> 00:31:31,510
+introduce like for example like in my
+
+865
+00:31:31,520 --> 00:31:33,669
+case when I want to have an alternative
+
+866
+00:31:33,679 --> 00:31:35,909
+way to do HTTP I have the native way and
+
+867
+00:31:35,919 --> 00:31:37,830
+the Rust way to do it. it just
+
+868
+00:31:37,840 --> 00:31:40,789
+introduces some fun challenges when one
+
+869
+00:31:40,799 --> 00:31:42,470
+of the backends have a completely
+
+870
+00:31:42,480 --> 00:31:44,870
+different way of thinking about these
+
+871
+00:31:44,880 --> 00:31:47,029
+things than the other. So it made it
+
+872
+00:31:47,039 --> 00:31:49,590
+slightly complicated to make you know
+
+873
+00:31:49,600 --> 00:31:51,669
+selecting the two different forks of the
+
+874
+00:31:51,679 --> 00:31:54,549
+road and make sure that nothing else in
+
+875
+00:31:54,559 --> 00:31:57,509
+curl would see that or suffer from that
+
+876
+00:31:57,519 --> 00:32:00,310
+or misbehave because of the different
+
+877
+00:32:00,320 --> 00:32:01,909
+which of the different backends you
+
+878
+00:32:01,919 --> 00:32:03,990
+would use. So it was just a challenge
+
+879
+00:32:04,000 --> 00:32:04,389
+really.
+
+880
+00:32:04,399 --> 00:32:06,789
+&gt;&gt; Yeah. Imagine you've got a sort of AI or
+
+881
+00:32:06,799 --> 00:32:10,230
+API to add a new backend curl. So if I
+
+882
+00:32:10,240 --> 00:32:11,909
+was coming along and I'd created a brand
+
+883
+00:32:11,919 --> 00:32:13,990
+new protocol and I wanted curl to do it,
+
+884
+00:32:14,000 --> 00:32:15,590
+I know there would be documentation of
+
+885
+00:32:15,600 --> 00:32:17,750
+how I hook that into your configure and
+
+886
+00:32:17,760 --> 00:32:19,830
+build process, but that wasn't there for
+
+887
+00:32:19,840 --> 00:32:22,149
+this Rust version Hyper because you
+
+888
+00:32:22,159 --> 00:32:23,430
+hadn't done it before. So
+
+889
+00:32:23,440 --> 00:32:25,430
+&gt;&gt; yeah, exactly. You've got two moving
+
+890
+00:32:25,440 --> 00:32:27,909
+parts to try and line up and work and a
+
+891
+00:32:27,919 --> 00:32:30,870
+whole new sort of frontier to try and
+
+892
+00:32:30,880 --> 00:32:33,029
+pull things out of lip curl that you
+
+893
+00:32:33,039 --> 00:32:35,110
+hadn't done before as well. Okay. So,
+
+894
+00:32:35,120 --> 00:32:38,870
+what advice would you or could you give
+
+895
+00:32:38,880 --> 00:32:40,549
+others with regards to this build
+
+896
+00:32:40,559 --> 00:32:42,710
+process? Actually, the way you've
+
+897
+00:32:42,720 --> 00:32:44,230
+explained it, it's just another C
+
+898
+00:32:44,240 --> 00:32:45,029
+library.
+
+899
+00:32:45,039 --> 00:32:47,909
+&gt;&gt; Yes, I think that's a pretty neat way to
+
+900
+00:32:47,919 --> 00:32:50,389
+do it. So I think that's straightforward
+
+901
+00:32:50,399 --> 00:32:53,190
+and from a C point of view, from our
+
+902
+00:32:53,200 --> 00:32:54,870
+project's point of view, it was really
+
+903
+00:32:54,880 --> 00:32:57,509
+convenient and really working well. So
+
+904
+00:32:57,519 --> 00:32:59,669
+technically there's no problem. There's
+
+905
+00:32:59,679 --> 00:33:03,509
+nothing really that I think that should
+
+906
+00:33:03,519 --> 00:33:05,029
+or need to be changed when it comes to
+
+907
+00:33:05,039 --> 00:33:06,870
+that. I think the biggest problem and
+
+908
+00:33:06,880 --> 00:33:08,310
+come back to it because I already
+
+909
+00:33:08,320 --> 00:33:10,070
+mentioned it and I see the same problem
+
+910
+00:33:10,080 --> 00:33:12,549
+actually with the other Rust provided
+
+911
+00:33:12,559 --> 00:33:15,830
+backends is that again you end up in a
+
+912
+00:33:15,840 --> 00:33:19,350
+weird land where the documentation is
+
+913
+00:33:19,360 --> 00:33:21,750
+often fairly good for these Rust
+
+914
+00:33:21,760 --> 00:33:24,549
+libraries but they don't since I don't
+
+915
+00:33:24,559 --> 00:33:27,509
+interface the Rust API I end up in a
+
+916
+00:33:27,519 --> 00:33:29,590
+weird land where I don't actually have a
+
+917
+00:33:29,600 --> 00:33:31,909
+documentation for how my the API
+
+918
+00:33:31,919 --> 00:33:33,430
+interface I use isn't actually
+
+919
+00:33:33,440 --> 00:33:35,190
+documented. So I have to do a lot of
+
+920
+00:33:35,200 --> 00:33:38,389
+guessing or reading code or both or
+
+921
+00:33:38,399 --> 00:33:40,710
+guessing how it actually works because
+
+922
+00:33:40,720 --> 00:33:43,430
+the translation from Rust to C is not
+
+923
+00:33:43,440 --> 00:33:45,750
+always straightforward and it's not even
+
+924
+00:33:45,760 --> 00:33:48,230
+I mean I can't even guess at some points
+
+925
+00:33:48,240 --> 00:33:50,310
+because it it matters. It depends on how
+
+926
+00:33:50,320 --> 00:33:52,789
+you actually do that FFI translation
+
+927
+00:33:52,799 --> 00:33:54,549
+pretty much. So that's a sort of a
+
+928
+00:33:54,559 --> 00:33:55,909
+common pattern I see.
+
+929
+00:33:55,919 --> 00:33:57,430
+&gt;&gt; Could you give us an example of that?
+
+930
+00:33:57,440 --> 00:33:59,350
+Say we've got a function that does
+
+931
+00:33:59,360 --> 00:34:01,190
+something and returns something. that
+
+932
+00:34:01,200 --> 00:34:04,710
+function interface is documented, but
+
+933
+00:34:04,720 --> 00:34:05,830
+what problem?
+
+934
+00:34:05,840 --> 00:34:07,669
+&gt;&gt; Well, typically it's only documented.
+
+935
+00:34:07,679 --> 00:34:09,990
+The Rust version of it is documented.
+
+936
+00:34:10,000 --> 00:34:12,230
+Sure. So, there's a a it's a fairly
+
+937
+00:34:12,240 --> 00:34:14,149
+elaborate description of how it works
+
+938
+00:34:14,159 --> 00:34:17,349
+when used in Rust, but I don't use it in
+
+939
+00:34:17,359 --> 00:34:19,270
+Rust. I don't even understand what the
+
+940
+00:34:19,280 --> 00:34:21,109
+documentation says about the types and
+
+941
+00:34:21,119 --> 00:34:23,190
+how they they work and everything or
+
+942
+00:34:23,200 --> 00:34:25,109
+even the return code because that's not
+
+943
+00:34:25,119 --> 00:34:27,669
+exactly what I I don't pass in those
+
+944
+00:34:27,679 --> 00:34:29,349
+arguments. I don't get the same return
+
+945
+00:34:29,359 --> 00:34:31,909
+code. So I usually get a more of a
+
+946
+00:34:31,919 --> 00:34:34,550
+tweaked or twisted version of that API,
+
+947
+00:34:34,560 --> 00:34:36,869
+but I need the details in that
+
+948
+00:34:36,879 --> 00:34:38,869
+particular flavor because I use the C
+
+949
+00:34:38,879 --> 00:34:41,109
+API, not the Rust API.
+
+950
+00:34:41,119 --> 00:34:42,710
+&gt;&gt; Yeah, I see. When I've been doing some
+
+951
+00:34:42,720 --> 00:34:45,109
+functions, it's I've only written them
+
+952
+00:34:45,119 --> 00:34:47,430
+because a C program is going to be
+
+953
+00:34:47,440 --> 00:34:49,750
+calling them. So I've changed the, you
+
+954
+00:34:49,760 --> 00:34:51,669
+know, the signature of that function and
+
+955
+00:34:51,679 --> 00:34:53,510
+what it returns. But I guess if you've
+
+956
+00:34:53,520 --> 00:34:54,629
+got like a really
+
+957
+00:34:54,639 --> 00:34:56,629
+&gt;&gt; I think sometimes it's more of a case
+
+958
+00:34:56,639 --> 00:35:00,069
+that sort of as a C user in this sort of
+
+959
+00:35:00,079 --> 00:35:02,390
+situation. I'm the oddball here. I'm the
+
+960
+00:35:02,400 --> 00:35:05,109
+niche case. So of course people are
+
+961
+00:35:05,119 --> 00:35:07,510
+sacrificing spending spare time and
+
+962
+00:35:07,520 --> 00:35:09,510
+offering their time on this and energy.
+
+963
+00:35:09,520 --> 00:35:11,270
+They of course focus on getting things
+
+964
+00:35:11,280 --> 00:35:13,670
+working primarily for the Rust users. So
+
+965
+00:35:13,680 --> 00:35:15,750
+that's why the Rust documentation is is
+
+966
+00:35:15,760 --> 00:35:18,150
+the priority. And I don't argue with
+
+967
+00:35:18,160 --> 00:35:20,150
+that because it makes sense. But
+
+968
+00:35:20,160 --> 00:35:22,630
+sometimes that makes it harder to use it
+
+969
+00:35:22,640 --> 00:35:25,030
+from C because this documentation is
+
+970
+00:35:25,040 --> 00:35:25,750
+often
+
+971
+00:35:25,760 --> 00:35:27,750
+&gt;&gt; yeah the types and the structures and
+
+972
+00:35:27,760 --> 00:35:29,990
+the R side when they tell Rush to
+
+973
+00:35:30,000 --> 00:35:32,470
+represent that as C you just have to
+
+974
+00:35:32,480 --> 00:35:34,870
+kind of see what comes out don't you?
+
+975
+00:35:34,880 --> 00:35:37,270
+&gt;&gt; Yeah. And then it comes back to this to
+
+976
+00:35:37,280 --> 00:35:39,349
+do this really well you probably need to
+
+977
+00:35:39,359 --> 00:35:41,589
+understand quite a lot of Rust and C at
+
+978
+00:35:41,599 --> 00:35:43,670
+the same time and that's a special
+
+979
+00:35:43,680 --> 00:35:45,270
+intersection of people.
+
+980
+00:35:45,280 --> 00:35:47,589
+&gt;&gt; Excellent. So I'm going to move us on to
+
+981
+00:35:47,599 --> 00:35:50,870
+our what you call autopsy for one of a
+
+982
+00:35:50,880 --> 00:35:52,630
+better word. What went wrong? You know
+
+983
+00:35:52,640 --> 00:35:55,670
+the analysis here. So first question,
+
+984
+00:35:55,680 --> 00:35:57,910
+was this the right part of curl to use
+
+985
+00:35:57,920 --> 00:36:00,230
+rust in? Yes, I think it could have been
+
+986
+00:36:00,240 --> 00:36:02,470
+the right part to use rust in. I don't
+
+987
+00:36:02,480 --> 00:36:04,390
+think it was actually the part of curl
+
+988
+00:36:04,400 --> 00:36:06,630
+that was the problem because I think as
+
+989
+00:36:06,640 --> 00:36:07,990
+I said before, I think we can pretty
+
+990
+00:36:08,000 --> 00:36:10,470
+much introduce backends for more or less
+
+991
+00:36:10,480 --> 00:36:12,790
+anything in curl like this if we just
+
+992
+00:36:12,800 --> 00:36:14,710
+spend time and energy and do it
+
+993
+00:36:14,720 --> 00:36:16,550
+correctly. So I don't think it was the
+
+994
+00:36:16,560 --> 00:36:18,870
+part of curl that was the problem. I
+
+995
+00:36:18,880 --> 00:36:21,750
+think the primary thing that made us
+
+996
+00:36:21,760 --> 00:36:24,310
+eventually pull it out again is that we
+
+997
+00:36:24,320 --> 00:36:28,550
+didn't really find users that wanted it.
+
+998
+00:36:28,560 --> 00:36:28,870
+&gt;&gt; Yeah.
+
+999
+00:36:28,880 --> 00:36:31,589
+&gt;&gt; So we have this I kind of like the the
+
+1000
+00:36:31,599 --> 00:36:33,750
+sort of the survival of the fittest
+
+1001
+00:36:33,760 --> 00:36:35,910
+approach by offering different backends
+
+1002
+00:36:35,920 --> 00:36:38,230
+for different solutions so that users
+
+1003
+00:36:38,240 --> 00:36:39,990
+would pick whatever they want and go
+
+1004
+00:36:40,000 --> 00:36:42,069
+with that. You know, we offer bunch of
+
+1005
+00:36:42,079 --> 00:36:43,670
+different TLS library solutions, for
+
+1006
+00:36:43,680 --> 00:36:45,270
+example, and users can pick whatever
+
+1007
+00:36:45,280 --> 00:36:46,950
+they want and build curl and and use
+
+1008
+00:36:46,960 --> 00:36:49,589
+that and we can over time detect that
+
+1009
+00:36:49,599 --> 00:36:51,270
+wait a minute, these different ones are
+
+1010
+00:36:51,280 --> 00:36:52,790
+never used. We don't have to support
+
+1011
+00:36:52,800 --> 00:36:54,470
+them anymore. We can remove them. So,
+
+1012
+00:36:54,480 --> 00:36:57,990
+pretty much letting users decide what we
+
+1013
+00:36:58,000 --> 00:37:00,069
+should have and what's used and what's
+
+1014
+00:37:00,079 --> 00:37:02,390
+best and what they want. It was quite
+
+1015
+00:37:02,400 --> 00:37:05,109
+notable quite early on and through the
+
+1016
+00:37:05,119 --> 00:37:07,589
+entire project that we had a hard time
+
+1017
+00:37:07,599 --> 00:37:09,910
+to get anyone to actually even just try
+
+1018
+00:37:09,920 --> 00:37:12,630
+out the hyper backend. So we had a
+
+1019
+00:37:12,640 --> 00:37:15,349
+pretty much no one used it and by not
+
+1020
+00:37:15,359 --> 00:37:17,910
+having users we also had very few
+
+1021
+00:37:17,920 --> 00:37:19,670
+contributors you know helping out
+
+1022
+00:37:19,680 --> 00:37:22,390
+improving the back end so that very few
+
+1023
+00:37:22,400 --> 00:37:24,950
+people actually engaged and helped us
+
+1024
+00:37:24,960 --> 00:37:25,829
+out. So
+
+1025
+00:37:25,839 --> 00:37:27,349
+&gt;&gt; how do you figure out if a back end's
+
+1026
+00:37:27,359 --> 00:37:29,510
+being used or is popular or not?
+
+1027
+00:37:29,520 --> 00:37:32,630
+basically just by asking people. So we
+
+1028
+00:37:32,640 --> 00:37:34,710
+have annual user surveys and usually you
+
+1029
+00:37:34,720 --> 00:37:36,630
+know asking on the mailing list people
+
+1030
+00:37:36,640 --> 00:37:39,030
+are frequent users are you using it or
+
+1031
+00:37:39,040 --> 00:37:40,630
+sometimes you could just notice you know
+
+1032
+00:37:40,640 --> 00:37:43,430
+by when we have had a serious bug for a
+
+1033
+00:37:43,440 --> 00:37:45,030
+while and we fix it and no one has told
+
+1034
+00:37:45,040 --> 00:37:46,630
+us about it. That's a sort of a pretty
+
+1035
+00:37:46,640 --> 00:37:48,790
+big clue that no one actually used it.
+
+1036
+00:37:48,800 --> 00:37:51,349
+We also marked it as experimental which
+
+1037
+00:37:51,359 --> 00:37:53,030
+also of course is a blocker for people
+
+1038
+00:37:53,040 --> 00:37:55,030
+to use it in production because we never
+
+1039
+00:37:55,040 --> 00:37:57,910
+actually got it completely 100% the same
+
+1040
+00:37:57,920 --> 00:38:00,470
+as the native. So we kept having I think
+
+1041
+00:38:00,480 --> 00:38:03,670
+like 3 4% of the test cases disabled
+
+1042
+00:38:03,680 --> 00:38:06,069
+because we had when you enabled hyper
+
+1043
+00:38:06,079 --> 00:38:08,150
+because we never got those test cases
+
+1044
+00:38:08,160 --> 00:38:09,670
+working exactly the same.
+
+1045
+00:38:09,680 --> 00:38:11,750
+&gt;&gt; Yeah, I suppose you could argue if it
+
+1046
+00:38:11,760 --> 00:38:14,390
+was marked as stable and then it became
+
+1047
+00:38:14,400 --> 00:38:16,950
+the default option then you'd get bug
+
+1048
+00:38:16,960 --> 00:38:19,030
+reports and people would opt in would
+
+1049
+00:38:19,040 --> 00:38:21,030
+help out but if you didn't get there you
+
+1050
+00:38:21,040 --> 00:38:21,829
+didn't get there.
+
+1051
+00:38:21,839 --> 00:38:23,990
+&gt;&gt; Exactly. Yeah. Of course that's sort of
+
+1052
+00:38:24,000 --> 00:38:27,030
+that was one obstacle certainly a major
+
+1053
+00:38:27,040 --> 00:38:28,950
+one. And were the other Rust options,
+
+1054
+00:38:28,960 --> 00:38:31,030
+the TLS stuff, was that there before you
+
+1055
+00:38:31,040 --> 00:38:32,470
+started this project? So you had some
+
+1056
+00:38:32,480 --> 00:38:34,390
+experience or was that done after?
+
+1057
+00:38:34,400 --> 00:38:37,589
+&gt;&gt; The key one for HP3 that was started
+
+1058
+00:38:37,599 --> 00:38:41,829
+before the Russell's one started I think
+
+1059
+00:38:41,839 --> 00:38:44,630
+pretty much while I was doing this.
+
+1060
+00:38:44,640 --> 00:38:46,150
+&gt;&gt; So that's Rust TLS, isn't it?
+
+1061
+00:38:46,160 --> 00:38:48,870
+&gt;&gt; Rust TLS. We have a much better
+
+1062
+00:38:48,880 --> 00:38:51,430
+understanding of TLS in curl and it
+
+1063
+00:38:51,440 --> 00:38:52,950
+makes it's we have much better
+
+1064
+00:38:52,960 --> 00:38:55,349
+infrastructure and setup for TLS
+
+1065
+00:38:55,359 --> 00:38:58,550
+backends in curl. So I think that was so
+
+1066
+00:38:58,560 --> 00:39:01,190
+that's a smoother ride and a better fit
+
+1067
+00:39:01,200 --> 00:39:03,910
+into curl and also I think TLS is a
+
+1068
+00:39:03,920 --> 00:39:06,390
+better abstraction layer I think maybe
+
+1069
+00:39:06,400 --> 00:39:08,870
+than HTTP sort of quote unquote because
+
+1070
+00:39:08,880 --> 00:39:12,390
+what the internal API or how to abstract
+
+1071
+00:39:12,400 --> 00:39:15,829
+HTTP away it's certainly far from clear
+
+1072
+00:39:15,839 --> 00:39:18,710
+and uh obvious how to do it and one of
+
+1073
+00:39:18,720 --> 00:39:22,150
+the challenges we face many times I
+
+1074
+00:39:22,160 --> 00:39:23,670
+already sort of alluded a little bit to
+
+1075
+00:39:23,680 --> 00:39:26,150
+the that hyper and curl has a little bit
+
+1076
+00:39:26,160 --> 00:39:27,750
+of different we have different sort of
+
+1077
+00:39:27,760 --> 00:39:29,990
+approaches how we approach HP which made
+
+1078
+00:39:30,000 --> 00:39:31,990
+it for example when getting the headers
+
+1079
+00:39:32,000 --> 00:39:34,790
+from hyper it would get them in a more
+
+1080
+00:39:34,800 --> 00:39:37,349
+or less random order while curl always
+
+1081
+00:39:37,359 --> 00:39:39,190
+returns them in the order they were sent
+
+1082
+00:39:39,200 --> 00:39:41,750
+over the wire which of course if I don't
+
+1083
+00:39:41,760 --> 00:39:43,829
+have the same order I can't compare them
+
+1084
+00:39:43,839 --> 00:39:45,589
+correctly as I do in my current test
+
+1085
+00:39:45,599 --> 00:39:47,829
+suite so that's one thing for example
+
+1086
+00:39:47,839 --> 00:39:49,990
+and other things like hyper has
+
+1087
+00:39:50,000 --> 00:39:52,550
+certainly other limits restrictions
+
+1088
+00:39:52,560 --> 00:39:56,150
+requirements on the HTTP layer than curl
+
+1089
+00:39:56,160 --> 00:39:59,750
+which also introduced funny friction and
+
+1090
+00:39:59,760 --> 00:40:01,750
+differences when you built one way or
+
+1091
+00:40:01,760 --> 00:40:03,589
+the other way because they would behave
+
+1092
+00:40:03,599 --> 00:40:06,069
+differently depending on just policies
+
+1093
+00:40:06,079 --> 00:40:08,470
+or religion or taste.
+
+1094
+00:40:08,480 --> 00:40:10,230
+&gt;&gt; The existing Rust things that you're
+
+1095
+00:40:10,240 --> 00:40:12,870
+using were again just C libraries but in
+
+1096
+00:40:12,880 --> 00:40:14,950
+a wellestablished landscape because you
+
+1097
+00:40:14,960 --> 00:40:16,550
+had other backends already.
+
+1098
+00:40:16,560 --> 00:40:19,109
+&gt;&gt; Yes. And this just this compacted it.
+
+1099
+00:40:19,119 --> 00:40:21,750
+And there must have been a point or was
+
+1100
+00:40:21,760 --> 00:40:23,030
+there a point when you thought, hold on,
+
+1101
+00:40:23,040 --> 00:40:24,790
+we're having to make so many changes to
+
+1102
+00:40:24,800 --> 00:40:26,790
+Hyper to get this to work. Did you ever
+
+1103
+00:40:26,800 --> 00:40:28,230
+have a conversation about, well, let's
+
+1104
+00:40:28,240 --> 00:40:30,310
+just do this from scratch because you
+
+1105
+00:40:30,320 --> 00:40:31,750
+tried it out or was that just not a
+
+1106
+00:40:31,760 --> 00:40:32,069
+thing?
+
+1107
+00:40:32,079 --> 00:40:34,230
+&gt;&gt; I think that also because I'm not
+
+1108
+00:40:34,240 --> 00:40:35,910
+qualified. I'm not skilled enough in
+
+1109
+00:40:35,920 --> 00:40:38,230
+Rust myself to do that. So, I wouldn't
+
+1110
+00:40:38,240 --> 00:40:40,950
+do it and therefore I wouldn't dream of
+
+1111
+00:40:40,960 --> 00:40:42,950
+demanding it from someone else either.
+
+1112
+00:40:42,960 --> 00:40:46,630
+So it was pretty much hyper or not at
+
+1113
+00:40:46,640 --> 00:40:48,870
+all right now at least sort of because
+
+1114
+00:40:48,880 --> 00:40:51,510
+now we had this hyper solution. This is
+
+1115
+00:40:51,520 --> 00:40:54,150
+what we struggle to get working and I
+
+1116
+00:40:54,160 --> 00:40:56,470
+think we got it pretty far as well. So I
+
+1117
+00:40:56,480 --> 00:40:59,430
+mean we were at 90 I don't know 97% of
+
+1118
+00:40:59,440 --> 00:41:01,670
+test case coverage. So I think we were
+
+1119
+00:41:01,680 --> 00:41:05,030
+pretty well on our way to get it to work
+
+1120
+00:41:05,040 --> 00:41:08,230
+but then it flatlined and no one worked
+
+1121
+00:41:08,240 --> 00:41:10,790
+on it for a while. just sat at that
+
+1122
+00:41:10,800 --> 00:41:12,950
+state and we didn't seem to have anyone
+
+1123
+00:41:12,960 --> 00:41:15,589
+really interested in pushing it forward.
+
+1124
+00:41:15,599 --> 00:41:17,750
+And when it was pretty much at that
+
+1125
+00:41:17,760 --> 00:41:19,990
+state, we decided that wait a minute, if
+
+1126
+00:41:20,000 --> 00:41:21,910
+if this is where we are, no one is
+
+1127
+00:41:21,920 --> 00:41:23,430
+pushing for it and no one is really
+
+1128
+00:41:23,440 --> 00:41:25,829
+asking for it either. And all of these
+
+1129
+00:41:25,839 --> 00:41:28,630
+different caveats and we need to do
+
+1130
+00:41:28,640 --> 00:41:31,270
+these different maybe not clutchy, but
+
+1131
+00:41:31,280 --> 00:41:33,430
+maybe some sometimes a little bit of
+
+1132
+00:41:33,440 --> 00:41:35,910
+uncomfortable or quirky solutions
+
+1133
+00:41:35,920 --> 00:41:39,030
+internally. And still we're only at this
+
+1134
+00:41:39,040 --> 00:41:42,630
+point. So maybe that's what we should
+
+1135
+00:41:42,640 --> 00:41:44,790
+call a sort of a end of the road for
+
+1136
+00:41:44,800 --> 00:41:46,790
+this adventure and say that we didn't
+
+1137
+00:41:46,800 --> 00:41:49,589
+actually manage to do this in a proper
+
+1138
+00:41:49,599 --> 00:41:50,069
+way.
+
+1139
+00:41:50,079 --> 00:41:52,470
+&gt;&gt; Um that brings me nicely on to what
+
+1140
+00:41:52,480 --> 00:41:54,470
+benefits did you gain from the attempt
+
+1141
+00:41:54,480 --> 00:41:56,230
+which to me sound like a lot you know a
+
+1142
+00:41:56,240 --> 00:41:58,150
+lot of things that you've learned.
+
+1143
+00:41:58,160 --> 00:42:00,630
+&gt;&gt; I think we learned a lot. I think
+
+1144
+00:42:00,640 --> 00:42:02,630
+actually Hyper also learned a lot. I
+
+1145
+00:42:02,640 --> 00:42:05,030
+think they improved as well as we did.
+
+1146
+00:42:05,040 --> 00:42:07,270
+So even though when we sort of split off
+
+1147
+00:42:07,280 --> 00:42:09,589
+and we're no longer using hyper I think
+
+1148
+00:42:09,599 --> 00:42:12,550
+we improved curl in several ways we made
+
+1149
+00:42:12,560 --> 00:42:15,510
+the HTTP handling more rigid and and
+
+1150
+00:42:15,520 --> 00:42:18,150
+stringent to match up with hyper really
+
+1151
+00:42:18,160 --> 00:42:19,910
+and we did a lot of cleaning up
+
+1152
+00:42:19,920 --> 00:42:23,190
+internally to be able to do this backend
+
+1153
+00:42:23,200 --> 00:42:25,430
+separation and that helped us internally
+
+1154
+00:42:25,440 --> 00:42:28,790
+to just do HTTP in a cleaner way and
+
+1155
+00:42:28,800 --> 00:42:30,950
+then also this lesson that we learned
+
+1156
+00:42:30,960 --> 00:42:34,069
+that we how we should do this the next
+
+1157
+00:42:34,079 --> 00:42:37,190
+time pretty And this entire hyper
+
+1158
+00:42:37,200 --> 00:42:40,230
+journey also coincided with other
+
+1159
+00:42:40,240 --> 00:42:42,710
+refactors we've done in curl. And I
+
+1160
+00:42:42,720 --> 00:42:46,230
+think the hyper lesson also helped us
+
+1161
+00:42:46,240 --> 00:42:48,630
+make decisions and and learn from that
+
+1162
+00:42:48,640 --> 00:42:50,710
+and use that when we refactored the
+
+1163
+00:42:50,720 --> 00:42:52,470
+internals in curl. So that we sort of
+
+1164
+00:42:52,480 --> 00:42:54,630
+have in the back of our minds we now
+
+1165
+00:42:54,640 --> 00:42:56,870
+have this idea that when or maybe if we
+
+1166
+00:42:56,880 --> 00:42:58,790
+do this again now we have these
+
+1167
+00:42:58,800 --> 00:43:01,109
+different tools and and setups that will
+
+1168
+00:43:01,119 --> 00:43:03,030
+help us do this better the next time.
+
+1169
+00:43:03,040 --> 00:43:05,750
+Did any of the changes that you made to
+
+1170
+00:43:05,760 --> 00:43:07,589
+to bring in Hyper, did they remain or
+
+1171
+00:43:07,599 --> 00:43:09,190
+did you just rip them all out when you
+
+1172
+00:43:09,200 --> 00:43:10,470
+removed Hyper?
+
+1173
+00:43:10,480 --> 00:43:13,190
+&gt;&gt; A lot of the improvements we did to HTTP
+
+1174
+00:43:13,200 --> 00:43:15,030
+in general and and the separation of
+
+1175
+00:43:15,040 --> 00:43:18,309
+HTTP from other there were some cases of
+
+1176
+00:43:18,319 --> 00:43:20,390
+pretty much of um I don't know how to
+
+1177
+00:43:20,400 --> 00:43:22,150
+sort of explain it but you know that we
+
+1178
+00:43:22,160 --> 00:43:24,390
+have sort of infected other code parts
+
+1179
+00:43:24,400 --> 00:43:26,950
+with HTTP specific knowledge that we had
+
+1180
+00:43:26,960 --> 00:43:29,030
+to make sure that they were not in the
+
+1181
+00:43:29,040 --> 00:43:31,190
+generic parts they had to be in the HTTP
+
+1182
+00:43:31,200 --> 00:43:32,950
+parts. So we did a lot of cleanups like
+
+1183
+00:43:32,960 --> 00:43:34,870
+that that have certainly remained and
+
+1184
+00:43:34,880 --> 00:43:36,790
+just been emphasized and improved over
+
+1185
+00:43:36,800 --> 00:43:38,630
+time. So I would say that quite a lot of
+
+1186
+00:43:38,640 --> 00:43:41,430
+the HTTP related the protocol related
+
+1187
+00:43:41,440 --> 00:43:44,309
+parts they have remained. What we pretty
+
+1188
+00:43:44,319 --> 00:43:46,309
+much ripped out was the entire attempt
+
+1189
+00:43:46,319 --> 00:43:49,510
+to have this flexible backend approach
+
+1190
+00:43:49,520 --> 00:43:51,990
+where we go either or way because we
+
+1191
+00:43:52,000 --> 00:43:53,270
+don't have that anymore. So we don't
+
+1192
+00:43:53,280 --> 00:43:55,270
+have to provide it. So that part we
+
+1193
+00:43:55,280 --> 00:43:56,230
+ripped out.
+
+1194
+00:43:56,240 --> 00:43:58,309
+&gt;&gt; That makes sense. In your blog post, you
+
+1195
+00:43:58,319 --> 00:43:59,910
+said, so I'm just going to quote this
+
+1196
+00:43:59,920 --> 00:44:03,190
+bit. 95% of the work is the easy part.
+
+1197
+00:44:03,200 --> 00:44:05,589
+Can you explain the other sentence that
+
+1198
+00:44:05,599 --> 00:44:07,990
+says the final few% would however turn
+
+1199
+00:44:08,000 --> 00:44:09,910
+out to be frictional enough to now
+
+1200
+00:44:09,920 --> 00:44:11,990
+eventually make us admit defeat, give
+
+1201
+00:44:12,000 --> 00:44:14,069
+up, and instead yank it all out again.
+
+1202
+00:44:14,079 --> 00:44:15,990
+&gt;&gt; So what those last bits
+
+1203
+00:44:16,000 --> 00:44:18,470
+&gt;&gt; I think pretty much because we made
+
+1204
+00:44:18,480 --> 00:44:21,430
+everything. We have about 2,000 test
+
+1205
+00:44:21,440 --> 00:44:24,230
+cases in total. I think about 800 of
+
+1206
+00:44:24,240 --> 00:44:26,309
+them or something. a thousand are about
+
+1207
+00:44:26,319 --> 00:44:29,510
+HTTP and I think we had we were down to
+
+1208
+00:44:29,520 --> 00:44:33,030
+maybe 15 of them failing with Hyper and
+
+1209
+00:44:33,040 --> 00:44:37,030
+getting those final 15 test cases to
+
+1210
+00:44:37,040 --> 00:44:39,190
+work. Those were the ones that sort of
+
+1211
+00:44:39,200 --> 00:44:42,390
+finally broke us because they require
+
+1212
+00:44:42,400 --> 00:44:45,270
+that someone actually understand
+
+1213
+00:44:45,280 --> 00:44:49,589
+hyper probably the C glue layer and curl
+
+1214
+00:44:49,599 --> 00:44:52,790
+and the protocols involved and sometimes
+
+1215
+00:44:52,800 --> 00:44:54,150
+more protocols involved because
+
+1216
+00:44:54,160 --> 00:44:56,230
+sometimes they also involve actually in
+
+1217
+00:44:56,240 --> 00:44:58,390
+these cases many times they involve HTTP
+
+1218
+00:44:58,400 --> 00:45:01,270
+authentication mechanisms too like NLM
+
+1219
+00:45:01,280 --> 00:45:04,710
+or digest or negotiate horrible things.
+
+1220
+00:45:04,720 --> 00:45:07,190
+So you really need particular kind of
+
+1221
+00:45:07,200 --> 00:45:09,430
+person with intimate knowledge of all
+
+1222
+00:45:09,440 --> 00:45:12,230
+this and not only knowledge but you also
+
+1223
+00:45:12,240 --> 00:45:15,030
+have one you need an interest and an
+
+1224
+00:45:15,040 --> 00:45:17,349
+energy enough to actually dig into this
+
+1225
+00:45:17,359 --> 00:45:20,230
+and work on this and we basically didn't
+
+1226
+00:45:20,240 --> 00:45:23,670
+find those persons with that time and
+
+1227
+00:45:23,680 --> 00:45:26,630
+energy. So they remained there and I
+
+1228
+00:45:26,640 --> 00:45:29,109
+didn't see any easy outcome. I didn't
+
+1229
+00:45:29,119 --> 00:45:32,309
+see anyone likely to show up to do this
+
+1230
+00:45:32,319 --> 00:45:33,349
+work. So
+
+1231
+00:45:33,359 --> 00:45:35,829
+&gt;&gt; those 15 tests, do you recall a couple
+
+1232
+00:45:35,839 --> 00:45:38,069
+of them what they were and and why they
+
+1233
+00:45:38,079 --> 00:45:38,870
+failed and
+
+1234
+00:45:38,880 --> 00:45:41,030
+&gt;&gt; well why they failed? That's part of the
+
+1235
+00:45:41,040 --> 00:45:43,190
+reason why if we knew exactly why they
+
+1236
+00:45:43,200 --> 00:45:44,790
+failed, it would have been easier. But
+
+1237
+00:45:44,800 --> 00:45:46,390
+that was part of the research that would
+
+1238
+00:45:46,400 --> 00:45:47,990
+have been done. It's in the in the
+
+1239
+00:45:48,000 --> 00:45:50,550
+interaction or the differences between
+
+1240
+00:45:50,560 --> 00:45:53,030
+the hyper solution to do things to the
+
+1241
+00:45:53,040 --> 00:45:55,750
+native solution to do things. And I
+
+1242
+00:45:55,760 --> 00:45:59,349
+could also just add that hyper is not
+
+1243
+00:45:59,359 --> 00:46:01,750
+doing everything. curl can do a lot more
+
+1244
+00:46:01,760 --> 00:46:04,630
+HTTP than hyper can. So the HTTP back
+
+1245
+00:46:04,640 --> 00:46:07,349
+end Hyper provides was not everything
+
+1246
+00:46:07,359 --> 00:46:09,829
+HTTP. So there was still part of HTTP
+
+1247
+00:46:09,839 --> 00:46:12,470
+that curl did natively. For example, all
+
+1248
+00:46:12,480 --> 00:46:14,470
+those authentication mechanisms, there
+
+1249
+00:46:14,480 --> 00:46:17,589
+was this interaction or middle where
+
+1250
+00:46:17,599 --> 00:46:21,430
+curl would do set up things magically to
+
+1251
+00:46:21,440 --> 00:46:23,990
+how to do HTTP and when it would use and
+
+1252
+00:46:24,000 --> 00:46:26,309
+interact with Hyper to perform the HTTP
+
+1253
+00:46:26,319 --> 00:46:28,630
+requests, but also it's not easy to
+
+1254
+00:46:28,640 --> 00:46:30,550
+explain and I don't recall the details
+
+1255
+00:46:30,560 --> 00:46:32,550
+right now, but there were mostly cases
+
+1256
+00:46:32,560 --> 00:46:35,109
+like that and they would end up slightly
+
+1257
+00:46:35,119 --> 00:46:37,430
+different than you know the requests or
+
+1258
+00:46:37,440 --> 00:46:38,870
+the responses would be slightly
+
+1259
+00:46:38,880 --> 00:46:40,390
+different depending on which solution
+
+1260
+00:46:40,400 --> 00:46:42,550
+you would use And the entire challenge
+
+1261
+00:46:42,560 --> 00:46:45,349
+there would be to figure out why and and
+
+1262
+00:46:45,359 --> 00:46:47,030
+what to do to fix it.
+
+1263
+00:46:47,040 --> 00:46:49,430
+&gt;&gt; I think I can imagine because I've done
+
+1264
+00:46:49,440 --> 00:46:51,910
+similar in my C project bringing Rust
+
+1265
+00:46:51,920 --> 00:46:53,589
+into it which is another reason why I
+
+1266
+00:46:53,599 --> 00:46:55,670
+was interested. So I imagine that the
+
+1267
+00:46:55,680 --> 00:46:58,550
+bits that curl still does that Hyper
+
+1268
+00:46:58,560 --> 00:47:00,950
+doesn't or never will. You set those up.
+
+1269
+00:47:00,960 --> 00:47:03,109
+You're giving your data. So you're
+
+1270
+00:47:03,119 --> 00:47:05,829
+passing stuff that's being created is in
+
+1271
+00:47:05,839 --> 00:47:07,750
+memory. you know, is all aligned or what
+
+1272
+00:47:07,760 --> 00:47:10,390
+have you on on the curl C side of the
+
+1273
+00:47:10,400 --> 00:47:12,870
+FFI boundary. You shove that across to
+
+1274
+00:47:12,880 --> 00:47:15,109
+Rust. It has to then interpret and
+
+1275
+00:47:15,119 --> 00:47:16,710
+understand all that bit correctly, do
+
+1276
+00:47:16,720 --> 00:47:19,030
+its bit, make changes, and then pass
+
+1277
+00:47:19,040 --> 00:47:21,430
+stuff back across the FFI boundary from
+
+1278
+00:47:21,440 --> 00:47:23,430
+Rust to C and hope that bit doesn't get
+
+1279
+00:47:23,440 --> 00:47:25,349
+messed up. And then you've got the
+
+1280
+00:47:25,359 --> 00:47:27,270
+strict agreements of who's managing
+
+1281
+00:47:27,280 --> 00:47:29,109
+memory, who's doing what, who's freeing
+
+1282
+00:47:29,119 --> 00:47:30,710
+things, who's setting it up, and that
+
+1283
+00:47:30,720 --> 00:47:32,950
+can get complicated very quickly.
+
+1284
+00:47:32,960 --> 00:47:35,589
+&gt;&gt; Yes. So that type of interaction because
+
+1285
+00:47:35,599 --> 00:47:38,309
+it was hyper is not a full 100%
+
+1286
+00:47:38,319 --> 00:47:40,230
+replacement for what Carl is doing.
+
+1287
+00:47:40,240 --> 00:47:42,950
+&gt;&gt; Exactly. And by the fact that it is
+
+1288
+00:47:42,960 --> 00:47:45,430
+doing things differently. So it was also
+
+1289
+00:47:45,440 --> 00:47:47,910
+that nature. So it was just you know
+
+1290
+00:47:47,920 --> 00:47:49,829
+fairly complicated programming
+
+1291
+00:47:49,839 --> 00:47:51,430
+challenge. I mean not impossible of
+
+1292
+00:47:51,440 --> 00:47:53,030
+course but it was just challenging
+
+1293
+00:47:53,040 --> 00:47:54,950
+enough that it turned out to be an
+
+1294
+00:47:54,960 --> 00:47:57,589
+obstacle that no one really worked on.
+
+1295
+00:47:57,599 --> 00:48:00,309
+And when no one has had worked on it for
+
+1296
+00:48:00,319 --> 00:48:02,390
+long enough, I took it as a sign that
+
+1297
+00:48:02,400 --> 00:48:05,109
+it's probably not something people want
+
+1298
+00:48:05,119 --> 00:48:07,589
+to work on either. And no one showed up
+
+1299
+00:48:07,599 --> 00:48:09,510
+interested in doing it either. Well,
+
+1300
+00:48:09,520 --> 00:48:11,430
+people did work on it that helped us out
+
+1301
+00:48:11,440 --> 00:48:14,309
+and and we got this far thanks not only
+
+1302
+00:48:14,319 --> 00:48:16,710
+to me of course or to Sean, but actually
+
+1303
+00:48:16,720 --> 00:48:18,069
+also to a whole bunch of other
+
+1304
+00:48:18,079 --> 00:48:19,990
+contributors who helped out. So there
+
+1305
+00:48:20,000 --> 00:48:22,069
+were people around. I mean, you hold
+
+1306
+00:48:22,079 --> 00:48:23,750
+very very high standards obviously
+
+1307
+00:48:23,760 --> 00:48:25,510
+because it's your baby. But you could
+
+1308
+00:48:25,520 --> 00:48:27,430
+argue that it's a success. You know, you
+
+1309
+00:48:27,440 --> 00:48:30,150
+got that far and you had 15 tests left
+
+1310
+00:48:30,160 --> 00:48:31,829
+to solve. I mean, that's a pretty big
+
+1311
+00:48:31,839 --> 00:48:33,190
+win, wasn't it? Really?
+
+1312
+00:48:33,200 --> 00:48:34,790
+&gt;&gt; I mean, I think we proved that it
+
+1313
+00:48:34,800 --> 00:48:37,030
+actually could work. It proved that the
+
+1314
+00:48:37,040 --> 00:48:39,829
+idea was solid and the implementation
+
+1315
+00:48:39,839 --> 00:48:43,030
+wasn't perfect, but it worked. So, I
+
+1316
+00:48:43,040 --> 00:48:45,349
+think in that aspect, it was a win, but
+
+1317
+00:48:45,359 --> 00:48:47,270
+then in the end, we didn't go all the
+
+1318
+00:48:47,280 --> 00:48:49,990
+way. And I was also the fact that we
+
+1319
+00:48:50,000 --> 00:48:51,910
+didn't really have anyone asking for
+
+1320
+00:48:51,920 --> 00:48:54,710
+this or using this or pushing for this,
+
+1321
+00:48:54,720 --> 00:48:56,630
+you know, there was no demand from the
+
+1322
+00:48:56,640 --> 00:48:58,549
+user side either. That was also sort of
+
+1323
+00:48:58,559 --> 00:49:00,790
+a pretty big factor because there was
+
+1324
+00:49:00,800 --> 00:49:02,950
+no, you know, big gain in the end of all
+
+1325
+00:49:02,960 --> 00:49:04,390
+this struggle either.
+
+1326
+00:49:04,400 --> 00:49:06,710
+&gt;&gt; Yeah. It's a feature build that if no
+
+1327
+00:49:06,720 --> 00:49:08,630
+one's asking for it, you know, it's a
+
+1328
+00:49:08,640 --> 00:49:09,670
+feature really, isn't it?
+
+1329
+00:49:09,680 --> 00:49:11,750
+&gt;&gt; Right. And so in the end it felt like
+
+1330
+00:49:11,760 --> 00:49:14,069
+yeah there's final friction here that we
+
+1331
+00:49:14,079 --> 00:49:17,510
+could maybe surpass and go through if we
+
+1332
+00:49:17,520 --> 00:49:19,670
+really made an effort but there was no
+
+1333
+00:49:19,680 --> 00:49:21,990
+one asking us to do that and the big
+
+1334
+00:49:22,000 --> 00:49:23,829
+trophy in the end was missing.
+
+1335
+00:49:23,839 --> 00:49:26,790
+&gt;&gt; Did you have a timeline by the sponsors
+
+1336
+00:49:26,800 --> 00:49:28,790
+of this feature? I forget the acronym.
+
+1337
+00:49:28,800 --> 00:49:30,870
+Did they say you had a year five years
+
+1338
+00:49:30,880 --> 00:49:33,030
+or just how did that work?
+
+1339
+00:49:33,040 --> 00:49:35,430
+&gt;&gt; No it wasn't really like that. They were
+
+1340
+00:49:35,440 --> 00:49:37,990
+much more flexible in ISRG. So they were
+
+1341
+00:49:38,000 --> 00:49:40,230
+really great with this. So they were
+
+1342
+00:49:40,240 --> 00:49:41,910
+fully on board with this and I had a
+
+1343
+00:49:41,920 --> 00:49:44,150
+full communication with them during over
+
+1344
+00:49:44,160 --> 00:49:46,230
+the years really and even when we came
+
+1345
+00:49:46,240 --> 00:49:48,069
+to this conclusion it wasn't really a
+
+1346
+00:49:48,079 --> 00:49:49,910
+conclusion first. It was more like a
+
+1347
+00:49:49,920 --> 00:49:51,750
+thought that maybe we should just
+
+1348
+00:49:51,760 --> 00:49:54,390
+conclude defeat here and give up and rip
+
+1349
+00:49:54,400 --> 00:49:57,190
+it out again. So I had conversation with
+
+1350
+00:49:57,200 --> 00:49:59,270
+them all the time and they were very
+
+1351
+00:49:59,280 --> 00:50:00,870
+good with this and they understand it
+
+1352
+00:50:00,880 --> 00:50:03,270
+completely. they struggle quite a lot
+
+1353
+00:50:03,280 --> 00:50:05,589
+too to find people to actually you know
+
+1354
+00:50:05,599 --> 00:50:07,589
+pick up the ball and continue this work
+
+1355
+00:50:07,599 --> 00:50:10,150
+and in the end I think we all concluded
+
+1356
+00:50:10,160 --> 00:50:12,470
+that this is the right decision for now
+
+1357
+00:50:12,480 --> 00:50:14,870
+I mean we haven't shut the door for this
+
+1358
+00:50:14,880 --> 00:50:17,670
+idea or this effort or this concept for
+
+1359
+00:50:17,680 --> 00:50:20,549
+the future anyway so who knows maybe we
+
+1360
+00:50:20,559 --> 00:50:22,950
+will come back to this idea and restart
+
+1361
+00:50:22,960 --> 00:50:24,069
+it in the future
+
+1362
+00:50:24,079 --> 00:50:25,750
+&gt;&gt; yeah there might be some trigger that
+
+1363
+00:50:25,760 --> 00:50:27,910
+comes out and it's just a a no-brainer
+
+1364
+00:50:27,920 --> 00:50:29,270
+to pick it up that's the beauty of
+
+1365
+00:50:29,280 --> 00:50:30,950
+source control you've got all the
+
+1366
+00:50:30,960 --> 00:50:32,390
+history there. I think I've asked this
+
+1367
+00:50:32,400 --> 00:50:33,910
+already or we've touched it. What can
+
+1368
+00:50:33,920 --> 00:50:35,589
+others learn from this?
+
+1369
+00:50:35,599 --> 00:50:37,349
+&gt;&gt; The general lesson is basically that
+
+1370
+00:50:37,359 --> 00:50:41,990
+it's it is a fair approach to replace
+
+1371
+00:50:42,000 --> 00:50:45,510
+C++ code in a larger project. So you can
+
+1372
+00:50:45,520 --> 00:50:47,670
+I kind of always like that approach with
+
+1373
+00:50:47,680 --> 00:50:49,910
+Rust already back from the days I worked
+
+1374
+00:50:49,920 --> 00:50:52,309
+with Firefox that it's it's a convenient
+
+1375
+00:50:52,319 --> 00:50:55,190
+and decent way to replace components
+
+1376
+00:50:55,200 --> 00:50:57,270
+sort of component by component wise
+
+1377
+00:50:57,280 --> 00:51:00,230
+instead of having to rewrite everything
+
+1378
+00:51:00,240 --> 00:51:02,870
+into Rust in one single blow. You can
+
+1379
+00:51:02,880 --> 00:51:04,950
+instead do it component by component. I
+
+1380
+00:51:04,960 --> 00:51:07,190
+and I still think that's a good way to
+
+1381
+00:51:07,200 --> 00:51:08,950
+do it and I think we proved that it
+
+1382
+00:51:08,960 --> 00:51:11,190
+works to do it that way. other things I
+
+1383
+00:51:11,200 --> 00:51:13,349
+I think it's harder because then you get
+
+1384
+00:51:13,359 --> 00:51:16,549
+into the weeds of exactly how the API
+
+1385
+00:51:16,559 --> 00:51:18,390
+works and how to actually replace a
+
+1386
+00:51:18,400 --> 00:51:20,790
+component in a software and that depends
+
+1387
+00:51:20,800 --> 00:51:22,710
+on the particular software I think more
+
+1388
+00:51:22,720 --> 00:51:24,470
+than anything else. I think we've
+
+1389
+00:51:24,480 --> 00:51:26,309
+covered my last question which would be
+
+1390
+00:51:26,319 --> 00:51:28,309
+why didn't others step forward to help
+
+1391
+00:51:28,319 --> 00:51:30,470
+and you explained that the knowledge
+
+1392
+00:51:30,480 --> 00:51:32,950
+domain here is like four different
+
+1393
+00:51:32,960 --> 00:51:34,790
+things you know there's the rust way to
+
+1394
+00:51:34,800 --> 00:51:37,109
+do it there's the C interface there's
+
+1395
+00:51:37,119 --> 00:51:40,950
+the particular bit you're replacing on
+
+1396
+00:51:40,960 --> 00:51:43,510
+curl and then the protocols or the specs
+
+1397
+00:51:43,520 --> 00:51:45,349
+involved with that whether it's
+
+1398
+00:51:45,359 --> 00:51:48,069
+authentication or you know HTTP version
+
+1399
+00:51:48,079 --> 00:51:51,030
+4 when that comes out etc. Yeah, and I
+
+1400
+00:51:51,040 --> 00:51:54,870
+think just the general lack of a
+
+1401
+00:51:54,880 --> 00:51:57,670
+perceived upside of of using this. I
+
+1402
+00:51:57,680 --> 00:51:59,510
+don't think most people think curl's
+
+1403
+00:51:59,520 --> 00:52:01,990
+native solution is bad or insecure and
+
+1404
+00:52:02,000 --> 00:52:03,990
+anything. So people wouldn't sort of
+
+1405
+00:52:04,000 --> 00:52:06,549
+dream of switching over to this new one
+
+1406
+00:52:06,559 --> 00:52:08,950
+anyway. So we're stuck in the land where
+
+1407
+00:52:08,960 --> 00:52:11,190
+people using curl, they they're pretty
+
+1408
+00:52:11,200 --> 00:52:13,030
+satisfied with the existing solution.
+
+1409
+00:52:13,040 --> 00:52:15,349
+People using Hyper, they're mostly Rust
+
+1410
+00:52:15,359 --> 00:52:17,030
+users. They're they're in Rust land.
+
+1411
+00:52:17,040 --> 00:52:18,710
+They're using Hyper already. They don't
+
+1412
+00:52:18,720 --> 00:52:21,430
+use curl anyway. So we ended up in this
+
+1413
+00:52:21,440 --> 00:52:24,710
+middle land with no demand.
+
+1414
+00:52:24,720 --> 00:52:27,109
+&gt;&gt; Yeah. I suppose if this was the hot spot
+
+1415
+00:52:27,119 --> 00:52:29,109
+of memory related security issues or
+
+1416
+00:52:29,119 --> 00:52:31,109
+what have you, you'd either take the
+
+1417
+00:52:31,119 --> 00:52:33,190
+decision to address them and see and fix
+
+1418
+00:52:33,200 --> 00:52:35,190
+them like you're constantly doing
+
+1419
+00:52:35,200 --> 00:52:37,829
+refactoring to make improvements or you
+
+1420
+00:52:37,839 --> 00:52:39,750
+bring rust in to do it. But without the
+
+1421
+00:52:39,760 --> 00:52:42,390
+sort of raw data to say you know given x
+
+1422
+00:52:42,400 --> 00:52:44,309
+amount of effort you'll get y amount of
+
+1423
+00:52:44,319 --> 00:52:46,470
+return it's hard to really quantify it.
+
+1424
+00:52:46,480 --> 00:52:48,390
+Yeah, we can also come back to the fact
+
+1425
+00:52:48,400 --> 00:52:52,150
+that my plan is not to remove the native
+
+1426
+00:52:52,160 --> 00:52:54,790
+C alternative anyway because I think the
+
+1427
+00:52:54,800 --> 00:52:56,950
+portability of curl and and curl's
+
+1428
+00:52:56,960 --> 00:52:59,670
+prevalence on everything everywhere is
+
+1429
+00:52:59,680 --> 00:53:01,910
+partly due to it being massively
+
+1430
+00:53:01,920 --> 00:53:04,470
+portable and it is this portable because
+
+1431
+00:53:04,480 --> 00:53:07,030
+it is written in C. So even if we had
+
+1432
+00:53:07,040 --> 00:53:09,589
+kept the hyper back end, we would have
+
+1433
+00:53:09,599 --> 00:53:12,230
+kept the native one as well. So we still
+
+1434
+00:53:12,240 --> 00:53:14,230
+need to work on the native one even if
+
+1435
+00:53:14,240 --> 00:53:16,790
+we would have provided a rust one. And
+
+1436
+00:53:16,800 --> 00:53:19,430
+are you aware of any C projects that you
+
+1437
+00:53:19,440 --> 00:53:21,670
+reviewed or listeners could review that
+
+1438
+00:53:21,680 --> 00:53:23,589
+do what you already do with Rust and
+
+1439
+00:53:23,599 --> 00:53:24,870
+parts for example or
+
+1440
+00:53:24,880 --> 00:53:28,150
+&gt;&gt; one sort of obvious sibling project to
+
+1441
+00:53:28,160 --> 00:53:31,670
+this is the I think it's called mod TLS
+
+1442
+00:53:31,680 --> 00:53:34,470
+thing in the Apache web server where I
+
+1443
+00:53:34,480 --> 00:53:36,870
+know Stefan Iing has written a
+
+1444
+00:53:36,880 --> 00:53:39,430
+replacement for the open SSL using
+
+1445
+00:53:39,440 --> 00:53:42,309
+module for Apache that is then using
+
+1446
+00:53:42,319 --> 00:53:45,270
+Rust TLS instead when you run the Apache
+
+1447
+00:53:45,280 --> 00:53:47,990
+web server which is pretty much the same
+
+1448
+00:53:48,000 --> 00:53:51,829
+take right by replacing well slightly
+
+1449
+00:53:51,839 --> 00:53:53,510
+different take but it's the same spirit
+
+1450
+00:53:53,520 --> 00:53:56,069
+that they replace a C library with a
+
+1451
+00:53:56,079 --> 00:53:59,270
+Rust library in order to do more memory
+
+1452
+00:53:59,280 --> 00:54:01,750
+safe operations. Yeah, I'll put that in
+
+1453
+00:54:01,760 --> 00:54:03,510
+the show notes and get that link off
+
+1454
+00:54:03,520 --> 00:54:05,270
+you. I think we had a quick chat before
+
+1455
+00:54:05,280 --> 00:54:07,750
+we started recording about Rust TLS and
+
+1456
+00:54:07,760 --> 00:54:10,790
+how it can use a C library underneath of
+
+1457
+00:54:10,800 --> 00:54:13,510
+a TLS implementation as well. So you've
+
+1458
+00:54:13,520 --> 00:54:16,390
+always got some CLS code somewhere
+
+1459
+00:54:16,400 --> 00:54:17,190
+depending on
+
+1460
+00:54:17,200 --> 00:54:19,750
+&gt;&gt; Yes. Yeah. And that's sometimes a bit
+
+1461
+00:54:19,760 --> 00:54:21,990
+ironic, right? When talking about using
+
+1462
+00:54:22,000 --> 00:54:24,150
+Rust for memory safety and then you end
+
+1463
+00:54:24,160 --> 00:54:26,630
+up using the C version somewhere in
+
+1464
+00:54:26,640 --> 00:54:27,990
+there anyway.
+
+1465
+00:54:28,000 --> 00:54:30,150
+&gt;&gt; Exactly. Okay. I think I'm going to wrap
+
+1466
+00:54:30,160 --> 00:54:32,309
+us up now. I'm really glad glad we did
+
+1467
+00:54:32,319 --> 00:54:33,910
+this show and hope it helps others
+
+1468
+00:54:33,920 --> 00:54:35,910
+understand how they can add Rust into
+
+1469
+00:54:35,920 --> 00:54:38,630
+their C project, make it success. And as
+
+1470
+00:54:38,640 --> 00:54:40,950
+we discussed, I it wasn't a failure. It
+
+1471
+00:54:40,960 --> 00:54:42,790
+was just, you know, a feature that
+
+1472
+00:54:42,800 --> 00:54:44,950
+didn't have enough demand and benefit
+
+1473
+00:54:44,960 --> 00:54:47,589
+and got very very complicated at the
+
+1474
+00:54:47,599 --> 00:54:49,670
+end. Was there anything we missed that
+
+1475
+00:54:49,680 --> 00:54:51,750
+you'd like to mention that was a
+
+1476
+00:54:51,760 --> 00:54:53,829
+particular highlight or challenge that
+
+1477
+00:54:53,839 --> 00:54:56,069
+you solved or just anything in general?
+
+1478
+00:54:56,079 --> 00:54:58,390
+&gt;&gt; No, I think we covered most of what I
+
+1479
+00:54:58,400 --> 00:55:00,950
+wanted to say. Maybe just to reiterate
+
+1480
+00:55:00,960 --> 00:55:03,430
+that Sean and the Hyper project, they
+
+1481
+00:55:03,440 --> 00:55:05,190
+were really great and they helped out a
+
+1482
+00:55:05,200 --> 00:55:07,270
+lot. there's really no blame on their
+
+1483
+00:55:07,280 --> 00:55:09,589
+side because certainly not because of
+
+1484
+00:55:09,599 --> 00:55:11,670
+lack of energy or lack of commitment
+
+1485
+00:55:11,680 --> 00:55:13,670
+from their side. It was basically just
+
+1486
+00:55:13,680 --> 00:55:15,109
+well everything we talk about.
+
+1487
+00:55:15,119 --> 00:55:16,870
+&gt;&gt; So how can people get in touch if they
+
+1488
+00:55:16,880 --> 00:55:19,270
+like to ask you particular things or you
+
+1489
+00:55:19,280 --> 00:55:21,750
+know maybe investigate some of these
+
+1490
+00:55:21,760 --> 00:55:23,990
+tests? Is this now gone until you get
+
+1491
+00:55:24,000 --> 00:55:26,150
+some capacity to do it again or drive
+
+1492
+00:55:26,160 --> 00:55:26,950
+appetite?
+
+1493
+00:55:26,960 --> 00:55:29,109
+&gt;&gt; All this is now gone from git. So if you
+
+1494
+00:55:29,119 --> 00:55:30,710
+want to bring back you have to bring
+
+1495
+00:55:30,720 --> 00:55:32,710
+back an old version and build from
+
+1496
+00:55:32,720 --> 00:55:34,790
+source and and try it out. I mean, you
+
+1497
+00:55:34,800 --> 00:55:36,790
+could do it if you're really interested
+
+1498
+00:55:36,800 --> 00:55:39,589
+into what kind of weird
+
+1499
+00:55:39,599 --> 00:55:41,030
+problems you can run into when you do
+
+1500
+00:55:41,040 --> 00:55:42,549
+this, but otherwise it's not that
+
+1501
+00:55:42,559 --> 00:55:44,470
+fruitful. I think now we're heading
+
+1502
+00:55:44,480 --> 00:55:46,390
+forward instead. So, we're looking into
+
+1503
+00:55:46,400 --> 00:55:48,069
+of course improving curl in every
+
+1504
+00:55:48,079 --> 00:55:50,870
+possible aspect and going forward. And
+
+1505
+00:55:50,880 --> 00:55:53,829
+if anyone ever think doing it again is
+
+1506
+00:55:53,839 --> 00:55:55,750
+would be a great idea, then we would of
+
+1507
+00:55:55,760 --> 00:55:57,750
+course consider getting this back onto
+
+1508
+00:55:57,760 --> 00:56:00,150
+the drawing table and do it better next
+
+1509
+00:56:00,160 --> 00:56:02,390
+time. But everything that is about curl
+
+1510
+00:56:02,400 --> 00:56:05,270
+is of course on curl.s SC on and just
+
+1511
+00:56:05,280 --> 00:56:06,309
+hit us up
+
+1512
+00:56:06,319 --> 00:56:07,670
+&gt;&gt; and your blog as well. Yeah.
+
+1513
+00:56:07,680 --> 00:56:08,630
+&gt;&gt; Yeah, absolutely.
+
+1514
+00:56:08,640 --> 00:56:09,910
+&gt;&gt; Yeah. I wonder if anything will come
+
+1515
+00:56:09,920 --> 00:56:12,470
+along like a hyper version two that has
+
+1516
+00:56:12,480 --> 00:56:14,789
+particular thing. But I guess with the
+
+1517
+00:56:14,799 --> 00:56:17,030
+author of Hyper and you know the expert
+
+1518
+00:56:17,040 --> 00:56:18,870
+you are, you would have solved it if it
+
+1519
+00:56:18,880 --> 00:56:20,870
+was there. Cool. Okay, Daniel, thank you
+
+1520
+00:56:20,880 --> 00:56:22,549
+for coming on the show. It's been a real
+
+1521
+00:56:22,559 --> 00:56:24,230
+pleasure. This is Gavin Henry for
+
+1522
+00:56:24,240 --> 00:56:26,069
+Software Engineering Radio. Thank you
+
+1523
+00:56:26,079 --> 00:56:27,109
+for listening.
+
+1524
+00:56:27,119 --> 00:56:29,109
+&gt;&gt; Bye.
+
+1525
+00:56:29,119 --> 00:56:30,710
+Thanks for listening to SE Radio, an
+
+1526
+00:56:30,720 --> 00:56:32,230
+educational program brought to you by
+
+1527
+00:56:32,240 --> 00:56:34,630
+ITLE e software magazine. For more about
+
+1528
+00:56:34,640 --> 00:56:36,390
+the podcast, including other episodes,
+
+1529
+00:56:36,400 --> 00:56:40,069
+visit our website at se-radio.net.
+
+1530
+00:56:40,079 --> 00:56:41,750
+To provide feedback, you can comment on
+
+1531
+00:56:41,760 --> 00:56:43,670
+each episode on the website or reach us
+
+1532
+00:56:43,680 --> 00:56:46,309
+on LinkedIn, Facebook, Twitter, or
+
+1533
+00:56:46,319 --> 00:56:47,670
+through our Slack channel at
+
+1534
+00:56:47,680 --> 00:56:50,789
+seradio.slack.com.
+
+1535
+00:56:52,069 --> 00:56:52,079
+You can also email us at
+
+1536
+00:56:52,079 --> 00:56:55,349
+teamseradio.net.
+
+1537
+00:56:57,349 --> 00:56:57,359
+This and all other episodes of SE radio
+
+1538
+00:56:57,359 --> 00:56:58,950
+is licensed under creative comments
+
+1539
+00:56:58,960 --> 00:57:00,870
+license 2.5.
+
+1540
+00:57:00,880 --> 00:57:06,760
+Thanks for listening.

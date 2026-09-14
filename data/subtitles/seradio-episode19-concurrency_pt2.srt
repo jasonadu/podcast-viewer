@@ -1,0 +1,2455 @@
+1
+00:00:02,990 --> 00:00:03,000
+Software Engineering Radio episode 19
+
+2
+00:00:03,000 --> 00:00:21,750
+concurrency part two.
+
+3
+00:00:24,190 --> 00:00:24,200
+Welcome to a new episode on Software
+
+4
+00:00:24,200 --> 00:00:27,790
+Engineering Radio. This is part two of
+
+5
+00:00:27,800 --> 00:00:30,950
+our concurrency topic. This time we talk
+
+6
+00:00:30,960 --> 00:00:33,270
+about synchronization and concurrency
+
+7
+00:00:33,280 --> 00:00:34,590
+patterns.
+
+8
+00:00:34,600 --> 00:00:37,710
+In the first part of our concurrency
+
+9
+00:00:37,720 --> 00:00:41,110
+episodes, we defined the terms a bit and
+
+10
+00:00:41,120 --> 00:00:43,430
+talked about challenges like dead lock
+
+11
+00:00:43,440 --> 00:00:45,390
+you have to deal with when you do
+
+12
+00:00:45,400 --> 00:00:48,790
+concurrent programming. In this episode,
+
+13
+00:00:48,800 --> 00:00:51,390
+we will go a little bit further and
+
+14
+00:00:51,400 --> 00:00:54,470
+discuss how to do synchronization and
+
+15
+00:00:54,480 --> 00:00:56,870
+what concurrency patterns are there.
+
+16
+00:00:56,880 --> 00:00:59,270
+General remark on our concurrency
+
+17
+00:00:59,280 --> 00:01:02,230
+episodes might be useful here.
+
+18
+00:01:02,240 --> 00:01:04,430
+Please do not consider our concurrency
+
+19
+00:01:04,440 --> 00:01:06,910
+episodes as a general encouragement to
+
+20
+00:01:06,920 --> 00:01:09,150
+use concurrency for everything and
+
+21
+00:01:09,160 --> 00:01:11,630
+everywhere. We would actually recommend
+
+22
+00:01:11,640 --> 00:01:14,430
+to to think a lot about when to use
+
+23
+00:01:14,440 --> 00:01:17,910
+concurrency and how because there is
+
+24
+00:01:17,920 --> 00:01:20,950
+always an overhead associated with
+
+25
+00:01:20,960 --> 00:01:23,230
+concurrency program with threads with
+
+26
+00:01:23,240 --> 00:01:25,990
+multiple processes. So in the most
+
+27
+00:01:26,000 --> 00:01:28,030
+common still most common case of a
+
+28
+00:01:28,040 --> 00:01:31,030
+single CPU hardware, you might not gain
+
+29
+00:01:31,040 --> 00:01:34,070
+a lot from it. You you get maybe a a
+
+30
+00:01:34,080 --> 00:01:36,630
+better reacting application, but you
+
+31
+00:01:36,640 --> 00:01:39,670
+also lose some performance. So take care
+
+32
+00:01:39,680 --> 00:01:42,030
+where to use concurrency and how to use
+
+33
+00:01:42,040 --> 00:01:43,430
+it.
+
+34
+00:01:43,440 --> 00:01:45,630
+Think about servers. There there you
+
+35
+00:01:45,640 --> 00:01:48,470
+have to use it, but always beware of the
+
+36
+00:01:48,480 --> 00:01:52,790
+overhead associated with concurrency. So
+
+37
+00:01:52,800 --> 00:01:55,550
+there are also some patterns or
+
+38
+00:01:55,560 --> 00:01:57,750
+techniques out there to avoid
+
+39
+00:01:57,760 --> 00:01:59,870
+concurrency and get applications that
+
+40
+00:01:59,880 --> 00:02:03,390
+react as if they were concurrent and one
+
+41
+00:02:03,400 --> 00:02:06,430
+of this is reactive design.
+
+42
+00:02:06,440 --> 00:02:09,710
+Yeah, so in many cases, especially when
+
+43
+00:02:09,720 --> 00:02:13,110
+only one CPU is involved, a reactive
+
+44
+00:02:13,120 --> 00:02:14,470
+design
+
+45
+00:02:14,480 --> 00:02:17,350
+using the reactor pattern can achieve
+
+46
+00:02:17,360 --> 00:02:20,190
+quite high performance, as high as a
+
+47
+00:02:20,200 --> 00:02:23,949
+concurrent design. The reactor pattern
+
+48
+00:02:23,959 --> 00:02:26,510
+is used to dispatch events from multiple
+
+49
+00:02:26,520 --> 00:02:30,190
+sources using a single thread.
+
+50
+00:02:30,200 --> 00:02:32,350
+As long as the computation is short
+
+51
+00:02:32,360 --> 00:02:35,870
+lasting, this is a good design. So, but
+
+52
+00:02:35,880 --> 00:02:38,590
+in case the computation after the
+
+53
+00:02:38,600 --> 00:02:41,790
+arrival of a event lasts longer, you
+
+54
+00:02:41,800 --> 00:02:44,870
+cannot you cannot circumvent that with a
+
+55
+00:02:44,880 --> 00:02:48,430
+single thread and still be reactive. So,
+
+56
+00:02:48,440 --> 00:02:50,430
+you need multiple threads and here you
+
+57
+00:02:50,440 --> 00:02:53,670
+have basically two options, at least two
+
+58
+00:02:53,680 --> 00:02:54,949
+options.
+
+59
+00:02:54,959 --> 00:02:58,070
+First, use a concurrent design with one
+
+60
+00:02:58,080 --> 00:03:01,150
+thread per event source, but that has
+
+61
+00:03:01,160 --> 00:03:04,229
+its limitation. For example, imagine one
+
+62
+00:03:04,239 --> 00:03:07,870
+source is quite busy, where in the other
+
+63
+00:03:07,880 --> 00:03:08,470
+um
+
+64
+00:03:08,480 --> 00:03:12,350
+source doesn't emit events so regularly.
+
+65
+00:03:12,360 --> 00:03:15,190
+In this case, you would only use one
+
+66
+00:03:15,200 --> 00:03:17,870
+thread and the other thread would mostly
+
+67
+00:03:17,880 --> 00:03:19,150
+run idle.
+
+68
+00:03:19,160 --> 00:03:21,910
+So, basically the the threads are not
+
+69
+00:03:21,920 --> 00:03:24,590
+shared across the event sources. A more
+
+70
+00:03:24,600 --> 00:03:27,630
+advanced solution to that is using
+
+71
+00:03:27,640 --> 00:03:30,750
+reactor in conjunction with a leader
+
+72
+00:03:30,760 --> 00:03:32,670
+followers pattern
+
+73
+00:03:32,680 --> 00:03:35,590
+to achieve a high scalability
+
+74
+00:03:35,600 --> 00:03:40,030
+and best resource usage. But that is
+
+75
+00:03:40,040 --> 00:03:43,310
+something we will discuss in part three.
+
+76
+00:03:43,320 --> 00:03:45,390
+So, let's get back to synchronization
+
+77
+00:03:45,400 --> 00:03:46,990
+and concurrency.
+
+78
+00:03:47,000 --> 00:03:49,229
+The The first form we will discuss is
+
+79
+00:03:49,239 --> 00:03:52,030
+the very simplest is a simple lock
+
+80
+00:03:52,040 --> 00:03:54,270
+and it's basically what we told last
+
+81
+00:03:54,280 --> 00:03:55,830
+episode.
+
+82
+00:03:55,840 --> 00:03:59,270
+It's about two or more threads sharing
+
+83
+00:03:59,280 --> 00:04:01,710
+some common data, for example, variable
+
+84
+00:04:01,720 --> 00:04:04,350
+or some resource like database
+
+85
+00:04:04,360 --> 00:04:05,990
+connection.
+
+86
+00:04:06,000 --> 00:04:07,949
+The access to this
+
+87
+00:04:07,959 --> 00:04:09,390
+shared
+
+88
+00:04:09,400 --> 00:04:12,070
+resources needs to be protected. So in
+
+89
+00:04:12,080 --> 00:04:15,270
+this case you simply use some kind of
+
+90
+00:04:15,280 --> 00:04:16,990
+lock and
+
+91
+00:04:17,000 --> 00:04:19,990
+therefore control which of the multiple
+
+92
+00:04:20,000 --> 00:04:22,670
+threads gets the resource. A more
+
+93
+00:04:22,680 --> 00:04:25,070
+complex form of it is the monitor
+
+94
+00:04:25,080 --> 00:04:26,510
+object.
+
+95
+00:04:26,520 --> 00:04:29,390
+A monitor object is basically an object
+
+96
+00:04:29,400 --> 00:04:32,550
+where every single method is
+
+97
+00:04:32,560 --> 00:04:35,630
+protected by some lock. So you have to
+
+98
+00:04:35,640 --> 00:04:38,030
+program in every method
+
+99
+00:04:38,040 --> 00:04:40,270
+or at the beginning of every method you
+
+100
+00:04:40,280 --> 00:04:42,590
+have to check if you have the lock. The
+
+101
+00:04:42,600 --> 00:04:45,070
+the object, the monitor object, has the
+
+102
+00:04:45,080 --> 00:04:48,830
+lock and after the method is completed
+
+103
+00:04:48,840 --> 00:04:51,070
+you have to release the lock. So the the
+
+104
+00:04:51,080 --> 00:04:54,230
+granularity is very coarse. You you have
+
+105
+00:04:54,240 --> 00:04:57,230
+always the whole object locked. So
+
+106
+00:04:57,240 --> 00:04:59,710
+monitor objects are quite heavyweight
+
+107
+00:04:59,720 --> 00:05:02,430
+and of course it's very or it is at
+
+108
+00:05:02,440 --> 00:05:04,430
+least dangerous to to use monitor
+
+109
+00:05:04,440 --> 00:05:07,190
+objects because if you forget to get
+
+110
+00:05:07,200 --> 00:05:09,630
+some lock or to release a lock you have
+
+111
+00:05:09,640 --> 00:05:11,750
+the problem that um
+
+112
+00:05:11,760 --> 00:05:13,790
+your monitor object doesn't work
+
+113
+00:05:13,800 --> 00:05:16,110
+anymore. Especially cumbersome and
+
+114
+00:05:16,120 --> 00:05:18,750
+error-prone is of course the the case of
+
+115
+00:05:18,760 --> 00:05:21,110
+an error. You have to check that you
+
+116
+00:05:21,120 --> 00:05:22,990
+also release the lock otherwise the
+
+117
+00:05:23,000 --> 00:05:25,950
+money will be locked forever.
+
+118
+00:05:25,960 --> 00:05:28,590
+Another problem is you have to take care
+
+119
+00:05:28,600 --> 00:05:32,470
+if you call an other method from within
+
+120
+00:05:32,480 --> 00:05:34,510
+your method.
+
+121
+00:05:34,520 --> 00:05:37,150
+This can at least lead to deadlocks.
+
+122
+00:05:37,160 --> 00:05:38,830
+If your locks are not re-entrant and
+
+123
+00:05:38,840 --> 00:05:42,310
+re-entrant means if you as a lock holder
+
+124
+00:05:42,320 --> 00:05:44,790
+have already the lock
+
+125
+00:05:44,800 --> 00:05:48,270
+you You also get the lock again and
+
+126
+00:05:48,280 --> 00:05:50,030
+don't have to wait until the lock is
+
+127
+00:05:50,040 --> 00:05:52,470
+released. Nevertheless, the advantage of
+
+128
+00:05:52,480 --> 00:05:54,230
+monitor object is actually that it's
+
+129
+00:05:54,240 --> 00:05:56,990
+very simple, very easy to use, very
+
+130
+00:05:57,000 --> 00:05:58,190
+clean,
+
+131
+00:05:58,200 --> 00:06:00,710
+and therefore it's the default or it's
+
+132
+00:06:00,720 --> 00:06:02,830
+it's a built-in feature of the Java
+
+133
+00:06:02,840 --> 00:06:05,750
+language. It's the way how
+
+134
+00:06:05,760 --> 00:06:08,990
+synchronization is implemented in Java.
+
+135
+00:06:09,000 --> 00:06:10,190
+And
+
+136
+00:06:10,200 --> 00:06:12,110
+therefore some of the problems don't
+
+137
+00:06:12,120 --> 00:06:13,710
+occur there, of course, because you
+
+138
+00:06:13,720 --> 00:06:16,390
+don't have to care to get the lock or
+
+139
+00:06:16,400 --> 00:06:19,470
+release the lock. Another thing I I want
+
+140
+00:06:19,480 --> 00:06:21,150
+to mention about monitor object, of
+
+141
+00:06:21,160 --> 00:06:23,470
+course, you can use monitor objects as a
+
+142
+00:06:23,480 --> 00:06:26,470
+mutex replacement if you simply define
+
+143
+00:06:26,480 --> 00:06:29,470
+an object that synchronizes, that gets
+
+144
+00:06:29,480 --> 00:06:32,110
+the lock, you can use it to to
+
+145
+00:06:32,120 --> 00:06:35,030
+yeah, implement simple mutexes with
+
+146
+00:06:35,040 --> 00:06:36,550
+monitor objects.
+
+147
+00:06:36,560 --> 00:06:38,390
+Yeah, the next pattern we want to
+
+148
+00:06:38,400 --> 00:06:42,270
+discuss is scope locking. Scope locking
+
+149
+00:06:42,280 --> 00:06:45,310
+has been documented in POSIX.2.
+
+150
+00:06:45,320 --> 00:06:48,430
+And scope locking helps you to actually
+
+151
+00:06:48,440 --> 00:06:50,990
+release a lock again because in many
+
+152
+00:06:51,000 --> 00:06:52,350
+cases
+
+153
+00:06:52,360 --> 00:06:55,310
+it is quite easy that a lock is not
+
+154
+00:06:55,320 --> 00:06:58,630
+released, either by a programmatic error
+
+155
+00:06:58,640 --> 00:07:01,750
+and that just the programmer forgot to
+
+156
+00:07:01,760 --> 00:07:04,750
+put in a release statement in that case
+
+157
+00:07:04,760 --> 00:07:07,430
+of the if branch or the like or an
+
+158
+00:07:07,440 --> 00:07:09,630
+exception occurred and just a totally
+
+159
+00:07:09,640 --> 00:07:11,350
+different
+
+160
+00:07:11,360 --> 00:07:14,190
+execution branch is chosen.
+
+161
+00:07:14,200 --> 00:07:18,150
+So, scope locking encapsulates the
+
+162
+00:07:18,160 --> 00:07:21,350
+acquire in the constructor
+
+163
+00:07:21,360 --> 00:07:25,150
+and the release in the destructor.
+
+164
+00:07:25,160 --> 00:07:28,310
+This way, as soon as you instantiate
+
+165
+00:07:28,320 --> 00:07:31,110
+the guard who implements that,
+
+166
+00:07:31,120 --> 00:07:35,390
+the lock is acquired and as soon as the
+
+167
+00:07:35,400 --> 00:07:37,550
+the scope is left uh
+
+168
+00:07:37,560 --> 00:07:41,070
+by by any means, either because you just
+
+169
+00:07:41,080 --> 00:07:41,670
+uh
+
+170
+00:07:41,680 --> 00:07:43,950
+from that method or because an exception
+
+171
+00:07:43,960 --> 00:07:46,590
+occurred, the destructor will ensure
+
+172
+00:07:46,600 --> 00:07:48,470
+that the lock is released.
+
+173
+00:07:48,480 --> 00:07:50,910
+Of course, uh this only works uh in
+
+174
+00:07:50,920 --> 00:07:53,750
+programming languages uh that have a
+
+175
+00:07:53,760 --> 00:07:58,830
+destructor like C++. Uh in Java, um we
+
+176
+00:07:58,840 --> 00:08:01,470
+have no destructor and therefore, well,
+
+177
+00:08:01,480 --> 00:08:03,430
+at least not um
+
+178
+00:08:03,440 --> 00:08:06,430
+the in in the classic sense. So, in
+
+179
+00:08:06,440 --> 00:08:09,110
+Java, this pattern uh just cannot be
+
+180
+00:08:09,120 --> 00:08:13,630
+used. And another pattern from POSA 2 um
+
+181
+00:08:13,640 --> 00:08:17,310
+is active object. Monitor objects that
+
+182
+00:08:17,320 --> 00:08:20,070
+we just introduced before are okay, but
+
+183
+00:08:20,080 --> 00:08:22,710
+they are passive and they do not own any
+
+184
+00:08:22,720 --> 00:08:24,350
+threads, so they must be driven
+
+185
+00:08:24,360 --> 00:08:27,230
+explicitly by other threads.
+
+186
+00:08:27,240 --> 00:08:29,430
+Encapsulating threads in so-called
+
+187
+00:08:29,440 --> 00:08:31,510
+active objects that follow the active
+
+188
+00:08:31,520 --> 00:08:34,070
+object pattern is a good idea for for
+
+189
+00:08:34,080 --> 00:08:36,350
+typical worker threads that accept
+
+190
+00:08:36,360 --> 00:08:38,230
+input, perform an asynchronous
+
+191
+00:08:38,240 --> 00:08:40,390
+computation, and then forward the
+
+192
+00:08:40,400 --> 00:08:43,390
+results to any other object, potentially
+
+193
+00:08:43,400 --> 00:08:47,150
+another active object. Active objects uh
+
+194
+00:08:47,160 --> 00:08:49,590
+have typically an input queue, which is
+
+195
+00:08:49,600 --> 00:08:51,630
+of course protected by a lock because it
+
+196
+00:08:51,640 --> 00:08:54,150
+gets accessed by the client or the
+
+197
+00:08:54,160 --> 00:08:58,350
+invoking thread who uh hands over and
+
+198
+00:08:58,360 --> 00:09:01,790
+computation request, and it is accessed,
+
+199
+00:09:01,800 --> 00:09:03,990
+of course, by the thread of the active
+
+200
+00:09:04,000 --> 00:09:07,350
+object. This way, um the active object
+
+201
+00:09:07,360 --> 00:09:09,829
+can accept multiple orders, multiple
+
+202
+00:09:09,839 --> 00:09:13,310
+input data while computing uh results
+
+203
+00:09:13,320 --> 00:09:16,870
+based on the previous uh input. The the
+
+204
+00:09:16,880 --> 00:09:19,750
+active object is reactive to the outside
+
+205
+00:09:19,760 --> 00:09:23,110
+while it's is still busy computing based
+
+206
+00:09:23,120 --> 00:09:26,390
+on the orders uh previously inserted.
+
+207
+00:09:26,400 --> 00:09:28,950
+Different strategies exist on how to
+
+208
+00:09:28,960 --> 00:09:31,630
+handle the cases when the queue is full.
+
+209
+00:09:31,640 --> 00:09:34,550
+Invoking client threads uh might block
+
+210
+00:09:34,560 --> 00:09:36,830
+when the queue is full and just have to
+
+211
+00:09:36,840 --> 00:09:39,750
+wait until it's empty again. The thread
+
+212
+00:09:39,760 --> 00:09:41,990
+of the active object itself will
+
+213
+00:09:42,000 --> 00:09:45,190
+typically block on the queue as long as
+
+214
+00:09:45,200 --> 00:09:48,910
+it is empty. One brief discussion about
+
+215
+00:09:48,920 --> 00:09:52,590
+queues. Queues often require dynamic
+
+216
+00:09:52,600 --> 00:09:55,950
+memory allocations and synchronization.
+
+217
+00:09:55,960 --> 00:09:59,070
+So, this in turn can cause really
+
+218
+00:09:59,080 --> 00:10:01,950
+measurable jitter and then in real-time
+
+219
+00:10:01,960 --> 00:10:04,790
+systems, this is the reason to minimize
+
+220
+00:10:04,800 --> 00:10:07,710
+the number of queues used especially in
+
+221
+00:10:07,720 --> 00:10:10,430
+the critical path. And here again,
+
+222
+00:10:10,440 --> 00:10:13,670
+architects should consider how to avoid
+
+223
+00:10:13,680 --> 00:10:16,910
+queues for example by using an reactive
+
+224
+00:10:16,920 --> 00:10:17,910
+design.
+
+225
+00:10:17,920 --> 00:10:19,710
+One problem if you have these active
+
+226
+00:10:19,720 --> 00:10:21,790
+objects, the clients have to deal with
+
+227
+00:10:21,800 --> 00:10:24,350
+the queue, so they have to put in the
+
+228
+00:10:24,360 --> 00:10:25,990
+request in the queue, so that's not so
+
+229
+00:10:26,000 --> 00:10:28,870
+problematic, but they also have to get
+
+230
+00:10:28,880 --> 00:10:30,750
+the results from the computation back
+
+231
+00:10:30,760 --> 00:10:33,110
+and that's a bit
+
+232
+00:10:33,120 --> 00:10:33,950
+Yeah,
+
+233
+00:10:33,960 --> 00:10:37,030
+it's not very easy to do if you have to
+
+234
+00:10:37,040 --> 00:10:39,870
+consider all this asynchronicity in your
+
+235
+00:10:39,880 --> 00:10:42,190
+client code. So, there is another
+
+236
+00:10:42,200 --> 00:10:44,829
+pattern. It's called future.
+
+237
+00:10:44,839 --> 00:10:47,270
+And a future is basically that your
+
+238
+00:10:47,280 --> 00:10:50,230
+active object, for example, gives you a
+
+239
+00:10:50,240 --> 00:10:52,829
+placeholder for the result and fills the
+
+240
+00:10:52,839 --> 00:10:55,510
+placeholder for the result later on. You
+
+241
+00:10:55,520 --> 00:10:58,470
+as a client of the active object don't
+
+242
+00:10:58,480 --> 00:11:00,190
+have to deal with queues, you don't have
+
+243
+00:11:00,200 --> 00:11:01,430
+to check
+
+244
+00:11:01,440 --> 00:11:04,350
+you just can use your future object as a
+
+245
+00:11:04,360 --> 00:11:06,750
+normal result object from from the
+
+246
+00:11:06,760 --> 00:11:09,790
+active object and get the result out of
+
+247
+00:11:09,800 --> 00:11:12,150
+the future object whenever you need. Of
+
+248
+00:11:12,160 --> 00:11:14,070
+course, it could be that the result
+
+249
+00:11:14,080 --> 00:11:16,070
+isn't computed yet because the active
+
+250
+00:11:16,080 --> 00:11:18,470
+object wasn't fast enough or the client
+
+251
+00:11:18,480 --> 00:11:21,829
+was faster at the this point. So, you
+
+252
+00:11:21,839 --> 00:11:23,430
+usually implement
+
+253
+00:11:23,440 --> 00:11:25,630
+a future object with blocking get
+
+254
+00:11:25,640 --> 00:11:28,310
+methods. If you want to take out the
+
+255
+00:11:28,320 --> 00:11:30,550
+result of the future object, the get
+
+256
+00:11:30,560 --> 00:11:32,430
+methods or whatever
+
+257
+00:11:32,440 --> 00:11:33,910
+they are called,
+
+258
+00:11:33,920 --> 00:11:36,270
+block until the the thing is computed,
+
+259
+00:11:36,280 --> 00:11:37,670
+the output is
+
+260
+00:11:37,680 --> 00:11:39,510
+result is computed.
+
+261
+00:11:39,520 --> 00:11:42,670
+And usually future objects also have
+
+262
+00:11:42,680 --> 00:11:44,990
+non-blocking check methods
+
+263
+00:11:45,000 --> 00:11:47,110
+if you don't want to force your client
+
+264
+00:11:47,120 --> 00:11:49,990
+to block for the result or until the
+
+265
+00:11:50,000 --> 00:11:53,910
+result is computed by the active object.
+
+266
+00:11:53,920 --> 00:11:56,270
+So, such a design
+
+267
+00:11:56,280 --> 00:11:59,590
+is only practical, of course, if only
+
+268
+00:11:59,600 --> 00:12:02,270
+one result will be computed by the
+
+269
+00:12:02,280 --> 00:12:04,910
+active object or by the asynchronous
+
+270
+00:12:04,920 --> 00:12:07,550
+object because if you have more than one
+
+271
+00:12:07,560 --> 00:12:09,790
+result, you can't simply
+
+272
+00:12:09,800 --> 00:12:11,750
+or you can't simplify the access for the
+
+273
+00:12:11,760 --> 00:12:13,990
+client in that way as described in
+
+274
+00:12:14,000 --> 00:12:15,790
+future object.
+
+275
+00:12:15,800 --> 00:12:17,750
+Double check locking is another pattern
+
+276
+00:12:17,760 --> 00:12:20,230
+that we want to discuss in the context
+
+277
+00:12:20,240 --> 00:12:22,190
+of concurrent designs.
+
+278
+00:12:22,200 --> 00:12:25,070
+Double check locking is useful every
+
+279
+00:12:25,080 --> 00:12:27,830
+time you do something lazily, every time
+
+280
+00:12:27,840 --> 00:12:30,870
+you do something on demand. For example,
+
+281
+00:12:30,880 --> 00:12:34,190
+in the case of lazy instantiation, one
+
+282
+00:12:34,200 --> 00:12:38,790
+of the examples of lazy instantiation is
+
+283
+00:12:38,800 --> 00:12:42,670
+the case of a singleton. Alex, could you
+
+284
+00:12:42,680 --> 00:12:45,470
+explain what a singleton is briefly?
+
+285
+00:12:45,480 --> 00:12:48,230
+The purpose of the singleton pattern is
+
+286
+00:12:48,240 --> 00:12:50,190
+to ensure that there is just one
+
+287
+00:12:50,200 --> 00:12:52,030
+instance of an object.
+
+288
+00:12:52,040 --> 00:12:53,950
+So, how do you do this? You usually
+
+289
+00:12:53,960 --> 00:12:56,430
+write a method called instance and in
+
+290
+00:12:56,440 --> 00:12:58,350
+this method, you check if the object is
+
+291
+00:12:58,360 --> 00:13:00,710
+already created. If it is, you just
+
+292
+00:13:00,720 --> 00:13:02,310
+return the reference or the point to the
+
+293
+00:13:02,320 --> 00:13:04,190
+object. Otherwise, you create it and
+
+294
+00:13:04,200 --> 00:13:06,790
+store the reference for later use.
+
+295
+00:13:06,800 --> 00:13:08,030
+The singleton pattern is actually a
+
+296
+00:13:08,040 --> 00:13:10,230
+pattern where are some controversies
+
+297
+00:13:10,240 --> 00:13:13,790
+about it because it is not so different
+
+298
+00:13:13,800 --> 00:13:16,430
+from using global variables because
+
+299
+00:13:16,440 --> 00:13:18,310
+usually you use it for a global
+
+300
+00:13:18,320 --> 00:13:19,990
+resource, a resource that is only
+
+301
+00:13:20,000 --> 00:13:22,990
+instantiated once in your whole program.
+
+302
+00:13:23,000 --> 00:13:25,110
+And that's a problem, of course, because
+
+303
+00:13:25,120 --> 00:13:26,870
+you you usually have reference and
+
+304
+00:13:26,880 --> 00:13:29,110
+dependencies spread all over your code
+
+305
+00:13:29,120 --> 00:13:32,310
+to this global instance. So, use the
+
+306
+00:13:32,320 --> 00:13:34,150
+singleton pattern only
+
+307
+00:13:34,160 --> 00:13:36,550
+when appropriate and try to avoid it as
+
+308
+00:13:36,560 --> 00:13:37,790
+far as possible.
+
+309
+00:13:37,800 --> 00:13:39,430
+So, singletons
+
+310
+00:13:39,440 --> 00:13:42,390
+basically erode your architecture. I
+
+311
+00:13:42,400 --> 00:13:45,230
+know that Kevlin Henney, who I really
+
+312
+00:13:45,240 --> 00:13:46,710
+value
+
+313
+00:13:46,720 --> 00:13:50,150
+as an expert on object orientation, he
+
+314
+00:13:50,160 --> 00:13:53,310
+can write episodes, he can write long
+
+315
+00:13:53,320 --> 00:13:56,350
+articles on why singletons are such a
+
+316
+00:13:56,360 --> 00:13:59,430
+bad idea. Still, they're an excellent
+
+317
+00:13:59,440 --> 00:14:02,870
+use case for double-check locking. So,
+
+318
+00:14:02,880 --> 00:14:03,910
+yeah,
+
+319
+00:14:03,920 --> 00:14:07,030
+discussing about singletons, we should
+
+320
+00:14:07,040 --> 00:14:11,190
+ask whether lazy instantiation and and
+
+321
+00:14:11,200 --> 00:14:13,430
+doing things lazily on demand in a
+
+322
+00:14:13,440 --> 00:14:16,190
+concurrent design is generally a good
+
+323
+00:14:16,200 --> 00:14:19,190
+practice or not. So, so I have no final
+
+324
+00:14:19,200 --> 00:14:22,550
+answer to that, but generally I think
+
+325
+00:14:22,560 --> 00:14:26,750
+it's a good idea to avoid on-demand
+
+326
+00:14:26,760 --> 00:14:30,750
+actions even if lazy acquisition in
+
+327
+00:14:30,760 --> 00:14:34,190
+general um saves you resources because
+
+328
+00:14:34,200 --> 00:14:36,470
+you would acquire them only when you
+
+329
+00:14:36,480 --> 00:14:39,110
+when actually needed. So, I'm kind of
+
+330
+00:14:39,120 --> 00:14:41,910
+bit torn what to recommend on this
+
+331
+00:14:41,920 --> 00:14:44,950
+topic. But, continuing with double-check
+
+332
+00:14:44,960 --> 00:14:48,390
+locking, the problem is as follows. So,
+
+333
+00:14:48,400 --> 00:14:51,310
+in case of lazy instantiation, for
+
+334
+00:14:51,320 --> 00:14:53,790
+example, you would need to check whether
+
+335
+00:14:53,800 --> 00:14:55,829
+the the resource the object, the
+
+336
+00:14:55,839 --> 00:14:58,270
+singleton to be instantiated uh is
+
+337
+00:14:58,280 --> 00:15:00,950
+already available. So, if you do that
+
+338
+00:15:00,960 --> 00:15:04,510
+not synchronized, um then you can easily
+
+339
+00:15:04,520 --> 00:15:07,630
+have the the chance that just another
+
+340
+00:15:07,640 --> 00:15:09,230
+thread did the same thing and
+
+341
+00:15:09,240 --> 00:15:10,990
+instantiated
+
+342
+00:15:11,000 --> 00:15:13,910
+the singleton or the common resource,
+
+343
+00:15:13,920 --> 00:15:16,270
+and you have suddenly two singletons,
+
+344
+00:15:16,280 --> 00:15:17,310
+two
+
+345
+00:15:17,320 --> 00:15:19,630
+resources, and it would actually
+
+346
+00:15:19,640 --> 00:15:22,190
+override the same variable, the the
+
+347
+00:15:22,200 --> 00:15:24,950
+reference to the singleton. So, doing
+
+348
+00:15:24,960 --> 00:15:26,990
+that in a synchronized way, you would
+
+349
+00:15:27,000 --> 00:15:28,950
+just put a synchronized statement in
+
+350
+00:15:28,960 --> 00:15:32,230
+Java across that critical section when
+
+351
+00:15:32,240 --> 00:15:34,350
+you check for the existence of that
+
+352
+00:15:34,360 --> 00:15:37,630
+resource and when you done
+
+353
+00:15:37,640 --> 00:15:39,910
+instantiate the resource.
+
+354
+00:15:39,920 --> 00:15:42,990
+But that really slows down your
+
+355
+00:15:43,000 --> 00:15:46,590
+execution because this check is always
+
+356
+00:15:46,600 --> 00:15:48,870
+in the critical path. Every time you
+
+357
+00:15:48,880 --> 00:15:51,510
+access the resource, you will use the
+
+358
+00:15:51,520 --> 00:15:53,950
+so-called instance method, for example,
+
+359
+00:15:53,960 --> 00:15:55,190
+of that
+
+360
+00:15:55,200 --> 00:15:58,670
+of a singleton, you will be required to
+
+361
+00:15:58,680 --> 00:16:01,070
+acquire and release the lock, which is
+
+362
+00:16:01,080 --> 00:16:03,990
+quite slow. So, the initial check for
+
+363
+00:16:04,000 --> 00:16:06,030
+for the existence
+
+364
+00:16:06,040 --> 00:16:08,750
+of that resource singleton should be
+
+365
+00:16:08,760 --> 00:16:12,630
+outside of any synchronized or locking
+
+366
+00:16:12,640 --> 00:16:14,790
+statement. And here comes the
+
+367
+00:16:14,800 --> 00:16:17,190
+double-check locking pattern. Um the
+
+368
+00:16:17,200 --> 00:16:20,030
+solution is to do an initial check for
+
+369
+00:16:20,040 --> 00:16:22,630
+the existence of the resource without
+
+370
+00:16:22,640 --> 00:16:24,310
+synchronization
+
+371
+00:16:24,320 --> 00:16:26,430
+and only in the case when it's not
+
+372
+00:16:26,440 --> 00:16:29,470
+existing yet, acquire the lock and check
+
+373
+00:16:29,480 --> 00:16:32,190
+again whether it's already existing.
+
+374
+00:16:32,200 --> 00:16:34,950
+Because while you waited on the lock,
+
+375
+00:16:34,960 --> 00:16:37,310
+while you try to acquire the lock,
+
+376
+00:16:37,320 --> 00:16:39,110
+somebody else might have created it
+
+377
+00:16:39,120 --> 00:16:41,910
+already. So, double-check locking helps
+
+378
+00:16:41,920 --> 00:16:45,350
+you to avoid the overall expensive
+
+379
+00:16:45,360 --> 00:16:47,430
+locking mechanism and you will be
+
+380
+00:16:47,440 --> 00:16:50,310
+required to acquire the lock only in the
+
+381
+00:16:50,320 --> 00:16:53,270
+case when it's not existing yet.
+
+382
+00:16:53,280 --> 00:16:56,310
+And other warning here, please don't use
+
+383
+00:16:56,320 --> 00:16:59,230
+double-check locking in Java because it
+
+384
+00:16:59,240 --> 00:17:01,350
+will not work. We will put a link on our
+
+385
+00:17:01,360 --> 00:17:04,630
+website for an exact explanation why it
+
+386
+00:17:04,640 --> 00:17:06,230
+is, but
+
+387
+00:17:06,240 --> 00:17:09,110
+there is fundamental flaw
+
+388
+00:17:09,120 --> 00:17:10,949
+Well, it's not a flaw, it's the way
+
+389
+00:17:10,959 --> 00:17:13,230
+bytecode and virtual machine is actually
+
+390
+00:17:13,240 --> 00:17:15,710
+designed in Java. There is no way to
+
+391
+00:17:15,720 --> 00:17:18,550
+implement double-check locking pattern
+
+392
+00:17:18,560 --> 00:17:20,829
+in Java without
+
+393
+00:17:20,839 --> 00:17:23,230
+breaking in some very special
+
+394
+00:17:23,240 --> 00:17:26,150
+situations. So, don't use it.
+
+395
+00:17:26,160 --> 00:17:27,910
+You have no chance to implement it.
+
+396
+00:17:27,920 --> 00:17:29,790
+There have been a lot of threats in the
+
+397
+00:17:29,800 --> 00:17:32,070
+internet on it. So, check it out. It's
+
+398
+00:17:32,080 --> 00:17:33,270
+dangerous.
+
+399
+00:17:33,280 --> 00:17:36,910
+Yeah, so with this we conclude our first
+
+400
+00:17:36,920 --> 00:17:40,990
+introduction of some patterns in the
+
+401
+00:17:41,000 --> 00:17:44,150
+concurrency domain. We will continue in
+
+402
+00:17:44,160 --> 00:17:47,430
+part three with more advanced patterns.
+
+403
+00:17:47,440 --> 00:17:50,390
+So, in this episode we want to continue
+
+404
+00:17:50,400 --> 00:17:54,190
+with some architectural considerations.
+
+405
+00:17:54,200 --> 00:17:56,350
+The number of threads seems to be
+
+406
+00:17:56,360 --> 00:17:59,550
+a critical topic and and reason for some
+
+407
+00:17:59,560 --> 00:18:02,470
+flame wars. For example, when I talk to
+
+408
+00:18:02,480 --> 00:18:04,870
+the embedded people doing
+
+409
+00:18:04,880 --> 00:18:06,950
+embedded projects,
+
+410
+00:18:06,960 --> 00:18:09,270
+developing embedded applications for the
+
+411
+00:18:09,280 --> 00:18:12,070
+automotive or automation domain, they
+
+412
+00:18:12,080 --> 00:18:16,550
+tell me that historically it has always
+
+413
+00:18:16,560 --> 00:18:20,390
+proved that they use as many threads as
+
+414
+00:18:20,400 --> 00:18:23,390
+necessary for every small responsibility
+
+415
+00:18:23,400 --> 00:18:26,070
+they would introduce a separate thread.
+
+416
+00:18:26,080 --> 00:18:28,110
+They would have queues between those
+
+417
+00:18:28,120 --> 00:18:30,710
+threads. So, the the overall design
+
+418
+00:18:30,720 --> 00:18:34,830
+looked like a a mailboxes system
+
+419
+00:18:34,840 --> 00:18:38,470
+where the the workers put orders for
+
+420
+00:18:38,480 --> 00:18:41,270
+other responsibilities into their input
+
+421
+00:18:41,280 --> 00:18:43,790
+queues. And at the end they they ended
+
+422
+00:18:43,800 --> 00:18:46,910
+up with dozens or even hundreds of
+
+423
+00:18:46,920 --> 00:18:50,070
+threads. And the argument for that
+
+424
+00:18:50,080 --> 00:18:52,230
+design, which they tell me, is that they
+
+425
+00:18:52,240 --> 00:18:54,750
+could at the end fine-tune the system
+
+426
+00:18:54,760 --> 00:18:57,830
+with priorities, assigning individual
+
+427
+00:18:57,840 --> 00:19:01,150
+priorities to the threads, and and get
+
+428
+00:19:01,160 --> 00:19:03,990
+the optimal best result. I don't believe
+
+429
+00:19:04,000 --> 00:19:07,270
+in in this design, to be honest. I think
+
+430
+00:19:07,280 --> 00:19:09,350
+reducing the number of threads to a
+
+431
+00:19:09,360 --> 00:19:12,950
+reasonable number, which in my opinion
+
+432
+00:19:12,960 --> 00:19:16,350
+is somewhere below a dozen,
+
+433
+00:19:16,360 --> 00:19:19,870
+is a good practice. Every time I was
+
+434
+00:19:19,880 --> 00:19:22,110
+involved in such an embedded project and
+
+435
+00:19:22,120 --> 00:19:24,790
+we designed the application with the a
+
+436
+00:19:24,800 --> 00:19:27,310
+reasonable low number of thread, we were
+
+437
+00:19:27,320 --> 00:19:29,950
+still able to achieve the the necessary
+
+438
+00:19:29,960 --> 00:19:32,950
+real-time properties and the scalability
+
+439
+00:19:32,960 --> 00:19:34,830
+and the performance, especially of the
+
+440
+00:19:34,840 --> 00:19:37,590
+system. And the design often quite was
+
+441
+00:19:37,600 --> 00:19:41,950
+easier and it was easier also to track
+
+442
+00:19:41,960 --> 00:19:45,030
+and and debug the system as I didn't
+
+443
+00:19:45,040 --> 00:19:48,830
+have to check dozens of queue content.
+
+444
+00:19:48,840 --> 00:19:51,870
+So, Alex, what is your experience for
+
+445
+00:19:51,880 --> 00:19:53,670
+the enterprise domain?
+
+446
+00:19:53,680 --> 00:19:56,510
+As you said, it's a very difficult topic
+
+447
+00:19:56,520 --> 00:19:58,910
+and actually I would recommend to move
+
+448
+00:19:58,920 --> 00:20:02,190
+the decision how many threads to have to
+
+449
+00:20:02,200 --> 00:20:05,710
+to run time. I would always recommend to
+
+450
+00:20:05,720 --> 00:20:08,990
+make thread pools configurable and to
+
+451
+00:20:09,000 --> 00:20:10,710
+actually, yeah, well, make this
+
+452
+00:20:10,720 --> 00:20:14,470
+threading strategy configurable because
+
+453
+00:20:14,480 --> 00:20:17,670
+it's nearly impossible to estimate or
+
+454
+00:20:17,680 --> 00:20:20,830
+plan in advance how your application
+
+455
+00:20:20,840 --> 00:20:22,950
+will run on the
+
+456
+00:20:22,960 --> 00:20:27,070
+the real production hardware and usually
+
+457
+00:20:27,080 --> 00:20:29,070
+the production hardware also changes
+
+458
+00:20:29,080 --> 00:20:31,710
+over the lifetime of an application.
+
+459
+00:20:31,720 --> 00:20:35,590
+People put in more CPUs or more memory
+
+460
+00:20:35,600 --> 00:20:38,390
+and therefore the whole thing, yeah,
+
+461
+00:20:38,400 --> 00:20:40,950
+behaves very different. So, it's a good
+
+462
+00:20:40,960 --> 00:20:46,190
+idea to not to design or to make a very
+
+463
+00:20:46,200 --> 00:20:49,350
+fixed design front up and
+
+464
+00:20:49,360 --> 00:20:52,430
+make these things like number of threads
+
+465
+00:20:52,440 --> 00:20:54,230
+not configurable.
+
+466
+00:20:54,240 --> 00:20:57,550
+You just used the term thread pool. I
+
+467
+00:20:57,560 --> 00:21:00,230
+guess that is something an advanced
+
+468
+00:21:00,240 --> 00:21:02,510
+topic that we will discuss in part
+
+469
+00:21:02,520 --> 00:21:04,830
+three, but briefly introduce what what
+
+470
+00:21:04,840 --> 00:21:06,030
+you mean by thread pool.
+
+471
+00:21:06,040 --> 00:21:09,070
+Okay. Threads are very expensive, not as
+
+472
+00:21:09,080 --> 00:21:10,910
+expensive as processors as we discussed
+
+473
+00:21:10,920 --> 00:21:13,190
+in the first episode, but still are very
+
+474
+00:21:13,200 --> 00:21:15,910
+expensive to create. So, a design
+
+475
+00:21:15,920 --> 00:21:18,190
+pattern there is to have a pool of
+
+476
+00:21:18,200 --> 00:21:19,710
+threads and
+
+477
+00:21:19,720 --> 00:21:21,630
+um if you need a new thread, don't
+
+478
+00:21:21,640 --> 00:21:23,870
+create a new one, just use one out of
+
+479
+00:21:23,880 --> 00:21:27,630
+the pool and um and delegate the re-
+
+480
+00:21:27,640 --> 00:21:30,190
+responsibility to do the job to one of
+
+481
+00:21:30,200 --> 00:21:31,150
+the
+
+482
+00:21:31,160 --> 00:21:33,670
+empty running or not used threads from
+
+483
+00:21:33,680 --> 00:21:34,750
+the thread pool.
+
+484
+00:21:34,760 --> 00:21:36,830
+Okay. And afterwards, you would have to
+
+485
+00:21:36,840 --> 00:21:38,830
+release the thread
+
+486
+00:21:38,840 --> 00:21:40,590
+again to the thread pool so that you
+
+487
+00:21:40,600 --> 00:21:42,270
+could reuse it the next time.
+
+488
+00:21:42,280 --> 00:21:43,110
+Exactly.
+
+489
+00:21:43,120 --> 00:21:45,430
+So, yeah, my my personal opinion on how
+
+490
+00:21:45,440 --> 00:21:47,990
+many threads are are necessary in a
+
+491
+00:21:48,000 --> 00:21:51,110
+system, for every part of the system
+
+492
+00:21:51,120 --> 00:21:54,030
+that is highly interactive and needs
+
+493
+00:21:54,040 --> 00:21:56,830
+therefore to be highly reactive, I
+
+494
+00:21:56,840 --> 00:21:59,390
+recommend to use a separate thread. This
+
+495
+00:21:59,400 --> 00:22:02,590
+is for example the case in in the user
+
+496
+00:22:02,600 --> 00:22:05,750
+interface design. Secondly,
+
+497
+00:22:05,760 --> 00:22:08,790
+good argumentation or good reasoning is
+
+498
+00:22:08,800 --> 00:22:12,030
+every time the control logic often
+
+499
+00:22:12,040 --> 00:22:15,190
+separated control flow of a concurrent
+
+500
+00:22:15,200 --> 00:22:17,390
+design is easier to understand and
+
+501
+00:22:17,400 --> 00:22:19,190
+maintain than a
+
+502
+00:22:19,200 --> 00:22:21,470
+highly reactive design using the
+
+503
+00:22:21,480 --> 00:22:24,390
+reactor. I would prefer the the control
+
+504
+00:22:24,400 --> 00:22:27,390
+logic being separated in a in a separate
+
+505
+00:22:27,400 --> 00:22:28,470
+thread.
+
+506
+00:22:28,480 --> 00:22:31,710
+And the third argument is use a reactive
+
+507
+00:22:31,720 --> 00:22:35,190
+design with a thread pool in case you
+
+508
+00:22:35,200 --> 00:22:38,590
+have long-lasting jobs. We will discuss
+
+509
+00:22:38,600 --> 00:22:41,270
+this kind of design in the third part.
+
+510
+00:22:41,280 --> 00:22:43,190
+Yep. Okay.
+
+511
+00:22:43,200 --> 00:22:45,670
+Um some of the recommendations I did for
+
+512
+00:22:45,680 --> 00:22:48,830
+configuration of thread pools also um
+
+513
+00:22:48,840 --> 00:22:51,950
+are true for the priority stuff. And I
+
+514
+00:22:51,960 --> 00:22:54,590
+guess it's the only way to to assign
+
+515
+00:22:54,600 --> 00:22:57,910
+priority to threads is to measure later
+
+516
+00:22:57,920 --> 00:23:01,550
+on and and then uh set the priorities
+
+517
+00:23:01,560 --> 00:23:04,430
+for the single threads in your system.
+
+518
+00:23:04,440 --> 00:23:06,030
+So, it's a lot about measuring in my
+
+519
+00:23:06,040 --> 00:23:07,110
+opinion.
+
+520
+00:23:07,120 --> 00:23:10,310
+Yeah, the signing priorities is a quite
+
+521
+00:23:10,320 --> 00:23:13,870
+difficult topic. Most cases I've seen
+
+522
+00:23:13,880 --> 00:23:15,830
+that it's only done
+
+523
+00:23:15,840 --> 00:23:18,590
+with some first estimations.
+
+524
+00:23:18,600 --> 00:23:20,710
+Here Doug Lea gives some
+
+525
+00:23:20,720 --> 00:23:24,030
+recommendations, for example, having for
+
+526
+00:23:24,040 --> 00:23:26,510
+crisis management and interaction the
+
+527
+00:23:26,520 --> 00:23:29,030
+highest priorities.
+
+528
+00:23:29,040 --> 00:23:32,390
+Then for IO and background tasks the
+
+529
+00:23:32,400 --> 00:23:33,910
+mid-level
+
+530
+00:23:33,920 --> 00:23:36,950
+priorities and the lowest priorities for
+
+531
+00:23:36,960 --> 00:23:38,230
+the jobs
+
+532
+00:23:38,240 --> 00:23:40,750
+that should run when nothing else is
+
+533
+00:23:40,760 --> 00:23:44,230
+really necessary to be performed. But
+
+534
+00:23:44,240 --> 00:23:47,230
+finally at the end, the fine-tuning is
+
+535
+00:23:47,240 --> 00:23:50,870
+almost always done by trial and error
+
+536
+00:23:50,880 --> 00:23:53,150
+basically. You try how your system
+
+537
+00:23:53,160 --> 00:23:56,790
+performs, you do long-running tests,
+
+538
+00:23:56,800 --> 00:23:59,310
+overnight tests, and then check the
+
+539
+00:23:59,320 --> 00:24:02,630
+results and check the performance
+
+540
+00:24:02,640 --> 00:24:04,790
+on whether you could achieve a better
+
+541
+00:24:04,800 --> 00:24:07,550
+performance and better real-time
+
+542
+00:24:07,560 --> 00:24:10,270
+properties by changing any of the
+
+543
+00:24:10,280 --> 00:24:11,910
+priorities.
+
+544
+00:24:11,920 --> 00:24:14,910
+A difficult and and challenging topic is
+
+545
+00:24:14,920 --> 00:24:17,790
+priority inversions, but that again we
+
+546
+00:24:17,800 --> 00:24:19,550
+save for later episode.
+
+547
+00:24:19,560 --> 00:24:20,270
+Mhm.
+
+548
+00:24:20,280 --> 00:24:21,950
+If we are we talk about the number of
+
+549
+00:24:21,960 --> 00:24:24,350
+threads, we should talk also a bit about
+
+550
+00:24:24,360 --> 00:24:28,070
+resources. Um if you develop in
+
+551
+00:24:28,080 --> 00:24:30,270
+multi-threaded environments, you always
+
+552
+00:24:30,280 --> 00:24:32,430
+have to take a look at where your
+
+553
+00:24:32,440 --> 00:24:35,670
+resources are from and how scarce they
+
+554
+00:24:35,680 --> 00:24:37,470
+are. I mean,
+
+555
+00:24:37,480 --> 00:24:39,750
+um if you have locks and they are
+
+556
+00:24:39,760 --> 00:24:41,870
+operating system locks, there might be a
+
+557
+00:24:41,880 --> 00:24:43,750
+number of locks your operating system
+
+558
+00:24:43,760 --> 00:24:45,830
+can handle without a problem, and then
+
+559
+00:24:45,840 --> 00:24:49,510
+there might be a a number your operating
+
+560
+00:24:49,520 --> 00:24:52,630
+system can't deal anymore. So so same
+
+561
+00:24:52,640 --> 00:24:55,310
+for number of threads, um always take
+
+562
+00:24:55,320 --> 00:24:59,270
+into account these resources might be
+
+563
+00:24:59,280 --> 00:25:00,950
+very expensive
+
+564
+00:25:00,960 --> 00:25:02,950
+and that they are
+
+565
+00:25:02,960 --> 00:25:03,870
+not an
+
+566
+00:25:03,880 --> 00:25:06,150
+infinite number of locks out there if
+
+567
+00:25:06,160 --> 00:25:09,230
+you have an environment with these
+
+568
+00:25:09,240 --> 00:25:12,510
+constraints. So, take a number take the
+
+569
+00:25:12,520 --> 00:25:16,230
+number of threads as a very important
+
+570
+00:25:16,240 --> 00:25:18,310
+number in your consideration. It it
+
+571
+00:25:18,320 --> 00:25:21,110
+might trash your application completely
+
+572
+00:25:21,120 --> 00:25:22,990
+if you have too many of them
+
+573
+00:25:23,000 --> 00:25:26,110
+and or too fine-grained threads for too
+
+574
+00:25:26,120 --> 00:25:28,190
+too little
+
+575
+00:25:28,200 --> 00:25:29,270
+things to do.
+
+576
+00:25:29,280 --> 00:25:31,870
+Yeah, so that the general recommendation
+
+577
+00:25:31,880 --> 00:25:33,710
+is to to handle
+
+578
+00:25:33,720 --> 00:25:35,270
+concurrency
+
+579
+00:25:35,280 --> 00:25:39,230
+as an architectural topic because it has
+
+580
+00:25:39,240 --> 00:25:41,790
+a very strong influence on on the
+
+581
+00:25:41,800 --> 00:25:43,670
+architecture and at the end at the
+
+582
+00:25:43,680 --> 00:25:46,990
+non-functional properties of your
+
+583
+00:25:47,000 --> 00:25:51,430
+system. To sum up our second episode on
+
+584
+00:25:51,440 --> 00:25:53,630
+concurrency, we would like to give the
+
+585
+00:25:53,640 --> 00:25:55,830
+the recommendation for general
+
+586
+00:25:55,840 --> 00:25:58,510
+concurrent and network programming to
+
+587
+00:25:58,520 --> 00:26:02,110
+read Posix 2. We put the link on our
+
+588
+00:26:02,120 --> 00:26:05,790
+homepage as usual and especially for
+
+589
+00:26:05,800 --> 00:26:09,270
+Java developers but also for non-Java
+
+590
+00:26:09,280 --> 00:26:12,750
+developers a good book on the topic is
+
+591
+00:26:12,760 --> 00:26:16,030
+concurrent programming in Java by Doug
+
+592
+00:26:16,040 --> 00:26:18,510
+Lea. This is one of my favorite books
+
+593
+00:26:18,520 --> 00:26:20,630
+about concurrency. It describes
+
+594
+00:26:20,640 --> 00:26:23,790
+step-by-step with many examples on how
+
+595
+00:26:23,800 --> 00:26:27,430
+to do good design with Java and
+
+596
+00:26:27,440 --> 00:26:29,990
+generally do good design in
+
+597
+00:26:30,000 --> 00:26:32,950
+object-oriented applications. Alex,
+
+598
+00:26:32,960 --> 00:26:34,590
+final word to say?
+
+599
+00:26:34,600 --> 00:26:37,070
+So, thanks for listening. As always, we
+
+600
+00:26:37,080 --> 00:26:40,430
+would be happy to get feedback from you
+
+601
+00:26:40,440 --> 00:26:44,230
+to complete our concurrency series. The
+
+602
+00:26:44,240 --> 00:26:46,350
+next episode will most probably deal
+
+603
+00:26:46,360 --> 00:26:48,310
+with building highly scalable servers
+
+604
+00:26:48,320 --> 00:26:50,990
+and advanced patterns in the concurrency
+
+605
+00:26:51,000 --> 00:27:13,990
+domain. Thanks for listening. Bye-bye.
+
+606
+00:27:15,670 --> 00:27:15,680
+This was another episode of Software
+
+607
+00:27:15,680 --> 00:27:17,590
+Engineering Radio.
+
+608
+00:27:17,600 --> 00:27:19,350
+The Software Engineering Radio team
+
+609
+00:27:19,360 --> 00:27:20,910
+wants to thank Henning Pauly for
+
+610
+00:27:20,920 --> 00:27:22,750
+providing the music as well as
+
+611
+00:27:22,760 --> 00:27:25,670
+lipsyn.com for hosting and bandwidth.
+
+612
+00:27:25,680 --> 00:27:27,830
+For more information on the podcast,
+
+613
+00:27:27,840 --> 00:27:30,070
+past episodes, and feedback, go to
+
+614
+00:27:30,080 --> 00:27:33,080
+se-radio.net.

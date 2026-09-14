@@ -1,0 +1,5367 @@
+1
+00:00:02,780 --> 00:00:02,790
+software engineering radio episode 61
+
+2
+00:00:02,790 --> 00:00:06,110
+and tons of GCC
+
+3
+00:00:06,120 --> 00:00:23,950
+[Music]
+
+4
+00:00:23,960 --> 00:00:26,300
+hi everybody welcome to another episode
+
+5
+00:00:26,310 --> 00:00:29,090
+of software engineering radio today this
+
+6
+00:00:29,100 --> 00:00:31,930
+is our new interviewing Morgan Peters on
+
+7
+00:00:31,940 --> 00:00:34,630
+compilers and the internals of compilers
+
+8
+00:00:34,640 --> 00:00:36,440
+exemplified on the gnu compiler
+
+9
+00:00:36,450 --> 00:00:38,690
+collection Morgan would you like to say
+
+10
+00:00:38,700 --> 00:00:39,650
+some words about yourself
+
+11
+00:00:39,660 --> 00:00:43,610
+sure hello my name is Morgan deters I'm
+
+12
+00:00:43,620 --> 00:00:46,549
+at the Washington University in st.
+
+13
+00:00:46,559 --> 00:00:48,470
+Louis and st. Louis Missouri in the USA
+
+14
+00:00:48,480 --> 00:00:53,960
+I study under dr. Ron Citroen who is the
+
+15
+00:00:53,970 --> 00:00:56,840
+I suppose main compilers guy there with
+
+16
+00:00:56,850 --> 00:01:01,970
+many decades of research I am a PhD
+
+17
+00:01:01,980 --> 00:01:03,830
+student I have been there for a number
+
+18
+00:01:03,840 --> 00:01:06,889
+of years and I'm graduating sometime
+
+19
+00:01:06,899 --> 00:01:08,960
+soon in the next six months or year so
+
+20
+00:01:08,970 --> 00:01:12,820
+hopefully I can find a job you can maybe
+
+21
+00:01:12,830 --> 00:01:15,620
+I have a number I have quite a bit of
+
+22
+00:01:15,630 --> 00:01:18,020
+experience with static analysis with
+
+23
+00:01:18,030 --> 00:01:20,620
+compilers with language implementations
+
+24
+00:01:20,630 --> 00:01:23,630
+going back for a number of years I've
+
+25
+00:01:23,640 --> 00:01:26,690
+done quite a bit of work on both with
+
+26
+00:01:26,700 --> 00:01:29,990
+Java but also especially on java virtual
+
+27
+00:01:30,000 --> 00:01:32,480
+machines various kinds of static
+
+28
+00:01:32,490 --> 00:01:35,390
+analysis on java programs on other kinds
+
+29
+00:01:35,400 --> 00:01:38,450
+of programs mic analysis profiling tools
+
+30
+00:01:38,460 --> 00:01:41,780
+for java and various other things but
+
+31
+00:01:41,790 --> 00:01:44,359
+that's that's really mainly my my forte
+
+32
+00:01:44,369 --> 00:01:45,770
+I'm in the real time and embedded
+
+33
+00:01:45,780 --> 00:01:47,149
+systems group at Washington University
+
+34
+00:01:47,159 --> 00:01:50,600
+so most of my work ends up dealing not
+
+35
+00:01:50,610 --> 00:01:51,859
+just with languages programming
+
+36
+00:01:51,869 --> 00:01:53,469
+languages compilers but also
+
+37
+00:01:53,479 --> 00:01:55,490
+specifically with real time and embedded
+
+38
+00:01:55,500 --> 00:01:59,450
+systems various interesting boards that
+
+39
+00:01:59,460 --> 00:02:01,969
+we get for avionics purposes yeah great
+
+40
+00:02:01,979 --> 00:02:06,800
+so let's start by taking a look at why
+
+41
+00:02:06,810 --> 00:02:09,560
+should anyone be interested in what
+
+42
+00:02:09,570 --> 00:02:11,420
+compilers are and how they work what
+
+43
+00:02:11,430 --> 00:02:13,220
+makes that interesting and relevant for
+
+44
+00:02:13,230 --> 00:02:15,590
+everyday life well it makes it very
+
+45
+00:02:15,600 --> 00:02:17,720
+interesting and relevant because it
+
+46
+00:02:17,730 --> 00:02:20,870
+ultimately when you compile your
+
+47
+00:02:20,880 --> 00:02:21,979
+software when you write and compile your
+
+48
+00:02:21,989 --> 00:02:23,900
+software you want it to run efficiently
+
+49
+00:02:23,910 --> 00:02:25,819
+you want it to run well on modern
+
+50
+00:02:25,829 --> 00:02:28,250
+processors taking advantage of of what
+
+51
+00:02:28,260 --> 00:02:30,800
+modern hardware has to offer you and and
+
+52
+00:02:30,810 --> 00:02:32,690
+really that's the compilers job to
+
+53
+00:02:32,700 --> 00:02:37,190
+to perform ultimately that's something
+
+54
+00:02:37,200 --> 00:02:38,330
+you don't have to worry about too much
+
+55
+00:02:38,340 --> 00:02:40,550
+the the too many of the internal details
+
+56
+00:02:40,560 --> 00:02:44,210
+of the good new compiler collection GCC
+
+57
+00:02:44,220 --> 00:02:48,020
+or other compilers but fundamentally
+
+58
+00:02:48,030 --> 00:02:49,640
+that's that's the job of people like me
+
+59
+00:02:49,650 --> 00:02:53,540
+other compiler developers to to make
+
+60
+00:02:53,550 --> 00:02:56,360
+sure that those things that efficient
+
+61
+00:02:56,370 --> 00:02:57,949
+implementations of your software
+
+62
+00:02:57,959 --> 00:03:00,140
+programs are ultimately created okay so
+
+63
+00:03:00,150 --> 00:03:02,210
+this is sort of a behind-the-scenes look
+
+64
+00:03:02,220 --> 00:03:04,820
+at the internals of things you use
+
+65
+00:03:04,830 --> 00:03:07,490
+everyday it's like going to a car garage
+
+66
+00:03:07,500 --> 00:03:09,470
+and ask mechanics how the internals of
+
+67
+00:03:09,480 --> 00:03:10,940
+motor work you shouldn't really have to
+
+68
+00:03:10,950 --> 00:03:12,319
+worry about it but then it's interesting
+
+69
+00:03:12,329 --> 00:03:14,900
+and might be helpful anyway and it's
+
+70
+00:03:14,910 --> 00:03:15,620
+something that's very relevant
+
+71
+00:03:15,630 --> 00:03:17,479
+absolutely and you want to make sure
+
+72
+00:03:17,489 --> 00:03:19,220
+that that the compiler you're using is
+
+73
+00:03:19,230 --> 00:03:21,140
+something that is that is current and
+
+74
+00:03:21,150 --> 00:03:23,420
+and and will give you what you want on
+
+75
+00:03:23,430 --> 00:03:26,229
+modern hardware absolutely yeah great so
+
+76
+00:03:26,239 --> 00:03:27,440
+well
+
+77
+00:03:27,450 --> 00:03:29,030
+maybe you'd like to start by explaining
+
+78
+00:03:29,040 --> 00:03:32,059
+how compiler works at the top level
+
+79
+00:03:32,069 --> 00:03:33,650
+what's the basic idea of the workings
+
+80
+00:03:33,660 --> 00:03:35,330
+inner workings of a compiler so
+
+81
+00:03:35,340 --> 00:03:37,759
+fundamentally a compiler has to read a
+
+82
+00:03:37,769 --> 00:03:40,849
+plain text generally source file and
+
+83
+00:03:40,859 --> 00:03:42,949
+understand what that means whether it be
+
+84
+00:03:42,959 --> 00:03:45,379
+in C or C++ or Java and try to
+
+85
+00:03:45,389 --> 00:03:47,449
+understand exactly what you mean by by
+
+86
+00:03:47,459 --> 00:03:49,970
+writing that that text source file so
+
+87
+00:03:49,980 --> 00:03:51,319
+anytime you use a variable it has to
+
+88
+00:03:51,329 --> 00:03:52,340
+figure out which variable you're
+
+89
+00:03:52,350 --> 00:03:54,020
+referencing how to access that variable
+
+90
+00:03:54,030 --> 00:03:55,789
+if it's a local variable or a global
+
+91
+00:03:55,799 --> 00:03:57,890
+variable or any other kind of thing or
+
+92
+00:03:57,900 --> 00:03:59,629
+whether it's a type and it has to
+
+93
+00:03:59,639 --> 00:04:04,430
+understand the the semantic content of
+
+94
+00:04:04,440 --> 00:04:07,009
+of your source program in the context of
+
+95
+00:04:07,019 --> 00:04:09,050
+various other parts of your program that
+
+96
+00:04:09,060 --> 00:04:10,460
+might be included in other source files
+
+97
+00:04:10,470 --> 00:04:14,259
+once it figures that out it has to
+
+98
+00:04:14,269 --> 00:04:16,550
+generally compilers will produce some
+
+99
+00:04:16,560 --> 00:04:19,279
+sort of internal representation to mull
+
+100
+00:04:19,289 --> 00:04:20,839
+over this information to understand it
+
+101
+00:04:20,849 --> 00:04:22,580
+better themselves to transform it in
+
+102
+00:04:22,590 --> 00:04:24,620
+various ways and ultimately it has to
+
+103
+00:04:24,630 --> 00:04:26,930
+produce object code for the target
+
+104
+00:04:26,940 --> 00:04:28,810
+platform of your choice whether that is
+
+105
+00:04:28,820 --> 00:04:31,010
+Java bytecode if it's producing a
+
+106
+00:04:31,020 --> 00:04:34,460
+portable class file Java class files for
+
+107
+00:04:34,470 --> 00:04:37,420
+instance or whether it's producing
+
+108
+00:04:37,430 --> 00:04:40,070
+pentium assembly or whether it's
+
+109
+00:04:40,080 --> 00:04:42,500
+producing PowerPC assembly or spark or
+
+110
+00:04:42,510 --> 00:04:44,570
+any number of different things it has to
+
+111
+00:04:44,580 --> 00:04:45,740
+generate something there the
+
+112
+00:04:45,750 --> 00:04:47,630
+is equivalent to your original source
+
+113
+00:04:47,640 --> 00:04:50,450
+program but hopefully efficient because
+
+114
+00:04:50,460 --> 00:04:51,980
+many different translations are possible
+
+115
+00:04:51,990 --> 00:04:54,530
+okay so let's drill in a little more and
+
+116
+00:04:54,540 --> 00:04:56,300
+be specific about the gnu compiler
+
+117
+00:04:56,310 --> 00:05:00,080
+collection it's basically a collection
+
+118
+00:05:00,090 --> 00:05:03,830
+of compiler framework well that's what
+
+119
+00:05:03,840 --> 00:05:05,630
+you said in yesterday's tutorial so
+
+120
+00:05:05,640 --> 00:05:09,050
+what's special about this what sets it
+
+121
+00:05:09,060 --> 00:05:12,170
+apart from other compilers well the GCC
+
+122
+00:05:12,180 --> 00:05:15,500
+the good new compiler collection is very
+
+123
+00:05:15,510 --> 00:05:17,810
+heavily used it's it's very flexible
+
+124
+00:05:17,820 --> 00:05:20,360
+it's very portable you can run it on
+
+125
+00:05:20,370 --> 00:05:22,610
+many different UNIX platforms you can
+
+126
+00:05:22,620 --> 00:05:25,490
+run it on Windows you can run it on Mac
+
+127
+00:05:25,500 --> 00:05:28,870
+OS you can run it anywhere basically and
+
+128
+00:05:28,880 --> 00:05:31,610
+and the the key advantages are that it
+
+129
+00:05:31,620 --> 00:05:33,290
+accepts many different source file
+
+130
+00:05:33,300 --> 00:05:35,810
+inputs that can compile C and C++ and
+
+131
+00:05:35,820 --> 00:05:40,880
+Java and ADA and Fortran and and it can
+
+132
+00:05:40,890 --> 00:05:45,140
+produce output object code for many
+
+133
+00:05:45,150 --> 00:05:46,550
+different target architectures for
+
+134
+00:05:46,560 --> 00:05:48,770
+PowerPC and SPARC and arm and various
+
+135
+00:05:48,780 --> 00:05:51,380
+embedded systems and pentium of course
+
+136
+00:05:51,390 --> 00:05:54,050
+and and and so the the key advantages of
+
+137
+00:05:54,060 --> 00:05:56,450
+GCC are that it is so flexible and so
+
+138
+00:05:56,460 --> 00:05:59,060
+portable that you can pretty much rely
+
+139
+00:05:59,070 --> 00:06:01,010
+on it and dependent on it on it anywhere
+
+140
+00:06:01,020 --> 00:06:02,780
+for any kind of development in these
+
+141
+00:06:02,790 --> 00:06:05,110
+languages that you're producing and
+
+142
+00:06:05,120 --> 00:06:08,270
+except that it and rely on it to produce
+
+143
+00:06:08,280 --> 00:06:10,940
+object code that is effective in many
+
+144
+00:06:10,950 --> 00:06:13,190
+different for many different hardware
+
+145
+00:06:13,200 --> 00:06:16,130
+architectures how does it achieve this
+
+146
+00:06:16,140 --> 00:06:18,920
+flexibility sounds like it's modular in
+
+147
+00:06:18,930 --> 00:06:21,650
+some ways yes GCC internally is very
+
+148
+00:06:21,660 --> 00:06:24,320
+modular so that so fundamentally GCC is
+
+149
+00:06:24,330 --> 00:06:26,810
+is composed of a a language specific
+
+150
+00:06:26,820 --> 00:06:29,930
+front end a neutral middle end and
+
+151
+00:06:29,940 --> 00:06:30,950
+that's what they actually call it the
+
+152
+00:06:30,960 --> 00:06:34,130
+middle end that is that's a funny name
+
+153
+00:06:34,140 --> 00:06:36,860
+yes it actually is but but but there's
+
+154
+00:06:36,870 --> 00:06:37,940
+also a back end so they have to have
+
+155
+00:06:37,950 --> 00:06:39,830
+something so they have to have something
+
+156
+00:06:39,840 --> 00:06:41,600
+in the middle so they had they have a
+
+157
+00:06:41,610 --> 00:06:43,130
+language dependent front end which can
+
+158
+00:06:43,140 --> 00:06:45,020
+be swapped in either for C or C++ or
+
+159
+00:06:45,030 --> 00:06:47,480
+Java a a middle end which then takes the
+
+160
+00:06:47,490 --> 00:06:48,980
+output of this front end which is a
+
+161
+00:06:48,990 --> 00:06:51,230
+language independent intermediate
+
+162
+00:06:51,240 --> 00:06:54,650
+representation the middle end then then
+
+163
+00:06:54,660 --> 00:06:57,170
+manipulates and massages this this
+
+164
+00:06:57,180 --> 00:06:58,519
+intermediate representation
+
+165
+00:06:58,529 --> 00:07:00,559
+into something that's more efficient or
+
+166
+00:07:00,569 --> 00:07:01,819
+at least that it hopes is more efficient
+
+167
+00:07:01,829 --> 00:07:04,639
+either in space or in runtime and then
+
+168
+00:07:04,649 --> 00:07:07,159
+the output of the middle end is a
+
+169
+00:07:07,169 --> 00:07:09,199
+representation that the back end can use
+
+170
+00:07:09,209 --> 00:07:11,079
+in the back end produces specific
+
+171
+00:07:11,089 --> 00:07:12,979
+architecture code so the back end is
+
+172
+00:07:12,989 --> 00:07:16,459
+then language neutral but architecture
+
+173
+00:07:16,469 --> 00:07:19,639
+specific the front end is language
+
+174
+00:07:19,649 --> 00:07:22,609
+dependent but architecture independent
+
+175
+00:07:22,619 --> 00:07:24,439
+and the middle end can operate on
+
+176
+00:07:24,449 --> 00:07:25,999
+anything so you have any front-end in
+
+177
+00:07:26,009 --> 00:07:28,069
+and it's modular with the middle end and
+
+178
+00:07:28,079 --> 00:07:29,749
+the middle end can then work with any
+
+179
+00:07:29,759 --> 00:07:31,459
+back-end which is then specific only to
+
+180
+00:07:31,469 --> 00:07:32,899
+the architecture it's producing code for
+
+181
+00:07:32,909 --> 00:07:34,849
+when your architecture you means a
+
+182
+00:07:34,859 --> 00:07:38,359
+target platform basically a processor
+
+183
+00:07:38,369 --> 00:07:40,579
+and a operating system that's that's
+
+184
+00:07:40,589 --> 00:07:43,429
+more or less correct so a specific
+
+185
+00:07:43,439 --> 00:07:46,159
+instruction set that's common on not
+
+186
+00:07:46,169 --> 00:07:48,409
+just one chip but a family of chips so
+
+187
+00:07:48,419 --> 00:07:51,409
+for example the entire Intel 32 bit line
+
+188
+00:07:51,419 --> 00:07:53,809
+of chips for example would be one
+
+189
+00:07:53,819 --> 00:07:57,859
+architecture right mm-hmm okay let's
+
+190
+00:07:57,869 --> 00:08:00,289
+take a closer look at these three ends
+
+191
+00:08:00,299 --> 00:08:03,350
+of the compiler starting to the front
+
+192
+00:08:03,360 --> 00:08:06,589
+end I find it quite fascinating that so
+
+193
+00:08:06,599 --> 00:08:10,669
+different languages can be parsed and
+
+194
+00:08:10,679 --> 00:08:13,279
+then transform into a common abstraction
+
+195
+00:08:13,289 --> 00:08:14,809
+how is that possible and what does this
+
+196
+00:08:14,819 --> 00:08:16,879
+common abstraction look like okay so
+
+197
+00:08:16,889 --> 00:08:21,189
+commonly in compilers when the when the
+
+198
+00:08:21,199 --> 00:08:24,469
+source file this text file is initially
+
+199
+00:08:24,479 --> 00:08:27,469
+read it is parsed into a tree like
+
+200
+00:08:27,479 --> 00:08:29,359
+representation an abstract syntax tree
+
+201
+00:08:29,369 --> 00:08:32,779
+of some form that that contains the
+
+202
+00:08:32,789 --> 00:08:35,569
+representation of what is meant by the
+
+203
+00:08:35,579 --> 00:08:38,029
+source program so it's particularly
+
+204
+00:08:38,039 --> 00:08:39,679
+useful to think of it as a tree because
+
+205
+00:08:39,689 --> 00:08:41,899
+expressions naturally fall into a tree
+
+206
+00:08:41,909 --> 00:08:44,990
+our arithmetic expressions for example X
+
+207
+00:08:45,000 --> 00:08:47,650
+plus y the quantity times some constant
+
+208
+00:08:47,660 --> 00:08:50,090
+can be naturally represented by a tree
+
+209
+00:08:50,100 --> 00:08:54,559
+like structure well in what way well by
+
+210
+00:08:54,569 --> 00:08:57,439
+by having a parent node represent say an
+
+211
+00:08:57,449 --> 00:08:59,269
+operation like multiplication and then
+
+212
+00:08:59,279 --> 00:09:01,069
+it's operands it's two operands in this
+
+213
+00:09:01,079 --> 00:09:04,759
+case being the specific targets of that
+
+214
+00:09:04,769 --> 00:09:06,079
+multiplication the first operand in the
+
+215
+00:09:06,089 --> 00:09:07,340
+second operand that you're multiplying
+
+216
+00:09:07,350 --> 00:09:08,869
+by for instance in in an arithmetic
+
+217
+00:09:08,879 --> 00:09:11,770
+sense so once this this
+
+218
+00:09:11,780 --> 00:09:13,570
+this tree representation is built up
+
+219
+00:09:13,580 --> 00:09:16,660
+from the the source file the front-end
+
+220
+00:09:16,670 --> 00:09:19,600
+needs to do additional processing to
+
+221
+00:09:19,610 --> 00:09:21,010
+figure out exactly what is meant by that
+
+222
+00:09:21,020 --> 00:09:23,440
+the semantic processing phase we'll go
+
+223
+00:09:23,450 --> 00:09:25,060
+through and make sure that the types are
+
+224
+00:09:25,070 --> 00:09:26,560
+all valid that all of the variables who
+
+225
+00:09:26,570 --> 00:09:28,450
+reference have in fact been declared and
+
+226
+00:09:28,460 --> 00:09:29,560
+that they're of the correct type and
+
+227
+00:09:29,570 --> 00:09:31,480
+that you're not doing anything that that
+
+228
+00:09:31,490 --> 00:09:33,310
+would cause an error in the source
+
+229
+00:09:33,320 --> 00:09:35,170
+language so anything that's it's illegal
+
+230
+00:09:35,180 --> 00:09:37,390
+or invalid and see or create some sort
+
+231
+00:09:37,400 --> 00:09:39,760
+of ambiguity can be ruled out at that
+
+232
+00:09:39,770 --> 00:09:41,710
+point and an error can be or a warning
+
+233
+00:09:41,720 --> 00:09:44,470
+can be can be issued and at the same
+
+234
+00:09:44,480 --> 00:09:45,760
+time it goes through and completes the
+
+235
+00:09:45,770 --> 00:09:47,230
+tree it figures out exactly what you're
+
+236
+00:09:47,240 --> 00:09:49,450
+trying to mean by by different source
+
+237
+00:09:49,460 --> 00:09:50,740
+code constructs so and see if you're
+
+238
+00:09:50,750 --> 00:09:52,450
+calling a function it tries to figure
+
+239
+00:09:52,460 --> 00:09:54,730
+out if if that function exists and link
+
+240
+00:09:54,740 --> 00:09:56,590
+it up to to its representation
+
+241
+00:09:56,600 --> 00:09:59,260
+internally of what that function is so
+
+242
+00:09:59,270 --> 00:10:01,810
+that it can in later phases produce the
+
+243
+00:10:01,820 --> 00:10:03,880
+code actually omit that function call so
+
+244
+00:10:03,890 --> 00:10:07,090
+that is the sort of the validity check
+
+245
+00:10:07,100 --> 00:10:10,270
+based on this common abstraction that is
+
+246
+00:10:10,280 --> 00:10:13,600
+the output of the front ends that that
+
+247
+00:10:13,610 --> 00:10:14,500
+is correct this intermediate
+
+248
+00:10:14,510 --> 00:10:17,890
+representation which is language neutral
+
+249
+00:10:17,900 --> 00:10:21,820
+is then output from the front ends so C
+
+250
+00:10:21,830 --> 00:10:23,650
+or C++ or Java no matter what you put in
+
+251
+00:10:23,660 --> 00:10:27,100
+ultimately is it produces this this GCC
+
+252
+00:10:27,110 --> 00:10:29,140
+specific intermediate representation
+
+253
+00:10:29,150 --> 00:10:31,270
+this data structure tree that that is
+
+254
+00:10:31,280 --> 00:10:35,650
+internal in GCC that that represents
+
+255
+00:10:35,660 --> 00:10:38,110
+what you what you have tried to do with
+
+256
+00:10:38,120 --> 00:10:40,090
+with your program that something that is
+
+257
+00:10:40,100 --> 00:10:42,370
+then valid the it's it's valid according
+
+258
+00:10:42,380 --> 00:10:43,930
+to the front end so you haven't violated
+
+259
+00:10:43,940 --> 00:10:46,930
+any of the languages rules and and it's
+
+260
+00:10:46,940 --> 00:10:48,940
+something then the the later passes of
+
+261
+00:10:48,950 --> 00:10:50,230
+the compiler and going over this
+
+262
+00:10:50,240 --> 00:10:51,850
+intermediate representation can use to
+
+263
+00:10:51,860 --> 00:10:54,960
+to translate that program to to the
+
+264
+00:10:54,970 --> 00:10:57,190
+specific target of your choice so in
+
+265
+00:10:57,200 --> 00:10:58,840
+fact many translations internally in the
+
+266
+00:10:58,850 --> 00:11:00,160
+compiler are happening when you when you
+
+267
+00:11:00,170 --> 00:11:01,329
+look at the compiler from the outside
+
+268
+00:11:01,339 --> 00:11:02,740
+it's taking a source program and
+
+269
+00:11:02,750 --> 00:11:06,280
+producing you know pentium code that you
+
+270
+00:11:06,290 --> 00:11:08,380
+can then run natively on your on your
+
+271
+00:11:08,390 --> 00:11:10,540
+hardware but in fact internally it's
+
+272
+00:11:10,550 --> 00:11:11,800
+producing many different intermediate
+
+273
+00:11:11,810 --> 00:11:13,540
+representations and going over in many
+
+274
+00:11:13,550 --> 00:11:15,670
+different ways in a way that's
+
+275
+00:11:15,680 --> 00:11:17,500
+convenient for it like many programs
+
+276
+00:11:17,510 --> 00:11:19,180
+that do data processing do as well they
+
+277
+00:11:19,190 --> 00:11:20,920
+the internally structure it in some way
+
+278
+00:11:20,930 --> 00:11:21,970
+that's convenient for them and then
+
+279
+00:11:21,980 --> 00:11:24,550
+output some summary or translation of
+
+280
+00:11:24,560 --> 00:11:25,510
+that data
+
+281
+00:11:25,520 --> 00:11:27,100
+but getting back to this comment
+
+282
+00:11:27,110 --> 00:11:29,560
+restructure I mean for expressions it's
+
+283
+00:11:29,570 --> 00:11:31,750
+sort of straightforward how they are
+
+284
+00:11:31,760 --> 00:11:36,130
+represented as as a tree and I mean
+
+285
+00:11:36,140 --> 00:11:38,020
+expressions are present in basically any
+
+286
+00:11:38,030 --> 00:11:41,140
+language so that is understandable but
+
+287
+00:11:41,150 --> 00:11:43,510
+then there are constructs like classes
+
+288
+00:11:43,520 --> 00:11:46,690
+or whatever that are specific for some
+
+289
+00:11:46,700 --> 00:11:48,100
+of the languages and others like sieve
+
+290
+00:11:48,110 --> 00:11:50,410
+just don't have these how are these
+
+291
+00:11:50,420 --> 00:11:52,540
+represented in this common language
+
+292
+00:11:52,550 --> 00:11:54,700
+neutral representation well there
+
+293
+00:11:54,710 --> 00:11:56,290
+they're put into it so only say you have
+
+294
+00:11:56,300 --> 00:11:59,620
+a tree type that represents a a class or
+
+295
+00:11:59,630 --> 00:12:02,560
+a struct in C or C++ some sort of data
+
+296
+00:12:02,570 --> 00:12:05,020
+structure a composite type to be more
+
+297
+00:12:05,030 --> 00:12:09,280
+specific and and then that that that
+
+298
+00:12:09,290 --> 00:12:11,590
+tree that that represents that that
+
+299
+00:12:11,600 --> 00:12:14,200
+particular class or that it read in from
+
+300
+00:12:14,210 --> 00:12:16,450
+the from the source file then has a list
+
+301
+00:12:16,460 --> 00:12:17,620
+of different fields that are in that
+
+302
+00:12:17,630 --> 00:12:20,890
+with all of their names and access modes
+
+303
+00:12:20,900 --> 00:12:22,990
+and types and everything else of that
+
+304
+00:12:23,000 --> 00:12:24,850
+class it has a list of all of the
+
+305
+00:12:24,860 --> 00:12:26,320
+methods of that class anything else
+
+306
+00:12:26,330 --> 00:12:28,690
+that's associated to that class as part
+
+307
+00:12:28,700 --> 00:12:31,630
+of that tree representation the tree is
+
+308
+00:12:31,640 --> 00:12:33,490
+basically just a common data structure
+
+309
+00:12:33,500 --> 00:12:36,730
+inside of GCC front ends and that the
+
+310
+00:12:36,740 --> 00:12:38,320
+front end communicates with the the
+
+311
+00:12:38,330 --> 00:12:41,530
+middle end using it's basically just a
+
+312
+00:12:41,540 --> 00:12:43,450
+common way for those things to
+
+313
+00:12:43,460 --> 00:12:45,900
+communicate and anything that doesn't as
+
+314
+00:12:45,910 --> 00:12:47,980
+naturally fit into that tree structure
+
+315
+00:12:47,990 --> 00:12:49,570
+anything that's not an expression is
+
+316
+00:12:49,580 --> 00:12:51,760
+sort of forced into it but it still
+
+317
+00:12:51,770 --> 00:12:53,920
+works very well in the sense that these
+
+318
+00:12:53,930 --> 00:12:55,540
+trees are then linked and you've got a
+
+319
+00:12:55,550 --> 00:12:57,040
+common tree structure for absolutely
+
+320
+00:12:57,050 --> 00:12:58,750
+everything internally this sounds like
+
+321
+00:12:58,760 --> 00:13:01,090
+some sort of podium orphism with some of
+
+322
+00:13:01,100 --> 00:13:03,070
+the concrete types some of the concrete
+
+323
+00:13:03,080 --> 00:13:05,830
+node types present in the common part
+
+324
+00:13:05,840 --> 00:13:07,870
+and then specific extensions for the
+
+325
+00:13:07,880 --> 00:13:10,750
+different front ends that's true so the
+
+326
+00:13:10,760 --> 00:13:13,770
+the tree structure in many compilers
+
+327
+00:13:13,780 --> 00:13:16,540
+that are written using object-oriented
+
+328
+00:13:16,550 --> 00:13:18,850
+languages such as Java or C++ if you
+
+329
+00:13:18,860 --> 00:13:20,020
+look at the compiler source code written
+
+330
+00:13:20,030 --> 00:13:22,480
+in those languages you'll typically find
+
+331
+00:13:22,490 --> 00:13:25,900
+a an abstract base class tree node or
+
+332
+00:13:25,910 --> 00:13:28,090
+something of this sort that then has
+
+333
+00:13:28,100 --> 00:13:30,070
+different subclasses for every kind of
+
+334
+00:13:30,080 --> 00:13:31,990
+different tree there is so you'd have
+
+335
+00:13:32,000 --> 00:13:33,610
+one for an arithmetic expression and
+
+336
+00:13:33,620 --> 00:13:34,960
+then further subclasses of that for
+
+337
+00:13:34,970 --> 00:13:37,050
+addition and subtraction and so forth
+
+338
+00:13:37,060 --> 00:13:38,750
+and a separate
+
+339
+00:13:38,760 --> 00:13:43,400
+class four function types and for method
+
+340
+00:13:43,410 --> 00:13:46,070
+types and for data structure types and
+
+341
+00:13:46,080 --> 00:13:48,860
+so forth in GCC the front ends are
+
+342
+00:13:48,870 --> 00:13:51,380
+actually written in C and you don't have
+
+343
+00:13:51,390 --> 00:13:54,050
+the object-oriented support of the
+
+344
+00:13:54,060 --> 00:13:55,580
+language that it's written in you don't
+
+345
+00:13:55,590 --> 00:13:57,170
+have the the support in C to do that
+
+346
+00:13:57,180 --> 00:13:58,550
+sort of thing so it makes it difficult
+
+347
+00:13:58,560 --> 00:14:00,860
+to use pretty morphism that's true so
+
+348
+00:14:00,870 --> 00:14:02,660
+what they do is sort of the C equivalent
+
+349
+00:14:02,670 --> 00:14:05,300
+and they create they they create a and
+
+350
+00:14:05,310 --> 00:14:06,500
+then this is used in many different
+
+351
+00:14:06,510 --> 00:14:08,750
+projects not not just GCC so you can't
+
+352
+00:14:08,760 --> 00:14:11,210
+pick on GCC just specifically but you do
+
+353
+00:14:11,220 --> 00:14:13,310
+see this elsewhere this is basically pre
+
+354
+00:14:13,320 --> 00:14:16,100
+object objects right it's it's what it's
+
+355
+00:14:16,110 --> 00:14:18,230
+what you do for objects and inheritance
+
+356
+00:14:18,240 --> 00:14:21,260
+when you don't have that support in the
+
+357
+00:14:21,270 --> 00:14:22,640
+in the tart and the language you're
+
+358
+00:14:22,650 --> 00:14:24,080
+writing it in and that is to create a
+
+359
+00:14:24,090 --> 00:14:25,910
+Union to get around the type system and
+
+360
+00:14:25,920 --> 00:14:27,650
+to put basically anything you want
+
+361
+00:14:27,660 --> 00:14:29,120
+inside of that Union so different fields
+
+362
+00:14:29,130 --> 00:14:30,830
+of the Union are in fact all on the same
+
+363
+00:14:30,840 --> 00:14:33,200
+a legate in the same place in memory and
+
+364
+00:14:33,210 --> 00:14:37,090
+you can have a a tree note Union that
+
+365
+00:14:37,100 --> 00:14:39,230
+contains a field for each type of
+
+366
+00:14:39,240 --> 00:14:41,690
+different tree node you have and then
+
+367
+00:14:41,700 --> 00:14:44,060
+access them all through that that common
+
+368
+00:14:44,070 --> 00:14:45,650
+data structure type even though there
+
+369
+00:14:45,660 --> 00:14:47,500
+are actually many different types so
+
+370
+00:14:47,510 --> 00:14:49,700
+it's it's not something that's type safe
+
+371
+00:14:49,710 --> 00:14:51,110
+and it's something that is that is
+
+372
+00:14:51,120 --> 00:14:52,760
+unsafe and if you do something unsafe in
+
+373
+00:14:52,770 --> 00:14:54,440
+the GCC code then it can crash at
+
+374
+00:14:54,450 --> 00:14:56,810
+runtime they do have various mechanisms
+
+375
+00:14:56,820 --> 00:14:58,790
+for making that a little bit more
+
+376
+00:14:58,800 --> 00:15:01,100
+convenient than it sounds but ultimately
+
+377
+00:15:01,110 --> 00:15:02,360
+yes you're trying to get around not
+
+378
+00:15:02,370 --> 00:15:04,190
+having language support in order to do
+
+379
+00:15:04,200 --> 00:15:06,680
+that the reason the GCC has done this is
+
+380
+00:15:06,690 --> 00:15:09,320
+because they want to be very portable
+
+381
+00:15:09,330 --> 00:15:11,120
+they want you to be able to take an
+
+382
+00:15:11,130 --> 00:15:15,020
+architecture that has only a minimal C
+
+383
+00:15:15,030 --> 00:15:17,540
+compiler available and to be able to
+
+384
+00:15:17,550 --> 00:15:20,480
+create GCC from that and as part of that
+
+385
+00:15:20,490 --> 00:15:22,370
+of course then you get the GNU C
+
+386
+00:15:22,380 --> 00:15:24,200
+compiler and also the C++ compiler and
+
+387
+00:15:24,210 --> 00:15:26,390
+also the Java compiler and and various
+
+388
+00:15:26,400 --> 00:15:29,990
+other things that that are then
+
+389
+00:15:30,000 --> 00:15:33,590
+convenient for you and in development so
+
+390
+00:15:33,600 --> 00:15:34,610
+ultimately they wanted to be very
+
+391
+00:15:34,620 --> 00:15:35,930
+portable and they didn't want to require
+
+392
+00:15:35,940 --> 00:15:38,090
+you to have a C++ compiler in order to
+
+393
+00:15:38,100 --> 00:15:42,500
+get GCC so the idea is that GCC itself
+
+394
+00:15:42,510 --> 00:15:44,900
+can be bootstrapped using just a minimal
+
+395
+00:15:44,910 --> 00:15:47,570
+set of features sort of the standard C
+
+396
+00:15:47,580 --> 00:15:49,700
+features and based on that once you have
+
+397
+00:15:49,710 --> 00:15:51,830
+a C compiler for a platform you get the
+
+398
+00:15:51,840 --> 00:15:52,400
+whole GC
+
+399
+00:15:52,410 --> 00:15:55,220
+see rich musical features that's correct
+
+400
+00:15:55,230 --> 00:15:56,540
+but that also means that internally in
+
+401
+00:15:56,550 --> 00:15:58,189
+GCC things have to be implemented in
+
+402
+00:15:58,199 --> 00:16:02,090
+this this well some of it is is created
+
+403
+00:16:02,100 --> 00:16:04,850
+in this minimal C set and and some of it
+
+404
+00:16:04,860 --> 00:16:06,319
+is created assuming that it already has
+
+405
+00:16:06,329 --> 00:16:09,019
+GCC and if you are trying to build it
+
+406
+00:16:09,029 --> 00:16:10,639
+using a minimal C compiler it actually
+
+407
+00:16:10,649 --> 00:16:12,439
+builds a subset of itself and then
+
+408
+00:16:12,449 --> 00:16:14,300
+creates the rest it compiles the rest of
+
+409
+00:16:14,310 --> 00:16:16,550
+it using that that subset of itself so
+
+410
+00:16:16,560 --> 00:16:19,519
+there are parts of GCC that the main
+
+411
+00:16:19,529 --> 00:16:22,160
+compiler code that that are written
+
+412
+00:16:22,170 --> 00:16:24,350
+using this very minimal minimal
+
+413
+00:16:24,360 --> 00:16:25,879
+assumptions about the C compiler and
+
+414
+00:16:25,889 --> 00:16:27,379
+other parts of it that assume that you
+
+415
+00:16:27,389 --> 00:16:28,429
+have the extensions that are available
+
+416
+00:16:28,439 --> 00:16:33,199
+in ingénue see the the entire GCC source
+
+417
+00:16:33,209 --> 00:16:35,629
+base if you if you download and look at
+
+418
+00:16:35,639 --> 00:16:37,550
+the entire source tree you in fact find
+
+419
+00:16:37,560 --> 00:16:39,259
+quite a bit of C++ and Java but these
+
+420
+00:16:39,269 --> 00:16:41,360
+are not in the main compiler portions
+
+421
+00:16:41,370 --> 00:16:43,550
+these are in the standard libraries for
+
+422
+00:16:43,560 --> 00:16:46,220
+C++ and Java you also find a
+
+423
+00:16:46,230 --> 00:16:47,689
+considerable amount of ADA code if you
+
+424
+00:16:47,699 --> 00:16:49,910
+download the entire package and and
+
+425
+00:16:49,920 --> 00:16:51,379
+various other things as well
+
+426
+00:16:51,389 --> 00:16:55,249
+for the ADA compiler and so forth but
+
+427
+00:16:55,259 --> 00:16:58,040
+yeah the the front ends generally
+
+428
+00:16:58,050 --> 00:17:00,019
+speaking for the most part are written
+
+429
+00:17:00,029 --> 00:17:01,990
+entirely in C and so they don't have
+
+430
+00:17:02,000 --> 00:17:03,860
+objects and inheritance and things that
+
+431
+00:17:03,870 --> 00:17:06,189
+we've come to be and come to rely on
+
+432
+00:17:06,199 --> 00:17:08,539
+okay so that's now assume that we have
+
+433
+00:17:08,549 --> 00:17:10,399
+this common language independent
+
+434
+00:17:10,409 --> 00:17:13,189
+abstraction of the tree nodes as the
+
+435
+00:17:13,199 --> 00:17:16,460
+output of the front-end so what happens
+
+436
+00:17:16,470 --> 00:17:19,490
+next so the the middle end then takes
+
+437
+00:17:19,500 --> 00:17:21,710
+this this output from the front end this
+
+438
+00:17:21,720 --> 00:17:24,350
+standard language neutral tree
+
+439
+00:17:24,360 --> 00:17:27,549
+representation that is called Gimple
+
+440
+00:17:27,559 --> 00:17:30,470
+because it's it's it's called Gimple
+
+441
+00:17:30,480 --> 00:17:34,909
+because it's it's actually a a new c
+
+442
+00:17:34,919 --> 00:17:38,450
+version of the simple language from
+
+443
+00:17:38,460 --> 00:17:42,020
+McGill University and and it's a it's a
+
+444
+00:17:42,030 --> 00:17:43,909
+slightly simplified version of the tree
+
+445
+00:17:43,919 --> 00:17:45,710
+representation that some of the front
+
+446
+00:17:45,720 --> 00:17:47,270
+ends use and it doesn't have any
+
+447
+00:17:47,280 --> 00:17:48,830
+language extensions and at this point it
+
+448
+00:17:48,840 --> 00:17:51,560
+is a a standard way for the front ends
+
+449
+00:17:51,570 --> 00:17:53,899
+to talk to the middle end and this tree
+
+450
+00:17:53,909 --> 00:17:57,080
+structure is manipulated by different
+
+451
+00:17:57,090 --> 00:17:58,610
+middle end passes so there's a pass
+
+452
+00:17:58,620 --> 00:18:01,039
+manager that that accumulates many
+
+453
+00:18:01,049 --> 00:18:03,590
+dozens of passes that before we get to
+
+454
+00:18:03,600 --> 00:18:05,990
+these different passes you just
+
+455
+00:18:06,000 --> 00:18:08,600
+that the different front ends have nodes
+
+456
+00:18:08,610 --> 00:18:10,520
+that are specific to a front and now you
+
+457
+00:18:10,530 --> 00:18:12,500
+said it's only the standard parts of how
+
+458
+00:18:12,510 --> 00:18:14,450
+that transformed okay let me let me
+
+459
+00:18:14,460 --> 00:18:17,270
+clarify so the the front ends when they
+
+460
+00:18:17,280 --> 00:18:18,800
+initially parse the source file
+
+461
+00:18:18,810 --> 00:18:20,420
+representation and they create this tree
+
+462
+00:18:20,430 --> 00:18:23,300
+representation can rely on language
+
+463
+00:18:23,310 --> 00:18:26,540
+specific kinds of trees so for example
+
+464
+00:18:26,550 --> 00:18:30,260
+language features if you look at C or
+
+465
+00:18:30,270 --> 00:18:32,900
+C++ or Java code they have tremendous
+
+466
+00:18:32,910 --> 00:18:35,780
+similarities and a common representation
+
+467
+00:18:35,790 --> 00:18:39,430
+can do them very very well it can it can
+
+468
+00:18:39,440 --> 00:18:41,780
+operate very effectively on those they
+
+469
+00:18:41,790 --> 00:18:43,940
+all have the idea of a statement and
+
+470
+00:18:43,950 --> 00:18:45,890
+they all have the idea of an expression
+
+471
+00:18:45,900 --> 00:18:47,600
+and various arithmetic expressions and
+
+472
+00:18:47,610 --> 00:18:49,820
+integer types and composite types and so
+
+473
+00:18:49,830 --> 00:18:52,070
+forth but they do also have differences
+
+474
+00:18:52,080 --> 00:18:54,770
+and so the synchronized construct for
+
+475
+00:18:54,780 --> 00:18:56,750
+example in Java doesn't really have an
+
+476
+00:18:56,760 --> 00:18:59,090
+equivalent at the language level in C or
+
+477
+00:18:59,100 --> 00:19:04,730
+C++ and the C++ notion of a try-catch
+
+478
+00:19:04,740 --> 00:19:07,190
+block is different than the Java notion
+
+479
+00:19:07,200 --> 00:19:08,840
+of a try-catch block and so forth so
+
+480
+00:19:08,850 --> 00:19:12,560
+some of these features can have in in
+
+481
+00:19:12,570 --> 00:19:14,210
+the front end just for convenience and
+
+482
+00:19:14,220 --> 00:19:15,860
+writing the front end and they can have
+
+483
+00:19:15,870 --> 00:19:17,570
+specific tree node types that represent
+
+484
+00:19:17,580 --> 00:19:19,910
+exactly what they're supposed to do but
+
+485
+00:19:19,920 --> 00:19:23,300
+the front ends are required to resolve
+
+486
+00:19:23,310 --> 00:19:24,980
+all of these language specific
+
+487
+00:19:24,990 --> 00:19:26,510
+extensions in the tree representation
+
+488
+00:19:26,520 --> 00:19:28,340
+before the tree representation is passed
+
+489
+00:19:28,350 --> 00:19:29,750
+on to the middle end so there are
+
+490
+00:19:29,760 --> 00:19:31,370
+language specific extensions that are
+
+491
+00:19:31,380 --> 00:19:32,840
+possible just for convenience in the
+
+492
+00:19:32,850 --> 00:19:34,580
+front end but at some point they do have
+
+493
+00:19:34,590 --> 00:19:37,040
+to be translated into this this simpler
+
+494
+00:19:37,050 --> 00:19:38,600
+tree representation for the middle end
+
+495
+00:19:38,610 --> 00:19:40,430
+which is language neutral to algorithms
+
+496
+00:19:40,440 --> 00:19:42,320
+so it's sort of a to pass front and
+
+497
+00:19:42,330 --> 00:19:44,120
+first they are allowed to use extensions
+
+498
+00:19:44,130 --> 00:19:46,190
+for as the path tree and then in the
+
+499
+00:19:46,200 --> 00:19:47,810
+second pass they sort of resolve these
+
+500
+00:19:47,820 --> 00:19:50,120
+extensions to the common set of tree
+
+501
+00:19:50,130 --> 00:19:52,850
+nodes in fact the front end can perform
+
+502
+00:19:52,860 --> 00:19:54,680
+as many passes as it likes and many of
+
+503
+00:19:54,690 --> 00:19:57,620
+them do typically they they load in the
+
+504
+00:19:57,630 --> 00:19:59,480
+source file in some incomplete tree
+
+505
+00:19:59,490 --> 00:20:02,870
+format that that that doesn't doesn't
+
+506
+00:20:02,880 --> 00:20:04,790
+have a a full I mean it has a
+
+507
+00:20:04,800 --> 00:20:06,440
+representation of the source file but it
+
+508
+00:20:06,450 --> 00:20:08,690
+doesn't it isn't all linked up to two
+
+509
+00:20:08,700 --> 00:20:10,400
+other parts of it and then it typically
+
+510
+00:20:10,410 --> 00:20:12,260
+goes through at least one more pass to
+
+511
+00:20:12,270 --> 00:20:15,169
+complete this tree to do type checking
+
+512
+00:20:15,179 --> 00:20:17,419
+to check that you've initialized all of
+
+513
+00:20:17,429 --> 00:20:18,950
+your variables etc
+
+514
+00:20:18,960 --> 00:20:20,360
+and some of the front ends can go
+
+515
+00:20:20,370 --> 00:20:22,850
+through multiple passes to do this and
+
+516
+00:20:22,860 --> 00:20:25,520
+then yes and then at the end of the at
+
+517
+00:20:25,530 --> 00:20:27,530
+the end of the front end when the front
+
+518
+00:20:27,540 --> 00:20:29,810
+end is finally finished with all of its
+
+519
+00:20:29,820 --> 00:20:33,080
+operation it's in its stamping this tree
+
+520
+00:20:33,090 --> 00:20:34,790
+representation is being final then yes
+
+521
+00:20:34,800 --> 00:20:37,670
+it does have to resolve any any language
+
+522
+00:20:37,680 --> 00:20:38,960
+specific parts of that of that
+
+523
+00:20:38,970 --> 00:20:41,510
+representation okay so the front end is
+
+524
+00:20:41,520 --> 00:20:43,700
+basically a black box that takes text
+
+525
+00:20:43,710 --> 00:20:46,010
+input and gives out a tree of the
+
+526
+00:20:46,020 --> 00:20:47,780
+standard kind of tree nodes that's
+
+527
+00:20:47,790 --> 00:20:49,640
+correct so now it goes into the middle
+
+528
+00:20:49,650 --> 00:20:51,230
+end with these different passes of
+
+529
+00:20:51,240 --> 00:20:53,120
+optimizations and that's correct so the
+
+530
+00:20:53,130 --> 00:20:55,070
+middle ends job is to take the street
+
+531
+00:20:55,080 --> 00:20:56,480
+representation and produce an equivalent
+
+532
+00:20:56,490 --> 00:21:02,710
+tree representation which is somewhat
+
+533
+00:21:02,720 --> 00:21:04,910
+architecture-specific so at this point
+
+534
+00:21:04,920 --> 00:21:07,760
+some some architecture details come into
+
+535
+00:21:07,770 --> 00:21:10,070
+play such as what types of registers are
+
+536
+00:21:10,080 --> 00:21:11,810
+available or what types of vector
+
+537
+00:21:11,820 --> 00:21:13,520
+instructions are available on the on the
+
+538
+00:21:13,530 --> 00:21:16,130
+hardware platform but the beginning part
+
+539
+00:21:16,140 --> 00:21:17,240
+of the middle end doesn't really worry
+
+540
+00:21:17,250 --> 00:21:18,320
+about that so the middle end really
+
+541
+00:21:18,330 --> 00:21:20,240
+proceeds in many phases and passes as
+
+542
+00:21:20,250 --> 00:21:22,400
+well so the middle ends job mainly is to
+
+543
+00:21:22,410 --> 00:21:24,590
+produce an equivalence but slightly
+
+544
+00:21:24,600 --> 00:21:27,320
+lower level representation of this this
+
+545
+00:21:27,330 --> 00:21:28,700
+tree representation it gets from the
+
+546
+00:21:28,710 --> 00:21:32,000
+front end that should be more efficient
+
+547
+00:21:32,010 --> 00:21:35,570
+either more efficient in space smaller
+
+548
+00:21:35,580 --> 00:21:37,490
+code or representing what will
+
+549
+00:21:37,500 --> 00:21:40,180
+eventually be smaller object code or
+
+550
+00:21:40,190 --> 00:21:42,380
+something that is more efficient in its
+
+551
+00:21:42,390 --> 00:21:44,710
+memory addressing or something that is
+
+552
+00:21:44,720 --> 00:21:47,120
+that has fewer instructions and will
+
+553
+00:21:47,130 --> 00:21:48,890
+probably execute faster or something
+
+554
+00:21:48,900 --> 00:21:51,980
+with fewer loops or etc I mean they're
+
+555
+00:21:51,990 --> 00:21:53,270
+numbered number different optimizations
+
+556
+00:21:53,280 --> 00:21:55,010
+available and it performs many dozens of
+
+557
+00:21:55,020 --> 00:21:57,830
+passes to go over this tree
+
+558
+00:21:57,840 --> 00:22:00,380
+representation and modify it in salt
+
+559
+00:22:00,390 --> 00:22:01,640
+subtle ways sometimes and sometimes
+
+560
+00:22:01,650 --> 00:22:04,130
+totally reorganize it into something
+
+561
+00:22:04,140 --> 00:22:06,440
+that is equivalent from a programmatic
+
+562
+00:22:06,450 --> 00:22:08,570
+point of view so if you run it it should
+
+563
+00:22:08,580 --> 00:22:09,980
+do exactly the same thing if you were to
+
+564
+00:22:09,990 --> 00:22:11,450
+interpret it and execute it like a
+
+565
+00:22:11,460 --> 00:22:14,120
+program and and yet something that
+
+566
+00:22:14,130 --> 00:22:17,660
+should run faster and once also so as a
+
+567
+00:22:17,670 --> 00:22:20,540
+simple example some statements in your
+
+568
+00:22:20,550 --> 00:22:24,830
+program may never be reached some some
+
+569
+00:22:24,840 --> 00:22:27,260
+comparisons that you perform against
+
+570
+00:22:27,270 --> 00:22:30,170
+zero save sometimes perhaps the compiler
+
+571
+00:22:30,180 --> 00:22:31,940
+can prove to itself that
+
+572
+00:22:31,950 --> 00:22:34,279
+that expression can never be 0 and so if
+
+573
+00:22:34,289 --> 00:22:35,509
+you compare it against zero then either
+
+574
+00:22:35,519 --> 00:22:39,560
+your your your if test is is dead so to
+
+575
+00:22:39,570 --> 00:22:41,629
+speak and that's that's the terminology
+
+576
+00:22:41,639 --> 00:22:46,039
+used in in the compiler community and if
+
+577
+00:22:46,049 --> 00:22:49,070
+you're if if such a statement is or
+
+578
+00:22:49,080 --> 00:22:51,200
+control flow constructs is considered to
+
+579
+00:22:51,210 --> 00:22:52,519
+be dead then it can be removed from the
+
+580
+00:22:52,529 --> 00:22:54,169
+program entirely and in the case of a
+
+581
+00:22:54,179 --> 00:22:55,700
+conditional like an if-then it can
+
+582
+00:22:55,710 --> 00:22:57,590
+potentially remove a large block of code
+
+583
+00:22:57,600 --> 00:22:59,210
+that is dependent on that F to whatever
+
+584
+00:22:59,220 --> 00:23:01,430
+would never be actually run so that sort
+
+585
+00:23:01,440 --> 00:23:03,139
+of optimization can be performed to
+
+586
+00:23:03,149 --> 00:23:06,110
+change your code considerably this sort
+
+587
+00:23:06,120 --> 00:23:07,370
+of thing can come up actually quite
+
+588
+00:23:07,380 --> 00:23:10,129
+commonly when you define constants in
+
+589
+00:23:10,139 --> 00:23:11,990
+your program or when something happens
+
+590
+00:23:12,000 --> 00:23:13,610
+in your to be configurable right when
+
+591
+00:23:13,620 --> 00:23:15,350
+you're writing ree-ree targetable
+
+592
+00:23:15,360 --> 00:23:17,450
+reconfigurable software you typically
+
+593
+00:23:17,460 --> 00:23:19,159
+try not to hard code as many things as
+
+594
+00:23:19,169 --> 00:23:21,049
+possible and you define a lot of
+
+595
+00:23:21,059 --> 00:23:23,210
+constants you define a number of things
+
+596
+00:23:23,220 --> 00:23:25,029
+that then configure that software and
+
+597
+00:23:25,039 --> 00:23:27,169
+many times the compiler can go through
+
+598
+00:23:27,179 --> 00:23:28,759
+and optimize that based on the specific
+
+599
+00:23:28,769 --> 00:23:30,169
+configuration that it is compiling at
+
+600
+00:23:30,179 --> 00:23:33,320
+hand so basically this middle aims looks
+
+601
+00:23:33,330 --> 00:23:36,200
+at the tree representation of a single
+
+602
+00:23:36,210 --> 00:23:38,299
+file and does local optimizations of
+
+603
+00:23:38,309 --> 00:23:40,399
+that by transforming one tree
+
+604
+00:23:40,409 --> 00:23:42,710
+representation is another or basically
+
+605
+00:23:42,720 --> 00:23:44,840
+modifying the tree representation that
+
+606
+00:23:44,850 --> 00:23:46,759
+is correct so the middle end proceeds
+
+607
+00:23:46,769 --> 00:23:49,039
+through many dozen passes as I as I
+
+608
+00:23:49,049 --> 00:23:50,629
+mentioned through the street
+
+609
+00:23:50,639 --> 00:23:52,700
+representation and creates a an
+
+610
+00:23:52,710 --> 00:23:54,259
+equivalent tree representation for each
+
+611
+00:23:54,269 --> 00:23:56,810
+method in your source program or each
+
+612
+00:23:56,820 --> 00:23:59,419
+method or function depending on whatever
+
+613
+00:23:59,429 --> 00:24:02,389
+source language you're coming from so
+
+614
+00:24:02,399 --> 00:24:04,250
+each one has a tree that represents the
+
+615
+00:24:04,260 --> 00:24:05,659
+code of that function or method and
+
+616
+00:24:05,669 --> 00:24:08,389
+those are all optimized through these
+
+617
+00:24:08,399 --> 00:24:11,269
+successive passes the the high level
+
+618
+00:24:11,279 --> 00:24:15,590
+tree representation is translated then
+
+619
+00:24:15,600 --> 00:24:18,430
+into a low level representation of
+
+620
+00:24:18,440 --> 00:24:21,259
+statements and this is common in in many
+
+621
+00:24:21,269 --> 00:24:24,110
+compilers to have multiple levels of
+
+622
+00:24:24,120 --> 00:24:26,899
+intermediate representation and this is
+
+623
+00:24:26,909 --> 00:24:30,080
+also a fairly similar one that you see
+
+624
+00:24:30,090 --> 00:24:32,779
+in other compilers which is the register
+
+625
+00:24:32,789 --> 00:24:36,919
+transfer language or RTL format RTL is
+
+626
+00:24:36,929 --> 00:24:38,409
+basically just then a sequence of
+
+627
+00:24:38,419 --> 00:24:41,210
+statements that are not quite assembly
+
+628
+00:24:41,220 --> 00:24:42,799
+statements but that look a lot like them
+
+629
+00:24:42,809 --> 00:24:44,149
+they're very low-level statements set
+
+630
+00:24:44,159 --> 00:24:47,150
+this particular
+
+631
+00:24:49,460 --> 00:24:49,470
+kind of register if there's a register
+
+632
+00:24:49,470 --> 00:24:53,540
+of register 65 let's say so at this
+
+633
+00:24:53,550 --> 00:24:59,420
+level it is not quite defined yet how
+
+634
+00:24:59,430 --> 00:25:01,730
+many it is the compiler does not worry
+
+635
+00:25:01,740 --> 00:25:03,800
+about how many registers are available
+
+636
+00:25:03,810 --> 00:25:05,240
+in the target instruction set and it
+
+637
+00:25:05,250 --> 00:25:06,770
+assumes it has as many as it likes and
+
+638
+00:25:06,780 --> 00:25:08,510
+it calls these pseudo registers right so
+
+639
+00:25:08,520 --> 00:25:10,340
+you might only have a few registers like
+
+640
+00:25:10,350 --> 00:25:13,550
+the Pentium does but that are actually
+
+641
+00:25:13,560 --> 00:25:15,680
+available and symbolically expressible
+
+642
+00:25:15,690 --> 00:25:18,320
+in the in the target code but this level
+
+643
+00:25:18,330 --> 00:25:19,550
+of the compiler assumes it has as many
+
+644
+00:25:19,560 --> 00:25:21,290
+as a can and later it will figure that
+
+645
+00:25:21,300 --> 00:25:25,250
+out so it precedes RTL contains just
+
+646
+00:25:25,260 --> 00:25:27,830
+very simple instructions that are not a
+
+647
+00:25:27,840 --> 00:25:29,270
+tree-like format but just a linear
+
+648
+00:25:29,280 --> 00:25:31,490
+sequence of code that represents all
+
+649
+00:25:31,500 --> 00:25:33,710
+these different that is equivalent to
+
+650
+00:25:33,720 --> 00:25:35,360
+your original source program but is very
+
+651
+00:25:35,370 --> 00:25:38,270
+low level contains go twos and various
+
+652
+00:25:38,280 --> 00:25:39,260
+other things that maybe you don't have
+
+653
+00:25:39,270 --> 00:25:40,610
+in your original source program so it's
+
+654
+00:25:40,620 --> 00:25:43,210
+sort of like assembler Bob sort of
+
+655
+00:25:43,220 --> 00:25:45,200
+architecture independent assembler code
+
+656
+00:25:45,210 --> 00:25:47,120
+it's largely architecture independent
+
+657
+00:25:47,130 --> 00:25:49,040
+the the specific back-end that you
+
+658
+00:25:49,050 --> 00:25:52,250
+choose for your compiler does when you
+
+659
+00:25:52,260 --> 00:25:54,200
+produce your compiler the back-end that
+
+660
+00:25:54,210 --> 00:25:56,150
+you that you have selected does have
+
+661
+00:25:56,160 --> 00:25:58,640
+some say as far as what RTL instructions
+
+662
+00:25:58,650 --> 00:26:02,270
+are available and used so this expansion
+
+663
+00:26:02,280 --> 00:26:04,910
+from the tree format that I mentioned
+
+664
+00:26:04,920 --> 00:26:06,320
+before this high-level tree
+
+665
+00:26:06,330 --> 00:26:09,050
+representation into this RTL that's very
+
+666
+00:26:09,060 --> 00:26:11,630
+low-level is guided somewhat by which
+
+667
+00:26:11,640 --> 00:26:13,760
+target platform you use so if you use a
+
+668
+00:26:13,770 --> 00:26:15,530
+target platform with vector instructions
+
+669
+00:26:15,540 --> 00:26:17,450
+then the RTL is going to represent that
+
+670
+00:26:17,460 --> 00:26:20,270
+and anytime you do a lot of array
+
+671
+00:26:20,280 --> 00:26:21,620
+manipulations in a loop it might
+
+672
+00:26:21,630 --> 00:26:23,540
+translate that into a vector instruction
+
+673
+00:26:23,550 --> 00:26:26,750
+to be more efficient at when when it
+
+674
+00:26:26,760 --> 00:26:28,700
+actually produces the code so because
+
+675
+00:26:28,710 --> 00:26:30,020
+the back end is so involved in
+
+676
+00:26:30,030 --> 00:26:32,150
+translating this RTL ultimately to the
+
+677
+00:26:32,160 --> 00:26:35,330
+assembly language because of that it
+
+678
+00:26:35,340 --> 00:26:37,340
+also has some say and in what this RTL
+
+679
+00:26:37,350 --> 00:26:38,180
+looks like mm-hmm
+
+680
+00:26:38,190 --> 00:26:40,910
+okay so now we have this RTL and on this
+
+681
+00:26:40,920 --> 00:26:43,010
+RTL probing some more optimizations are
+
+682
+00:26:43,020 --> 00:26:45,890
+done that's correct so many passes are
+
+683
+00:26:45,900 --> 00:26:47,780
+then run on this RTL once the RTL is
+
+684
+00:26:47,790 --> 00:26:48,740
+expanded from the tree representation
+
+685
+00:26:48,750 --> 00:26:51,200
+various low level optimizations can then
+
+686
+00:26:51,210 --> 00:26:53,060
+be performed on that so these low level
+
+687
+00:26:53,070 --> 00:26:54,470
+optimizations include many of the same
+
+688
+00:26:54,480 --> 00:26:55,880
+things the same sort of dead code
+
+689
+00:26:55,890 --> 00:26:57,960
+elimination that I mentioned before but
+
+690
+00:26:57,970 --> 00:26:59,310
+the high-level details of the code are
+
+691
+00:26:59,320 --> 00:27:02,610
+now no longer available right you're
+
+692
+00:27:02,620 --> 00:27:03,420
+looking at a very low level
+
+693
+00:27:03,430 --> 00:27:05,010
+representation of the code there are a
+
+694
+00:27:05,020 --> 00:27:06,540
+lot of people optimizations that can be
+
+695
+00:27:06,550 --> 00:27:08,070
+made which basically if you consider it
+
+696
+00:27:08,080 --> 00:27:10,500
+if you think of printing out a large
+
+697
+00:27:10,510 --> 00:27:12,810
+page of code a very low level code maybe
+
+698
+00:27:12,820 --> 00:27:14,310
+assembly code or something at that level
+
+699
+00:27:14,320 --> 00:27:17,820
+and taking a small a small frame a slide
+
+700
+00:27:17,830 --> 00:27:19,980
+or a magnifying glass sort of down the
+
+701
+00:27:19,990 --> 00:27:21,420
+length of the code and looking for
+
+702
+00:27:21,430 --> 00:27:23,040
+specific sequences of instructions that
+
+703
+00:27:23,050 --> 00:27:25,440
+you know can be replaced with more
+
+704
+00:27:25,450 --> 00:27:26,490
+efficient instructions and then
+
+705
+00:27:26,500 --> 00:27:27,720
+replacing them that's what a people
+
+706
+00:27:27,730 --> 00:27:29,130
+optimization is so you're just looking
+
+707
+00:27:29,140 --> 00:27:30,840
+at a small range of instructions and
+
+708
+00:27:30,850 --> 00:27:34,050
+replacing known anti-patterns basically
+
+709
+00:27:34,060 --> 00:27:36,390
+with with equivalent code which you know
+
+710
+00:27:36,400 --> 00:27:37,710
+that to run a lot faster so this can
+
+711
+00:27:37,720 --> 00:27:39,270
+change addressing modes various other
+
+712
+00:27:39,280 --> 00:27:41,160
+things so that sort of thing is easily
+
+713
+00:27:41,170 --> 00:27:42,540
+performed on the RTL as well as more
+
+714
+00:27:42,550 --> 00:27:44,700
+global optimizations that that do look
+
+715
+00:27:44,710 --> 00:27:46,890
+at what is available in the low-level
+
+716
+00:27:46,900 --> 00:27:48,540
+representation and replace it some
+
+717
+00:27:48,550 --> 00:27:49,740
+things are more easily done at the low
+
+718
+00:27:49,750 --> 00:27:51,150
+level some things are more easily done
+
+719
+00:27:51,160 --> 00:27:52,590
+at the high level and and that sort of
+
+720
+00:27:52,600 --> 00:27:54,480
+depends you know however you want to
+
+721
+00:27:54,490 --> 00:27:57,360
+write your optimization pass the history
+
+722
+00:27:57,370 --> 00:28:00,000
+of GCC is also that in the past the tree
+
+723
+00:28:00,010 --> 00:28:02,280
+representation didn't exist as a
+
+724
+00:28:02,290 --> 00:28:04,890
+standard language neutral intermediate
+
+725
+00:28:04,900 --> 00:28:07,260
+representation way back in in the
+
+726
+00:28:07,270 --> 00:28:08,910
+wilderness stage well not the wilderness
+
+727
+00:28:08,920 --> 00:28:11,070
+days of GCC but but back when back when
+
+728
+00:28:11,080 --> 00:28:13,230
+we all knew - back when we all
+
+729
+00:28:13,240 --> 00:28:15,720
+originally grew to love it it didn't
+
+730
+00:28:15,730 --> 00:28:18,690
+have as as standard a a tree
+
+731
+00:28:18,700 --> 00:28:19,980
+representation so many of these tree
+
+732
+00:28:19,990 --> 00:28:21,690
+passes are actually pretty recent in the
+
+733
+00:28:21,700 --> 00:28:24,480
+compiler and originally the RTL passes
+
+734
+00:28:24,490 --> 00:28:26,100
+were what you had as the optimization
+
+735
+00:28:26,110 --> 00:28:28,020
+passes and so the front end would
+
+736
+00:28:28,030 --> 00:28:30,120
+produce RTL or something that could be
+
+737
+00:28:30,130 --> 00:28:32,100
+easily produced into translated into our
+
+738
+00:28:32,110 --> 00:28:35,400
+tail and then the RTL optimization
+
+739
+00:28:35,410 --> 00:28:36,900
+passes where all you had so historically
+
+740
+00:28:36,910 --> 00:28:38,520
+there are a lot of RTL low-level
+
+741
+00:28:38,530 --> 00:28:40,110
+optimization passes for that reason as
+
+742
+00:28:40,120 --> 00:28:42,560
+well and the tree ones are much newer
+
+743
+00:28:42,570 --> 00:28:45,270
+right now in GCC they both exist and
+
+744
+00:28:45,280 --> 00:28:46,560
+they probably will both continue to
+
+745
+00:28:46,570 --> 00:28:48,380
+exist because some optimizations are
+
+746
+00:28:48,390 --> 00:28:51,120
+more easily targeted at different levels
+
+747
+00:28:51,130 --> 00:28:53,850
+of abstraction in the code at some point
+
+748
+00:28:53,860 --> 00:28:56,250
+then during the RTL passes halfway
+
+749
+00:28:56,260 --> 00:28:57,240
+through or a little bit more than
+
+750
+00:28:57,250 --> 00:29:01,230
+halfway through the one RTL pass which
+
+751
+00:29:01,240 --> 00:29:03,390
+is probably the most important marker of
+
+752
+00:29:03,400 --> 00:29:06,540
+all of them is the register allocation
+
+753
+00:29:06,550 --> 00:29:08,130
+phase and this is where these pseudo
+
+754
+00:29:08,140 --> 00:29:09,570
+registers that I've said in the past
+
+755
+00:29:09,580 --> 00:29:11,780
+that the B compiler can
+
+756
+00:29:11,790 --> 00:29:14,100
+assume it has an infinite number of
+
+757
+00:29:14,110 --> 00:29:18,090
+registers basically and at this point it
+
+758
+00:29:18,100 --> 00:29:21,000
+actually has to come to terms with
+
+759
+00:29:21,010 --> 00:29:24,450
+reality that on the that on SPARC
+
+760
+00:29:24,460 --> 00:29:26,550
+architecture it has certain types of
+
+761
+00:29:26,560 --> 00:29:29,540
+registers and and access modes and
+
+762
+00:29:29,550 --> 00:29:31,620
+instructions for accessing them
+
+763
+00:29:31,630 --> 00:29:33,510
+efficiently and on PowerPC the story is
+
+764
+00:29:33,520 --> 00:29:35,070
+a little different on pentium the story
+
+765
+00:29:35,080 --> 00:29:38,130
+is quite different and and so it has to
+
+766
+00:29:38,140 --> 00:29:42,930
+actually meet reality and assign hard
+
+767
+00:29:42,940 --> 00:29:45,780
+registers the actual registers to
+
+768
+00:29:45,790 --> 00:29:47,640
+optimizations were easier to do while
+
+769
+00:29:47,650 --> 00:29:49,410
+you're well assuming you had as many
+
+770
+00:29:49,420 --> 00:29:52,680
+registers as you chose to have and then
+
+771
+00:29:52,690 --> 00:29:53,460
+when you're finished with the
+
+772
+00:29:53,470 --> 00:29:55,170
+optimizations you sort of try to break
+
+773
+00:29:55,180 --> 00:29:56,940
+them down and make compromises and
+
+774
+00:29:56,950 --> 00:29:59,190
+actually put things into memory into
+
+775
+00:29:59,200 --> 00:30:01,050
+immediately instead of having the
+
+776
+00:30:01,060 --> 00:30:02,910
+register that sort of thing that's true
+
+777
+00:30:02,920 --> 00:30:05,100
+that's true so many times for example
+
+778
+00:30:05,110 --> 00:30:07,920
+you might be using or the internal
+
+779
+00:30:07,930 --> 00:30:09,360
+representation of your program might be
+
+780
+00:30:09,370 --> 00:30:11,490
+using pseudo register 13 and pseudo
+
+781
+00:30:11,500 --> 00:30:14,580
+register 65 in such ways that they don't
+
+782
+00:30:14,590 --> 00:30:17,130
+actually overlap and at the register
+
+783
+00:30:17,140 --> 00:30:18,990
+allocation phase it can map those on to
+
+784
+00:30:19,000 --> 00:30:21,180
+the same hardware register can use the
+
+785
+00:30:21,190 --> 00:30:23,670
+Pentium register EAX let's say for both
+
+786
+00:30:23,680 --> 00:30:27,060
+of them and it has no difficulty doing
+
+787
+00:30:27,070 --> 00:30:28,830
+that but at some point in the in the
+
+788
+00:30:28,840 --> 00:30:30,870
+passes it has to discover that it can do
+
+789
+00:30:30,880 --> 00:30:32,190
+that sort of thing so it doesn't
+
+790
+00:30:32,200 --> 00:30:33,840
+necessarily cost you anything
+
+791
+00:30:33,850 --> 00:30:35,400
+typically what does happen is that
+
+792
+00:30:35,410 --> 00:30:36,660
+you're using many different values at
+
+793
+00:30:36,670 --> 00:30:38,550
+once and that it has to spill especially
+
+794
+00:30:38,560 --> 00:30:43,020
+on Pentium it has to spill many values
+
+795
+00:30:43,030 --> 00:30:44,760
+to the stack right so it does actually
+
+796
+00:30:44,770 --> 00:30:47,580
+have to go out to memory to write back
+
+797
+00:30:47,590 --> 00:30:49,200
+in and perform additional computations
+
+798
+00:30:49,210 --> 00:30:50,760
+with them so that's that's definitely
+
+799
+00:30:50,770 --> 00:30:52,170
+the case and during register allocation
+
+800
+00:30:52,180 --> 00:30:55,250
+it does as well as it can to store
+
+801
+00:30:55,260 --> 00:30:58,800
+frequently used variables or the
+
+802
+00:30:58,810 --> 00:31:00,300
+equivalence of variables at this level
+
+803
+00:31:00,310 --> 00:31:03,210
+of abstraction many of your program
+
+804
+00:31:03,220 --> 00:31:04,620
+variables in actual hardware registers
+
+805
+00:31:04,630 --> 00:31:07,020
+for speed but at some point yes it does
+
+806
+00:31:07,030 --> 00:31:09,660
+have to compromise and and accept that
+
+807
+00:31:09,670 --> 00:31:10,620
+some of those are going to go to memory
+
+808
+00:31:10,630 --> 00:31:12,930
+and then I have to be loaded back at
+
+809
+00:31:12,940 --> 00:31:14,520
+some point just to get some idea how
+
+810
+00:31:14,530 --> 00:31:15,870
+many registers do the different
+
+811
+00:31:15,880 --> 00:31:18,890
+architectures actually have currently oh
+
+812
+00:31:18,900 --> 00:31:21,300
+well I'm not I'm not the best person
+
+813
+00:31:21,310 --> 00:31:24,379
+maybe to to compare architectures
+
+814
+00:31:24,389 --> 00:31:29,009
+I'm most familiar with with x86
+
+815
+00:31:29,019 --> 00:31:30,509
+architectures and in the actual hardware
+
+816
+00:31:30,519 --> 00:31:32,639
+I think many more registers are
+
+817
+00:31:32,649 --> 00:31:33,990
+available the ones that were actually
+
+818
+00:31:34,000 --> 00:31:36,090
+that are actually usable for generic
+
+819
+00:31:36,100 --> 00:31:40,110
+program data on 32-bit Intel are in just
+
+820
+00:31:40,120 --> 00:31:42,869
+a few I mean there's the that the common
+
+821
+00:31:42,879 --> 00:31:46,799
+ones are EA xba EBX I'm sorry EAX EBX
+
+822
+00:31:46,809 --> 00:31:49,860
+ECX and EDX which of the extended ones
+
+823
+00:31:49,870 --> 00:31:52,980
+from way back in the in the old 16-bit
+
+824
+00:31:52,990 --> 00:31:55,230
+days so those are the extended you know
+
+825
+00:31:55,240 --> 00:31:57,060
+32-bit general registers for anything
+
+826
+00:31:57,070 --> 00:31:58,590
+there are a couple of index registers
+
+827
+00:31:58,600 --> 00:32:01,379
+there's the stack register the program
+
+828
+00:32:01,389 --> 00:32:02,549
+counter various other things that you
+
+829
+00:32:02,559 --> 00:32:05,100
+can't use as easily for generic program
+
+830
+00:32:05,110 --> 00:32:09,960
+data so I mean ultimately you're sort of
+
+831
+00:32:09,970 --> 00:32:12,629
+limited to using a few and the compiler
+
+832
+00:32:12,639 --> 00:32:14,129
+and runtime system typically reserved
+
+833
+00:32:14,139 --> 00:32:17,879
+also one or two of those for you know a
+
+834
+00:32:17,889 --> 00:32:19,799
+pointer to global or thread specific
+
+835
+00:32:19,809 --> 00:32:22,799
+data and and various other things
+
+836
+00:32:22,809 --> 00:32:25,289
+internally so so ultimately the the
+
+837
+00:32:25,299 --> 00:32:27,360
+number of registers say on Pentium that
+
+838
+00:32:27,370 --> 00:32:30,509
+that it can assign values to of your
+
+839
+00:32:30,519 --> 00:32:33,060
+program are very few okay so now we have
+
+840
+00:32:33,070 --> 00:32:35,730
+the registers assigned what's next so
+
+841
+00:32:35,740 --> 00:32:37,619
+the register allocation having been
+
+842
+00:32:37,629 --> 00:32:40,230
+completed there are a few more RTL
+
+843
+00:32:40,240 --> 00:32:41,970
+passes to perform some some very
+
+844
+00:32:41,980 --> 00:32:44,009
+low-level optimizations that are mainly
+
+845
+00:32:44,019 --> 00:32:49,230
+architecture specific and then the
+
+846
+00:32:49,240 --> 00:32:52,379
+specific description of the machine that
+
+847
+00:32:52,389 --> 00:32:55,860
+GCC has for the architecture family for
+
+848
+00:32:55,870 --> 00:32:57,149
+the processor family and for the
+
+849
+00:32:57,159 --> 00:32:59,700
+specific chip that you're compiling code
+
+850
+00:32:59,710 --> 00:33:01,680
+for the description of this machine that
+
+851
+00:33:01,690 --> 00:33:06,180
+GCC has is used to match this RTL code
+
+852
+00:33:06,190 --> 00:33:08,159
+against ways of implementing it in the
+
+853
+00:33:08,169 --> 00:33:11,879
+actual assembly code so the RTL has some
+
+854
+00:33:11,889 --> 00:33:15,210
+way of representing a you know the
+
+855
+00:33:15,220 --> 00:33:18,749
+addition of two 32-bit integers let's
+
+856
+00:33:18,759 --> 00:33:23,279
+say and whenever the whenever that
+
+857
+00:33:23,289 --> 00:33:24,930
+particular pattern is seen when you're
+
+858
+00:33:24,940 --> 00:33:26,759
+adding two 32-bit integers whether it be
+
+859
+00:33:26,769 --> 00:33:28,680
+a register in memory or memory register
+
+860
+00:33:28,690 --> 00:33:30,840
+or various other memory you know an
+
+861
+00:33:30,850 --> 00:33:33,299
+offset from memory and a register all
+
+862
+00:33:33,309 --> 00:33:34,259
+the different addressing modes that are
+
+863
+00:33:34,269 --> 00:33:39,049
+possible that has matched the RTL
+
+864
+00:33:41,880 --> 00:33:41,890
+the RTL that that expresses that is
+
+865
+00:33:41,890 --> 00:33:44,279
+matched and an equivalent assembly
+
+866
+00:33:44,289 --> 00:33:47,970
+language line or or group of assembly
+
+867
+00:33:47,980 --> 00:33:50,310
+language instructions is then produced
+
+868
+00:33:50,320 --> 00:33:52,169
+in the output stream so this is this
+
+869
+00:33:52,179 --> 00:33:54,720
+this template matching is is performed
+
+870
+00:33:54,730 --> 00:33:56,700
+by as I said the description of the
+
+871
+00:33:56,710 --> 00:33:58,200
+specific machine and this machine
+
+872
+00:33:58,210 --> 00:34:00,480
+description file one which exists for
+
+873
+00:34:00,490 --> 00:34:05,549
+every back-end available in GCC drives
+
+874
+00:34:05,559 --> 00:34:07,879
+this this template matching so it can
+
+875
+00:34:07,889 --> 00:34:11,810
+specifically tell GCC the main GCC
+
+876
+00:34:11,820 --> 00:34:15,510
+driver okay so this description of the
+
+877
+00:34:15,520 --> 00:34:18,930
+machine that GCC has for every
+
+878
+00:34:18,940 --> 00:34:21,119
+architecture for every processor family
+
+879
+00:34:21,129 --> 00:34:24,389
+and even for specific chips then allows
+
+880
+00:34:24,399 --> 00:34:26,970
+you to match or allows GCC to match the
+
+881
+00:34:26,980 --> 00:34:28,889
+specific RTL that it has at this level
+
+882
+00:34:28,899 --> 00:34:30,869
+with specific assembly instructions that
+
+883
+00:34:30,879 --> 00:34:33,690
+it knows will will implement it so the
+
+884
+00:34:33,700 --> 00:34:35,730
+RTL templates look something like you
+
+885
+00:34:35,740 --> 00:34:40,290
+know set some value that is a register
+
+886
+00:34:40,300 --> 00:34:42,240
+to some other value which is immediate
+
+887
+00:34:42,250 --> 00:34:45,060
+and then an immediate constant is quite
+
+888
+00:34:45,070 --> 00:34:47,010
+cool it's quite modular apparently I
+
+889
+00:34:47,020 --> 00:34:48,359
+mean you have it's if you're speaking of
+
+890
+00:34:48,369 --> 00:34:51,149
+this machine description file so is it
+
+891
+00:34:51,159 --> 00:34:52,800
+it sounds like there is actually one
+
+892
+00:34:52,810 --> 00:34:54,960
+file for each kind of processor and all
+
+893
+00:34:54,970 --> 00:34:56,760
+the specifics of the professor processor
+
+894
+00:34:56,770 --> 00:34:58,970
+are basically in this description file I
+
+895
+00:34:58,980 --> 00:35:02,430
+mean that's amazing that's that's mostly
+
+896
+00:35:02,440 --> 00:35:06,950
+true so so with with with certain
+
+897
+00:35:06,960 --> 00:35:09,839
+caveats but but yes the machine
+
+898
+00:35:09,849 --> 00:35:12,420
+description file does include a very
+
+899
+00:35:12,430 --> 00:35:14,579
+large amount of information and codes a
+
+900
+00:35:14,589 --> 00:35:15,839
+very large amount of information about
+
+901
+00:35:15,849 --> 00:35:18,390
+what's available in the processor and
+
+902
+00:35:18,400 --> 00:35:20,010
+what sort of code can be generated
+
+903
+00:35:20,020 --> 00:35:22,740
+however have some sort of regular
+
+904
+00:35:22,750 --> 00:35:24,120
+expression or something like that to
+
+905
+00:35:24,130 --> 00:35:26,940
+describe what sort of RTL you want to
+
+906
+00:35:26,950 --> 00:35:28,380
+transform into what kind of assembly
+
+907
+00:35:28,390 --> 00:35:30,450
+output that's true so so basically what
+
+908
+00:35:30,460 --> 00:35:32,310
+you end up seeing is a number of
+
+909
+00:35:32,320 --> 00:35:36,480
+different pattern matching groups that
+
+910
+00:35:36,490 --> 00:35:38,250
+basically say if if the RTL looks
+
+911
+00:35:38,260 --> 00:35:40,560
+something like this matching on the
+
+912
+00:35:40,570 --> 00:35:42,270
+different types of the operands and by
+
+913
+00:35:42,280 --> 00:35:44,599
+types here I basically mean the
+
+914
+00:35:44,609 --> 00:35:46,740
+addressing mode whether it's an integer
+
+915
+00:35:46,750 --> 00:35:48,480
+constant versus a register versus a
+
+916
+00:35:48,490 --> 00:35:50,940
+memory reference
+
+917
+00:35:50,950 --> 00:35:52,530
+you know and there are various other
+
+918
+00:35:52,540 --> 00:35:54,660
+details but that sort of thing when
+
+919
+00:35:54,670 --> 00:35:55,950
+you're doing a simple assignment let's
+
+920
+00:35:55,960 --> 00:35:59,309
+say from memory into a register in RTL
+
+921
+00:35:59,319 --> 00:36:01,770
+then the operands can be matched a
+
+922
+00:36:01,780 --> 00:36:03,660
+certain way to the set instruction the
+
+923
+00:36:03,670 --> 00:36:07,970
+assigned instruction and then particular
+
+924
+00:36:07,980 --> 00:36:10,140
+you know a particular assembly language
+
+925
+00:36:10,150 --> 00:36:12,690
+sequence can be output not everything is
+
+926
+00:36:12,700 --> 00:36:13,829
+completely encoded in machine
+
+927
+00:36:13,839 --> 00:36:15,329
+description file because the machine
+
+928
+00:36:15,339 --> 00:36:17,370
+description file can is actually very
+
+929
+00:36:17,380 --> 00:36:20,460
+flexible and can rely on external si
+
+930
+00:36:20,470 --> 00:36:22,829
+functions that you provide in additional
+
+931
+00:36:22,839 --> 00:36:26,069
+source files so so for example for a a
+
+932
+00:36:26,079 --> 00:36:29,069
+complicated processor family like the
+
+933
+00:36:29,079 --> 00:36:32,789
+Intel 32 bit there are actually many
+
+934
+00:36:32,799 --> 00:36:34,650
+different files that go into into
+
+935
+00:36:34,660 --> 00:36:36,780
+producing this there's a header file you
+
+936
+00:36:36,790 --> 00:36:39,780
+know C dot H file that that gives GCC
+
+937
+00:36:39,790 --> 00:36:41,069
+some idea of what the different
+
+938
+00:36:41,079 --> 00:36:43,559
+registers available are that gives it
+
+939
+00:36:43,569 --> 00:36:44,849
+some idea of what different addressing
+
+940
+00:36:44,859 --> 00:36:45,809
+modes are available and some other
+
+941
+00:36:45,819 --> 00:36:48,539
+things the machine description file
+
+942
+00:36:48,549 --> 00:36:49,620
+takes care of a lot of the simple work
+
+943
+00:36:49,630 --> 00:36:52,980
+of producing assembly code for the
+
+944
+00:36:52,990 --> 00:36:57,030
+32-bit Intel platform based on certain
+
+945
+00:36:57,040 --> 00:36:59,880
+RTL template patterns but then anything
+
+946
+00:36:59,890 --> 00:37:03,359
+more complicated can be an arbitrary C
+
+947
+00:37:03,369 --> 00:37:05,250
+function can be called reduce assembly
+
+948
+00:37:05,260 --> 00:37:07,620
+for that so I mean it's basically a very
+
+949
+00:37:07,630 --> 00:37:09,150
+flexible format where if you want to
+
+950
+00:37:09,160 --> 00:37:10,829
+escape from the machine description file
+
+951
+00:37:10,839 --> 00:37:13,920
+format you can call an arbitrary C
+
+952
+00:37:13,930 --> 00:37:16,289
+function to to match a template or if a
+
+953
+00:37:16,299 --> 00:37:17,640
+certain template has been matched to to
+
+954
+00:37:17,650 --> 00:37:19,380
+output the code for it so it is it is
+
+955
+00:37:19,390 --> 00:37:21,390
+pretty flexible that means that for
+
+956
+00:37:21,400 --> 00:37:24,150
+something that for a family that has
+
+957
+00:37:24,160 --> 00:37:25,559
+lots of different chips available that
+
+958
+00:37:25,569 --> 00:37:28,890
+it wants to support the the specifics of
+
+959
+00:37:28,900 --> 00:37:32,160
+each then for like like the Intel family
+
+960
+00:37:32,170 --> 00:37:34,440
+then you can actually get very specific
+
+961
+00:37:34,450 --> 00:37:35,670
+in the back end and produce a very
+
+962
+00:37:35,680 --> 00:37:37,349
+efficient code for that specific chip
+
+963
+00:37:37,359 --> 00:37:39,420
+what about multiprocessor environment or
+
+964
+00:37:39,430 --> 00:37:41,549
+multi-core and environments that are
+
+965
+00:37:41,559 --> 00:37:45,720
+common now does the back and to specific
+
+966
+00:37:45,730 --> 00:37:49,140
+work for optimization for them that's a
+
+967
+00:37:49,150 --> 00:37:52,079
+good question I I don't believe it does
+
+968
+00:37:52,089 --> 00:37:56,370
+at this time it produces mainly if
+
+969
+00:37:56,380 --> 00:37:57,839
+you're talking about a superscalar
+
+970
+00:37:57,849 --> 00:37:59,250
+architecture where that doesn't have to
+
+971
+00:37:59,260 --> 00:38:01,170
+pack a large instruction word of of
+
+972
+00:38:01,180 --> 00:38:05,220
+different parallel instructions to
+
+973
+00:38:05,230 --> 00:38:09,150
+it's it's not really doing anything of
+
+974
+00:38:09,160 --> 00:38:13,380
+that of that sort for for masais SNP
+
+975
+00:38:13,390 --> 00:38:17,250
+Intel again right now it does use
+
+976
+00:38:17,260 --> 00:38:19,830
+certain I mean basically it will produce
+
+977
+00:38:19,840 --> 00:38:21,450
+assembly that they have found to be
+
+978
+00:38:21,460 --> 00:38:26,190
+efficient and so if if they they might
+
+979
+00:38:26,200 --> 00:38:28,260
+have modified the output assembly of GCC
+
+980
+00:38:28,270 --> 00:38:30,120
+to do things that are more efficient on
+
+981
+00:38:30,130 --> 00:38:32,760
+dual-core machines but but I'm not I'm
+
+982
+00:38:32,770 --> 00:38:34,260
+not familiar with any of the specifics
+
+983
+00:38:34,270 --> 00:38:37,770
+of that yeah but in the case of a
+
+984
+00:38:37,780 --> 00:38:38,850
+machine where it's not a very long
+
+985
+00:38:38,860 --> 00:38:40,740
+instruction word of parallel operations
+
+986
+00:38:40,750 --> 00:38:42,480
+where the hardware largely takes care of
+
+987
+00:38:42,490 --> 00:38:44,340
+all of this itself the compiler doesn't
+
+988
+00:38:44,350 --> 00:38:45,960
+have to do as much if you're talking
+
+989
+00:38:45,970 --> 00:38:48,030
+about a VL iw machine or something then
+
+990
+00:38:48,040 --> 00:38:49,560
+then the compiler has to actually
+
+991
+00:38:49,570 --> 00:38:51,920
+support a lot more in the back end to
+
+992
+00:38:51,930 --> 00:38:54,120
+advertise what sort of parallelism is
+
+993
+00:38:54,130 --> 00:38:56,420
+available for the hardware to perform
+
+994
+00:38:56,430 --> 00:38:58,950
+okay so now we've reached the stage
+
+995
+00:38:58,960 --> 00:39:00,630
+where actually assembly output is
+
+996
+00:39:00,640 --> 00:39:03,570
+produced and that is I think basically
+
+997
+00:39:03,580 --> 00:39:05,640
+the end of the processing that the
+
+998
+00:39:05,650 --> 00:39:08,520
+compiler per se does that's correct so
+
+999
+00:39:08,530 --> 00:39:12,420
+the the compiler itself basically it
+
+1000
+00:39:12,430 --> 00:39:14,220
+doesn't do the assembly work itself it
+
+1001
+00:39:14,230 --> 00:39:15,420
+just produces something that can then be
+
+1002
+00:39:15,430 --> 00:39:19,680
+fed into a common assembler for whatever
+
+1003
+00:39:19,690 --> 00:39:22,950
+architecture you have and then further
+
+1004
+00:39:22,960 --> 00:39:24,840
+from there into a linker to produce a a
+
+1005
+00:39:24,850 --> 00:39:28,020
+final binary which you can run but the
+
+1006
+00:39:28,030 --> 00:39:32,430
+the work of producing a architecture
+
+1007
+00:39:32,440 --> 00:39:34,320
+specific program that is equivalent to
+
+1008
+00:39:34,330 --> 00:39:35,460
+the original source program has been
+
+1009
+00:39:35,470 --> 00:39:36,930
+done at this point so basically yes the
+
+1010
+00:39:36,940 --> 00:39:38,160
+compilers work has been done at this
+
+1011
+00:39:38,170 --> 00:39:42,390
+point in GCC it takes that a little bit
+
+1012
+00:39:42,400 --> 00:39:43,620
+step further it all it takes that
+
+1013
+00:39:43,630 --> 00:39:45,360
+several steps further but this sounds
+
+1014
+00:39:45,370 --> 00:39:48,870
+like use somewhat in favor of GCC I i've
+
+1015
+00:39:48,880 --> 00:39:52,760
+been using GCC for many many years and
+
+1016
+00:39:52,770 --> 00:39:56,060
+i'm sure many of your listeners have and
+
+1017
+00:39:56,070 --> 00:39:59,790
+it's it's a very useful tool of one of
+
+1018
+00:39:59,800 --> 00:40:02,070
+its benefits is that it well I mean it
+
+1019
+00:40:02,080 --> 00:40:05,850
+doesn't necessarily it's not alone in
+
+1020
+00:40:05,860 --> 00:40:07,110
+having this benefit certainly other
+
+1021
+00:40:07,120 --> 00:40:09,150
+other tools do this as well but it
+
+1022
+00:40:09,160 --> 00:40:10,740
+doesn't only produce the assembly code
+
+1023
+00:40:10,750 --> 00:40:12,660
+it also provides a driver program that
+
+1024
+00:40:12,670 --> 00:40:15,360
+that wraps the compiler and not only
+
+1025
+00:40:15,370 --> 00:40:16,770
+runs the compiler on your source code
+
+1026
+00:40:16,780 --> 00:40:17,850
+but
+
+1027
+00:40:17,860 --> 00:40:19,800
+also runs the assembler with the correct
+
+1028
+00:40:19,810 --> 00:40:21,300
+arguments runs the linker with the
+
+1029
+00:40:21,310 --> 00:40:22,740
+correct arguments and generally these
+
+1030
+00:40:22,750 --> 00:40:24,120
+are the new assembler in the new linker
+
+1031
+00:40:24,130 --> 00:40:25,350
+but they don't have to be if you're
+
+1032
+00:40:25,360 --> 00:40:28,410
+running on a non new Linux platform for
+
+1033
+00:40:28,420 --> 00:40:31,740
+example but the driver program can then
+
+1034
+00:40:31,750 --> 00:40:33,570
+run these run the compiler on your
+
+1035
+00:40:33,580 --> 00:40:35,220
+source program run the assembler run the
+
+1036
+00:40:35,230 --> 00:40:36,630
+linker everything's taken care of for
+
+1037
+00:40:36,640 --> 00:40:38,910
+you automatically so in fact when I or
+
+1038
+00:40:38,920 --> 00:40:40,950
+you or any of your listeners run GCC at
+
+1039
+00:40:40,960 --> 00:40:42,450
+the command line on their HelloWorld
+
+1040
+00:40:42,460 --> 00:40:45,810
+program it takes care of a lot of this
+
+1041
+00:40:45,820 --> 00:40:47,160
+work for you and you don't ever have to
+
+1042
+00:40:47,170 --> 00:40:50,960
+worry about how to link it proprietary
+
+1043
+00:40:50,970 --> 00:40:55,080
+to to work and so forth on your platform
+
+1044
+00:40:55,090 --> 00:40:56,940
+everything like that is basically taken
+
+1045
+00:40:56,950 --> 00:40:58,650
+care of by its driver program but the
+
+1046
+00:40:58,660 --> 00:41:01,940
+compiler itself for C or C++ or Java or
+
+1047
+00:41:01,950 --> 00:41:05,070
+whatever is is basically done at the
+
+1048
+00:41:05,080 --> 00:41:06,680
+point when it produces an assembly code
+
+1049
+00:41:06,690 --> 00:41:10,380
+okay now let's assume that we are some
+
+1050
+00:41:10,390 --> 00:41:12,750
+of our listeners have become curious and
+
+1051
+00:41:12,760 --> 00:41:14,370
+want to take a closer look at the
+
+1052
+00:41:14,380 --> 00:41:17,640
+internals of GCC what would be some
+
+1053
+00:41:17,650 --> 00:41:20,370
+pointers to actually let's say someone
+
+1054
+00:41:20,380 --> 00:41:22,050
+downloads the source code the entire
+
+1055
+00:41:22,060 --> 00:41:24,390
+source code of GCC over the URL that'll
+
+1056
+00:41:24,400 --> 00:41:27,030
+be the show notes and then also take a
+
+1057
+00:41:27,040 --> 00:41:28,740
+look at some interesting parts of the
+
+1058
+00:41:28,750 --> 00:41:30,300
+source code could you give some pointers
+
+1059
+00:41:30,310 --> 00:41:34,140
+that sort of our key and interesting to
+
+1060
+00:41:34,150 --> 00:41:36,060
+understand what's going on okay would
+
+1061
+00:41:36,070 --> 00:41:37,290
+you like me to navigate the source code
+
+1062
+00:41:37,300 --> 00:41:38,820
+basically hear over the radio sort of
+
+1063
+00:41:38,830 --> 00:41:41,340
+yeah okay so so if you're if you're in
+
+1064
+00:41:41,350 --> 00:41:43,220
+the top level of the of the source tree
+
+1065
+00:41:43,230 --> 00:41:45,180
+you'll actually notice a number of
+
+1066
+00:41:45,190 --> 00:41:47,130
+different directories that that have to
+
+1067
+00:41:47,140 --> 00:41:48,720
+do with various parts of the the entire
+
+1068
+00:41:48,730 --> 00:41:50,730
+platform some of which we haven't talked
+
+1069
+00:41:50,740 --> 00:41:53,370
+about today the most important one is
+
+1070
+00:41:53,380 --> 00:41:56,250
+the GCC directory so you're inside of
+
+1071
+00:41:56,260 --> 00:41:57,990
+the GCC top-level directory and then if
+
+1072
+00:41:58,000 --> 00:41:59,580
+you look at the GCC directory inside of
+
+1073
+00:41:59,590 --> 00:42:01,950
+that you'll find all of the compiler
+
+1074
+00:42:01,960 --> 00:42:03,630
+sources basically all the front ends are
+
+1075
+00:42:03,640 --> 00:42:06,900
+in there all of the the middle end
+
+1076
+00:42:06,910 --> 00:42:08,400
+passes that we talked about today are
+
+1077
+00:42:08,410 --> 00:42:09,750
+there the back ends are all in there
+
+1078
+00:42:09,760 --> 00:42:11,730
+everything else ok so maybe I'll return
+
+1079
+00:42:11,740 --> 00:42:13,140
+to this but but that's that's basically
+
+1080
+00:42:13,150 --> 00:42:14,280
+where everything we've talked about is
+
+1081
+00:42:14,290 --> 00:42:19,590
+there's the Lib standard C++ that's Li
+
+1082
+00:42:19,600 --> 00:42:23,070
+BST DC plus plus v3 directory and that's
+
+1083
+00:42:23,080 --> 00:42:25,860
+the standard C++ library all of the STL
+
+1084
+00:42:25,870 --> 00:42:27,300
+everything else that's implemented as
+
+1085
+00:42:27,310 --> 00:42:30,150
+part of the GCC project but this isn't
+
+1086
+00:42:30,160 --> 00:42:30,990
+part of the
+
+1087
+00:42:31,000 --> 00:42:32,490
+Tyler this is the support the runtime
+
+1088
+00:42:32,500 --> 00:42:34,470
+support library all of the headers all
+
+1089
+00:42:34,480 --> 00:42:36,900
+of the files that are associated the
+
+1090
+00:42:36,910 --> 00:42:38,160
+source files that are associated with
+
+1091
+00:42:38,170 --> 00:42:39,930
+the C++ standard library
+
+1092
+00:42:39,940 --> 00:42:43,080
+there's Lib Java Li BJ a VA which is the
+
+1093
+00:42:43,090 --> 00:42:47,010
+standard Java Runtime that's that's
+
+1094
+00:42:47,020 --> 00:42:50,190
+available for for a new Java compiled
+
+1095
+00:42:50,200 --> 00:42:52,380
+programs and this includes the entire
+
+1096
+00:42:52,390 --> 00:42:54,300
+class library or most of the class
+
+1097
+00:42:54,310 --> 00:42:58,200
+library functionality a lot of the
+
+1098
+00:42:58,210 --> 00:43:00,420
+runtime the dynamic class loading
+
+1099
+00:43:00,430 --> 00:43:02,730
+capabilities which sound sort of weird I
+
+1100
+00:43:02,740 --> 00:43:04,890
+mean having Java code compiled to
+
+1101
+00:43:04,900 --> 00:43:06,450
+natives something that Java developers
+
+1102
+00:43:06,460 --> 00:43:07,890
+really needs to get used to but we'd
+
+1103
+00:43:07,900 --> 00:43:10,830
+like to say some words about why it is
+
+1104
+00:43:10,840 --> 00:43:12,840
+necessary to have separate separate
+
+1105
+00:43:12,850 --> 00:43:14,070
+implementation of the standard Java
+
+1106
+00:43:14,080 --> 00:43:18,750
+library okay so so I mean Java's use
+
+1107
+00:43:18,760 --> 00:43:21,540
+Java folks you aren't just not used to
+
+1108
+00:43:21,550 --> 00:43:23,820
+having their code compiled to native so
+
+1109
+00:43:23,830 --> 00:43:25,530
+it's so this is basically what I'm
+
+1110
+00:43:25,540 --> 00:43:26,760
+talking about here is ahead of time
+
+1111
+00:43:26,770 --> 00:43:28,590
+compilation when you use renews Java
+
+1112
+00:43:28,600 --> 00:43:32,490
+compiler you can you can instruct it to
+
+1113
+00:43:32,500 --> 00:43:35,610
+produce you the usual class file output
+
+1114
+00:43:35,620 --> 00:43:37,410
+you can have it produce a dot class file
+
+1115
+00:43:37,420 --> 00:43:40,770
+just like Java C or jikes would or or
+
+1116
+00:43:40,780 --> 00:43:42,600
+you know Eclipse or any number of things
+
+1117
+00:43:42,610 --> 00:43:48,060
+or you can instruct it to produce object
+
+1118
+00:43:48,070 --> 00:43:49,440
+code you can you know instruct it to
+
+1119
+00:43:49,450 --> 00:43:51,360
+compile it just like it would see or C++
+
+1120
+00:43:51,370 --> 00:43:53,460
+there there are some advantages to that
+
+1121
+00:43:53,470 --> 00:43:56,580
+the advantages are not as many as they
+
+1122
+00:43:56,590 --> 00:43:58,260
+used to be because now there are
+
+1123
+00:43:58,270 --> 00:44:00,450
+sophisticated just-in-time compilers
+
+1124
+00:44:00,460 --> 00:44:01,830
+that can actually do a bit more because
+
+1125
+00:44:01,840 --> 00:44:03,210
+they have a lot of profiling data about
+
+1126
+00:44:03,220 --> 00:44:04,770
+the program as it actually runs the
+
+1127
+00:44:04,780 --> 00:44:07,920
+classes the Java classes and can also
+
+1128
+00:44:07,930 --> 00:44:10,740
+optimize dynamically loaded classes and
+
+1129
+00:44:10,750 --> 00:44:13,770
+various other things but ahead of time
+
+1130
+00:44:13,780 --> 00:44:16,230
+compilation with new Java is very useful
+
+1131
+00:44:16,240 --> 00:44:19,530
+in my work for embedded systems in
+
+1132
+00:44:19,540 --> 00:44:22,500
+particular where you don't have the the
+
+1133
+00:44:22,510 --> 00:44:23,970
+ability because you don't have the
+
+1134
+00:44:23,980 --> 00:44:25,020
+memory or you don't have the resources
+
+1135
+00:44:25,030 --> 00:44:28,320
+you know the power to run a full JVM
+
+1136
+00:44:28,330 --> 00:44:30,510
+with a sophisticated just-in-time
+
+1137
+00:44:30,520 --> 00:44:33,170
+compiler but you don't need the extra
+
+1138
+00:44:33,180 --> 00:44:36,000
+flexibility because of the application
+
+1139
+00:44:36,010 --> 00:44:38,130
+you're working on of having dynamic
+
+1140
+00:44:38,140 --> 00:44:39,930
+class loaded files that are heavily
+
+1141
+00:44:39,940 --> 00:44:42,480
+performing and so basically if you're
+
+1142
+00:44:42,490 --> 00:44:43,800
+talking about a small embedded computer
+
+1143
+00:44:43,810 --> 00:44:44,849
+with very little memory
+
+1144
+00:44:44,859 --> 00:44:47,130
+that that might only run a minimal Linux
+
+1145
+00:44:47,140 --> 00:44:50,670
+kernel if any at all you don't want to
+
+1146
+00:44:50,680 --> 00:44:53,370
+just upload dot class files to it and
+
+1147
+00:44:53,380 --> 00:44:56,160
+then require a large JVM to support
+
+1148
+00:44:56,170 --> 00:44:57,449
+which may not even be available for the
+
+1149
+00:44:57,459 --> 00:45:00,449
+platform for many it's not so ahead of
+
+1150
+00:45:00,459 --> 00:45:01,769
+time compilation into something that's
+
+1151
+00:45:01,779 --> 00:45:03,959
+equivalent to C or C++ code that has
+
+1152
+00:45:03,969 --> 00:45:06,329
+been compiled is then very useful for
+
+1153
+00:45:06,339 --> 00:45:08,069
+these kinds of machines I can be useful
+
+1154
+00:45:08,079 --> 00:45:10,979
+in other in other places as well GCC
+
+1155
+00:45:10,989 --> 00:45:12,809
+does include a lot of optimizations and
+
+1156
+00:45:12,819 --> 00:45:14,849
+can do a tremendous amount before run
+
+1157
+00:45:14,859 --> 00:45:16,890
+time you don't have to pay the overhead
+
+1158
+00:45:16,900 --> 00:45:19,229
+of actually compiling at runtime as you
+
+1159
+00:45:19,239 --> 00:45:21,989
+do with just-in-time compilers and so
+
+1160
+00:45:21,999 --> 00:45:25,680
+for many programs gcj compiled Java
+
+1161
+00:45:25,690 --> 00:45:28,109
+programs can perform very well compared
+
+1162
+00:45:28,119 --> 00:45:31,410
+to other approaches sophisticated JVMs
+
+1163
+00:45:31,420 --> 00:45:35,099
+with with highly optimizing just-in-time
+
+1164
+00:45:35,109 --> 00:45:37,949
+compilers in them mm-hmm so it's it's
+
+1165
+00:45:37,959 --> 00:45:40,469
+not necessarily a bad thing to ahead of
+
+1166
+00:45:40,479 --> 00:45:42,269
+Ted of time compile everything ahead of
+
+1167
+00:45:42,279 --> 00:45:45,209
+time I'm sorry that's it's it's not
+
+1168
+00:45:45,219 --> 00:45:47,670
+necessarily a bad thing to compile
+
+1169
+00:45:47,680 --> 00:45:49,829
+everything ahead of time as opposed to
+
+1170
+00:45:49,839 --> 00:45:52,109
+producing a dot class file but there are
+
+1171
+00:45:52,119 --> 00:45:53,549
+advantages and disadvantages the
+
+1172
+00:45:53,559 --> 00:45:56,099
+disadvantages of course are that it's no
+
+1173
+00:45:56,109 --> 00:45:57,660
+longer portable you can't distribute
+
+1174
+00:45:57,670 --> 00:46:00,059
+your dot class file to everybody on
+
+1175
+00:46:00,069 --> 00:46:03,390
+every hardware architecture and expect
+
+1176
+00:46:03,400 --> 00:46:05,309
+it to work so we go back to this
+
+1177
+00:46:05,319 --> 00:46:07,769
+directory structure of what let's look
+
+1178
+00:46:07,779 --> 00:46:10,199
+at two or three interesting files
+
+1179
+00:46:10,209 --> 00:46:12,630
+what would you say our key actually
+
+1180
+00:46:12,640 --> 00:46:15,539
+source files of the GCC that give an
+
+1181
+00:46:15,549 --> 00:46:17,729
+idea of what's actually going on people
+
+1182
+00:46:17,739 --> 00:46:19,469
+should look at every one to get an idea
+
+1183
+00:46:19,479 --> 00:46:23,400
+ok well I'll probably have to give
+
+1184
+00:46:23,410 --> 00:46:26,759
+slightly more than three that's ok maybe
+
+1185
+00:46:26,769 --> 00:46:31,259
+30 I can I can give a few pointers if
+
+1186
+00:46:31,269 --> 00:46:34,289
+you're opening up the GCC source tree
+
+1187
+00:46:34,299 --> 00:46:36,029
+and you're interested in looking at a
+
+1188
+00:46:36,039 --> 00:46:37,949
+few files in the compiler that are most
+
+1189
+00:46:37,959 --> 00:46:40,559
+interesting you can go inside the GCC
+
+1190
+00:46:40,569 --> 00:46:43,199
+directory and then inside the config
+
+1191
+00:46:43,209 --> 00:46:45,660
+directory and you'll find a directory
+
+1192
+00:46:45,670 --> 00:46:47,339
+for every back-end that's available
+
+1193
+00:46:47,349 --> 00:46:51,140
+every hardware architecture right so I
+
+1194
+00:46:51,150 --> 00:46:53,459
+386 let's pick on because we've been
+
+1195
+00:46:53,469 --> 00:46:56,219
+picking on it so far today you can go
+
+1196
+00:46:56,229 --> 00:46:57,839
+into the i386 directory and then you'll
+
+1197
+00:46:57,849 --> 00:46:58,589
+find an i3
+
+1198
+00:46:58,599 --> 00:47:02,489
+six dot MD file and that's the machine
+
+1199
+00:47:02,499 --> 00:47:03,719
+description file that I mentioned before
+
+1200
+00:47:03,729 --> 00:47:06,289
+and inside of there you'll find a lot of
+
+1201
+00:47:06,299 --> 00:47:09,630
+RTL templates they're the things that
+
+1202
+00:47:09,640 --> 00:47:11,549
+look like Lisp symbolic expressions if
+
+1203
+00:47:11,559 --> 00:47:13,979
+you're familiar with them you'll find a
+
+1204
+00:47:13,989 --> 00:47:16,680
+lot of those that match standard
+
+1205
+00:47:16,690 --> 00:47:18,420
+operations that GCC needs to perform
+
+1206
+00:47:18,430 --> 00:47:22,469
+with with The Associated RTL and with
+
+1207
+00:47:22,479 --> 00:47:24,509
+The Associated assembly instructions so
+
+1208
+00:47:24,519 --> 00:47:25,769
+that's one place that's sort of
+
+1209
+00:47:25,779 --> 00:47:27,150
+interesting to look to to see that
+
+1210
+00:47:27,160 --> 00:47:29,400
+instruction selection phase so that's at
+
+1211
+00:47:29,410 --> 00:47:31,650
+the end it's starting back at the
+
+1212
+00:47:31,660 --> 00:47:33,029
+top-level directory if you go into the
+
+1213
+00:47:33,039 --> 00:47:36,329
+GCC source directory and then look at
+
+1214
+00:47:36,339 --> 00:47:43,019
+the passes C file you'll see what's what
+
+1215
+00:47:43,029 --> 00:47:44,370
+what drives the middle end this is the
+
+1216
+00:47:44,380 --> 00:47:45,960
+pass manager that I mentioned before
+
+1217
+00:47:45,970 --> 00:47:47,759
+that it orders all of the different
+
+1218
+00:47:47,769 --> 00:47:49,799
+optimization passes not only on the tree
+
+1219
+00:47:49,809 --> 00:47:52,309
+representation but also on the RTL
+
+1220
+00:47:52,319 --> 00:47:54,210
+representation so that's where the list
+
+1221
+00:47:54,220 --> 00:47:56,670
+of all the optimizations is basically is
+
+1222
+00:47:56,680 --> 00:47:59,370
+one call per optimization for all these
+
+1223
+00:47:59,380 --> 00:48:01,289
+dozens of passes that actually take
+
+1224
+00:48:01,299 --> 00:48:02,640
+place and that's right that's right and
+
+1225
+00:48:02,650 --> 00:48:04,170
+if you have you look for the C macro
+
+1226
+00:48:04,180 --> 00:48:07,499
+next underscore pass all uppercase if
+
+1227
+00:48:07,509 --> 00:48:09,209
+I'm trying to remember what the source
+
+1228
+00:48:09,219 --> 00:48:11,849
+file looks like here without lo being
+
+1229
+00:48:11,859 --> 00:48:13,859
+able to look at it you'll find all of
+
+1230
+00:48:13,869 --> 00:48:15,329
+the different passes ordered there so if
+
+1231
+00:48:15,339 --> 00:48:17,370
+you're interested in what passes are
+
+1232
+00:48:17,380 --> 00:48:19,529
+performed and what orders that's a good
+
+1233
+00:48:19,539 --> 00:48:22,019
+place to look most of those passes have
+
+1234
+00:48:22,029 --> 00:48:25,049
+similarly named source files that are
+
+1235
+00:48:25,059 --> 00:48:26,819
+available in that same directory so then
+
+1236
+00:48:26,829 --> 00:48:30,839
+if you're interested in say dead code
+
+1237
+00:48:30,849 --> 00:48:32,819
+elimination as I mentioned before which
+
+1238
+00:48:32,829 --> 00:48:35,450
+is the DCE optimization then you can
+
+1239
+00:48:35,460 --> 00:48:37,739
+look at the in the same directory you
+
+1240
+00:48:37,749 --> 00:48:42,719
+can look at the tree - SSA - d c-- e dot
+
+1241
+00:48:42,729 --> 00:48:48,120
+c file and that's that's the the the
+
+1242
+00:48:48,130 --> 00:48:50,759
+dead code elimination pass for GCC and
+
+1243
+00:48:50,769 --> 00:48:52,109
+if you look through that source code
+
+1244
+00:48:52,119 --> 00:48:54,029
+you'll that source file you'll see
+
+1245
+00:48:54,039 --> 00:48:57,479
+exactly how dead code elimination is
+
+1246
+00:48:57,489 --> 00:49:00,749
+done on the tree representation inside
+
+1247
+00:49:00,759 --> 00:49:02,430
+of GCC so there there are no secrets
+
+1248
+00:49:02,440 --> 00:49:03,809
+here it's an open source project and you
+
+1249
+00:49:03,819 --> 00:49:04,920
+can and you can take a look at
+
+1250
+00:49:04,930 --> 00:49:05,849
+everything and everything's accessible
+
+1251
+00:49:05,859 --> 00:49:07,859
+so that's the middle end if you're
+
+1252
+00:49:07,869 --> 00:49:09,479
+interested in the front ends I would i
+
+1253
+00:49:09,489 --> 00:49:10,990
+would
+
+1254
+00:49:11,000 --> 00:49:14,140
+and for Java its most easily accessible
+
+1255
+00:49:14,150 --> 00:49:17,530
+I suppose and just because of the way
+
+1256
+00:49:17,540 --> 00:49:19,060
+that the front end is is structured and
+
+1257
+00:49:19,070 --> 00:49:21,370
+the fact that many people know Java I
+
+1258
+00:49:21,380 --> 00:49:23,320
+don't know your listener pace I suppose
+
+1259
+00:49:23,330 --> 00:49:26,410
+but Java is usually a simpler language
+
+1260
+00:49:26,420 --> 00:49:30,370
+to look at then than C++ because of the
+
+1261
+00:49:30,380 --> 00:49:32,230
+additional features that C++ has that
+
+1262
+00:49:32,240 --> 00:49:34,000
+makes language implementations a little
+
+1263
+00:49:34,010 --> 00:49:36,490
+bit more difficult you're here
+
+1264
+00:49:36,500 --> 00:49:38,950
+well sometimes writing in C++ can be
+
+1265
+00:49:38,960 --> 00:49:40,450
+more difficult but at least language
+
+1266
+00:49:40,460 --> 00:49:42,460
+implement implementers have a larger job
+
+1267
+00:49:42,470 --> 00:49:46,870
+I was just joking C++ great there's good
+
+1268
+00:49:46,880 --> 00:49:49,030
+reason so you super fastest yeah Java is
+
+1269
+00:49:49,040 --> 00:49:51,100
+simpler obviously yeah it just as an
+
+1270
+00:49:51,110 --> 00:49:54,130
+aside I am one of those rare programming
+
+1271
+00:49:54,140 --> 00:49:55,930
+language people that don't have
+
+1272
+00:49:55,940 --> 00:49:58,510
+necessarily a favorite language i i i
+
+1273
+00:49:58,520 --> 00:50:01,720
+don't favor java over c++ over parole
+
+1274
+00:50:01,730 --> 00:50:05,260
+over Oh camel over Haskell over Python
+
+1275
+00:50:05,270 --> 00:50:07,780
+or anything else I enjoy all these
+
+1276
+00:50:07,790 --> 00:50:11,490
+languages for 4 different projects and
+
+1277
+00:50:11,500 --> 00:50:15,220
+when when a particular project that I'm
+
+1278
+00:50:15,230 --> 00:50:16,810
+attacking doesn't fit naturally into a
+
+1279
+00:50:16,820 --> 00:50:19,660
+language I tend to pick another one or
+
+1280
+00:50:19,670 --> 00:50:20,710
+if there are many different ones that
+
+1281
+00:50:20,720 --> 00:50:22,570
+are possible I choose them by random
+
+1282
+00:50:22,580 --> 00:50:25,990
+lots because it's it's it's interesting
+
+1283
+00:50:26,000 --> 00:50:30,070
+to maintain a good skill set across many
+
+1284
+00:50:30,080 --> 00:50:31,060
+different languages and to expose
+
+1285
+00:50:31,070 --> 00:50:32,050
+yourself to a lot of different things
+
+1286
+00:50:32,060 --> 00:50:33,430
+but I don't I don't really have a
+
+1287
+00:50:33,440 --> 00:50:35,260
+favorite language I enjoy implementing
+
+1288
+00:50:35,270 --> 00:50:36,760
+languages I like writing programs in
+
+1289
+00:50:36,770 --> 00:50:40,090
+various different languages and and I I
+
+1290
+00:50:40,100 --> 00:50:41,440
+guess I'm more interested in comparing
+
+1291
+00:50:41,450 --> 00:50:46,690
+languages then then then evangelizing
+
+1292
+00:50:46,700 --> 00:50:47,880
+yeah
+
+1293
+00:50:47,890 --> 00:50:51,760
+however ok so at least at least in this
+
+1294
+00:50:51,770 --> 00:50:53,950
+case I can say that Java is easier to
+
+1295
+00:50:53,960 --> 00:50:56,350
+implement in some ways certainly at the
+
+1296
+00:50:56,360 --> 00:51:00,310
+language level and and so anyway so
+
+1297
+00:51:00,320 --> 00:51:02,170
+inside of the GCC directory inside of
+
+1298
+00:51:02,180 --> 00:51:04,390
+the Java subdirectory you can look at
+
+1299
+00:51:04,400 --> 00:51:08,290
+parse dot Y and this is a a C like file
+
+1300
+00:51:08,300 --> 00:51:10,600
+even despite the dot Y extension
+
+1301
+00:51:10,610 --> 00:51:13,450
+it's a yak grama problem it's a yes it's
+
+1302
+00:51:13,460 --> 00:51:15,670
+a a well it's a bison grammar which is
+
+1303
+00:51:15,680 --> 00:51:18,210
+largely compatible back with with yak
+
+1304
+00:51:18,220 --> 00:51:21,550
+which it's few tens of thousands of
+
+1305
+00:51:21,560 --> 00:51:23,770
+lines long I think it contains a lot of
+
+1306
+00:51:23,780 --> 00:51:24,550
+support functions
+
+1307
+00:51:24,560 --> 00:51:25,990
+because it contains a lot of support
+
+1308
+00:51:26,000 --> 00:51:27,850
+functions beyond the actual grammar but
+
+1309
+00:51:27,860 --> 00:51:29,140
+this is where the entire Java grammar
+
+1310
+00:51:29,150 --> 00:51:31,630
+lives and how it parses those things and
+
+1311
+00:51:31,640 --> 00:51:34,030
+how it generates this this initial tree
+
+1312
+00:51:34,040 --> 00:51:35,320
+structure before it has to go through
+
+1313
+00:51:35,330 --> 00:51:36,730
+and semantically analyze it and complete
+
+1314
+00:51:36,740 --> 00:51:38,590
+it that that's an excellent place to
+
+1315
+00:51:38,600 --> 00:51:41,860
+start looking at at the java front-end
+
+1316
+00:51:41,870 --> 00:51:44,320
+to figure out exactly how it operates on
+
+1317
+00:51:44,330 --> 00:51:47,590
+different source level constructs and
+
+1318
+00:51:47,600 --> 00:51:49,360
+then from there you can trace through
+
+1319
+00:51:49,370 --> 00:51:50,950
+how different parts of that front-end
+
+1320
+00:51:50,960 --> 00:51:53,770
+work thank you very much it's been fun
+
+1321
+00:51:53,780 --> 00:51:55,120
+discussing GCC with you
+
+1322
+00:51:55,130 --> 00:52:05,600
+Thank You Arnhem Thank You Morgan
+
+1323
+00:52:18,839 --> 00:52:18,849
+[Music]
+
+1324
+00:52:18,849 --> 00:52:20,979
+thanks for listening to software
+
+1325
+00:52:20,989 --> 00:52:23,019
+engineering radio if you want to get
+
+1326
+00:52:23,029 --> 00:52:24,339
+more information about software
+
+1327
+00:52:24,349 --> 00:52:26,199
+engineering radio or if you want to give
+
+1328
+00:52:26,209 --> 00:52:28,870
+us feedback please go to our website at
+
+1329
+00:52:28,880 --> 00:52:32,439
+se dash radio dot net you can also
+
+1330
+00:52:32,449 --> 00:52:37,359
+contact the team at team at SAE - radio
+
+1331
+00:52:37,369 --> 00:52:39,969
+net although we prefer entries in our
+
+1332
+00:52:39,979 --> 00:52:42,130
+comment system on the website so other
+
+1333
+00:52:42,140 --> 00:52:43,839
+people can see what you think
+
+1334
+00:52:43,849 --> 00:52:45,669
+software engineering radio wants to
+
+1335
+00:52:45,679 --> 00:52:47,739
+thank Henning Poli for the intro and
+
+1336
+00:52:47,749 --> 00:52:50,409
+outro music as well as Lipson for
+
+1337
+00:52:50,419 --> 00:52:53,529
+providing the bandwidth this episode of
+
+1338
+00:52:53,539 --> 00:52:56,169
+se radio as well as all other episodes
+
+1339
+00:52:56,179 --> 00:52:58,479
+is licensed under Creative Commons
+
+1340
+00:52:58,489 --> 00:52:59,469
+license
+
+1341
+00:52:59,479 --> 00:53:02,140
+see the soft engineering radio website
+
+1342
+00:53:02,150 --> 00:53:10,400
+for details

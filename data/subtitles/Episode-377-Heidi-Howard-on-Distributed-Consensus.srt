@@ -1,0 +1,4823 @@
+1
+00:00:02,800 --> 00:00:02,810
+this is software engineering radio the
+
+2
+00:00:02,810 --> 00:00:04,840
+podcast for professional developers on
+
+3
+00:00:04,850 --> 00:00:08,589
+the web at se - radio dotnet SC radio is
+
+4
+00:00:08,599 --> 00:00:09,700
+brought to you by the I Triple E
+
+5
+00:00:09,710 --> 00:00:11,890
+Computer Society I Triple E software
+
+6
+00:00:11,900 --> 00:00:14,799
+magazine online at computer org slash
+
+7
+00:00:14,809 --> 00:00:26,830
+software are you looking for a better
+
+8
+00:00:26,840 --> 00:00:29,230
+way to track your engineering backlog do
+
+9
+00:00:29,240 --> 00:00:30,519
+you want a project management tool
+
+10
+00:00:30,529 --> 00:00:33,009
+that's both powerful and a joy to use
+
+11
+00:00:33,019 --> 00:00:35,619
+give clubhouse a try designed for
+
+12
+00:00:35,629 --> 00:00:37,569
+software teams clubhouse is a fast
+
+13
+00:00:37,579 --> 00:00:39,009
+modern alternative to conventional
+
+14
+00:00:39,019 --> 00:00:40,899
+project management tools that are either
+
+15
+00:00:40,909 --> 00:00:43,569
+too complex are too simple start your
+
+16
+00:00:43,579 --> 00:00:45,399
+free trial and get two extra free months
+
+17
+00:00:45,409 --> 00:00:54,789
+at clubhouse io / se radio hello this is
+
+18
+00:00:54,799 --> 00:00:57,069
+Adam Gordon bell for software
+
+19
+00:00:57,079 --> 00:00:59,139
+engineering radio today I'm speaking
+
+20
+00:00:59,149 --> 00:01:01,689
+with Heidi Howard a research fellow in
+
+21
+00:01:01,699 --> 00:01:03,789
+computer science at the University of
+
+22
+00:01:03,799 --> 00:01:06,249
+Cambridge how do you welcome to software
+
+23
+00:01:06,259 --> 00:01:08,289
+engineering radio thank you so much for
+
+24
+00:01:08,299 --> 00:01:10,990
+having me so today we're gonna talk
+
+25
+00:01:11,000 --> 00:01:13,749
+about distributed consensus algorithms
+
+26
+00:01:13,759 --> 00:01:15,550
+and I thought a good place to start is
+
+27
+00:01:15,560 --> 00:01:18,490
+is with the basics so so what is a
+
+28
+00:01:18,500 --> 00:01:21,069
+distributed system a distributed system
+
+29
+00:01:21,079 --> 00:01:24,069
+is basically a concurrent system but
+
+30
+00:01:24,079 --> 00:01:26,620
+even worse it's a system where multiple
+
+31
+00:01:26,630 --> 00:01:28,270
+things are happening at the same time
+
+32
+00:01:28,280 --> 00:01:31,090
+but you can also have failures and a
+
+33
+00:01:31,100 --> 00:01:33,760
+synchrony so the nodes in the system can
+
+34
+00:01:33,770 --> 00:01:35,380
+fail and they may or may not come back
+
+35
+00:01:35,390 --> 00:01:38,109
+up and we also have a synchrony so when
+
+36
+00:01:38,119 --> 00:01:39,789
+we send messages we don't know exactly
+
+37
+00:01:39,799 --> 00:01:41,289
+how long they're going to take to get to
+
+38
+00:01:41,299 --> 00:01:43,510
+their destination or even if they will
+
+39
+00:01:43,520 --> 00:01:45,459
+get to their destination so it's sort of
+
+40
+00:01:45,469 --> 00:01:48,160
+like like multiple instances of the same
+
+41
+00:01:48,170 --> 00:01:50,980
+program running and communicating over a
+
+42
+00:01:50,990 --> 00:01:52,690
+network is that yeah absolutely
+
+43
+00:01:52,700 --> 00:01:55,149
+absolutely in the context of a
+
+44
+00:01:55,159 --> 00:01:55,989
+distributed system
+
+45
+00:01:55,999 --> 00:01:58,450
+what does consensus mean so can
+
+46
+00:01:58,460 --> 00:02:01,209
+consensus means making a decision in a
+
+47
+00:02:01,219 --> 00:02:02,679
+distributed system so that could be
+
+48
+00:02:02,689 --> 00:02:05,709
+deciding a value in a register or
+
+49
+00:02:05,719 --> 00:02:09,009
+deciding an ordering of operations to be
+
+50
+00:02:09,019 --> 00:02:11,400
+applied to a database
+
+51
+00:02:11,410 --> 00:02:13,170
+and what makes distributed consensus
+
+52
+00:02:13,180 --> 00:02:15,150
+difficult is the same thing that makes
+
+53
+00:02:15,160 --> 00:02:16,980
+distributed systems difficult that is
+
+54
+00:02:16,990 --> 00:02:18,870
+the the asynchrony and the partial
+
+55
+00:02:18,880 --> 00:02:22,140
+failures if we had a purely reliable
+
+56
+00:02:22,150 --> 00:02:24,120
+system that was super synchronous then
+
+57
+00:02:24,130 --> 00:02:25,890
+consensus would be really easy to solve
+
+58
+00:02:25,900 --> 00:02:28,170
+but unfortunately computers don't work
+
+59
+00:02:28,180 --> 00:02:31,230
+like that in reality so what does it
+
+60
+00:02:31,240 --> 00:02:33,420
+mean to have consensus is just agreement
+
+61
+00:02:33,430 --> 00:02:37,110
+so consensus has three components so the
+
+62
+00:02:37,120 --> 00:02:39,660
+first one is that the value you agree is
+
+63
+00:02:39,670 --> 00:02:41,880
+the value that somebody proposed it
+
+64
+00:02:41,890 --> 00:02:43,200
+should be so that's kind of the
+
+65
+00:02:43,210 --> 00:02:45,540
+non-trivial T component there is a
+
+66
+00:02:45,550 --> 00:02:47,910
+safety component so when you decide a
+
+67
+00:02:47,920 --> 00:02:50,610
+value that's final everyone finds out
+
+68
+00:02:50,620 --> 00:02:52,830
+the same value and thirdly there is a
+
+69
+00:02:52,840 --> 00:02:55,860
+progress component so that means that if
+
+70
+00:02:55,870 --> 00:02:57,900
+everything's working okay in the system
+
+71
+00:02:57,910 --> 00:03:00,240
+the system will reach a decision so the
+
+72
+00:03:00,250 --> 00:03:01,680
+system can't get itself stuck
+
+73
+00:03:01,690 --> 00:03:04,320
+indefinitely in a deadlock so when do we
+
+74
+00:03:04,330 --> 00:03:06,660
+need consensus in a distributed system
+
+75
+00:03:06,670 --> 00:03:09,180
+do we always need it is there specific
+
+76
+00:03:09,190 --> 00:03:14,460
+use cases that we don't always need it
+
+77
+00:03:14,470 --> 00:03:16,860
+because it could be quite expensive in
+
+78
+00:03:16,870 --> 00:03:18,330
+practice in terms of the number of
+
+79
+00:03:18,340 --> 00:03:20,880
+messages and and stuff that's needed you
+
+80
+00:03:20,890 --> 00:03:24,030
+need consensus when you have to have
+
+81
+00:03:24,040 --> 00:03:26,610
+strong consistency guarantees so for
+
+82
+00:03:26,620 --> 00:03:28,410
+example if you have a key value store
+
+83
+00:03:28,420 --> 00:03:31,050
+and you need to have linearize ability
+
+84
+00:03:31,060 --> 00:03:32,699
+you can't just have like cause or
+
+85
+00:03:32,709 --> 00:03:34,770
+consistency or something like that you
+
+86
+00:03:34,780 --> 00:03:36,390
+absolutely have to have linearize
+
+87
+00:03:36,400 --> 00:03:38,940
+ability so it could be holding some
+
+88
+00:03:38,950 --> 00:03:41,340
+really critical data in your system it
+
+89
+00:03:41,350 --> 00:03:42,840
+could be data that's for like
+
+90
+00:03:42,850 --> 00:03:45,180
+configuration or orchestration we're
+
+91
+00:03:45,190 --> 00:03:47,160
+sacrificing consistency is just not okay
+
+92
+00:03:47,170 --> 00:03:51,090
+and you need consensus if you can't rely
+
+93
+00:03:51,100 --> 00:03:54,120
+on synchrony of clocks so for example
+
+94
+00:03:54,130 --> 00:03:57,030
+Google doesn't always need consensus
+
+95
+00:03:57,040 --> 00:03:59,940
+they use a system called spanner this
+
+96
+00:03:59,950 --> 00:04:02,520
+uses clocks basically because Google
+
+97
+00:04:02,530 --> 00:04:04,470
+controls the data center so they've put
+
+98
+00:04:04,480 --> 00:04:07,979
+atomic clocks and GPS receivers into
+
+99
+00:04:07,989 --> 00:04:10,800
+their data centers instead of relying on
+
+100
+00:04:10,810 --> 00:04:13,530
+normal time protocols and that means
+
+101
+00:04:13,540 --> 00:04:15,900
+they don't need consensus either is that
+
+102
+00:04:15,910 --> 00:04:18,449
+because if they all agree on the exact
+
+103
+00:04:18,459 --> 00:04:20,310
+time stamps they can put things in order
+
+104
+00:04:20,320 --> 00:04:21,810
+even though they take place in different
+
+105
+00:04:21,820 --> 00:04:23,640
+places yeah absolutely
+
+106
+00:04:23,650 --> 00:04:24,720
+like they
+
+107
+00:04:24,730 --> 00:04:27,810
+they don't rely on it being perfect but
+
+108
+00:04:27,820 --> 00:04:29,670
+it's very very close to perfect so as
+
+109
+00:04:29,680 --> 00:04:32,370
+long as the timestamps are consistent to
+
+110
+00:04:32,380 --> 00:04:34,830
+within a very small margin then that's
+
+111
+00:04:34,840 --> 00:04:36,420
+absolutely fine in the system will run
+
+112
+00:04:36,430 --> 00:04:38,100
+and that allows the system to be much
+
+113
+00:04:38,110 --> 00:04:39,930
+more efficient a much more lightweight
+
+114
+00:04:39,940 --> 00:04:41,760
+than a proper distributed consensus
+
+115
+00:04:41,770 --> 00:04:43,670
+system one thing that I find confusing
+
+116
+00:04:43,680 --> 00:04:47,580
+maybe is just consensus and consistency
+
+117
+00:04:47,590 --> 00:04:50,760
+they both start with C's and are they
+
+118
+00:04:50,770 --> 00:04:53,400
+the same thing or I'm familiar with the
+
+119
+00:04:53,410 --> 00:04:54,720
+cap theorem which I believe has to do
+
+120
+00:04:54,730 --> 00:04:56,880
+with consistency out of consensus and
+
+121
+00:04:56,890 --> 00:05:00,210
+consistency relate consensus is the
+
+122
+00:05:00,220 --> 00:05:03,060
+method of achieving very strong
+
+123
+00:05:03,070 --> 00:05:06,440
+consistency and how does the cap theorem
+
+124
+00:05:06,450 --> 00:05:09,450
+in terms of the cap theorem when we're
+
+125
+00:05:09,460 --> 00:05:11,640
+looking at consensus we're getting
+
+126
+00:05:11,650 --> 00:05:13,460
+strong consistency so we're not
+
+127
+00:05:13,470 --> 00:05:16,490
+compromising consistency we are however
+
+128
+00:05:16,500 --> 00:05:19,860
+compromising availability so typical
+
+129
+00:05:19,870 --> 00:05:22,650
+consensus systems use majorities which
+
+130
+00:05:22,660 --> 00:05:24,840
+means that if say three participants in
+
+131
+00:05:24,850 --> 00:05:26,940
+a system of five participants go down
+
+132
+00:05:26,950 --> 00:05:30,180
+the system is unable to be available and
+
+133
+00:05:30,190 --> 00:05:32,370
+so you've sacrificed availability in
+
+134
+00:05:32,380 --> 00:05:34,350
+that case so it's more of a is a CP
+
+135
+00:05:34,360 --> 00:05:36,930
+system in that kind of set of
+
+136
+00:05:36,940 --> 00:05:40,290
+terminology so in a in a distributed
+
+137
+00:05:40,300 --> 00:05:42,690
+consensus system there's an it's not
+
+138
+00:05:42,700 --> 00:05:45,150
+possible to be highly available is that
+
+139
+00:05:45,160 --> 00:05:49,680
+right your ma I think the comparison
+
+140
+00:05:49,690 --> 00:05:51,510
+usually because you're getting the
+
+141
+00:05:51,520 --> 00:05:52,860
+strong consistency guaranteed a
+
+142
+00:05:52,870 --> 00:05:55,320
+comparison is usually between having one
+
+143
+00:05:55,330 --> 00:05:58,320
+server or having three servers or five
+
+144
+00:05:58,330 --> 00:06:01,110
+servers and using consensus so you have
+
+145
+00:06:01,120 --> 00:06:03,270
+better availability than you would have
+
+146
+00:06:03,280 --> 00:06:06,330
+had with just one server so it's it's
+
+147
+00:06:06,340 --> 00:06:08,160
+improved availability compared to one
+
+148
+00:06:08,170 --> 00:06:09,960
+server whether whether it's improved
+
+149
+00:06:09,970 --> 00:06:11,250
+enough to be considered high
+
+150
+00:06:11,260 --> 00:06:13,500
+availability I think depends on the
+
+151
+00:06:13,510 --> 00:06:14,250
+situation
+
+152
+00:06:14,260 --> 00:06:15,510
+if those servers are in different
+
+153
+00:06:15,520 --> 00:06:17,970
+availability zones for example and you
+
+154
+00:06:17,980 --> 00:06:19,740
+can tolerate failure of one that seems
+
+155
+00:06:19,750 --> 00:06:21,780
+pretty pretty highly available to me so
+
+156
+00:06:21,790 --> 00:06:24,330
+it because you just need the majority up
+
+157
+00:06:24,340 --> 00:06:28,200
+so if you scale up to more nodes then it
+
+158
+00:06:28,210 --> 00:06:30,600
+can still be sort of highly available am
+
+159
+00:06:30,610 --> 00:06:33,120
+I getting this right right so if you
+
+160
+00:06:33,130 --> 00:06:35,250
+have three notes you can tolerate one
+
+161
+00:06:35,260 --> 00:06:37,680
+failure if you scale up to five nodes
+
+162
+00:06:37,690 --> 00:06:38,189
+you could
+
+163
+00:06:38,199 --> 00:06:40,769
+tolerate two failures and up to seven
+
+164
+00:06:40,779 --> 00:06:42,659
+you could tolerate three and people
+
+165
+00:06:42,669 --> 00:06:44,580
+don't tend to scale further than that
+
+166
+00:06:44,590 --> 00:06:45,029
+really
+
+167
+00:06:45,039 --> 00:06:48,809
+why not because whenever you're doing
+
+168
+00:06:48,819 --> 00:06:51,510
+something you need to use the mature
+
+169
+00:06:51,520 --> 00:06:53,670
+that majority of participants you need
+
+170
+00:06:53,680 --> 00:06:55,110
+to get the majority of participants to
+
+171
+00:06:55,120 --> 00:06:57,480
+basically agree back you with what
+
+172
+00:06:57,490 --> 00:06:59,540
+you're doing so as you scale the system
+
+173
+00:06:59,550 --> 00:07:02,489
+the size of the majority goes up and up
+
+174
+00:07:02,499 --> 00:07:05,760
+and therefore the latency and the amount
+
+175
+00:07:05,770 --> 00:07:07,469
+of messages that you need to exchange to
+
+176
+00:07:07,479 --> 00:07:09,320
+get anything done gets higher and higher
+
+177
+00:07:09,330 --> 00:07:11,189
+well that's interesting so the
+
+178
+00:07:11,199 --> 00:07:13,739
+throughput like of Rights for instance
+
+179
+00:07:13,749 --> 00:07:16,110
+decreases the more nodes you have
+
+180
+00:07:16,120 --> 00:07:18,689
+because you jority absolutely it's it's
+
+181
+00:07:18,699 --> 00:07:20,939
+the opposite of a scalable system for
+
+182
+00:07:20,949 --> 00:07:22,649
+the best performance you would have one
+
+183
+00:07:22,659 --> 00:07:28,709
+node that is interesting so at my work I
+
+184
+00:07:28,719 --> 00:07:30,179
+sometimes work on this distributed
+
+185
+00:07:30,189 --> 00:07:33,899
+system and it has this like it's a Java
+
+186
+00:07:33,909 --> 00:07:35,360
+program it has this like leadership
+
+187
+00:07:35,370 --> 00:07:38,519
+annotation so like I can say like I need
+
+188
+00:07:38,529 --> 00:07:41,399
+to do something I only need to do I need
+
+189
+00:07:41,409 --> 00:07:42,839
+to make sure it happens on startup but
+
+190
+00:07:42,849 --> 00:07:44,779
+like only once and so there's this I
+
+191
+00:07:44,789 --> 00:07:47,100
+just have to say I think it's the code
+
+192
+00:07:47,110 --> 00:07:49,559
+like leader only I can kind of annotate
+
+193
+00:07:49,569 --> 00:07:51,119
+that and that's where I kind of do
+
+194
+00:07:51,129 --> 00:07:52,740
+things like if I need to do some data
+
+195
+00:07:52,750 --> 00:07:55,350
+migration that's kind of shared data I
+
+196
+00:07:55,360 --> 00:07:58,260
+will do that there what happens in sort
+
+197
+00:07:58,270 --> 00:07:59,610
+of a process like that like what does
+
+198
+00:07:59,620 --> 00:08:01,260
+that mean to say the leader only does
+
+199
+00:08:01,270 --> 00:08:04,800
+this what is leadership election okay so
+
+200
+00:08:04,810 --> 00:08:07,050
+leadership election is basically
+
+201
+00:08:07,060 --> 00:08:09,239
+deciding who's gonna be the person to
+
+202
+00:08:09,249 --> 00:08:12,269
+make decisions in a distributed sense so
+
+203
+00:08:12,279 --> 00:08:14,760
+it is there are some political analogies
+
+204
+00:08:14,770 --> 00:08:16,350
+that are of true you know I've probably
+
+205
+00:08:16,360 --> 00:08:18,869
+turned out to draw on too much but
+
+206
+00:08:18,879 --> 00:08:20,550
+basically the participants in the system
+
+207
+00:08:20,560 --> 00:08:22,950
+design decide between themselves who is
+
+208
+00:08:22,960 --> 00:08:25,860
+able to act on their behalf if they
+
+209
+00:08:25,870 --> 00:08:27,989
+decided this every time anything needed
+
+210
+00:08:27,999 --> 00:08:29,909
+to be done it would take a long time to
+
+211
+00:08:29,919 --> 00:08:31,889
+get anything done so before the system
+
+212
+00:08:31,899 --> 00:08:35,040
+needs to do things it decides who's
+
+213
+00:08:35,050 --> 00:08:36,540
+gonna be in charge who's going to be
+
+214
+00:08:36,550 --> 00:08:38,219
+responsible for making those decisions
+
+215
+00:08:38,229 --> 00:08:41,360
+that is the leader of the system and
+
+216
+00:08:41,370 --> 00:08:43,800
+typically in consensus systems where
+
+217
+00:08:43,810 --> 00:08:46,800
+we're using majorities the leader backs
+
+218
+00:08:46,810 --> 00:08:49,259
+up all their decisions to a majority of
+
+219
+00:08:49,269 --> 00:08:50,769
+the other participants
+
+220
+00:08:50,779 --> 00:08:52,929
+and then if the leader fails there's a
+
+221
+00:08:52,939 --> 00:08:55,059
+backup on at least the majority of the
+
+222
+00:08:55,069 --> 00:08:57,730
+participants so is it in fact like a
+
+223
+00:08:57,740 --> 00:08:59,379
+voting process
+
+224
+00:08:59,389 --> 00:09:00,850
+it's called leadership election is the
+
+225
+00:09:00,860 --> 00:09:03,639
+nodes voting where they absolutely are
+
+226
+00:09:03,649 --> 00:09:07,749
+voting they we use some mechanisms to
+
+227
+00:09:07,759 --> 00:09:10,569
+basically allow participants to vote
+
+228
+00:09:10,579 --> 00:09:13,569
+multiple times if they need to and these
+
+229
+00:09:13,579 --> 00:09:16,299
+things like views ballots or term
+
+230
+00:09:16,309 --> 00:09:18,160
+numbers depending on what academic paper
+
+231
+00:09:18,170 --> 00:09:20,530
+you're you're looking at so that they
+
+232
+00:09:20,540 --> 00:09:22,210
+can still make progress so we don't ever
+
+233
+00:09:22,220 --> 00:09:24,249
+end up in a deadlock situation where
+
+234
+00:09:24,259 --> 00:09:25,900
+half the participants are voted for one
+
+235
+00:09:25,910 --> 00:09:27,489
+leader and the other half voted for a
+
+236
+00:09:27,499 --> 00:09:31,509
+different leader so I think that kind of
+
+237
+00:09:31,519 --> 00:09:33,509
+gives me an understanding of what
+
+238
+00:09:33,519 --> 00:09:36,970
+distributed consensus is so I thought it
+
+239
+00:09:36,980 --> 00:09:39,160
+might be fun to take like a historical
+
+240
+00:09:39,170 --> 00:09:41,619
+perspective on this in part because I
+
+241
+00:09:41,629 --> 00:09:43,569
+saw taki gave that kind of had that that
+
+242
+00:09:43,579 --> 00:09:46,689
+feel to it so what was the what was the
+
+243
+00:09:46,699 --> 00:09:49,239
+first solution you're aware of to
+
+244
+00:09:49,249 --> 00:09:53,559
+distributed consensus that's that's
+
+245
+00:09:53,569 --> 00:09:55,360
+quite an interesting and contentious
+
+246
+00:09:55,370 --> 00:09:56,920
+question actually because there was
+
+247
+00:09:56,930 --> 00:09:59,650
+quite a few different people who
+
+248
+00:09:59,660 --> 00:10:01,840
+proposed consensus at a similar ash time
+
+249
+00:10:01,850 --> 00:10:04,689
+so we're talking late 80s and a lot of
+
+250
+00:10:04,699 --> 00:10:06,160
+the consensus algorithms were kind of
+
+251
+00:10:06,170 --> 00:10:08,889
+buried in other academic papers papers
+
+252
+00:10:08,899 --> 00:10:11,110
+about things like transactions and they
+
+253
+00:10:11,120 --> 00:10:14,290
+weren't necessarily noticed the paper
+
+254
+00:10:14,300 --> 00:10:17,740
+that is kind of iconic for pioneering
+
+255
+00:10:17,750 --> 00:10:19,660
+distributed consensus is a paper called
+
+256
+00:10:19,670 --> 00:10:21,790
+the part-time Parliament by cheering
+
+257
+00:10:21,800 --> 00:10:24,939
+Award winner Lesley Lamport yeah he was
+
+258
+00:10:24,949 --> 00:10:29,170
+he was a guest on se radio episode 2:03
+
+259
+00:10:29,180 --> 00:10:31,540
+so listeners concerned they check that
+
+260
+00:10:31,550 --> 00:10:31,840
+out
+
+261
+00:10:31,850 --> 00:10:35,019
+so what is the the Paxos algorithm so
+
+262
+00:10:35,029 --> 00:10:37,210
+the packs without groom is kind of this
+
+263
+00:10:37,220 --> 00:10:38,829
+algorithm that we've been describing so
+
+264
+00:10:38,839 --> 00:10:40,929
+far it's an algorithm that has two
+
+265
+00:10:40,939 --> 00:10:43,030
+phases in the first phase the majority
+
+266
+00:10:43,040 --> 00:10:45,579
+of people get together and just elect
+
+267
+00:10:45,589 --> 00:10:47,739
+one of the participants to be the leader
+
+268
+00:10:47,749 --> 00:10:49,269
+to be the person who's going to choose
+
+269
+00:10:49,279 --> 00:10:51,639
+values in the future and in the second
+
+270
+00:10:51,649 --> 00:10:53,439
+phase the leader chooses a value and
+
+271
+00:10:53,449 --> 00:10:55,660
+they back that value up to the majority
+
+272
+00:10:55,670 --> 00:10:58,210
+of participants this means that if that
+
+273
+00:10:58,220 --> 00:11:00,189
+leader fails they can communicate with
+
+274
+00:11:00,199 --> 00:11:02,650
+the participants the participants
+
+275
+00:11:02,660 --> 00:11:04,150
+communicate between themselves sorry
+
+276
+00:11:04,160 --> 00:11:04,569
+and
+
+277
+00:11:04,579 --> 00:11:07,030
+a new leader and as long as a majority
+
+278
+00:11:07,040 --> 00:11:09,639
+are involved in choosing a new leader we
+
+279
+00:11:09,649 --> 00:11:11,079
+can be sure that at least one of those
+
+280
+00:11:11,089 --> 00:11:13,059
+people who votes for a loot new leader
+
+281
+00:11:13,069 --> 00:11:15,309
+will know about what the last leader did
+
+282
+00:11:15,319 --> 00:11:18,280
+you mentioned earlier banner what what
+
+283
+00:11:18,290 --> 00:11:22,269
+systems use Paxos like practical
+
+284
+00:11:22,279 --> 00:11:24,819
+distributed systems soap access is very
+
+285
+00:11:24,829 --> 00:11:27,819
+widely used it's used in chubbie which
+
+286
+00:11:27,829 --> 00:11:30,429
+is used it's just a Google system it's
+
+287
+00:11:30,439 --> 00:11:34,210
+used in Cassandra it's what can talk
+
+288
+00:11:34,220 --> 00:11:36,639
+about Paxos versus roughed in a bit but
+
+289
+00:11:36,649 --> 00:11:38,829
+it's it's the same or very similar to
+
+290
+00:11:38,839 --> 00:11:41,619
+the raft algorithm which is used in EDD
+
+291
+00:11:41,629 --> 00:11:44,169
+which is used in kubernetes it's very
+
+292
+00:11:44,179 --> 00:11:46,119
+similar to the SAP algorithm which is in
+
+293
+00:11:46,129 --> 00:11:48,910
+zookeeper it's very very widely used
+
+294
+00:11:48,920 --> 00:11:52,030
+typically just for coordination and
+
+295
+00:11:52,040 --> 00:11:56,439
+orchestration so if I am using a paxos
+
+296
+00:11:56,449 --> 00:11:59,229
+system and like let's say it has three
+
+297
+00:11:59,239 --> 00:12:01,979
+nodes like your previous example and I
+
+298
+00:12:01,989 --> 00:12:05,289
+go I'm a client and I try to write a
+
+299
+00:12:05,299 --> 00:12:07,929
+value like what happens there do I have
+
+300
+00:12:07,939 --> 00:12:10,840
+to go to the leader yeah so you send
+
+301
+00:12:10,850 --> 00:12:13,780
+your write request to the leader the
+
+302
+00:12:13,790 --> 00:12:15,789
+leader will then place it in a kind of
+
+303
+00:12:15,799 --> 00:12:17,590
+sequence of write requests that it's
+
+304
+00:12:17,600 --> 00:12:19,900
+received and it will then send a message
+
+305
+00:12:19,910 --> 00:12:21,609
+to the other participant saying that
+
+306
+00:12:21,619 --> 00:12:24,189
+they should insert that write in those
+
+307
+00:12:24,199 --> 00:12:26,769
+given position in kind of the history of
+
+308
+00:12:26,779 --> 00:12:28,960
+what's happened in the system into their
+
+309
+00:12:28,970 --> 00:12:30,939
+logs the other participants will do that
+
+310
+00:12:30,949 --> 00:12:33,729
+right and then once majority have got
+
+311
+00:12:33,739 --> 00:12:36,100
+back the leader will commit that right
+
+312
+00:12:36,110 --> 00:12:38,229
+so if it's got like say a state machine
+
+313
+00:12:38,239 --> 00:12:40,239
+there like a replica or if a key value
+
+314
+00:12:40,249 --> 00:12:42,400
+store it will apply the request and it
+
+315
+00:12:42,410 --> 00:12:45,039
+will return to you an acknowledgement
+
+316
+00:12:45,049 --> 00:12:47,530
+that it's been successful and if I try
+
+317
+00:12:47,540 --> 00:12:51,009
+to read that value back is how does it
+
+318
+00:12:51,019 --> 00:12:53,409
+work where if I only have to write it to
+
+319
+00:12:53,419 --> 00:12:54,789
+the majority of nodes isn't there a
+
+320
+00:12:54,799 --> 00:12:57,369
+chance if I tried to read I could access
+
+321
+00:12:57,379 --> 00:12:59,379
+the value that's not part of that
+
+322
+00:12:59,389 --> 00:13:01,960
+majority so it depends how you implement
+
+323
+00:13:01,970 --> 00:13:04,840
+the reads the proper theoretically the
+
+324
+00:13:04,850 --> 00:13:06,729
+proper way to implement reads is to
+
+325
+00:13:06,739 --> 00:13:09,069
+achieve consensus over the reads as well
+
+326
+00:13:09,079 --> 00:13:11,739
+so they also get a position inside the
+
+327
+00:13:11,749 --> 00:13:14,199
+log the leader will basically check that
+
+328
+00:13:14,209 --> 00:13:17,049
+they still are a leader they're still up
+
+329
+00:13:17,059 --> 00:13:18,519
+to date they still know everything
+
+330
+00:13:18,529 --> 00:13:19,960
+about what's happened in the system and
+
+331
+00:13:19,970 --> 00:13:22,179
+then they will apply the read and that
+
+332
+00:13:22,189 --> 00:13:24,790
+guarantees you linearizable reads as
+
+333
+00:13:24,800 --> 00:13:27,129
+well as writes typically in practice
+
+334
+00:13:27,139 --> 00:13:28,809
+though because systems have generally
+
+335
+00:13:28,819 --> 00:13:31,360
+read heavy we implement route we're a
+
+336
+00:13:31,370 --> 00:13:33,519
+bit more relaxed in the way we implement
+
+337
+00:13:33,529 --> 00:13:36,100
+reads so for example you would send the
+
+338
+00:13:36,110 --> 00:13:38,410
+read just to the master and the master
+
+339
+00:13:38,420 --> 00:13:41,170
+will give send you back a response and
+
+340
+00:13:41,180 --> 00:13:42,999
+as long as that master is still the
+
+341
+00:13:43,009 --> 00:13:44,860
+master in the system that will be a
+
+342
+00:13:44,870 --> 00:13:48,129
+consistent response and what if I have
+
+343
+00:13:48,139 --> 00:13:51,220
+like two clients and they each try to
+
+344
+00:13:51,230 --> 00:13:54,549
+write the same value in some time span
+
+345
+00:13:54,559 --> 00:13:57,879
+that's very close I guess yeah so from a
+
+346
+00:13:57,889 --> 00:14:00,699
+consensus perspective those both of
+
+347
+00:14:00,709 --> 00:14:02,710
+those rights will be successful and they
+
+348
+00:14:02,720 --> 00:14:06,429
+will happen in a order it doesn't limit
+
+349
+00:14:06,439 --> 00:14:08,739
+what order will be it will happen in but
+
+350
+00:14:08,749 --> 00:14:10,720
+it will definitely appear as if one
+
+351
+00:14:10,730 --> 00:14:12,579
+happened then they ever happened or vice
+
+352
+00:14:12,589 --> 00:14:15,549
+versa so there won't be you won't end up
+
+353
+00:14:15,559 --> 00:14:18,069
+with an inconsistent state in the system
+
+354
+00:14:18,079 --> 00:14:19,629
+it's definitely the case that all the
+
+355
+00:14:19,639 --> 00:14:21,249
+replicas in the system will see those
+
+356
+00:14:21,259 --> 00:14:23,650
+rights in the same order but linearise
+
+357
+00:14:23,660 --> 00:14:26,079
+ability doesn't guarantee a particular
+
+358
+00:14:26,089 --> 00:14:28,900
+ordering over concurrent rights only
+
+359
+00:14:28,910 --> 00:14:30,429
+over rights that happen at different
+
+360
+00:14:30,439 --> 00:14:33,040
+times are there cases where a right
+
+361
+00:14:33,050 --> 00:14:36,460
+could fail so we can fail if the system
+
+362
+00:14:36,470 --> 00:14:38,470
+is unavailable so if there are two out
+
+363
+00:14:38,480 --> 00:14:39,900
+of three participants served down
+
+364
+00:14:39,910 --> 00:14:42,610
+perhaps you contact the leader but the
+
+365
+00:14:42,620 --> 00:14:44,829
+other two nodes are down the leader
+
+366
+00:14:44,839 --> 00:14:47,079
+isn't able to commit that right that
+
+367
+00:14:47,089 --> 00:14:49,660
+would be a failed right but as long as
+
+368
+00:14:49,670 --> 00:14:52,480
+the systems up the reads will get placed
+
+369
+00:14:52,490 --> 00:14:55,119
+in some sort of order so you mentioned
+
+370
+00:14:55,129 --> 00:14:58,929
+chubbie which i think is a google paper
+
+371
+00:14:58,939 --> 00:15:01,629
+or system it's a it's a google it's a
+
+372
+00:15:01,639 --> 00:15:04,119
+Google paper about a Google system yep
+
+373
+00:15:04,129 --> 00:15:07,419
+so what innovation did Google bring to
+
+374
+00:15:07,429 --> 00:15:10,210
+the world of distributed consensus if
+
+375
+00:15:10,220 --> 00:15:12,040
+any Google was probably the first
+
+376
+00:15:12,050 --> 00:15:15,160
+company that publicly came out and said
+
+377
+00:15:15,170 --> 00:15:17,169
+like we are implementing pacts offs and
+
+378
+00:15:17,179 --> 00:15:19,660
+we are deploying it at scale here is the
+
+379
+00:15:19,670 --> 00:15:21,879
+story of how we did it his the
+
+380
+00:15:21,889 --> 00:15:23,980
+engineering solutions we came up with to
+
+381
+00:15:23,990 --> 00:15:25,419
+some of the problems to do with
+
+382
+00:15:25,429 --> 00:15:26,309
+implementing
+
+383
+00:15:26,319 --> 00:15:29,350
+Paxos in practice and what were some of
+
+384
+00:15:29,360 --> 00:15:31,510
+those challenges and problems I
+
+385
+00:15:31,520 --> 00:15:32,800
+so some of the problems would be things
+
+386
+00:15:32,810 --> 00:15:34,810
+like we're reaching agreement about a
+
+387
+00:15:34,820 --> 00:15:37,360
+sequence of operations so that sequence
+
+388
+00:15:37,370 --> 00:15:39,220
+of operations just keeps growing and
+
+389
+00:15:39,230 --> 00:15:41,680
+growing indefinitely and at some point
+
+390
+00:15:41,690 --> 00:15:43,330
+you need to kind of compact that
+
+391
+00:15:43,340 --> 00:15:47,200
+sequence or you need to snap shot it so
+
+392
+00:15:47,210 --> 00:15:48,970
+that you don't end up just using an
+
+393
+00:15:48,980 --> 00:15:51,100
+infinite amount of memory I heard this
+
+394
+00:15:51,110 --> 00:15:54,430
+term before Multi Paxos what does that
+
+395
+00:15:54,440 --> 00:15:56,920
+mean so multi packs this is actually
+
+396
+00:15:56,930 --> 00:15:58,720
+what we've been describing so far so
+
+397
+00:15:58,730 --> 00:16:01,090
+people tend to use the term as packs or
+
+398
+00:16:01,100 --> 00:16:03,520
+some multi packs or synonymously so
+
+399
+00:16:03,530 --> 00:16:05,200
+that's the idea that you establish
+
+400
+00:16:05,210 --> 00:16:06,580
+leader in the system and that system
+
+401
+00:16:06,590 --> 00:16:09,250
+will go that leader sorry will go on to
+
+402
+00:16:09,260 --> 00:16:12,340
+make many decisions in the system single
+
+403
+00:16:12,350 --> 00:16:14,830
+degree Paxos or like the vanilla pack
+
+404
+00:16:14,840 --> 00:16:17,440
+source or classic pack sauce is where
+
+405
+00:16:17,450 --> 00:16:20,470
+you have the leader just make one
+
+406
+00:16:20,480 --> 00:16:23,350
+decision and then next time you elect
+
+407
+00:16:23,360 --> 00:16:25,720
+someone new and you have them make one
+
+408
+00:16:25,730 --> 00:16:28,660
+decision so it's basically you run a
+
+409
+00:16:28,670 --> 00:16:32,020
+kind of distinct instance of Paxos every
+
+410
+00:16:32,030 --> 00:16:34,150
+time you need to make a decision each of
+
+411
+00:16:34,160 --> 00:16:36,730
+those instances it's is basically
+
+412
+00:16:36,740 --> 00:16:39,790
+disconnected and was this multi paxos
+
+413
+00:16:39,800 --> 00:16:41,890
+like was this Google's innovation or was
+
+414
+00:16:41,900 --> 00:16:44,410
+this in the original paper multi it was
+
+415
+00:16:44,420 --> 00:16:46,210
+in the original paper it was a little
+
+416
+00:16:46,220 --> 00:16:48,160
+bit it was a little bit hidden in the
+
+417
+00:16:48,170 --> 00:16:49,660
+original paper just like back so
+
+418
+00:16:49,670 --> 00:16:52,060
+supposed to be honest but Lumpur lays it
+
+419
+00:16:52,070 --> 00:16:54,820
+out quite clearly in the in his pencils
+
+420
+00:16:54,830 --> 00:16:57,460
+made simple which is his paper to kind
+
+421
+00:16:57,470 --> 00:16:59,170
+of try to explain the part-time
+
+422
+00:16:59,180 --> 00:17:01,780
+parliment paper a bit more a bit bit
+
+423
+00:17:01,790 --> 00:17:03,550
+more clearly and earlier you mentioned
+
+424
+00:17:03,560 --> 00:17:06,340
+zookeeper and I think some consistency
+
+425
+00:17:06,350 --> 00:17:08,290
+algorithm that it used I thought it used
+
+426
+00:17:08,300 --> 00:17:10,960
+Paxos is that incorrect it's four it
+
+427
+00:17:10,970 --> 00:17:12,010
+depends who you talk to
+
+428
+00:17:12,020 --> 00:17:15,250
+basically so zookeeper uses an algorithm
+
+429
+00:17:15,260 --> 00:17:17,290
+called Zapp which stands for zookeeper
+
+430
+00:17:17,300 --> 00:17:20,050
+atomic broadcast that algorithm solves
+
+431
+00:17:20,060 --> 00:17:22,570
+atomic broadcast which has been shown to
+
+432
+00:17:22,580 --> 00:17:25,440
+be equivalent to multivariate consensus
+
+433
+00:17:25,450 --> 00:17:29,050
+sab is very very similar to the multi
+
+434
+00:17:29,060 --> 00:17:30,880
+Paxos algorithm that we've been
+
+435
+00:17:30,890 --> 00:17:33,640
+discussing so far there's a few kind of
+
+436
+00:17:33,650 --> 00:17:35,080
+design decisions they're a little bit
+
+437
+00:17:35,090 --> 00:17:36,880
+different but the general idea of
+
+438
+00:17:36,890 --> 00:17:39,160
+electing a leader using majorities and
+
+439
+00:17:39,170 --> 00:17:40,990
+that leader than taking decisions on
+
+440
+00:17:41,000 --> 00:17:43,240
+behalf of the system is the same what is
+
+441
+00:17:43,250 --> 00:17:45,880
+atomic broadcast atomic broadcast
+
+442
+00:17:45,890 --> 00:17:48,700
+is the idea that if you send messages
+
+443
+00:17:48,710 --> 00:17:51,549
+within a system everybody will see the
+
+444
+00:17:51,559 --> 00:17:54,070
+messages in the same order regardless of
+
+445
+00:17:54,080 --> 00:17:56,590
+the asynchrony in the system ah so the
+
+446
+00:17:56,600 --> 00:17:58,390
+reason it's the same as kind of it's
+
+447
+00:17:58,400 --> 00:17:59,680
+what you were saying the leader kind of
+
+448
+00:17:59,690 --> 00:18:01,210
+orders them and then distributes them
+
+449
+00:18:01,220 --> 00:18:04,090
+out to the nodes yeah absolutely
+
+450
+00:18:04,100 --> 00:18:07,150
+if you had an OS and network that gave
+
+451
+00:18:07,160 --> 00:18:08,890
+you atomic broadcast you could implement
+
+452
+00:18:08,900 --> 00:18:11,350
+consensus really drivel II by just
+
+453
+00:18:11,360 --> 00:18:13,390
+allowing anyone to send their operation
+
+454
+00:18:13,400 --> 00:18:15,549
+as a message and then everyone would see
+
+455
+00:18:15,559 --> 00:18:17,799
+exactly the same set of operations in
+
+456
+00:18:17,809 --> 00:18:20,470
+the same order interesting you mentioned
+
+457
+00:18:20,480 --> 00:18:25,390
+at CD and raft so is is raft a variation
+
+458
+00:18:25,400 --> 00:18:27,370
+on Paxos or something completely
+
+459
+00:18:27,380 --> 00:18:30,400
+different again depends who you ask my
+
+460
+00:18:30,410 --> 00:18:34,200
+perspective is very much that raft is a
+
+461
+00:18:34,210 --> 00:18:38,049
+really good well articulated description
+
+462
+00:18:38,059 --> 00:18:40,919
+and simplified version of Paxos
+
+463
+00:18:40,929 --> 00:18:43,330
+specifically designed for using with
+
+464
+00:18:43,340 --> 00:18:45,280
+state machine replication which is by
+
+465
+00:18:45,290 --> 00:18:48,310
+far the most common application of Paxos
+
+466
+00:18:48,320 --> 00:18:51,039
+in practice I know some people talk
+
+467
+00:18:51,049 --> 00:18:52,840
+about raft and paxos as if they're
+
+468
+00:18:52,850 --> 00:18:54,580
+completely separate and completely
+
+469
+00:18:54,590 --> 00:18:57,490
+different algorithms that's not that's
+
+470
+00:18:57,500 --> 00:18:59,380
+definitely not view that I would agree
+
+471
+00:18:59,390 --> 00:19:01,390
+with but raft is definitely very nice
+
+472
+00:19:01,400 --> 00:19:03,700
+very nice paper it's very nice algorithm
+
+473
+00:19:03,710 --> 00:19:06,310
+and it was in fact my introduction to
+
+474
+00:19:06,320 --> 00:19:08,740
+the field of distributed consensus so
+
+475
+00:19:08,750 --> 00:19:10,480
+how can it be a different algorithm and
+
+476
+00:19:10,490 --> 00:19:14,320
+be the same the devil is in the detail
+
+477
+00:19:14,330 --> 00:19:18,700
+the basic basic kind of core idea is the
+
+478
+00:19:18,710 --> 00:19:22,000
+same and because part time Parliament
+
+479
+00:19:22,010 --> 00:19:25,840
+was such a we're so under specified you
+
+480
+00:19:25,850 --> 00:19:27,669
+can basically make the case that it's
+
+481
+00:19:27,679 --> 00:19:30,460
+the same as most anything that you you
+
+482
+00:19:30,470 --> 00:19:32,380
+come up with because it was quite quite
+
+483
+00:19:32,390 --> 00:19:35,200
+vague in what it said the good thing
+
+484
+00:19:35,210 --> 00:19:37,659
+about raft is that it's quite specific
+
+485
+00:19:37,669 --> 00:19:40,030
+unlike a lot of the theoretical computer
+
+486
+00:19:40,040 --> 00:19:41,470
+science work so raft is about
+
+487
+00:19:41,480 --> 00:19:44,260
+replicating state machines and agreeing
+
+488
+00:19:44,270 --> 00:19:46,539
+an order of operations to pass into
+
+489
+00:19:46,549 --> 00:19:49,180
+those state machines and it uses lots of
+
+490
+00:19:49,190 --> 00:19:52,510
+examples of key value stores and I think
+
+491
+00:19:52,520 --> 00:19:54,820
+that yeah that made it that's made it
+
+492
+00:19:54,830 --> 00:19:57,409
+the famous paper that it now is
+
+493
+00:19:57,419 --> 00:19:59,690
+so is it a good starting place if
+
+494
+00:19:59,700 --> 00:20:01,310
+somebody wanted to understand these
+
+495
+00:20:01,320 --> 00:20:02,599
+algorithms it sounds like it's just
+
+496
+00:20:02,609 --> 00:20:05,479
+better specified I think yeah I do think
+
+497
+00:20:05,489 --> 00:20:06,799
+it's a really good starting point for
+
+498
+00:20:06,809 --> 00:20:10,069
+for understanding the kind of basics of
+
+499
+00:20:10,079 --> 00:20:12,949
+paxos I think that people do struggle
+
+500
+00:20:12,959 --> 00:20:15,139
+after reading raft as to where to go
+
+501
+00:20:15,149 --> 00:20:17,779
+next and if I needed a recommendation
+
+502
+00:20:17,789 --> 00:20:20,749
+for for that I would say there's a good
+
+503
+00:20:20,759 --> 00:20:22,609
+paper called paxos made moderately
+
+504
+00:20:22,619 --> 00:20:26,089
+complex which describes paxos and some
+
+505
+00:20:26,099 --> 00:20:28,669
+of the big famous variants to the paxos
+
+506
+00:20:28,679 --> 00:20:31,219
+algorithm it's kind of a survey or
+
+507
+00:20:31,229 --> 00:20:33,499
+overview of what's out there and from
+
+508
+00:20:33,509 --> 00:20:35,709
+then you could then bootstrap into
+
+509
+00:20:35,719 --> 00:20:37,969
+consensus out different types different
+
+510
+00:20:37,979 --> 00:20:39,919
+families of consensus algorithms
+
+511
+00:20:39,929 --> 00:20:42,589
+depending on on your needs I still find
+
+512
+00:20:42,599 --> 00:20:44,180
+this terminology confusing because like
+
+513
+00:20:44,190 --> 00:20:47,239
+so sed says it uses the raft protocol
+
+514
+00:20:47,249 --> 00:20:50,060
+and then like I think like Cassandra
+
+515
+00:20:50,070 --> 00:20:52,099
+says it uses Paxos but you're saying
+
+516
+00:20:52,109 --> 00:20:54,829
+these are the same really it's it's more
+
+517
+00:20:54,839 --> 00:20:57,499
+of an implementation perspective or yeah
+
+518
+00:20:57,509 --> 00:21:01,249
+yeah yeah so are there any variations on
+
+519
+00:21:01,259 --> 00:21:02,989
+these algorithms that should be
+
+520
+00:21:02,999 --> 00:21:05,299
+preferred in certain situations versus
+
+521
+00:21:05,309 --> 00:21:08,749
+others yeah definitely so there's a
+
+522
+00:21:08,759 --> 00:21:11,539
+different different kind of family of
+
+523
+00:21:11,549 --> 00:21:13,669
+algorithms the main algorithm in that
+
+524
+00:21:13,679 --> 00:21:15,819
+family is called fast pack sauce and
+
+525
+00:21:15,829 --> 00:21:19,639
+this group of algorithms basically uses
+
+526
+00:21:19,649 --> 00:21:21,739
+bigger chorim's so instead of using
+
+527
+00:21:21,749 --> 00:21:24,289
+majorities it might use say two-thirds
+
+528
+00:21:24,299 --> 00:21:27,139
+of participants but it removes the
+
+529
+00:21:27,149 --> 00:21:29,329
+leader from the system so it goes from a
+
+530
+00:21:29,339 --> 00:21:31,339
+centralized approach to a decentralized
+
+531
+00:21:31,349 --> 00:21:34,129
+approach and that family has other
+
+532
+00:21:34,139 --> 00:21:36,019
+algorithms in it like generalized
+
+533
+00:21:36,029 --> 00:21:38,839
+consensus or a gala terian Paxos and
+
+534
+00:21:38,849 --> 00:21:41,509
+those are good algorithms if latency is
+
+535
+00:21:41,519 --> 00:21:42,949
+really important to use if you were
+
+536
+00:21:42,959 --> 00:21:44,839
+implementing consensus across data
+
+537
+00:21:44,849 --> 00:21:45,560
+centers
+
+538
+00:21:45,570 --> 00:21:48,139
+there's definitely something I would
+
+539
+00:21:48,149 --> 00:21:50,599
+recommend so if we were implementing it
+
+540
+00:21:50,609 --> 00:21:54,169
+across data centers would we still want
+
+541
+00:21:54,179 --> 00:21:55,969
+to keep a low number of nodes I think
+
+542
+00:21:55,979 --> 00:21:58,339
+before you said never more than five or
+
+543
+00:21:58,349 --> 00:22:01,399
+something like that yeah yeah so I think
+
+544
+00:22:01,409 --> 00:22:03,979
+if you're using majority quorums it's
+
+545
+00:22:03,989 --> 00:22:05,839
+the system's running it was the bigger
+
+546
+00:22:05,849 --> 00:22:08,209
+you make it so I would say I would say
+
+547
+00:22:08,219 --> 00:22:09,529
+five is a good number
+
+548
+00:22:09,539 --> 00:22:10,860
+some people do three
+
+549
+00:22:10,870 --> 00:22:12,960
+some people do seven I don't really see
+
+550
+00:22:12,970 --> 00:22:16,950
+people using nine and above if you did
+
+551
+00:22:16,960 --> 00:22:20,220
+want to span more nodes then some of the
+
+552
+00:22:20,230 --> 00:22:22,260
+work that I've did a couple of years ago
+
+553
+00:22:22,270 --> 00:22:25,350
+it's known as flexible paxos and this is
+
+554
+00:22:25,360 --> 00:22:29,040
+about allowing some flexibility in Paxos
+
+555
+00:22:29,050 --> 00:22:31,440
+algorithms as it says on the tin by
+
+556
+00:22:31,450 --> 00:22:33,990
+allowing you to use different quorum so
+
+557
+00:22:34,000 --> 00:22:35,820
+instead of using majorities you can use
+
+558
+00:22:35,830 --> 00:22:38,400
+different group sizes and that allows
+
+559
+00:22:38,410 --> 00:22:41,100
+you to then scale up consensus more than
+
+560
+00:22:41,110 --> 00:22:43,650
+if you were using majorities so this is
+
+561
+00:22:43,660 --> 00:22:46,350
+your contribution to the field like how
+
+562
+00:22:46,360 --> 00:22:47,070
+is it different
+
+563
+00:22:47,080 --> 00:22:49,470
+what is the advantage of being able to
+
+564
+00:22:49,480 --> 00:22:52,320
+choose a different majority so Paxos
+
+565
+00:22:52,330 --> 00:22:56,370
+gives you one option in terms of trading
+
+566
+00:22:56,380 --> 00:22:59,040
+the performance of the system against
+
+567
+00:22:59,050 --> 00:23:01,800
+fault tolerance you use majorities you
+
+568
+00:23:01,810 --> 00:23:04,800
+can tolerate minority failures but if
+
+569
+00:23:04,810 --> 00:23:07,500
+you had say seven a system of seven
+
+570
+00:23:07,510 --> 00:23:10,170
+nodes what you could do instead of using
+
+571
+00:23:10,180 --> 00:23:12,570
+a quorum of four which is the majority
+
+572
+00:23:12,580 --> 00:23:15,240
+you could use a quorum of three it's a
+
+573
+00:23:15,250 --> 00:23:17,430
+smaller quorum which means there's less
+
+574
+00:23:17,440 --> 00:23:19,650
+messages and it could be more performant
+
+575
+00:23:19,660 --> 00:23:24,090
+in some cases it may tolerate one less
+
+576
+00:23:24,100 --> 00:23:26,880
+failure so it would only tolerate two
+
+577
+00:23:26,890 --> 00:23:29,700
+failures instead of three but depending
+
+578
+00:23:29,710 --> 00:23:30,960
+on the system you can get some really
+
+579
+00:23:30,970 --> 00:23:32,610
+interesting performance gains from that
+
+580
+00:23:32,620 --> 00:23:34,980
+so what flex will paxos does is
+
+581
+00:23:34,990 --> 00:23:37,260
+basically open up packs offs and say you
+
+582
+00:23:37,270 --> 00:23:39,180
+can choose that trade-off that you want
+
+583
+00:23:39,190 --> 00:23:41,820
+to make versus Paxos says this is the
+
+584
+00:23:41,830 --> 00:23:43,680
+one trade-off that you have and this
+
+585
+00:23:43,690 --> 00:23:46,620
+will fit all systems so is this
+
+586
+00:23:46,630 --> 00:23:50,910
+algorithm in usage yeah yeah absolutely
+
+587
+00:23:50,920 --> 00:23:54,660
+so I've seen various kind of discussions
+
+588
+00:23:54,670 --> 00:23:57,270
+of it people have implemented it so
+
+589
+00:23:57,280 --> 00:23:58,890
+there was a master student that
+
+590
+00:23:58,900 --> 00:24:01,110
+implemented it into zookeeper and there
+
+591
+00:24:01,120 --> 00:24:03,180
+yeah if you google it online for us
+
+592
+00:24:03,190 --> 00:24:04,890
+other people have implemented it there's
+
+593
+00:24:04,900 --> 00:24:07,530
+a team that are using it to do geo
+
+594
+00:24:07,540 --> 00:24:09,750
+replicated consensus their algorithm is
+
+595
+00:24:09,760 --> 00:24:13,650
+called W Paxos yeah so lots of I
+
+596
+00:24:13,660 --> 00:24:15,750
+implemented it myself as well I built it
+
+597
+00:24:15,760 --> 00:24:19,170
+on top of implementation called limp
+
+598
+00:24:19,180 --> 00:24:21,600
+axles although that's predominantly for
+
+599
+00:24:21,610 --> 00:24:24,840
+kind of benchmarking and testing
+
+600
+00:24:24,850 --> 00:24:27,360
+we've been talking about these consensus
+
+601
+00:24:27,370 --> 00:24:30,330
+algorithms I guess with the assumption
+
+602
+00:24:30,340 --> 00:24:32,040
+that they work like how is that
+
+603
+00:24:32,050 --> 00:24:34,860
+demonstrated that's a really good
+
+604
+00:24:34,870 --> 00:24:38,100
+question so it's quite hard to reason
+
+605
+00:24:38,110 --> 00:24:39,870
+about what's going on with these
+
+606
+00:24:39,880 --> 00:24:41,549
+algorithms because they really are quite
+
+607
+00:24:41,559 --> 00:24:45,000
+quite subtle the tool that I use the
+
+608
+00:24:45,010 --> 00:24:46,440
+same tool that all people in the field
+
+609
+00:24:46,450 --> 00:24:50,340
+use is known as TLA plus it was also
+
+610
+00:24:50,350 --> 00:24:53,100
+vented by Leslie Lamport so shocking
+
+611
+00:24:53,110 --> 00:24:55,080
+means it's good for expressing consensus
+
+612
+00:24:55,090 --> 00:24:57,210
+algorithms and what it does is it allows
+
+613
+00:24:57,220 --> 00:24:59,910
+you to write the algorithm and then it
+
+614
+00:24:59,920 --> 00:25:01,620
+allows you to model check that
+
+615
+00:25:01,630 --> 00:25:03,810
+specification of the algorithm so you
+
+616
+00:25:03,820 --> 00:25:06,570
+can come up with a property say at most
+
+617
+00:25:06,580 --> 00:25:10,320
+one value is decided in any slot in a
+
+618
+00:25:10,330 --> 00:25:13,590
+sequence and then you can check for a
+
+619
+00:25:13,600 --> 00:25:15,570
+kind of small configuration that that's
+
+620
+00:25:15,580 --> 00:25:18,540
+true regardless of what happens in the
+
+621
+00:25:18,550 --> 00:25:20,930
+system that's quite a nice way of
+
+622
+00:25:20,940 --> 00:25:23,490
+getting you to think carefully about the
+
+623
+00:25:23,500 --> 00:25:25,200
+algorithm and reasoning about edge cases
+
+624
+00:25:25,210 --> 00:25:27,960
+but it is limited in the sense that you
+
+625
+00:25:27,970 --> 00:25:30,330
+model check for a specific number of
+
+626
+00:25:30,340 --> 00:25:32,160
+nodes so you check for five nodes or for
+
+627
+00:25:32,170 --> 00:25:34,770
+seven nodes if you want to check more
+
+628
+00:25:34,780 --> 00:25:37,020
+comprehensively you can move on to using
+
+629
+00:25:37,030 --> 00:25:40,290
+a theorem prover so there's T laps which
+
+630
+00:25:40,300 --> 00:25:42,150
+is their improver over T la Plus
+
+631
+00:25:42,160 --> 00:25:45,150
+otherwise this theorem provers the one
+
+632
+00:25:45,160 --> 00:25:46,740
+developed by Cambridge University School
+
+633
+00:25:46,750 --> 00:25:49,140
+Isabel and there's another one this
+
+634
+00:25:49,150 --> 00:25:50,580
+written a no camel which is called cog
+
+635
+00:25:50,590 --> 00:25:53,790
+and they allow you to prove properties
+
+636
+00:25:53,800 --> 00:25:56,910
+of consensus algorithms this again is
+
+637
+00:25:56,920 --> 00:25:59,190
+very nice it allows you to reason about
+
+638
+00:25:59,200 --> 00:26:01,740
+edge cases but you then still have to
+
+639
+00:26:01,750 --> 00:26:04,350
+hand over the algorithm to two engineers
+
+640
+00:26:04,360 --> 00:26:07,590
+to implement and then you know who knows
+
+641
+00:26:07,600 --> 00:26:11,760
+that's implemented correctly and so I'm
+
+642
+00:26:11,770 --> 00:26:14,580
+a huge fan of the work of Calkins buri
+
+643
+00:26:14,590 --> 00:26:16,919
+which is probably further so if your
+
+644
+00:26:16,929 --> 00:26:18,180
+listeners who are interested in
+
+645
+00:26:18,190 --> 00:26:21,240
+databases mm-hmm and his Jessop system
+
+646
+00:26:21,250 --> 00:26:24,960
+where he tests various databases and key
+
+647
+00:26:24,970 --> 00:26:27,030
+value stores and he tests them for
+
+648
+00:26:27,040 --> 00:26:29,070
+linear writes ability and I doesn't
+
+649
+00:26:29,080 --> 00:26:31,770
+really good really good work in terms of
+
+650
+00:26:31,780 --> 00:26:33,780
+checking whether these algorithms
+
+651
+00:26:33,790 --> 00:26:35,490
+actually do what they say in the to say
+
+652
+00:26:35,500 --> 00:26:38,050
+on the tin and he's tested
+
+653
+00:26:38,060 --> 00:26:41,050
+and at CG I believe yeah I think that he
+
+654
+00:26:41,060 --> 00:26:42,580
+was a guest I don't have the number but
+
+655
+00:26:42,590 --> 00:26:44,710
+all I'll find it so what he does is
+
+656
+00:26:44,720 --> 00:26:47,680
+actually real-world testing is T la Plus
+
+657
+00:26:47,690 --> 00:26:49,660
+like a simulation is that how you would
+
+658
+00:26:49,670 --> 00:26:52,330
+describe it or is it a proof it's I
+
+659
+00:26:52,340 --> 00:26:54,570
+guess it's kind of like a simulation so
+
+660
+00:26:54,580 --> 00:26:58,480
+you write the algorithm in there
+
+661
+00:26:58,490 --> 00:27:01,030
+especially in the special ta+ language
+
+662
+00:27:01,040 --> 00:27:04,240
+and then you basically you model check
+
+663
+00:27:04,250 --> 00:27:06,280
+which is simulation but it's just
+
+664
+00:27:06,290 --> 00:27:08,650
+exhaustive simulation so you check all
+
+665
+00:27:08,660 --> 00:27:10,870
+possible scenarios is quite
+
+666
+00:27:10,880 --> 00:27:12,670
+computationally instead so as you can
+
+667
+00:27:12,680 --> 00:27:16,150
+imagine Oh an interesting thing I was
+
+668
+00:27:16,160 --> 00:27:17,440
+noticing I was looking at some
+
+669
+00:27:17,450 --> 00:27:21,160
+benchmarks online of zookeeper versus
+
+670
+00:27:21,170 --> 00:27:23,350
+@cd versus a couple other systems and
+
+671
+00:27:23,360 --> 00:27:26,200
+then looking at them versus like a more
+
+672
+00:27:26,210 --> 00:27:28,860
+traditional like key value store and
+
+673
+00:27:28,870 --> 00:27:32,260
+they seem to be not there they're
+
+674
+00:27:32,270 --> 00:27:34,090
+obviously slower because consensus has
+
+675
+00:27:34,100 --> 00:27:37,150
+to be reached but not too bad but what I
+
+676
+00:27:37,160 --> 00:27:39,610
+noticed is there's big spikes in like
+
+677
+00:27:39,620 --> 00:27:41,860
+latency like occasionally a write takes
+
+678
+00:27:41,870 --> 00:27:43,780
+a long time I wondered if there was
+
+679
+00:27:43,790 --> 00:27:45,910
+something to do with reaching consensus
+
+680
+00:27:45,920 --> 00:27:47,770
+that can cause like unpredictable times
+
+681
+00:27:47,780 --> 00:27:50,680
+for updates yes so there's definitely
+
+682
+00:27:50,690 --> 00:27:53,110
+stuff that that can that can go wrong in
+
+683
+00:27:53,120 --> 00:27:54,280
+practice that could leave to a high
+
+684
+00:27:54,290 --> 00:27:57,190
+latency so probably the most common
+
+685
+00:27:57,200 --> 00:28:00,430
+would be a failure of the leader or just
+
+686
+00:28:00,440 --> 00:28:02,680
+a suspected failure of the leader so if
+
+687
+00:28:02,690 --> 00:28:04,300
+there was say a bit of congestion in the
+
+688
+00:28:04,310 --> 00:28:06,490
+network and the other participants
+
+689
+00:28:06,500 --> 00:28:08,080
+accidentally believed that the leader
+
+690
+00:28:08,090 --> 00:28:10,390
+had failed and they go on to try and
+
+691
+00:28:10,400 --> 00:28:12,880
+elect a new leader that can take quite
+
+692
+00:28:12,890 --> 00:28:15,490
+really quite a long time and it's quite
+
+693
+00:28:15,500 --> 00:28:18,010
+funny because you know no no failures of
+
+694
+00:28:18,020 --> 00:28:20,710
+actual of actual participants in your
+
+695
+00:28:20,720 --> 00:28:23,290
+system need to occur for your system to
+
+696
+00:28:23,300 --> 00:28:25,270
+actually believe that there's a failure
+
+697
+00:28:25,280 --> 00:28:27,970
+and then suffer the high latency as a
+
+698
+00:28:27,980 --> 00:28:31,360
+result yeah earlier you mentioned like
+
+699
+00:28:31,370 --> 00:28:35,170
+multi data center consistency it seems
+
+700
+00:28:35,180 --> 00:28:37,300
+like that would be a challenge with with
+
+701
+00:28:37,310 --> 00:28:40,510
+the latency and possibly like losing
+
+702
+00:28:40,520 --> 00:28:42,700
+contact is this being done in practice
+
+703
+00:28:42,710 --> 00:28:45,400
+like consistency across data centers
+
+704
+00:28:45,410 --> 00:28:51,280
+yeah it is it is so Google mega store
+
+705
+00:28:51,290 --> 00:28:54,670
+and is paxos influence Paxos across data
+
+706
+00:28:54,680 --> 00:28:58,210
+centers it's it is hard it is tricky I
+
+707
+00:28:58,220 --> 00:29:01,150
+think what usually happens is that
+
+708
+00:29:01,160 --> 00:29:03,700
+because we don't want to accidentally
+
+709
+00:29:03,710 --> 00:29:05,380
+believe a leader has failed we set
+
+710
+00:29:05,390 --> 00:29:08,320
+timers for how often we heart be the
+
+711
+00:29:08,330 --> 00:29:09,850
+leader and how long we're willing to
+
+712
+00:29:09,860 --> 00:29:11,740
+wait before we start reporting this
+
+713
+00:29:11,750 --> 00:29:14,800
+leader as having failed we have in a Geo
+
+714
+00:29:14,810 --> 00:29:16,240
+replicated setting we have to set those
+
+715
+00:29:16,250 --> 00:29:19,560
+timers quite high to stop those false
+
+716
+00:29:19,570 --> 00:29:23,020
+failure detection detection the downside
+
+717
+00:29:23,030 --> 00:29:24,670
+of this of course is that when a failure
+
+718
+00:29:24,680 --> 00:29:27,340
+does happen and the leader does go down
+
+719
+00:29:27,350 --> 00:29:30,000
+the system will wait a long time
+
+720
+00:29:30,010 --> 00:29:32,260
+unnecessarily just to be a hundred
+
+721
+00:29:32,270 --> 00:29:33,820
+percent sure that that leader has gone
+
+722
+00:29:33,830 --> 00:29:36,640
+down well 99% sure you can never be a
+
+723
+00:29:36,650 --> 00:29:38,260
+hundred percent sure of anything in
+
+724
+00:29:38,270 --> 00:29:41,160
+distributed systems
+
+725
+00:29:44,350 --> 00:29:44,360
+so you mentioned time outs in a
+
+726
+00:29:44,360 --> 00:29:47,470
+distributed system I think I I saw in a
+
+727
+00:29:47,480 --> 00:29:49,900
+talk of yours something called the FLP
+
+728
+00:29:49,910 --> 00:29:52,540
+result which I believe showed that
+
+729
+00:29:52,550 --> 00:29:54,730
+reaching consensus could be impossible
+
+730
+00:29:54,740 --> 00:29:57,550
+is that right yes that's right so quite
+
+731
+00:29:57,560 --> 00:29:59,770
+entertainingly the FLP result was
+
+732
+00:29:59,780 --> 00:30:02,800
+basically the paper that founded the
+
+733
+00:30:02,810 --> 00:30:05,110
+field of distributed consensus so paper
+
+734
+00:30:05,120 --> 00:30:07,480
+that said this thing is impossible led
+
+735
+00:30:07,490 --> 00:30:09,640
+to decades of researchers trying to
+
+736
+00:30:09,650 --> 00:30:13,150
+prove the authors wrong and what that
+
+737
+00:30:13,160 --> 00:30:15,700
+paper says is that it's impossible to
+
+738
+00:30:15,710 --> 00:30:18,190
+guarantee consensus in a system where
+
+739
+00:30:18,200 --> 00:30:21,850
+even one participant might fail which is
+
+740
+00:30:21,860 --> 00:30:23,350
+interesting because it doesn't even say
+
+741
+00:30:23,360 --> 00:30:25,510
+one participant fails if there's just
+
+742
+00:30:25,520 --> 00:30:27,880
+the possibility that a participant might
+
+743
+00:30:27,890 --> 00:30:31,810
+fail you can't guarantee consensus so
+
+744
+00:30:31,820 --> 00:30:32,860
+that means you can't be sure that
+
+745
+00:30:32,870 --> 00:30:35,260
+consensus will happen within a bounded
+
+746
+00:30:35,270 --> 00:30:40,540
+time period so I don't get then if it's
+
+747
+00:30:40,550 --> 00:30:42,850
+impossible how is this resolved or was
+
+748
+00:30:42,860 --> 00:30:46,900
+it we don't get guaranteed consensus in
+
+749
+00:30:46,910 --> 00:30:49,450
+practice in practice we do things like
+
+750
+00:30:49,460 --> 00:30:52,030
+we have we use timers and we set them
+
+751
+00:30:52,040 --> 00:30:54,370
+quite high and we all when we send a
+
+752
+00:30:54,380 --> 00:30:57,130
+message instead of we use things like
+
+753
+00:30:57,140 --> 00:30:59,170
+TCP and we say we just assume the
+
+754
+00:30:59,180 --> 00:31:03,250
+message will get there within a year and
+
+755
+00:31:03,260 --> 00:31:04,970
+that allows us to
+
+756
+00:31:04,980 --> 00:31:07,550
+circumvent the FOP result in practice
+
+757
+00:31:07,560 --> 00:31:11,450
+and why why does the FLP result results
+
+758
+00:31:11,460 --> 00:31:13,400
+suggest that it's impossible it's
+
+759
+00:31:13,410 --> 00:31:15,470
+impossible because we can't guarantee
+
+760
+00:31:15,480 --> 00:31:18,110
+within like a fixed time period that we
+
+761
+00:31:18,120 --> 00:31:19,940
+will be able to get consensus so we
+
+762
+00:31:19,950 --> 00:31:21,890
+can't definitely say like it is gonna
+
+763
+00:31:21,900 --> 00:31:24,320
+happen in this amount of time which
+
+764
+00:31:24,330 --> 00:31:25,670
+makes sense when we can't even guarantee
+
+765
+00:31:25,680 --> 00:31:27,590
+that a message will get to somewhere
+
+766
+00:31:27,600 --> 00:31:29,300
+within a fixed amount of time so we
+
+767
+00:31:29,310 --> 00:31:30,860
+definitely can't guarantee that many
+
+768
+00:31:30,870 --> 00:31:32,750
+messages will have got too many
+
+769
+00:31:32,760 --> 00:31:35,510
+different places within a fixed amount
+
+770
+00:31:35,520 --> 00:31:38,090
+of time so is it related to this idea
+
+771
+00:31:38,100 --> 00:31:39,890
+like I can't tell if you're still there
+
+772
+00:31:39,900 --> 00:31:42,740
+because you might be there but just not
+
+773
+00:31:42,750 --> 00:31:47,450
+getting my my requests yeah yep um so
+
+774
+00:31:47,460 --> 00:31:49,490
+how did you get interested in this field
+
+775
+00:31:49,500 --> 00:31:52,730
+so I came across the rough paper whilst
+
+776
+00:31:52,740 --> 00:31:55,640
+I was doing my undergraduate and I read
+
+777
+00:31:55,650 --> 00:31:58,010
+the paper and I thought it was really
+
+778
+00:31:58,020 --> 00:31:59,990
+interesting and I was really excited by
+
+779
+00:32:00,000 --> 00:32:01,940
+the idea of consensus and at this point
+
+780
+00:32:01,950 --> 00:32:04,040
+the paper was just a draft online it
+
+781
+00:32:04,050 --> 00:32:05,510
+hadn't been published or anything like
+
+782
+00:32:05,520 --> 00:32:08,750
+that and I like many people wanted to go
+
+783
+00:32:08,760 --> 00:32:10,490
+away and implement it so I did I
+
+784
+00:32:10,500 --> 00:32:12,350
+implemented it in my favorite language
+
+785
+00:32:12,360 --> 00:32:14,570
+at the time which is okay was work was
+
+786
+00:32:14,580 --> 00:32:18,710
+is Oh camel and in that implementation I
+
+787
+00:32:18,720 --> 00:32:20,210
+came up with like what I thought was
+
+788
+00:32:20,220 --> 00:32:22,610
+some cool novel optimizations to the
+
+789
+00:32:22,620 --> 00:32:24,230
+algorithm to make the performance better
+
+790
+00:32:24,240 --> 00:32:26,990
+so I implemented those and I started
+
+791
+00:32:27,000 --> 00:32:28,850
+telling people about them very very
+
+792
+00:32:28,860 --> 00:32:31,880
+excited I was and then people were like
+
+793
+00:32:31,890 --> 00:32:34,700
+this is all known stuff this is like
+
+794
+00:32:34,710 --> 00:32:36,440
+what people use with Paxos all the time
+
+795
+00:32:36,450 --> 00:32:38,630
+and you need to go away and do a lot of
+
+796
+00:32:38,640 --> 00:32:40,880
+reading about Paxos and consensus before
+
+797
+00:32:40,890 --> 00:32:42,920
+you can start optimizing consensus
+
+798
+00:32:42,930 --> 00:32:46,370
+algorithms so I went away and I read
+
+799
+00:32:46,380 --> 00:32:49,300
+various algorithms on consensus I also
+
+800
+00:32:49,310 --> 00:32:51,980
+started giving some talks about those
+
+801
+00:32:51,990 --> 00:32:54,140
+papers that I'd read because I don't
+
+802
+00:32:54,150 --> 00:32:56,210
+think you really I think you really know
+
+803
+00:32:56,220 --> 00:32:57,530
+something until you try to teach it to
+
+804
+00:32:57,540 --> 00:33:00,530
+somebody else and from there I got more
+
+805
+00:33:00,540 --> 00:33:02,510
+and more interested in consensus
+
+806
+00:33:02,520 --> 00:33:04,160
+algorithms and how we could optimize
+
+807
+00:33:04,170 --> 00:33:07,520
+their performance in practice is the
+
+808
+00:33:07,530 --> 00:33:09,680
+danger with your early optimizations
+
+809
+00:33:09,690 --> 00:33:12,080
+just that they would make it you know
+
+810
+00:33:12,090 --> 00:33:14,390
+not always consistent in some way that
+
+811
+00:33:14,400 --> 00:33:17,779
+you didn't perceive not normally
+
+812
+00:33:17,789 --> 00:33:20,330
+mostly they're just complicated and they
+
+813
+00:33:20,340 --> 00:33:22,999
+take away from the point of raft the
+
+814
+00:33:23,009 --> 00:33:25,989
+whole point of raft is that it it puts
+
+815
+00:33:25,999 --> 00:33:29,210
+simplicity first and they say upfront in
+
+816
+00:33:29,220 --> 00:33:31,099
+the paper they say you know well we had
+
+817
+00:33:31,109 --> 00:33:32,690
+a choice between performance and
+
+818
+00:33:32,700 --> 00:33:34,279
+understandability we chose
+
+819
+00:33:34,289 --> 00:33:36,409
+understandability so I was basically
+
+820
+00:33:36,419 --> 00:33:39,109
+just putting back in all of the stuff
+
+821
+00:33:39,119 --> 00:33:42,080
+that they had taken out from paxos and I
+
+822
+00:33:42,090 --> 00:33:43,909
+was putting it back in to try to make it
+
+823
+00:33:43,919 --> 00:33:46,690
+more efficient there is definitely a
+
+824
+00:33:46,700 --> 00:33:49,279
+definitely a challenge with ensuring the
+
+825
+00:33:49,289 --> 00:33:51,710
+safety of optimizations particularly
+
+826
+00:33:51,720 --> 00:33:55,339
+when people start to use clocks and rely
+
+827
+00:33:55,349 --> 00:33:58,930
+on clocks so things like master leases
+
+828
+00:33:58,940 --> 00:34:01,460
+as a software engineer chances are
+
+829
+00:34:01,470 --> 00:34:03,320
+you've crossed paths with MongoDB at
+
+830
+00:34:03,330 --> 00:34:04,969
+some point whether you're building an
+
+831
+00:34:04,979 --> 00:34:06,320
+app for millions of users are just
+
+832
+00:34:06,330 --> 00:34:08,659
+figuring out a side hustle as the most
+
+833
+00:34:08,669 --> 00:34:11,030
+popular non relational database MongoDB
+
+834
+00:34:11,040 --> 00:34:12,859
+is intuitive and incredibly easy for
+
+835
+00:34:12,869 --> 00:34:15,200
+development teams to use now with
+
+836
+00:34:15,210 --> 00:34:17,629
+MongoDB Atlas you can take advantage of
+
+837
+00:34:17,639 --> 00:34:20,030
+MongoDB flexible document data model as
+
+838
+00:34:20,040 --> 00:34:23,000
+a fully automated cloud service MongoDB
+
+839
+00:34:23,010 --> 00:34:24,980
+Atlas handles all the costly database
+
+840
+00:34:24,990 --> 00:34:26,899
+operations and admin tasks you'd rather
+
+841
+00:34:26,909 --> 00:34:29,059
+not spend time on like security high
+
+842
+00:34:29,069 --> 00:34:31,159
+availability data recovery monitoring
+
+843
+00:34:31,169 --> 00:34:34,099
+and elastic scaling try MongoDB Atlas
+
+844
+00:34:34,109 --> 00:34:35,119
+for free today
+
+845
+00:34:35,129 --> 00:34:38,030
+visit MongoDB comm slash cloud to learn
+
+846
+00:34:38,040 --> 00:34:44,539
+more when when we talk about an
+
+847
+00:34:44,549 --> 00:34:47,389
+innovation like you're flexible paxos
+
+848
+00:34:47,399 --> 00:34:49,250
+like what is coming up with that involve
+
+849
+00:34:49,260 --> 00:34:51,500
+are you using the TI plus that you
+
+850
+00:34:51,510 --> 00:34:53,720
+discussed sir you just have an idea or
+
+851
+00:34:53,730 --> 00:34:57,710
+what is your steps so the story of a
+
+852
+00:34:57,720 --> 00:34:59,569
+flexible practice is quite a funny one
+
+853
+00:34:59,579 --> 00:35:02,210
+so I was in it was three summers ago I
+
+854
+00:35:02,220 --> 00:35:04,579
+went to vmware research in in palo alto
+
+855
+00:35:04,589 --> 00:35:07,220
+california to work with dolly and monkey
+
+856
+00:35:07,230 --> 00:35:10,160
+who's a very famous computer scientists
+
+857
+00:35:10,170 --> 00:35:11,809
+in the field of distributed consensus
+
+858
+00:35:11,819 --> 00:35:13,819
+and she wanted me to work on an area
+
+859
+00:35:13,829 --> 00:35:16,099
+known as Byzantine fault tolerance so
+
+860
+00:35:16,109 --> 00:35:17,960
+that is the type of consensus that fuels
+
+861
+00:35:17,970 --> 00:35:20,960
+to blockchain and whilst I was kind of
+
+862
+00:35:20,970 --> 00:35:22,789
+trying to get my head together with
+
+863
+00:35:22,799 --> 00:35:25,370
+Byzantine fault tolerance I was also
+
+864
+00:35:25,380 --> 00:35:27,319
+trying to put together a talk to kind of
+
+865
+00:35:27,329 --> 00:35:30,290
+introduce myself to the team about
+
+866
+00:35:30,300 --> 00:35:32,150
+and how it works and how do we teach
+
+867
+00:35:32,160 --> 00:35:34,840
+Paxos from real like first principles
+
+868
+00:35:34,850 --> 00:35:37,010
+Lamport has this famous quote where he
+
+869
+00:35:37,020 --> 00:35:37,580
+says that
+
+870
+00:35:37,590 --> 00:35:40,640
+paxos is practice is inevitable you know
+
+871
+00:35:40,650 --> 00:35:42,440
+if you just think about consensus you
+
+872
+00:35:42,450 --> 00:35:45,020
+would derive Paxos and so I was trying
+
+873
+00:35:45,030 --> 00:35:46,880
+to kind of put that to the test and
+
+874
+00:35:46,890 --> 00:35:48,920
+whilst I was doing it and I'm also
+
+875
+00:35:48,930 --> 00:35:50,090
+trying to prove it
+
+876
+00:35:50,100 --> 00:35:51,950
+using kind of pen and paper proof I
+
+877
+00:35:51,960 --> 00:35:53,930
+couldn't see why we needed to use
+
+878
+00:35:53,940 --> 00:35:56,870
+majorities for consensus and I went
+
+879
+00:35:56,880 --> 00:35:58,310
+through a good few weeks of just
+
+880
+00:35:58,320 --> 00:36:00,770
+thinking oh my gosh I don't understand
+
+881
+00:36:00,780 --> 00:36:02,510
+paxos this is a thing I think going
+
+882
+00:36:02,520 --> 00:36:04,430
+around and talking to people about and
+
+883
+00:36:04,440 --> 00:36:06,380
+like I've been telling people about
+
+884
+00:36:06,390 --> 00:36:07,940
+consensus and people assume that I know
+
+885
+00:36:07,950 --> 00:36:09,890
+but I just I can't understand why we
+
+886
+00:36:09,900 --> 00:36:13,250
+need majorities so I definitely spent
+
+887
+00:36:13,260 --> 00:36:14,480
+quite a while scratching my head
+
+888
+00:36:14,490 --> 00:36:16,130
+assuming I was just missing something
+
+889
+00:36:16,140 --> 00:36:18,830
+and eventually I got the bravery
+
+890
+00:36:18,840 --> 00:36:21,290
+together to go to my colleague Dahlia
+
+891
+00:36:21,300 --> 00:36:23,270
+monkey and say like why whose pixels
+
+892
+00:36:23,280 --> 00:36:26,330
+need to use majority quorums and
+
+893
+00:36:26,340 --> 00:36:28,040
+initially she was like well you know for
+
+894
+00:36:28,050 --> 00:36:30,860
+safety's it's obvious and then I was
+
+895
+00:36:30,870 --> 00:36:32,930
+like but why for safety and she thought
+
+896
+00:36:32,940 --> 00:36:35,930
+about it and she was like you you don't
+
+897
+00:36:35,940 --> 00:36:37,700
+need them you don't need them the court
+
+898
+00:36:37,710 --> 00:36:40,220
+the requirement about quorums is weaker
+
+899
+00:36:40,230 --> 00:36:43,840
+than them what paxos uses and so then we
+
+900
+00:36:43,850 --> 00:36:46,730
+expressed it in TLA plus i was it was
+
+901
+00:36:46,740 --> 00:36:48,860
+pretty easy to express because Lamport
+
+902
+00:36:48,870 --> 00:36:51,530
+actually written a Paxos implementation
+
+903
+00:36:51,540 --> 00:36:53,720
+into la plus so varying that for
+
+904
+00:36:53,730 --> 00:36:55,940
+flexible Paxos was quite straightforward
+
+905
+00:36:55,950 --> 00:36:59,270
+and then we wrote up a paper and sent it
+
+906
+00:36:59,280 --> 00:37:01,250
+around and it was very helpful to have
+
+907
+00:37:01,260 --> 00:37:04,010
+done the tli plus stuff and to have a
+
+908
+00:37:04,020 --> 00:37:06,470
+famous computer scientist like Dahlia
+
+909
+00:37:06,480 --> 00:37:08,570
+kind of backing that works try and
+
+910
+00:37:08,580 --> 00:37:10,070
+convince other people that it was true
+
+911
+00:37:10,080 --> 00:37:11,390
+because I think for a lot of people's
+
+912
+00:37:11,400 --> 00:37:13,610
+initial reaction was like what is this
+
+913
+00:37:13,620 --> 00:37:15,440
+what are you talking about everyone
+
+914
+00:37:15,450 --> 00:37:17,210
+knows packed cells needs to use
+
+915
+00:37:17,220 --> 00:37:21,170
+majorities for safety wow it sounds like
+
+916
+00:37:21,180 --> 00:37:24,290
+quite an exciting time I think isn't it
+
+917
+00:37:24,300 --> 00:37:26,090
+true that the original like Paxos paper
+
+918
+00:37:26,100 --> 00:37:29,720
+took a long time to gain acceptance yes
+
+919
+00:37:29,730 --> 00:37:33,820
+yes it is so I think it was seven years
+
+920
+00:37:33,830 --> 00:37:37,340
+remembering correctly that the paper I
+
+921
+00:37:37,350 --> 00:37:39,470
+think some versions of it had like been
+
+922
+00:37:39,480 --> 00:37:41,120
+distributed to some people but it wasn't
+
+923
+00:37:41,130 --> 00:37:42,620
+formally published for
+
+924
+00:37:42,630 --> 00:37:45,920
+for a long long time it's still I think
+
+925
+00:37:45,930 --> 00:37:49,609
+once it was published Butler Lampson I
+
+926
+00:37:49,619 --> 00:37:52,660
+believe wrote a paper about
+
+927
+00:37:52,670 --> 00:37:55,910
+lamport's paxos paper and really kind of
+
+928
+00:37:55,920 --> 00:37:57,650
+and mumble had already got a good
+
+929
+00:37:57,660 --> 00:37:58,970
+reputation for his work in distributed
+
+930
+00:37:58,980 --> 00:38:01,400
+systems that it really like as soon as
+
+931
+00:38:01,410 --> 00:38:03,109
+it was available I really took off very
+
+932
+00:38:03,119 --> 00:38:07,130
+quickly if you're using this TL A+ to
+
+933
+00:38:07,140 --> 00:38:09,620
+show something like that the majority is
+
+934
+00:38:09,630 --> 00:38:11,900
+not needed like why is is getting
+
+935
+00:38:11,910 --> 00:38:13,519
+accepted tired like isn't that a
+
+936
+00:38:13,529 --> 00:38:16,970
+demonstration because it's very hard to
+
+937
+00:38:16,980 --> 00:38:18,380
+convince people that stuff they've
+
+938
+00:38:18,390 --> 00:38:19,970
+believed to be true for a long time
+
+939
+00:38:19,980 --> 00:38:22,819
+isn't true and a lot of the descriptions
+
+940
+00:38:22,829 --> 00:38:25,370
+of paxos bake the idea of majorities
+
+941
+00:38:25,380 --> 00:38:27,859
+right into the very definition of what
+
+942
+00:38:27,869 --> 00:38:29,779
+it means to reach consensus and
+
+943
+00:38:29,789 --> 00:38:32,089
+therefore the idea of not having them is
+
+944
+00:38:32,099 --> 00:38:35,779
+is crazy and with TL a-plus like it does
+
+945
+00:38:35,789 --> 00:38:37,999
+have its limitations so like I said when
+
+946
+00:38:38,009 --> 00:38:41,150
+you check a model you specify a number
+
+947
+00:38:41,160 --> 00:38:43,220
+of notes so you can't show for all
+
+948
+00:38:43,230 --> 00:38:45,259
+possible and where n is the number of
+
+949
+00:38:45,269 --> 00:38:47,539
+notes you can say I've checked for three
+
+950
+00:38:47,549 --> 00:38:49,730
+and five and seven but I can't say that
+
+951
+00:38:49,740 --> 00:38:52,519
+it's true in a general case did you end
+
+952
+00:38:52,529 --> 00:38:54,259
+up showing it's true in a general case
+
+953
+00:38:54,269 --> 00:38:56,539
+using another tool at another time
+
+954
+00:38:56,549 --> 00:38:59,539
+so I've done a pen and paper kind of
+
+955
+00:38:59,549 --> 00:39:01,460
+paper boof where you kind of break it
+
+956
+00:39:01,470 --> 00:39:03,680
+down and and I've washed out over a few
+
+957
+00:39:03,690 --> 00:39:05,240
+pages and that's something people have
+
+958
+00:39:05,250 --> 00:39:08,269
+been very been happy enough with once
+
+959
+00:39:08,279 --> 00:39:10,549
+you once you once you find the right way
+
+960
+00:39:10,559 --> 00:39:12,230
+of explaining it you can easily make
+
+961
+00:39:12,240 --> 00:39:14,660
+quite a convincing case for flexible
+
+962
+00:39:14,670 --> 00:39:16,700
+paxos what I'm actually one of the
+
+963
+00:39:16,710 --> 00:39:18,019
+things I'm working on at the moment is
+
+964
+00:39:18,029 --> 00:39:19,279
+learning to use
+
+965
+00:39:19,289 --> 00:39:22,009
+Isabeau which is a their improver so
+
+966
+00:39:22,019 --> 00:39:24,710
+that I can prove these things in the
+
+967
+00:39:24,720 --> 00:39:27,079
+general case it's one of those things or
+
+968
+00:39:27,089 --> 00:39:28,700
+it takes a long time to learn and it's
+
+969
+00:39:28,710 --> 00:39:30,859
+quite a difficult tool but hopefully
+
+970
+00:39:30,869 --> 00:39:32,690
+once I've once I've got it
+
+971
+00:39:32,700 --> 00:39:35,329
+I'll be able to use a again and again to
+
+972
+00:39:35,339 --> 00:39:37,910
+show consider correctness or the in
+
+973
+00:39:37,920 --> 00:39:40,249
+correctness of consensus algorithms and
+
+974
+00:39:40,259 --> 00:39:43,309
+are there future innovations and
+
+975
+00:39:43,319 --> 00:39:49,880
+consensus algorithms expected in the
+
+976
+00:39:49,890 --> 00:39:51,380
+paper recently which is called the
+
+977
+00:39:51,390 --> 00:39:53,180
+generalized solution to distributed
+
+978
+00:39:53,190 --> 00:39:55,890
+consensus and what it does is it breaks
+
+979
+00:39:55,900 --> 00:39:58,079
+Consensus such that it only uses
+
+980
+00:39:58,089 --> 00:40:00,720
+immutable registers the good thing about
+
+981
+00:40:00,730 --> 00:40:03,120
+only using immutable registers is that
+
+982
+00:40:03,130 --> 00:40:04,950
+when you have immutability it's a lot
+
+983
+00:40:04,960 --> 00:40:08,220
+easier to see what's going on and if you
+
+984
+00:40:08,230 --> 00:40:10,799
+read a register you know that that value
+
+985
+00:40:10,809 --> 00:40:13,410
+will always be the same by switching to
+
+986
+00:40:13,420 --> 00:40:15,299
+that representation of using immutable
+
+987
+00:40:15,309 --> 00:40:17,519
+registers it's become apparent that
+
+988
+00:40:17,529 --> 00:40:19,890
+there are even more consensus algorithms
+
+989
+00:40:19,900 --> 00:40:21,029
+that are correct than I originally
+
+990
+00:40:21,039 --> 00:40:24,269
+thought and so at the moment it's just a
+
+991
+00:40:24,279 --> 00:40:26,489
+case of exploring specific points in
+
+992
+00:40:26,499 --> 00:40:30,239
+that space so the area is not like
+
+993
+00:40:30,249 --> 00:40:33,210
+totally explored no no definitely not
+
+994
+00:40:33,220 --> 00:40:37,140
+and beyond kind of the consensus I
+
+995
+00:40:37,150 --> 00:40:39,359
+currently work on which is non Byzantine
+
+996
+00:40:39,369 --> 00:40:42,359
+consensus there is Byzantine consensus
+
+997
+00:40:42,369 --> 00:40:44,370
+so this is where participants can act
+
+998
+00:40:44,380 --> 00:40:47,210
+maliciously or just arbitrarily
+
+999
+00:40:47,220 --> 00:40:49,799
+Byzantine consensus has been around for
+
+1000
+00:40:49,809 --> 00:40:52,710
+a very long time but is now getting a
+
+1001
+00:40:52,720 --> 00:40:54,839
+lot of interest because of blockchain
+
+1002
+00:40:54,849 --> 00:40:56,160
+and cryptocurrencies
+
+1003
+00:40:56,170 --> 00:40:58,650
+how does blockchain and consensus really
+
+1004
+00:40:58,660 --> 00:41:01,109
+I'm not clear on that so in the
+
+1005
+00:41:01,119 --> 00:41:02,819
+blockchain generally what happens is you
+
+1006
+00:41:02,829 --> 00:41:06,599
+use some process like proof of work to
+
+1007
+00:41:06,609 --> 00:41:09,029
+elect a committee and that committee
+
+1008
+00:41:09,039 --> 00:41:12,599
+makes decisions using Byzantine fault
+
+1009
+00:41:12,609 --> 00:41:14,549
+tolerant consensus algorithm such as
+
+1010
+00:41:14,559 --> 00:41:17,460
+pbft practical Byzantine fault tolerance
+
+1011
+00:41:17,470 --> 00:41:20,039
+and in that algorithm it basically uses
+
+1012
+00:41:20,049 --> 00:41:22,769
+extra round trips and the signing of
+
+1013
+00:41:22,779 --> 00:41:25,440
+messages to keep a record each
+
+1014
+00:41:25,450 --> 00:41:27,150
+participant basin keeps a record of what
+
+1015
+00:41:27,160 --> 00:41:28,470
+all the other participants in the system
+
+1016
+00:41:28,480 --> 00:41:30,539
+are doing so that when you reach
+
+1017
+00:41:30,549 --> 00:41:32,970
+consensus so you can reach consensus
+
+1018
+00:41:32,980 --> 00:41:35,190
+whilst tolerating the fact that some of
+
+1019
+00:41:35,200 --> 00:41:36,599
+those participants might have lied to
+
+1020
+00:41:36,609 --> 00:41:39,239
+you it is more even more heavyweight
+
+1021
+00:41:39,249 --> 00:41:42,420
+than normal consensus why would you be
+
+1022
+00:41:42,430 --> 00:41:44,400
+concerned that nodes my lie to you
+
+1023
+00:41:44,410 --> 00:41:46,349
+because you don't know who's who's
+
+1024
+00:41:46,359 --> 00:41:49,829
+operating who's operating that node so
+
+1025
+00:41:49,839 --> 00:41:53,039
+with the kind of consensus I usually
+
+1026
+00:41:53,049 --> 00:41:55,140
+work on you control all the nodes and
+
+1027
+00:41:55,150 --> 00:41:57,269
+they're in your datacenter and everybody
+
+1028
+00:41:57,279 --> 00:41:59,579
+is able to trust everyone else but out
+
+1029
+00:41:59,589 --> 00:42:01,049
+in the real world you know different
+
+1030
+00:42:01,059 --> 00:42:03,059
+people are operating different machines
+
+1031
+00:42:03,069 --> 00:42:07,860
+also you know programs contain books
+
+1032
+00:42:07,870 --> 00:42:10,470
+and if you're using Byzantine fault
+
+1033
+00:42:10,480 --> 00:42:12,870
+tolerance to build say a cryptocurrency
+
+1034
+00:42:12,880 --> 00:42:15,540
+what you've got is some really motivated
+
+1035
+00:42:15,550 --> 00:42:17,340
+attackers who would be willing to put a
+
+1036
+00:42:17,350 --> 00:42:19,740
+lot of resources in to try to compromise
+
+1037
+00:42:19,750 --> 00:42:22,620
+some of those hosts and take over the
+
+1038
+00:42:22,630 --> 00:42:25,440
+distributed consensus component yeah so
+
+1039
+00:42:25,450 --> 00:42:27,990
+in a like in a zookeeper system like I
+
+1040
+00:42:28,000 --> 00:42:29,910
+control all the nodes and I don't have
+
+1041
+00:42:29,920 --> 00:42:32,280
+to worry about them misbehaving is there
+
+1042
+00:42:32,290 --> 00:42:34,530
+value for kind of the zookeeper scenario
+
+1043
+00:42:34,540 --> 00:42:36,240
+some of the breakthroughs in the
+
+1044
+00:42:36,250 --> 00:42:38,580
+blockchain area like what it never makes
+
+1045
+00:42:38,590 --> 00:42:40,800
+sense to have zookeeper be able to
+
+1046
+00:42:40,810 --> 00:42:43,260
+handle adversarial nodes or something so
+
+1047
+00:42:43,270 --> 00:42:44,670
+people are working on this there is
+
+1048
+00:42:44,680 --> 00:42:47,070
+Byzantine fault tolerant versions of
+
+1049
+00:42:47,080 --> 00:42:50,220
+raft it's an it's not my speciality my
+
+1050
+00:42:50,230 --> 00:42:53,070
+PhD was entirely in the non Byzantine
+
+1051
+00:42:53,080 --> 00:42:56,960
+space I personally think that the best
+
+1052
+00:42:56,970 --> 00:42:59,340
+Byzantine consensus algorithms are
+
+1053
+00:42:59,350 --> 00:43:02,340
+leaderless though decentralized because
+
+1054
+00:43:02,350 --> 00:43:04,920
+if you have a leader it just makes a lot
+
+1055
+00:43:04,930 --> 00:43:07,530
+harder to construct a Byzantine
+
+1056
+00:43:07,540 --> 00:43:09,150
+consensus algorithm because you have to
+
+1057
+00:43:09,160 --> 00:43:10,890
+deal with the fact that that leader that
+
+1058
+00:43:10,900 --> 00:43:12,870
+pointer centralization in your system
+
+1059
+00:43:12,880 --> 00:43:14,910
+might lie whereas if you have a
+
+1060
+00:43:14,920 --> 00:43:16,710
+decentralized system I think it's much
+
+1061
+00:43:16,720 --> 00:43:19,440
+easier to tolerate lies and a malicious
+
+1062
+00:43:19,450 --> 00:43:21,560
+participants is their performance
+
+1063
+00:43:21,570 --> 00:43:23,550
+ramifications if you don't have a leader
+
+1064
+00:43:23,560 --> 00:43:26,190
+as is it more complicated or or slower
+
+1065
+00:43:26,200 --> 00:43:30,030
+it is generally a little bit slower like
+
+1066
+00:43:30,040 --> 00:43:31,650
+if you take something like fast pack
+
+1067
+00:43:31,660 --> 00:43:35,400
+sauce which is a fast packs also slower
+
+1068
+00:43:35,410 --> 00:43:39,120
+fast facts versus larger quorum so it
+
+1069
+00:43:39,130 --> 00:43:40,800
+might say two-thirds of participants
+
+1070
+00:43:40,810 --> 00:43:42,360
+have to agree something before it can
+
+1071
+00:43:42,370 --> 00:43:44,190
+happen instead of saying just over half
+
+1072
+00:43:44,200 --> 00:43:46,650
+of the participants have to have to
+
+1073
+00:43:46,660 --> 00:43:48,990
+agree performance can perform install so
+
+1074
+00:43:49,000 --> 00:43:51,570
+be less reliable so in an algorithm like
+
+1075
+00:43:51,580 --> 00:43:53,010
+fast pack sauce you can end up with
+
+1076
+00:43:53,020 --> 00:43:55,440
+situations where because you don't have
+
+1077
+00:43:55,450 --> 00:43:57,360
+a leader you have two people trying to
+
+1078
+00:43:57,370 --> 00:43:59,430
+do to do something at the same time and
+
+1079
+00:43:59,440 --> 00:44:01,770
+they conflict and one of them has to
+
+1080
+00:44:01,780 --> 00:44:04,500
+back off and try again so we've heard
+
+1081
+00:44:04,510 --> 00:44:07,200
+about variations on on distributed
+
+1082
+00:44:07,210 --> 00:44:09,510
+consensus like what does the future hold
+
+1083
+00:44:09,520 --> 00:44:11,430
+like I'm a software developer the
+
+1084
+00:44:11,440 --> 00:44:14,820
+listeners are as well can we expect what
+
+1085
+00:44:14,830 --> 00:44:17,130
+a faster zookeeper some new breakthrough
+
+1086
+00:44:17,140 --> 00:44:19,380
+I've never heard of everything rights to
+
+1087
+00:44:19,390 --> 00:44:20,460
+the blockchain
+
+1088
+00:44:20,470 --> 00:44:21,870
+where do you think things are heading I
+
+1089
+00:44:21,880 --> 00:44:24,450
+think we're heading towards a world
+
+1090
+00:44:24,460 --> 00:44:26,640
+where we have more options in terms of
+
+1091
+00:44:26,650 --> 00:44:28,050
+distributed consensus that are
+
+1092
+00:44:28,060 --> 00:44:30,870
+specialized to different scenarios so at
+
+1093
+00:44:30,880 --> 00:44:33,300
+the moment we really in practice we
+
+1094
+00:44:33,310 --> 00:44:35,700
+mostly have paxos and its variants and
+
+1095
+00:44:35,710 --> 00:44:37,980
+they're all use majorities and they're
+
+1096
+00:44:37,990 --> 00:44:39,780
+all leader based and I think we're gonna
+
+1097
+00:44:39,790 --> 00:44:42,089
+see more and more different options that
+
+1098
+00:44:42,099 --> 00:44:44,550
+come available so with fast paxos for
+
+1099
+00:44:44,560 --> 00:44:47,010
+example you can use different types of
+
+1100
+00:44:47,020 --> 00:44:49,680
+quorums across where you've got multiple
+
+1101
+00:44:49,690 --> 00:44:51,630
+nodes across different data centers and
+
+1102
+00:44:51,640 --> 00:44:53,970
+within data centers so that you could
+
+1103
+00:44:53,980 --> 00:44:57,359
+tolerate a data center failure for
+
+1104
+00:44:57,369 --> 00:44:59,250
+example and so I think we're gonna see a
+
+1105
+00:44:59,260 --> 00:45:02,280
+lot more variation as people come to
+
+1106
+00:45:02,290 --> 00:45:04,770
+understand consensus algorithms more and
+
+1107
+00:45:04,780 --> 00:45:07,440
+more and also you know if depending on
+
+1108
+00:45:07,450 --> 00:45:09,390
+whether you want to have a right TV
+
+1109
+00:45:09,400 --> 00:45:10,980
+workload versus whether you have a read
+
+1110
+00:45:10,990 --> 00:45:13,079
+heavy workload you might want to use
+
+1111
+00:45:13,089 --> 00:45:15,420
+different consensus algorithm whether if
+
+1112
+00:45:15,430 --> 00:45:16,890
+you've got a key value store and there's
+
+1113
+00:45:16,900 --> 00:45:19,380
+a lot of locality and accesses you may
+
+1114
+00:45:19,390 --> 00:45:20,490
+want to use a different kind of
+
+1115
+00:45:20,500 --> 00:45:22,470
+consensus algorithm too if there wasn't
+
+1116
+00:45:22,480 --> 00:45:24,780
+so it really depends on on the
+
+1117
+00:45:24,790 --> 00:45:26,160
+application and the trade-offs you're
+
+1118
+00:45:26,170 --> 00:45:28,200
+willing to make so my big hope for the
+
+1119
+00:45:28,210 --> 00:45:30,599
+future is that that you know you have to
+
+1120
+00:45:30,609 --> 00:45:32,160
+make compromises in distributed systems
+
+1121
+00:45:32,170 --> 00:45:33,990
+but you should at least get to choose
+
+1122
+00:45:34,000 --> 00:45:36,510
+which compromises you make instead of
+
+1123
+00:45:36,520 --> 00:45:41,460
+having to take Paxos as it is and I'm
+
+1124
+00:45:41,470 --> 00:45:42,839
+right at the beginning you mentioned
+
+1125
+00:45:42,849 --> 00:45:45,809
+Google spanner and how does their
+
+1126
+00:45:45,819 --> 00:45:47,970
+approach from this differ they're kind
+
+1127
+00:45:47,980 --> 00:45:49,230
+of rethinking some of the assumptions
+
+1128
+00:45:49,240 --> 00:45:54,180
+about networks or time yeah so in Google
+
+1129
+00:45:54,190 --> 00:45:57,420
+spanner the protocol actually makes use
+
+1130
+00:45:57,430 --> 00:46:00,420
+of clocks and relies on clock synchrony
+
+1131
+00:46:00,430 --> 00:46:02,609
+to some extent for safety which is very
+
+1132
+00:46:02,619 --> 00:46:05,220
+different from consensus Google are able
+
+1133
+00:46:05,230 --> 00:46:07,230
+to do this because they put atomic
+
+1134
+00:46:07,240 --> 00:46:09,960
+clocks and all their data centers and so
+
+1135
+00:46:09,970 --> 00:46:11,670
+it's a reasonable assumption to assume
+
+1136
+00:46:11,680 --> 00:46:13,470
+that those clocks are pretty close to
+
+1137
+00:46:13,480 --> 00:46:15,059
+synchronized but that's not an
+
+1138
+00:46:15,069 --> 00:46:17,099
+assumption that everybody can make with
+
+1139
+00:46:17,109 --> 00:46:20,010
+their normal machines that are using ntp
+
+1140
+00:46:20,020 --> 00:46:22,910
+say just first for time synchronization
+
+1141
+00:46:22,920 --> 00:46:26,010
+and what about if if networks become
+
+1142
+00:46:26,020 --> 00:46:28,410
+more reliable with that influence these
+
+1143
+00:46:28,420 --> 00:46:31,589
+algorithms yeah I mean if if we could
+
+1144
+00:46:31,599 --> 00:46:33,960
+get a lot stronger
+
+1145
+00:46:33,970 --> 00:46:36,180
+guarantees about the synchrony and
+
+1146
+00:46:36,190 --> 00:46:38,700
+network so if we could say with a very
+
+1147
+00:46:38,710 --> 00:46:40,319
+very high degree of certainty that a
+
+1148
+00:46:40,329 --> 00:46:42,150
+message will be delivered within a
+
+1149
+00:46:42,160 --> 00:46:45,599
+fairly small time bound we would be able
+
+1150
+00:46:45,609 --> 00:46:47,520
+to develop much better systems I think
+
+1151
+00:46:47,530 --> 00:46:49,410
+so for example we could detect failures
+
+1152
+00:46:49,420 --> 00:46:52,170
+of participants a lot more quickly if we
+
+1153
+00:46:52,180 --> 00:46:54,150
+didn't have such variation in network
+
+1154
+00:46:54,160 --> 00:46:57,870
+latency because we'd have a tighter
+
+1155
+00:46:57,880 --> 00:47:01,500
+timeout yeah absolutely and what's your
+
+1156
+00:47:01,510 --> 00:47:04,339
+future work what are you working on so
+
+1157
+00:47:04,349 --> 00:47:06,890
+as I said before I'm working a bit on
+
+1158
+00:47:06,900 --> 00:47:08,970
+Isabelle and learning about using
+
+1159
+00:47:08,980 --> 00:47:11,400
+theorem provers I'm also looking to
+
+1160
+00:47:11,410 --> 00:47:13,589
+learn more about Byzantine fault
+
+1161
+00:47:13,599 --> 00:47:16,109
+tolerance and if we can apply flexible
+
+1162
+00:47:16,119 --> 00:47:18,329
+Paxos and generalize consensus and some
+
+1163
+00:47:18,339 --> 00:47:20,309
+of the ideas from non Byzantine
+
+1164
+00:47:20,319 --> 00:47:24,270
+consensus to Byzantine consensus so you
+
+1165
+00:47:24,280 --> 00:47:27,240
+you started with reading this RAF paper
+
+1166
+00:47:27,250 --> 00:47:30,240
+has an undergraduate what what did you
+
+1167
+00:47:30,250 --> 00:47:32,220
+think it would be like then getting into
+
+1168
+00:47:32,230 --> 00:47:33,839
+this field and and how is it actually
+
+1169
+00:47:33,849 --> 00:47:36,540
+played out I never really had a plan I
+
+1170
+00:47:36,550 --> 00:47:39,900
+did not plan to to go into this field I
+
+1171
+00:47:39,910 --> 00:47:41,520
+just read the RAF paper because I was
+
+1172
+00:47:41,530 --> 00:47:44,220
+interested and then I was was really
+
+1173
+00:47:44,230 --> 00:47:47,130
+interested so I implemented it and then
+
+1174
+00:47:47,140 --> 00:47:49,290
+I thought about it a lot it wasn't it
+
+1175
+00:47:49,300 --> 00:47:53,250
+wasn't my plan to do a PhD on dish B
+
+1176
+00:47:53,260 --> 00:47:57,120
+consensus it was my plan to do a PhD on
+
+1177
+00:47:57,130 --> 00:48:03,809
+kind of peer to peer edge of cloud
+
+1178
+00:48:03,819 --> 00:48:06,569
+computing at the edge and to build these
+
+1179
+00:48:06,579 --> 00:48:10,829
+massive systems and solving consensus
+
+1180
+00:48:10,839 --> 00:48:13,800
+was a tiny tiny tiny component of that I
+
+1181
+00:48:13,810 --> 00:48:16,260
+guess I expected in my head that that
+
+1182
+00:48:16,270 --> 00:48:18,000
+consensus would be a couple of pages of
+
+1183
+00:48:18,010 --> 00:48:25,620
+my PhD thesis instead of 150 pages so I
+
+1184
+00:48:25,630 --> 00:48:28,020
+do thank you for coming on the show
+
+1185
+00:48:28,030 --> 00:48:30,180
+where where can listeners find you
+
+1186
+00:48:30,190 --> 00:48:31,710
+online if they want to reach out to you
+
+1187
+00:48:31,720 --> 00:48:35,640
+so mostly I'm on twitter my handle is
+
+1188
+00:48:35,650 --> 00:48:38,819
+heidi and 360 and will include that in
+
+1189
+00:48:38,829 --> 00:48:40,589
+the show notes along with some of these
+
+1190
+00:48:40,599 --> 00:48:43,559
+links this is adam gordon bell for
+
+1191
+00:48:43,569 --> 00:48:46,260
+software engineering radio thank you for
+
+1192
+00:48:46,270 --> 00:48:47,390
+listening
+
+1193
+00:48:47,400 --> 00:48:49,589
+thanks for listening to se radio an
+
+1194
+00:48:49,599 --> 00:48:51,180
+educational program brought to you by
+
+1195
+00:48:51,190 --> 00:48:53,339
+out your police software magazine for
+
+1196
+00:48:53,349 --> 00:48:54,750
+more about the podcast including other
+
+1197
+00:48:54,760 --> 00:48:57,630
+episodes visit our website @ SC - radio
+
+1198
+00:48:57,640 --> 00:49:00,450
+net to provide feedback you can comment
+
+1199
+00:49:00,460 --> 00:49:02,430
+on each episode on the website or reach
+
+1200
+00:49:02,440 --> 00:49:05,160
+us on LinkedIn Facebook Twitter or
+
+1201
+00:49:05,170 --> 00:49:06,900
+through our slack channel at SC
+
+1202
+00:49:06,910 --> 00:49:11,220
+radio.com you can also email us at team
+
+1203
+00:49:11,230 --> 00:49:14,880
+@ SC - radio net this and all other
+
+1204
+00:49:14,890 --> 00:49:16,920
+episodes of SU radio is licensed under
+
+1205
+00:49:16,930 --> 00:49:20,250
+Creative Commons license 2.5 thanks for
+
+1206
+00:49:20,260 --> 00:49:22,559
+listening

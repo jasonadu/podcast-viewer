@@ -1,0 +1,5659 @@
+1
+00:00:02,710 --> 00:00:02,720
+This is Software Engineering Radio, the
+
+2
+00:00:02,720 --> 00:00:04,790
+podcast for professional developers on
+
+3
+00:00:04,800 --> 00:00:07,790
+the web at se-radio.net.
+
+4
+00:00:07,800 --> 00:00:09,630
+SE Radio is brought to you by the IEEE
+
+5
+00:00:09,640 --> 00:00:11,830
+Computer Society and by IEEE Software
+
+6
+00:00:11,840 --> 00:00:13,590
+Magazine online at
+
+7
+00:00:13,600 --> 00:00:19,110
+computer.org/software.
+
+8
+00:00:21,390 --> 00:00:21,400
+For Software Engineering Radio, this is
+
+9
+00:00:21,400 --> 00:00:24,030
+Robert Blumen. I have with me Chris
+
+10
+00:00:24,040 --> 00:00:26,710
+Love. Chris works at Modernize as a
+
+11
+00:00:26,720 --> 00:00:28,790
+distinguished engineer.
+
+12
+00:00:28,800 --> 00:00:31,590
+Chris and Jay Vyas are co-authors of the
+
+13
+00:00:31,600 --> 00:00:34,310
+book Core Kubernetes and Chris is a
+
+14
+00:00:34,320 --> 00:00:37,390
+Google Cloud Certified Fellow. Chris,
+
+15
+00:00:37,400 --> 00:00:40,230
+welcome to Software Engineering Radio.
+
+16
+00:00:40,240 --> 00:00:42,510
+Thank you, Robert. Really appreciate you
+
+17
+00:00:42,520 --> 00:00:44,350
+having me come in and speak with you
+
+18
+00:00:44,360 --> 00:00:46,390
+folks today. Happy to have you. We're
+
+19
+00:00:46,400 --> 00:00:48,510
+going to take advantage of your being
+
+20
+00:00:48,520 --> 00:00:52,230
+here to talk about Kubernetes security.
+
+21
+00:00:52,240 --> 00:00:55,030
+Now, Kubernetes is a distributed system
+
+22
+00:00:55,040 --> 00:00:58,750
+except external traffic. It uses compute
+
+23
+00:00:58,760 --> 00:01:01,190
+resources. Is there such a thing as
+
+24
+00:01:01,200 --> 00:01:03,950
+Kubernetes security or is it just about
+
+25
+00:01:03,960 --> 00:01:06,350
+following best practices that are
+
+26
+00:01:06,360 --> 00:01:09,070
+well-known for these type of systems? I
+
+27
+00:01:09,080 --> 00:01:11,710
+think it's both. I think, of course,
+
+28
+00:01:11,720 --> 00:01:14,110
+it's best practices like update your
+
+29
+00:01:14,120 --> 00:01:16,510
+software dependencies, update your
+
+30
+00:01:16,520 --> 00:01:18,670
+dependencies from your operating system.
+
+31
+00:01:18,680 --> 00:01:20,470
+It's that, but now you're running a
+
+32
+00:01:20,480 --> 00:01:21,950
+containerized system, so you have to
+
+33
+00:01:21,960 --> 00:01:24,150
+remember to update the dependencies in
+
+34
+00:01:24,160 --> 00:01:26,470
+the container as well as update your
+
+35
+00:01:26,480 --> 00:01:29,270
+host version of Bash. So, of course,
+
+36
+00:01:29,280 --> 00:01:31,710
+there's intricacies to it. We're running
+
+37
+00:01:31,720 --> 00:01:33,710
+a nice distributed system that allows us
+
+38
+00:01:33,720 --> 00:01:35,950
+to do complicated stuff like scaling and
+
+39
+00:01:35,960 --> 00:01:38,190
+we have failover, but because of that
+
+40
+00:01:38,200 --> 00:01:39,750
+we've got a little bit more complicated
+
+41
+00:01:39,760 --> 00:01:41,390
+networking that can cause some
+
+42
+00:01:41,400 --> 00:01:43,510
+challenges from a security standpoint.
+
+43
+00:01:43,520 --> 00:01:45,590
+But, we have other distributed systems
+
+44
+00:01:45,600 --> 00:01:47,590
+that we've been using for a while. Most
+
+45
+00:01:47,600 --> 00:01:49,790
+of them are based around containers, but
+
+46
+00:01:49,800 --> 00:01:51,550
+there's definitely some wrinkles. But,
+
+47
+00:01:51,560 --> 00:01:52,830
+like you said, at the end of the day,
+
+48
+00:01:52,840 --> 00:01:55,550
+it's an API layer. You've got a bunch of
+
+49
+00:01:55,560 --> 00:01:58,030
+compute nodes, which are either your
+
+50
+00:01:58,040 --> 00:02:01,270
+servers or your EC2 instances or your
+
+51
+00:02:01,280 --> 00:02:05,310
+GKE instances and you've got a bunch of
+
+52
+00:02:05,320 --> 00:02:07,510
+containers running around. So, I would
+
+53
+00:02:07,520 --> 00:02:09,950
+say it's non-trivial, but it's not
+
+54
+00:02:09,960 --> 00:02:12,350
+rocket science. It's not as challenging
+
+55
+00:02:12,360 --> 00:02:14,390
+as catching a rocket with a couple
+
+56
+00:02:14,400 --> 00:02:17,390
+chopsticks. The overall umbrella of
+
+57
+00:02:17,400 --> 00:02:19,710
+Kubernetes security, it has many
+
+58
+00:02:19,720 --> 00:02:21,910
+subtopics, more than we can cover in an
+
+59
+00:02:21,920 --> 00:02:24,310
+hour. If you were to pick a few that are
+
+60
+00:02:24,320 --> 00:02:26,910
+most important to focus on, what's your
+
+61
+00:02:26,920 --> 00:02:29,750
+short list? I would try to group them
+
+62
+00:02:29,760 --> 00:02:33,670
+into I kind of go from large world
+
+63
+00:02:33,680 --> 00:02:36,710
+internal. So, we could talk about what
+
+64
+00:02:36,720 --> 00:02:38,670
+to expect when setting up a Kubernetes
+
+65
+00:02:38,680 --> 00:02:42,070
+cluster, so overall security. Then, you
+
+66
+00:02:42,080 --> 00:02:44,110
+can go down to a node level security
+
+67
+00:02:44,120 --> 00:02:46,990
+from there, network security from there,
+
+68
+00:02:47,000 --> 00:02:49,310
+pod security and from there, container
+
+69
+00:02:49,320 --> 00:02:51,070
+security. Container security is
+
+70
+00:02:51,080 --> 00:02:54,150
+well-documented, but I think some folks
+
+71
+00:02:54,160 --> 00:02:55,750
+either don't have the time and money to
+
+72
+00:02:55,760 --> 00:02:57,790
+put those in place. Operating system
+
+73
+00:02:57,800 --> 00:02:58,950
+security, I'm not going to talk to you
+
+74
+00:02:58,960 --> 00:03:01,270
+about. There's lots of other references
+
+75
+00:03:01,280 --> 00:03:04,110
+that folks can go to that I always look
+
+76
+00:03:04,120 --> 00:03:06,790
+at myself as a Lego engineer, right?
+
+77
+00:03:06,800 --> 00:03:08,150
+We've got building blocks. Some are
+
+78
+00:03:08,160 --> 00:03:10,550
+uniques to Kubernetes and like you said,
+
+79
+00:03:10,560 --> 00:03:12,510
+some operating system security is
+
+80
+00:03:12,520 --> 00:03:14,550
+operating system security. But,
+
+81
+00:03:14,560 --> 00:03:16,470
+typically on a operating system, you
+
+82
+00:03:16,480 --> 00:03:17,830
+aren't running two different network
+
+83
+00:03:17,840 --> 00:03:19,510
+layers and that's what you get within
+
+84
+00:03:19,520 --> 00:03:21,790
+Kubernetes. So, it'd be a good time for
+
+85
+00:03:21,800 --> 00:03:24,030
+me to let the listeners know we did an
+
+86
+00:03:24,040 --> 00:03:26,630
+entire episode on Kubernetes networking,
+
+87
+00:03:26,640 --> 00:03:29,390
+number 619. We will return to that a
+
+88
+00:03:29,400 --> 00:03:31,590
+little bit later. Let's go down your
+
+89
+00:03:31,600 --> 00:03:33,710
+list, Chris, and hit these things in
+
+90
+00:03:33,720 --> 00:03:35,670
+order starting with setting up
+
+91
+00:03:35,680 --> 00:03:38,270
+Kubernetes overall security. What are
+
+92
+00:03:38,280 --> 00:03:40,750
+some of the main points that should be
+
+93
+00:03:40,760 --> 00:03:42,430
+addressed? Right, you want to think
+
+94
+00:03:42,440 --> 00:03:45,750
+about from a network layer, from a node
+
+95
+00:03:45,760 --> 00:03:47,950
+setup layer and from a overall account
+
+96
+00:03:47,960 --> 00:03:50,030
+permissions layer. Again, if you're
+
+97
+00:03:50,040 --> 00:03:51,270
+running in a data center, this is a
+
+98
+00:03:51,280 --> 00:03:52,870
+little bit different, right? But, I
+
+99
+00:03:52,880 --> 00:03:54,510
+would say majority of people that are
+
+100
+00:03:54,520 --> 00:03:58,070
+running a Kubernetes are running within
+
+101
+00:03:58,080 --> 00:04:01,590
+AWS or GKE or Azure or pick your cloud
+
+102
+00:04:01,600 --> 00:04:03,510
+provider. So, there's always some
+
+103
+00:04:03,520 --> 00:04:05,870
+gotchas around those cloud environments.
+
+104
+00:04:05,880 --> 00:04:07,830
+For instance, you want to make sure that
+
+105
+00:04:07,840 --> 00:04:09,950
+the role that you're setting up your
+
+106
+00:04:09,960 --> 00:04:11,950
+cluster with and the role that the
+
+107
+00:04:11,960 --> 00:04:14,030
+cluster's running with are the correct
+
+108
+00:04:14,040 --> 00:04:16,229
+roles. You don't want to set your
+
+109
+00:04:16,239 --> 00:04:20,630
+cluster up with a role that is a account
+
+110
+00:04:20,640 --> 00:04:23,270
+level admin. You want to give your
+
+111
+00:04:23,280 --> 00:04:24,950
+Kubernetes cluster and your Kubernetes
+
+112
+00:04:24,960 --> 00:04:26,910
+nodes the right level of permissions.
+
+113
+00:04:26,920 --> 00:04:28,710
+So, that means setting up a user before
+
+114
+00:04:28,720 --> 00:04:31,830
+you set up Kubernetes. From there, also
+
+115
+00:04:31,840 --> 00:04:34,590
+look at a private network. Don't expose
+
+116
+00:04:34,600 --> 00:04:36,990
+your nodes to the public. In other
+
+117
+00:04:37,000 --> 00:04:40,430
+words, port 22 on node A should not be
+
+118
+00:04:40,440 --> 00:04:43,150
+accessible via an external network.
+
+119
+00:04:43,160 --> 00:04:45,190
+You're going to need to VPN into your
+
+120
+00:04:45,200 --> 00:04:47,670
+nodes and realistically, developers and
+
+121
+00:04:47,680 --> 00:04:49,550
+admins shouldn't necessarily have to add
+
+122
+00:04:49,560 --> 00:04:53,150
+a node level. Also, your API layer or
+
+123
+00:04:53,160 --> 00:04:55,190
+web API should also be behind a
+
+124
+00:04:55,200 --> 00:04:56,950
+firewall. That should be networked in
+
+125
+00:04:56,960 --> 00:04:58,710
+and should be on a private network where
+
+126
+00:04:58,720 --> 00:05:01,470
+folks aren't able to access and people
+
+127
+00:05:01,480 --> 00:05:04,390
+we've had bugs in Kubernetes where
+
+128
+00:05:04,400 --> 00:05:06,550
+authentication for very short amount of
+
+129
+00:05:06,560 --> 00:05:09,870
+time was broken at the API layer. And
+
+130
+00:05:09,880 --> 00:05:11,870
+fortunately, folks that maintain
+
+131
+00:05:11,880 --> 00:05:14,190
+Kubernetes fixed it pretty fast, but it
+
+132
+00:05:14,200 --> 00:05:16,190
+was overnight where if you had a
+
+133
+00:05:16,200 --> 00:05:19,150
+publicly exposed API and you had XYZ
+
+134
+00:05:19,160 --> 00:05:21,390
+version of Kubernetes, people could just
+
+135
+00:05:21,400 --> 00:05:23,830
+do a coup control command right to it.
+
+136
+00:05:23,840 --> 00:05:27,150
+So, doing some basic setup before you
+
+137
+00:05:27,160 --> 00:05:29,510
+are thinking through your security model
+
+138
+00:05:29,520 --> 00:05:31,190
+and your security setup before you set
+
+139
+00:05:31,200 --> 00:05:33,190
+up a cluster is really important. IP
+
+140
+00:05:33,200 --> 00:05:35,750
+spacing, for instance, that gets folks
+
+141
+00:05:35,760 --> 00:05:37,550
+in trouble as well. So, you want to make
+
+142
+00:05:37,560 --> 00:05:39,350
+sure the subnet you're running on is
+
+143
+00:05:39,360 --> 00:05:42,070
+private. Main points there would be use
+
+144
+00:05:42,080 --> 00:05:44,230
+the cloud service provider's access
+
+145
+00:05:44,240 --> 00:05:48,270
+management, use a private VPC and put
+
+146
+00:05:48,280 --> 00:05:50,390
+your whole cluster behind some kind of
+
+147
+00:05:50,400 --> 00:05:53,070
+firewall or proxy to cut it off from the
+
+148
+00:05:53,080 --> 00:05:55,870
+web. Did I miss anything? No, and then
+
+149
+00:05:55,880 --> 00:05:57,550
+you're looking at some form of public
+
+150
+00:05:57,560 --> 00:05:59,550
+ingress, right? You're looking at having
+
+151
+00:05:59,560 --> 00:06:01,670
+to maintain some form of ingress
+
+152
+00:06:01,680 --> 00:06:04,550
+controller that allow external traffic
+
+153
+00:06:04,560 --> 00:06:06,350
+to go in internally into your cluster,
+
+154
+00:06:06,360 --> 00:06:07,470
+which makes it a little bit more
+
+155
+00:06:07,480 --> 00:06:09,550
+complicated, but I would rather not have
+
+156
+00:06:09,560 --> 00:06:11,070
+nodes exposed to the internet
+
+157
+00:06:11,080 --> 00:06:12,150
+personally.
+
+158
+00:06:12,160 --> 00:06:14,310
+Would any of the last set of answers
+
+159
+00:06:14,320 --> 00:06:17,070
+change if you are running the cluster on
+
+160
+00:06:17,080 --> 00:06:19,390
+the company's own computers?
+
+161
+00:06:19,400 --> 00:06:21,390
+You can think about it in the same way,
+
+162
+00:06:21,400 --> 00:06:22,870
+right? You would have some sort of
+
+163
+00:06:22,880 --> 00:06:25,150
+router setup where you again have
+
+164
+00:06:25,160 --> 00:06:27,270
+internal IP addresses and external IP
+
+165
+00:06:27,280 --> 00:06:30,190
+addresses. It's just more work. You have
+
+166
+00:06:30,200 --> 00:06:33,910
+to set up your air quote VPC network or
+
+167
+00:06:33,920 --> 00:06:36,990
+network that's internal by hand as and
+
+168
+00:06:37,000 --> 00:06:39,310
+maintain it and you can't just make a
+
+169
+00:06:39,320 --> 00:06:42,110
+Terraform call to your cloud provider's
+
+170
+00:06:42,120 --> 00:06:44,230
+API to set it up for you. You have to
+
+171
+00:06:44,240 --> 00:06:46,390
+have yourself or somebody else set those
+
+172
+00:06:46,400 --> 00:06:48,350
+routers up. But, same type of model
+
+173
+00:06:48,360 --> 00:06:50,390
+exists. Networking is networking is
+
+174
+00:06:50,400 --> 00:06:53,030
+networking. We have eight IP addresses
+
+175
+00:06:53,040 --> 00:06:55,070
+here and there. Do you have any stories
+
+176
+00:06:55,080 --> 00:06:56,350
+from a time you were setting up a
+
+177
+00:06:56,360 --> 00:06:58,350
+cluster, something you missed or from
+
+178
+00:06:58,360 --> 00:07:00,950
+auditing another setup where you found
+
+179
+00:07:00,960 --> 00:07:04,110
+something that needed to be locked down?
+
+180
+00:07:04,120 --> 00:07:06,910
+Yeah, many of those. I've found pretty
+
+181
+00:07:06,920 --> 00:07:08,550
+much everything that I've talked about
+
+182
+00:07:08,560 --> 00:07:10,870
+set up incorrectly. A lot of the times,
+
+183
+00:07:10,880 --> 00:07:13,590
+people set up their cluster and exposed
+
+184
+00:07:13,600 --> 00:07:16,750
+API server and or the nodes or both
+
+185
+00:07:16,760 --> 00:07:19,910
+publicly. It's more complicated to set
+
+186
+00:07:19,920 --> 00:07:22,190
+up a VPN type mechanism to get into your
+
+187
+00:07:22,200 --> 00:07:24,710
+nodes. It's much easier not to have it
+
+188
+00:07:24,720 --> 00:07:27,870
+that way, right? As well as I've seen
+
+189
+00:07:27,880 --> 00:07:30,830
+many clusters that were created using
+
+190
+00:07:30,840 --> 00:07:33,910
+like I have a cloud access a cloud admin
+
+191
+00:07:33,920 --> 00:07:36,790
+account and I incorrectly set up my
+
+192
+00:07:36,800 --> 00:07:39,470
+cluster and it is using Chris Love's
+
+193
+00:07:39,480 --> 00:07:42,470
+cloud admin account. That's not good.
+
+194
+00:07:42,480 --> 00:07:44,990
+Being able to have a Kubernetes cluster
+
+195
+00:07:45,000 --> 00:07:48,350
+create a VPC or create other components
+
+196
+00:07:48,360 --> 00:07:51,110
+isn't a great way to do security within
+
+197
+00:07:51,120 --> 00:07:54,790
+Kubernetes. I am both authorization and
+
+198
+00:07:54,800 --> 00:07:57,230
+both auth and off Z are complicated
+
+199
+00:07:57,240 --> 00:07:59,710
+enough. You don't want to add a layer
+
+200
+00:07:59,720 --> 00:08:02,910
+where you're running your cluster as a
+
+201
+00:08:02,920 --> 00:08:04,510
+Chris Love user.
+
+202
+00:08:04,520 --> 00:08:07,070
+I've set up a cluster. I went through my
+
+203
+00:08:07,080 --> 00:08:09,230
+checklist, done all the things we talked
+
+204
+00:08:09,240 --> 00:08:12,310
+about. Are there any either open source
+
+205
+00:08:12,320 --> 00:08:14,590
+frameworks or testing tools that would
+
+206
+00:08:14,600 --> 00:08:17,470
+run through and verify that the things
+
+207
+00:08:17,480 --> 00:08:19,470
+that need access have and the things
+
+208
+00:08:19,480 --> 00:08:21,870
+that should not have access cannot? I
+
+209
+00:08:21,880 --> 00:08:24,950
+believe the CNCF has a testing tool that
+
+210
+00:08:24,960 --> 00:08:26,670
+goes through your cluster soup to nuts,
+
+211
+00:08:26,680 --> 00:08:28,830
+kind of gives it once over. Also,
+
+212
+00:08:28,840 --> 00:08:30,750
+frankly, the documentation on Kubernetes
+
+213
+00:08:30,760 --> 00:08:32,390
+security on the Kubernetes sites
+
+214
+00:08:32,400 --> 00:08:35,430
+tremendous. So, I'm going through. It
+
+215
+00:08:35,440 --> 00:08:37,110
+almost drills down in the same order
+
+216
+00:08:37,120 --> 00:08:39,190
+that I've been using in a long time and
+
+217
+00:08:39,200 --> 00:08:40,630
+I can't say I've written any of the
+
+218
+00:08:40,640 --> 00:08:43,790
+security documentation there, but it has
+
+219
+00:08:43,800 --> 00:08:46,430
+a checklist of what to do. You've got
+
+220
+00:08:46,440 --> 00:08:48,870
+tools that are owned or been donated and
+
+221
+00:08:48,880 --> 00:08:51,110
+maintained by other companies that CNCF
+
+222
+00:08:51,120 --> 00:08:52,870
+have. And there's plenty of companies
+
+223
+00:08:52,880 --> 00:08:55,830
+there outside that can either help you
+
+224
+00:08:55,840 --> 00:08:58,830
+set them up or test them after the fact.
+
+225
+00:08:58,840 --> 00:09:01,790
+Sounds great. I think we can move on to
+
+226
+00:09:01,800 --> 00:09:04,510
+the next layer that you addressed, which
+
+227
+00:09:04,520 --> 00:09:07,070
+is node security. What are some of the
+
+228
+00:09:07,080 --> 00:09:09,750
+common attacks at the node level?
+
+229
+00:09:09,760 --> 00:09:12,950
+Again, it's instance or server level
+
+230
+00:09:12,960 --> 00:09:16,590
+security. It's SSH attacks, right?
+
+231
+00:09:16,600 --> 00:09:18,430
+Fortunately, our modern-day cloud
+
+232
+00:09:18,440 --> 00:09:20,430
+providers give us good authentication
+
+233
+00:09:20,440 --> 00:09:23,830
+methods for SSH that is not username and
+
+234
+00:09:23,840 --> 00:09:26,550
+password. But, again, it goes back to
+
+235
+00:09:26,560 --> 00:09:28,550
+you're maintaining nodes. I would say
+
+236
+00:09:28,560 --> 00:09:30,190
+this, unless you're running a data
+
+237
+00:09:30,200 --> 00:09:32,350
+center, you're not looking at in-place
+
+238
+00:09:32,360 --> 00:09:34,070
+upgrades. And if you're running in your
+
+239
+00:09:34,080 --> 00:09:35,550
+own data center, you could be running
+
+240
+00:09:35,560 --> 00:09:37,790
+virtualization as well. And if you're
+
+241
+00:09:37,800 --> 00:09:39,990
+virtualized and you have your own cloud,
+
+242
+00:09:40,000 --> 00:09:43,470
+we're looking at doing rollovers of an
+
+243
+00:09:43,480 --> 00:09:46,150
+operating system to upgrade your OS.
+
+244
+00:09:46,160 --> 00:09:48,590
+We're also looking at running immutable
+
+245
+00:09:48,600 --> 00:09:50,110
+operating systems, which is another
+
+246
+00:09:50,120 --> 00:09:52,630
+thing that I highly recommend. Running
+
+247
+00:09:52,640 --> 00:09:55,510
+operating systems that have read-only
+
+248
+00:09:55,520 --> 00:09:59,950
+components, it allows you to not have
+
+249
+00:09:59,960 --> 00:10:02,350
+bad guys overwrite binaries. You know,
+
+250
+00:10:02,360 --> 00:10:04,550
+that's just a bad thing. But again, in
+
+251
+00:10:04,560 --> 00:10:07,950
+terms of how Kubernetes upgrades, rather
+
+252
+00:10:07,960 --> 00:10:10,510
+than upgrading your OS, you need to
+
+253
+00:10:10,520 --> 00:10:13,470
+upgrade a node. So, upgrade your nodes
+
+254
+00:10:13,480 --> 00:10:15,950
+through a rolling upgrade, and then you
+
+255
+00:10:15,960 --> 00:10:18,070
+update your operating system. If you're
+
+256
+00:10:18,080 --> 00:10:19,150
+running on bare metal without
+
+257
+00:10:19,160 --> 00:10:22,030
+virtualization, then most likely you are
+
+258
+00:10:22,040 --> 00:10:24,590
+looking at in-place upgrades. But then
+
+259
+00:10:24,600 --> 00:10:26,470
+you can shift around your workloads to
+
+260
+00:10:26,480 --> 00:10:28,750
+do that. As we mentioned at the top of
+
+261
+00:10:28,760 --> 00:10:31,790
+the show, OS level security is OS. It's
+
+262
+00:10:31,800 --> 00:10:35,190
+really the I would say that's probably
+
+263
+00:10:35,200 --> 00:10:38,190
+the best-known security posture that we
+
+264
+00:10:38,200 --> 00:10:39,950
+know of, right? Because system admins
+
+265
+00:10:39,960 --> 00:10:42,710
+have been maintaining OS level security
+
+266
+00:10:42,720 --> 00:10:44,950
+since the beginning of time, at least
+
+267
+00:10:44,960 --> 00:10:46,710
+the beginning of Unix, and the beginning
+
+268
+00:10:46,720 --> 00:10:48,670
+of computers. So, that's probably the
+
+269
+00:10:48,680 --> 00:10:50,390
+best-known security layer or the
+
+270
+00:10:50,400 --> 00:10:52,670
+best-known security practices that we
+
+271
+00:10:52,680 --> 00:10:55,350
+have. Now, as we move into the network
+
+272
+00:10:55,360 --> 00:10:57,270
+security, we move into the pod security,
+
+273
+00:10:57,280 --> 00:10:58,750
+and we move into container security, I
+
+274
+00:10:58,760 --> 00:10:59,790
+would say those are all the newer
+
+275
+00:10:59,800 --> 00:11:01,270
+technologies.
+
+276
+00:11:01,280 --> 00:11:03,070
+If I'm running on a cloud service
+
+277
+00:11:03,080 --> 00:11:06,030
+provider, then they manage the nodes,
+
+278
+00:11:06,040 --> 00:11:08,110
+they will auto-scale nodes in or out of
+
+279
+00:11:08,120 --> 00:11:09,550
+the cluster
+
+280
+00:11:09,560 --> 00:11:11,950
+as needed. Can I count on the cloud
+
+281
+00:11:11,960 --> 00:11:13,950
+service provider to manage the node
+
+282
+00:11:13,960 --> 00:11:16,350
+image and to refresh it if
+
+283
+00:11:16,360 --> 00:11:18,590
+vulnerabilities are discovered, or is
+
+284
+00:11:18,600 --> 00:11:20,430
+that something that as a cluster
+
+285
+00:11:20,440 --> 00:11:23,070
+operator I need to push a button or do
+
+286
+00:11:23,080 --> 00:11:25,390
+something when I want a refresh of the
+
+287
+00:11:25,400 --> 00:11:27,270
+node image? It really depends on how you
+
+288
+00:11:27,280 --> 00:11:29,470
+set up your cluster. First off, you can
+
+289
+00:11:29,480 --> 00:11:31,350
+run your own control plane for
+
+290
+00:11:31,360 --> 00:11:33,790
+Kubernetes. Lots of companies that are a
+
+291
+00:11:33,800 --> 00:11:36,070
+little bit more sophisticated do that.
+
+292
+00:11:36,080 --> 00:11:38,030
+They'll still run their own master
+
+293
+00:11:38,040 --> 00:11:41,150
+instances with etcd, etc., etc. So,
+
+294
+00:11:41,160 --> 00:11:42,590
+sometimes the control plane is
+
+295
+00:11:42,600 --> 00:11:44,190
+maintained, sometimes it's not. I would
+
+296
+00:11:44,200 --> 00:11:46,910
+say the majority of companies that are
+
+297
+00:11:46,920 --> 00:11:50,590
+running on top of EKS and GCP or AKS,
+
+298
+00:11:50,600 --> 00:11:52,950
+they are using a managed control plane.
+
+299
+00:11:52,960 --> 00:11:55,110
+Nodes, on the other hand, you often have
+
+300
+00:11:55,120 --> 00:11:58,230
+options that the cloud provider
+
+301
+00:11:58,240 --> 00:12:01,150
+automatically upgrades for you, or you
+
+302
+00:12:01,160 --> 00:12:03,510
+have to upgrade them yourselves. What
+
+303
+00:12:03,520 --> 00:12:05,470
+companies are finding that it's often
+
+304
+00:12:05,480 --> 00:12:08,990
+necessary for you to upgrade your nodes.
+
+305
+00:12:09,000 --> 00:12:12,430
+Workloads are not typically like you
+
+306
+00:12:12,440 --> 00:12:14,790
+still have complicated workloads that
+
+307
+00:12:14,800 --> 00:12:16,710
+are not I would say cloud-native
+
+308
+00:12:16,720 --> 00:12:19,190
+friendly, necessarily. And because of
+
+309
+00:12:19,200 --> 00:12:21,390
+that, the upgrade process can have a
+
+310
+00:12:21,400 --> 00:12:22,950
+couple bumps here and there. There's
+
+311
+00:12:22,960 --> 00:12:24,670
+many companies that still have outages
+
+312
+00:12:24,680 --> 00:12:26,950
+when they do upgrades. And you can't
+
+313
+00:12:26,960 --> 00:12:29,430
+have a cloud provider automatically
+
+314
+00:12:29,440 --> 00:12:32,270
+upgrade for you, necessarily. Nice
+
+315
+00:12:32,280 --> 00:12:34,350
+theoretical world, we'd be able to have
+
+316
+00:12:34,360 --> 00:12:36,829
+that. There's other packages within
+
+317
+00:12:36,839 --> 00:12:38,390
+cloud providers where the cloud
+
+318
+00:12:38,400 --> 00:12:40,630
+providers are maintaining your nodes for
+
+319
+00:12:40,640 --> 00:12:42,430
+you. And then of course, upgrades do
+
+320
+00:12:42,440 --> 00:12:43,910
+happen in the background. You're able to
+
+321
+00:12:43,920 --> 00:12:45,790
+set up here's the window I want my
+
+322
+00:12:45,800 --> 00:12:47,790
+upgrades to happen between 2:00 and 4:00
+
+323
+00:12:47,800 --> 00:12:50,190
+a.m. Eastern time on Saturdays, for
+
+324
+00:12:50,200 --> 00:12:52,510
+instance, or on Tuesdays, cuz that's the
+
+325
+00:12:52,520 --> 00:12:54,550
+lowest traffic day of the year or of a
+
+326
+00:12:54,560 --> 00:12:56,670
+week that you have. So, again, there's
+
+327
+00:12:56,680 --> 00:12:58,430
+options. Going back to what you're
+
+328
+00:12:58,440 --> 00:13:00,030
+talking about originally, Robert, those
+
+329
+00:13:00,040 --> 00:13:01,590
+are decisions you need to make before
+
+330
+00:13:01,600 --> 00:13:03,470
+you set up your cluster. Do you want to
+
+331
+00:13:03,480 --> 00:13:05,110
+maintain your own control plane? Please
+
+332
+00:13:05,120 --> 00:13:07,070
+don't. Please don't, unless you really
+
+333
+00:13:07,080 --> 00:13:08,910
+know what you're doing. Do you want to
+
+334
+00:13:08,920 --> 00:13:10,990
+maintain your own node pools?
+
+335
+00:13:11,000 --> 00:13:12,790
+50/50 on that, depends the amount of
+
+336
+00:13:12,800 --> 00:13:14,230
+staff you have, or do you want your
+
+337
+00:13:14,240 --> 00:13:15,870
+cloud provider to completely maintain
+
+338
+00:13:15,880 --> 00:13:18,430
+everything for you? And on top of that,
+
+339
+00:13:18,440 --> 00:13:20,470
+then you're looking at less work, but
+
+340
+00:13:20,480 --> 00:13:21,710
+you lose control. There's trade-offs
+
+341
+00:13:21,720 --> 00:13:23,710
+there. Definitely trade-offs. Give some
+
+342
+00:13:23,720 --> 00:13:26,630
+more details of what can go wrong during
+
+343
+00:13:26,640 --> 00:13:29,990
+an upgrade. Theoretically, Kubernetes
+
+344
+00:13:30,000 --> 00:13:32,510
+will reschedule traffic off of the nodes
+
+345
+00:13:32,520 --> 00:13:34,110
+you want to remove and onto the new
+
+346
+00:13:34,120 --> 00:13:36,470
+ones, but when does that not work as
+
+347
+00:13:36,480 --> 00:13:37,750
+intended?
+
+348
+00:13:37,760 --> 00:13:39,510
+Long-running jobs, for instance, that
+
+349
+00:13:39,520 --> 00:13:42,350
+don't restart. So, stateful applications
+
+350
+00:13:42,360 --> 00:13:44,630
+that aren't truly cloud-native, you can
+
+351
+00:13:44,640 --> 00:13:47,390
+run into problems with more complicated
+
+352
+00:13:47,400 --> 00:13:49,390
+stateful applications during an upgrade
+
+353
+00:13:49,400 --> 00:13:51,790
+process. You need to do something to the
+
+354
+00:13:51,800 --> 00:13:54,030
+database, for instance, put it into a
+
+355
+00:13:54,040 --> 00:13:57,310
+certain type of mode before you upgrade
+
+356
+00:13:57,320 --> 00:14:00,670
+before you evict the pod. So, sometimes
+
+357
+00:14:00,680 --> 00:14:02,630
+you've got to do three steps before you
+
+358
+00:14:02,640 --> 00:14:04,790
+upgrade, and then three steps after you
+
+359
+00:14:04,800 --> 00:14:06,230
+upgrade. So, that makes it a little bit
+
+360
+00:14:06,240 --> 00:14:08,910
+more complicated. Older database systems
+
+361
+00:14:08,920 --> 00:14:11,829
+that have been made more cloud-friendly
+
+362
+00:14:11,839 --> 00:14:13,910
+still have some challenges. So, stateful
+
+363
+00:14:13,920 --> 00:14:16,430
+applications, long-running applications
+
+364
+00:14:16,440 --> 00:14:17,630
+that don't necessarily restart
+
+365
+00:14:17,640 --> 00:14:20,550
+themselves, or you have a 60-minute job,
+
+366
+00:14:20,560 --> 00:14:22,550
+and you go through an upgrade, shouldn't
+
+367
+00:14:22,560 --> 00:14:24,150
+be upgrading at that time cuz those jobs
+
+368
+00:14:24,160 --> 00:14:26,030
+are running. Now you've got to rerun a
+
+369
+00:14:26,040 --> 00:14:28,150
+60-minute job. And if it's a critical
+
+370
+00:14:28,160 --> 00:14:30,430
+process, it's kind of challenging. And
+
+371
+00:14:30,440 --> 00:14:32,310
+you can run not only in upgrades, but
+
+372
+00:14:32,320 --> 00:14:33,590
+you can run the same thing when you're
+
+373
+00:14:33,600 --> 00:14:36,230
+running or run into the same type of
+
+374
+00:14:36,240 --> 00:14:37,069
+problem when you're running
+
+375
+00:14:37,079 --> 00:14:38,949
+auto-scaling. So, if you have a
+
+376
+00:14:38,959 --> 00:14:41,310
+long-running job, such as a CI build,
+
+377
+00:14:41,320 --> 00:14:43,910
+your auto-scaler sizes down the node
+
+378
+00:14:43,920 --> 00:14:45,829
+pool, which in effect is the same type
+
+379
+00:14:45,839 --> 00:14:47,190
+of behavior you do when you upgrade a
+
+380
+00:14:47,200 --> 00:14:48,990
+Kubernetes cluster. You'll have that job
+
+381
+00:14:49,000 --> 00:14:50,790
+kicked off. Hopefully, you want that job
+
+382
+00:14:50,800 --> 00:14:53,150
+to restart, but sometimes they don't.
+
+383
+00:14:53,160 --> 00:14:55,710
+From security perspective, the upgrade
+
+384
+00:14:55,720 --> 00:14:57,670
+process is important that it goes
+
+385
+00:14:57,680 --> 00:15:00,270
+quickly so that you can remediate
+
+386
+00:15:00,280 --> 00:15:01,910
+security issues quickly. If you're
+
+387
+00:15:01,920 --> 00:15:03,910
+looking at redeploying workloads, you're
+
+388
+00:15:03,920 --> 00:15:05,910
+looking at pushing out new workloads.
+
+389
+00:15:05,920 --> 00:15:08,230
+It's a combination of the processes that
+
+390
+00:15:08,240 --> 00:15:10,350
+you have in-house to run upgrades, how
+
+391
+00:15:10,360 --> 00:15:12,150
+complicated your workload is, as well as
+
+392
+00:15:12,160 --> 00:15:14,670
+if you need to roll out new workload.
+
+393
+00:15:14,680 --> 00:15:18,270
+Say you've got a spring dependency issue
+
+394
+00:15:18,280 --> 00:15:19,870
+where there's a CV in spring and you
+
+395
+00:15:19,880 --> 00:15:22,110
+need to roll out an entirely new
+
+396
+00:15:22,120 --> 00:15:24,350
+application because of that or 40
+
+397
+00:15:24,360 --> 00:15:26,670
+applications. Again, your CI needs to be
+
+398
+00:15:26,680 --> 00:15:29,230
+able to handle that type of roll out.
+
+399
+00:15:29,240 --> 00:15:31,150
+I've been involved in database
+
+400
+00:15:31,160 --> 00:15:33,790
+migrations some years ago. This
+
+401
+00:15:33,800 --> 00:15:36,310
+typically involves a lot of runbooks,
+
+402
+00:15:36,320 --> 00:15:38,550
+manual steps, like you described where
+
+403
+00:15:38,560 --> 00:15:39,910
+the three things you do before and the
+
+404
+00:15:39,920 --> 00:15:42,750
+three things you do after. I am aware
+
+405
+00:15:42,760 --> 00:15:45,550
+that there are some offerings in the
+
+406
+00:15:45,560 --> 00:15:46,710
+database world where they've created
+
+407
+00:15:46,720 --> 00:15:49,310
+Kubernetes operators that to some extent
+
+408
+00:15:49,320 --> 00:15:52,110
+can take over the role of a human system
+
+409
+00:15:52,120 --> 00:15:55,069
+admin. Are most things in Kubernetes
+
+410
+00:15:55,079 --> 00:15:56,590
+world now
+
+411
+00:15:56,600 --> 00:15:59,230
+aiming to be pretty automated in face of
+
+412
+00:15:59,240 --> 00:16:01,829
+all kinds of disruptions, or is it still
+
+413
+00:16:01,839 --> 00:16:04,110
+kind of old-school where database is
+
+414
+00:16:04,120 --> 00:16:05,829
+going to be migrated and we're going to
+
+415
+00:16:05,839 --> 00:16:07,390
+have downtime and we're going to baby
+
+416
+00:16:07,400 --> 00:16:09,430
+sit it? Well, it depends on what you're
+
+417
+00:16:09,440 --> 00:16:12,030
+running, right? It's application and
+
+418
+00:16:12,040 --> 00:16:13,870
+operator dependent, not necessarily
+
+419
+00:16:13,880 --> 00:16:15,990
+Kubernetes cluster dependent, is the way
+
+420
+00:16:16,000 --> 00:16:18,670
+I would put it. If the workload can
+
+421
+00:16:18,680 --> 00:16:20,710
+restart itself nicely, you flip a
+
+422
+00:16:20,720 --> 00:16:22,990
+button, ham it fault-tolerance mode, and
+
+423
+00:16:23,000 --> 00:16:24,750
+you know that your fault tolerance works
+
+424
+00:16:24,760 --> 00:16:27,750
+as expected, you should be fine. It's
+
+425
+00:16:27,760 --> 00:16:29,750
+running the upgrade in dev first to make
+
+426
+00:16:29,760 --> 00:16:31,990
+sure that you're fine, rather than
+
+427
+00:16:32,000 --> 00:16:35,110
+having a 40-step runbook and playbook.
+
+428
+00:16:35,120 --> 00:16:37,750
+Are we there yet? No. If you can afford
+
+429
+00:16:37,760 --> 00:16:39,790
+it, have somebody else maintain your
+
+430
+00:16:39,800 --> 00:16:42,190
+databases for you. Have people like I
+
+431
+00:16:42,200 --> 00:16:45,390
+would say most companies aren't Google,
+
+432
+00:16:45,400 --> 00:16:47,510
+aren't Apple, aren't Facebook, right?
+
+433
+00:16:47,520 --> 00:16:49,829
+They don't have hundreds of engineers
+
+434
+00:16:49,839 --> 00:16:51,310
+that maintain their databases for them
+
+435
+00:16:51,320 --> 00:16:53,230
+necessarily. If you are that company,
+
+436
+00:16:53,240 --> 00:16:54,829
+then yeah, you might be able to get away
+
+437
+00:16:54,839 --> 00:16:56,430
+with it. The thing with running
+
+438
+00:16:56,440 --> 00:16:57,990
+databases and other stateful
+
+439
+00:16:58,000 --> 00:17:00,190
+applications is you have to understand
+
+440
+00:17:00,200 --> 00:17:01,949
+how that stateful application actually
+
+441
+00:17:01,959 --> 00:17:04,669
+runs on top of Kubernetes really well.
+
+442
+00:17:04,679 --> 00:17:07,590
+It's not just I'm running an application
+
+443
+00:17:07,600 --> 00:17:09,710
+and it runs great. It's I'm running an
+
+444
+00:17:09,720 --> 00:17:12,110
+application on top of Kubernetes because
+
+445
+00:17:12,120 --> 00:17:14,710
+of the way it fails over. And it
+
+446
+00:17:14,720 --> 00:17:16,750
+basically if it says, "Okay, you got 60
+
+447
+00:17:16,760 --> 00:17:20,150
+seconds to leave, application A, B, C,
+
+448
+00:17:20,160 --> 00:17:21,870
+or replica A, B, C is a better way to
+
+449
+00:17:21,880 --> 00:17:23,910
+put it, you have 60 seconds and you're
+
+450
+00:17:23,920 --> 00:17:25,590
+out of here. I don't care what's going
+
+451
+00:17:25,600 --> 00:17:27,750
+on, this node's going down, and your pit
+
+452
+00:17:27,760 --> 00:17:29,470
+is going to get terminated." So, your
+
+453
+00:17:29,480 --> 00:17:31,350
+application has to handle that. And
+
+454
+00:17:31,360 --> 00:17:33,310
+realistically, though, Robert, your
+
+455
+00:17:33,320 --> 00:17:35,350
+application needs to handle that anyways
+
+456
+00:17:35,360 --> 00:17:36,870
+because it's the same pattern that
+
+457
+00:17:36,880 --> 00:17:39,590
+happens during outages. Again, it goes
+
+458
+00:17:39,600 --> 00:17:42,510
+back. If your company can afford RDS,
+
+459
+00:17:42,520 --> 00:17:44,510
+why not use RDS? If your company can
+
+460
+00:17:44,520 --> 00:17:48,750
+afford running SQL Server on Azure, let
+
+461
+00:17:48,760 --> 00:17:50,870
+the experts handle it. It turns over
+
+462
+00:17:50,880 --> 00:17:52,870
+some control, you have to run their
+
+463
+00:17:52,880 --> 00:17:55,710
+version of Postgres. Rather than, you
+
+464
+00:17:55,720 --> 00:17:56,910
+know, you might have three versions of
+
+465
+00:17:56,920 --> 00:17:58,430
+Postgres that you can run. So, if you
+
+466
+00:17:58,440 --> 00:18:00,310
+need a much older version, then you
+
+467
+00:18:00,320 --> 00:18:02,110
+might be running it yourself. But that's
+
+468
+00:18:02,120 --> 00:18:04,990
+a whole 'nother story where let's have
+
+469
+00:18:05,000 --> 00:18:07,030
+Postgres updated in your company. You
+
+470
+00:18:07,040 --> 00:18:08,270
+know, it goes back to time and money,
+
+471
+00:18:08,280 --> 00:18:10,070
+right? The story I tell about security
+
+472
+00:18:10,080 --> 00:18:11,230
+is you're going to get hacked most
+
+473
+00:18:11,240 --> 00:18:12,910
+likely. You're big, you're going to get
+
+474
+00:18:12,920 --> 00:18:14,710
+hacked, and or people are going to be
+
+475
+00:18:14,720 --> 00:18:17,110
+knocking on your door a lot. But it goes
+
+476
+00:18:17,120 --> 00:18:18,830
+back to business risk and time and
+
+477
+00:18:18,840 --> 00:18:20,630
+money. As much as we talk about these
+
+478
+00:18:20,640 --> 00:18:22,750
+security offerings and what to do, it
+
+479
+00:18:22,760 --> 00:18:24,669
+all goes back to how many hours a day we
+
+480
+00:18:24,679 --> 00:18:26,669
+have to engineer it, how many hands we
+
+481
+00:18:26,679 --> 00:18:29,230
+have on keyboards. And I would say now,
+
+482
+00:18:29,240 --> 00:18:31,590
+we've definitely have some help from AI.
+
+483
+00:18:31,600 --> 00:18:33,110
+I don't think it's quite there yet, but
+
+484
+00:18:33,120 --> 00:18:34,350
+supposedly we're going to be out of a
+
+485
+00:18:34,360 --> 00:18:36,310
+job here pretty soon, Robert. So, I
+
+486
+00:18:36,320 --> 00:18:37,909
+don't believe that, but that's a whole
+
+487
+00:18:37,919 --> 00:18:39,350
+'nother topic that we don't need to go
+
+488
+00:18:39,360 --> 00:18:41,030
+into. But like I said, it's all time and
+
+489
+00:18:41,040 --> 00:18:43,070
+money. We can do this, it's not rocket
+
+490
+00:18:43,080 --> 00:18:45,710
+science. There is a broad range of
+
+491
+00:18:45,720 --> 00:18:47,750
+things you need to look at, but it goes
+
+492
+00:18:47,760 --> 00:18:49,270
+back to pretty much what we've been
+
+493
+00:18:49,280 --> 00:18:51,550
+saying over our chat.
+
+494
+00:18:51,560 --> 00:18:54,390
+Would you accept one of the standard
+
+495
+00:18:54,400 --> 00:18:56,310
+node images that's recommended by the
+
+496
+00:18:56,320 --> 00:18:58,950
+cloud service vendor, or would you start
+
+497
+00:18:58,960 --> 00:19:03,190
+from uh long-term or stable release of
+
+498
+00:19:03,200 --> 00:19:05,870
+your favorite operating system and then
+
+499
+00:19:05,880 --> 00:19:08,270
+batten down the hatches to get it even
+
+500
+00:19:08,280 --> 00:19:10,870
+more secure than the off-the-shelf? I
+
+501
+00:19:10,880 --> 00:19:13,390
+would say use off-the-shelf. The reason
+
+502
+00:19:13,400 --> 00:19:16,470
+being is that they have a staff of 100
+
+503
+00:19:16,480 --> 00:19:18,550
+people or more that are maintaining that
+
+504
+00:19:18,560 --> 00:19:20,310
+image. With most companies, they're
+
+505
+00:19:20,320 --> 00:19:22,430
+lucky if they have two. Most companies
+
+506
+00:19:22,440 --> 00:19:24,470
+don't have people that write kernel
+
+507
+00:19:24,480 --> 00:19:27,390
+level code, and the cloud providers do.
+
+508
+00:19:27,400 --> 00:19:28,830
+A good example, this happened a long
+
+509
+00:19:28,840 --> 00:19:33,430
+time ago, was the issue with the Intel
+
+510
+00:19:33,440 --> 00:19:35,950
+processors where we ran into some
+
+511
+00:19:35,960 --> 00:19:38,950
+processor issues and CVEs within the
+
+512
+00:19:38,960 --> 00:19:41,149
+operating system itself in the kernel.
+
+513
+00:19:41,159 --> 00:19:44,190
+So, the CVE was announced the day after
+
+514
+00:19:44,200 --> 00:19:46,590
+Google released new images that
+
+515
+00:19:46,600 --> 00:19:49,190
+contained the fixes. So, we're talking
+
+516
+00:19:49,200 --> 00:19:51,110
+virtually immediate. It took Debian and
+
+517
+00:19:51,120 --> 00:19:54,030
+Ubuntu a couple weeks to catch up if not
+
+518
+00:19:54,040 --> 00:19:56,350
+longer. So you're looking at that type
+
+519
+00:19:56,360 --> 00:20:00,670
+of lag with CVEs where AWS, the big
+
+520
+00:20:00,680 --> 00:20:03,230
+folks are talking about the CVEs before
+
+521
+00:20:03,240 --> 00:20:04,910
+you even know about them and they're
+
+522
+00:20:04,920 --> 00:20:06,990
+coming out really, really fast with
+
+523
+00:20:07,000 --> 00:20:09,070
+patches. RHEL is the same way. And I'm
+
+524
+00:20:09,080 --> 00:20:10,510
+not saying there's anything wrong with
+
+525
+00:20:10,520 --> 00:20:14,670
+Debian or Ubuntu or XYZ operating
+
+526
+00:20:14,680 --> 00:20:16,390
+system. There's definitely folks that
+
+527
+00:20:16,400 --> 00:20:18,630
+even offer operating systems that are
+
+528
+00:20:18,640 --> 00:20:21,830
+built for Kubernetes nowadays. So do you
+
+529
+00:20:21,840 --> 00:20:22,870
+need one?
+
+530
+00:20:22,880 --> 00:20:25,270
+I don't know. Do you have a use case and
+
+531
+00:20:25,280 --> 00:20:26,470
+is there a business value for your
+
+532
+00:20:26,480 --> 00:20:29,470
+company to have one? Great. Will I run
+
+533
+00:20:29,480 --> 00:20:33,950
+on top of like I do work with images and
+
+534
+00:20:33,960 --> 00:20:35,870
+I get frustrated that there are some
+
+535
+00:20:35,880 --> 00:20:37,870
+CVEs running around in a couple
+
+536
+00:20:37,880 --> 00:20:39,550
+distributions and they say, "No, those
+
+537
+00:20:39,560 --> 00:20:40,990
+aren't CVEs and we're not going to fix
+
+538
+00:20:41,000 --> 00:20:42,590
+them." A lot of security people don't
+
+539
+00:20:42,600 --> 00:20:45,950
+like that. But I go to Amazon Linux for
+
+540
+00:20:45,960 --> 00:20:48,990
+instance and I know if I'm going to put
+
+541
+00:20:49,000 --> 00:20:50,910
+something on Amazon Linux and get it
+
+542
+00:20:50,920 --> 00:20:53,310
+screened I would say about 90% of the
+
+543
+00:20:53,320 --> 00:20:55,830
+time if it's Amazon Linux maintained
+
+544
+00:20:55,840 --> 00:20:58,030
+packages, it's going to pass screening.
+
+545
+00:20:58,040 --> 00:21:01,230
+Same thing with I forgot the name of the
+
+546
+00:21:01,240 --> 00:21:03,190
+operating system that GCP runs which is
+
+547
+00:21:03,200 --> 00:21:04,630
+completely immutable by the way, which
+
+548
+00:21:04,640 --> 00:21:07,870
+is pretty cool. And again, I can't even
+
+549
+00:21:07,880 --> 00:21:10,270
+screen that in a lot of ways. But again,
+
+550
+00:21:10,280 --> 00:21:12,270
+it's leveraging you pay enough for a
+
+551
+00:21:12,280 --> 00:21:15,270
+cloud provider as it is. Use their toys.
+
+552
+00:21:15,280 --> 00:21:17,030
+Leverage their knowledge as much as you
+
+553
+00:21:17,040 --> 00:21:20,070
+can in a wise way. If you have use cases
+
+554
+00:21:20,080 --> 00:21:22,870
+where you have XYZ software that has to
+
+555
+00:21:22,880 --> 00:21:25,670
+run at the node level and you have to
+
+556
+00:21:25,680 --> 00:21:27,950
+have this, then I understand you got to
+
+557
+00:21:27,960 --> 00:21:30,470
+run that specific operating system. But
+
+558
+00:21:30,480 --> 00:21:32,830
+again, it's kind of like running your
+
+559
+00:21:32,840 --> 00:21:34,870
+own email server nowadays, Robert.
+
+560
+00:21:34,880 --> 00:21:38,790
+Running your own image registry. Use the
+
+561
+00:21:38,800 --> 00:21:40,990
+services that do it really, really well.
+
+562
+00:21:41,000 --> 00:21:42,950
+Like I don't want to run my own logging.
+
+563
+00:21:42,960 --> 00:21:45,470
+I want to use somebody to ship my logs
+
+564
+00:21:45,480 --> 00:21:48,350
+off to and or a solution that's in-house
+
+565
+00:21:48,360 --> 00:21:50,870
+that I ship my own logs off to. I don't
+
+566
+00:21:50,880 --> 00:21:52,710
+want to do it myself. I haven't admined
+
+567
+00:21:52,720 --> 00:21:54,590
+an email server in I don't know how
+
+568
+00:21:54,600 --> 00:21:55,790
+long.
+
+569
+00:21:55,800 --> 00:21:58,470
+We want to use the experts. Let's switch
+
+570
+00:21:58,480 --> 00:22:01,430
+topics now move on to the next layer of
+
+571
+00:22:01,440 --> 00:22:02,430
+your
+
+572
+00:22:02,440 --> 00:22:04,950
+stack of the top security issues. That
+
+573
+00:22:04,960 --> 00:22:06,510
+would be the network. What are the main
+
+574
+00:22:06,520 --> 00:22:07,750
+issues
+
+575
+00:22:07,760 --> 00:22:10,550
+in the network security area?
+
+576
+00:22:10,560 --> 00:22:14,150
+It's access. So within a Kubernetes
+
+577
+00:22:14,160 --> 00:22:17,070
+cluster, any pod can access any other
+
+578
+00:22:17,080 --> 00:22:19,430
+pod unless you set up network
+
+579
+00:22:19,440 --> 00:22:21,270
+restrictions. You either want to use
+
+580
+00:22:21,280 --> 00:22:23,910
+network policies or a service mesh like
+
+581
+00:22:23,920 --> 00:22:26,350
+Istio. This is probably one of the areas
+
+582
+00:22:26,360 --> 00:22:29,150
+that I see the least maturity in
+
+583
+00:22:29,160 --> 00:22:31,669
+within the folks that I work with. I
+
+584
+00:22:31,679 --> 00:22:34,590
+would say recently I've seen far more
+
+585
+00:22:34,600 --> 00:22:36,710
+maturity where folks are using service
+
+586
+00:22:36,720 --> 00:22:38,310
+mesh that they want to use or they're
+
+587
+00:22:38,320 --> 00:22:40,870
+using network security policies where
+
+588
+00:22:40,880 --> 00:22:44,430
+you are limited to call outside traffic.
+
+589
+00:22:44,440 --> 00:22:46,230
+In other words, your pod cannot get to
+
+590
+00:22:46,240 --> 00:22:49,669
+Google as well as your replica A cannot
+
+591
+00:22:49,679 --> 00:22:51,550
+get to a different name space with
+
+592
+00:22:51,560 --> 00:22:53,630
+replica B. And that's definitely
+
+593
+00:22:53,640 --> 00:22:55,710
+something that you need to look at and
+
+594
+00:22:55,720 --> 00:22:57,110
+control and it's a lot of work to be
+
+595
+00:22:57,120 --> 00:22:59,510
+honest. Within a name space, most pods
+
+596
+00:22:59,520 --> 00:23:01,390
+will be able to talk to other pods. As
+
+597
+00:23:01,400 --> 00:23:03,790
+well as so there's two different ways
+
+598
+00:23:03,800 --> 00:23:06,150
+that you can set up a pod in terms of
+
+599
+00:23:06,160 --> 00:23:08,470
+which network it runs on because we have
+
+600
+00:23:08,480 --> 00:23:10,630
+our host network, right? It's how all
+
+601
+00:23:10,640 --> 00:23:12,310
+the other hosts talk to each other. It's
+
+602
+00:23:12,320 --> 00:23:14,590
+the typical networking pattern that we
+
+603
+00:23:14,600 --> 00:23:17,070
+look at. Then we have some sort of pod
+
+604
+00:23:17,080 --> 00:23:19,669
+network whether it's virtual or it's
+
+605
+00:23:19,679 --> 00:23:22,110
+IP'd a different way. They've done it
+
+606
+00:23:22,120 --> 00:23:25,030
+about 15 different ways sideways. But if
+
+607
+00:23:25,040 --> 00:23:27,390
+you run your pod on the host network, it
+
+608
+00:23:27,400 --> 00:23:29,470
+can access everything in the host then
+
+609
+00:23:29,480 --> 00:23:30,750
+depending on the permissions you give
+
+610
+00:23:30,760 --> 00:23:33,990
+it. So definitely keep your pods on the
+
+611
+00:23:34,000 --> 00:23:36,390
+pod network. There are some daemon sets
+
+612
+00:23:36,400 --> 00:23:38,190
+and controllers that do host level
+
+613
+00:23:38,200 --> 00:23:40,070
+operations. For instance, you need
+
+614
+00:23:40,080 --> 00:23:42,110
+Nvidia drivers installed, right? There
+
+615
+00:23:42,120 --> 00:23:44,830
+are daemon sets that will run on your
+
+616
+00:23:44,840 --> 00:23:47,390
+host. So when your host starts, Nvidia
+
+617
+00:23:47,400 --> 00:23:49,470
+drivers get installed. So you have to
+
+618
+00:23:49,480 --> 00:23:51,470
+run them on the host network. But if you
+
+619
+00:23:51,480 --> 00:23:53,510
+can and majority of your workloads
+
+620
+00:23:53,520 --> 00:23:56,030
+should be on your pod network. As well
+
+621
+00:23:56,040 --> 00:23:59,190
+as network traffic, I would talk about
+
+622
+00:23:59,200 --> 00:24:01,550
+you mentioned operators. Operators need
+
+623
+00:24:01,560 --> 00:24:03,950
+to talk to the control plane, the API
+
+624
+00:24:03,960 --> 00:24:05,910
+server. And because of that, you're
+
+625
+00:24:05,920 --> 00:24:08,030
+looking at our back security. By
+
+626
+00:24:08,040 --> 00:24:10,350
+default, don't mount the service account
+
+627
+00:24:10,360 --> 00:24:12,470
+token which allows for you to
+
+628
+00:24:12,480 --> 00:24:14,630
+authenticate or at times if you
+
+629
+00:24:14,640 --> 00:24:16,150
+misconfigure it, allows you to
+
+630
+00:24:16,160 --> 00:24:18,470
+authenticate with the API server. So
+
+631
+00:24:18,480 --> 00:24:20,470
+it's controlling access there. Also
+
+632
+00:24:20,480 --> 00:24:22,350
+you're looking at DNS as well. That's
+
+633
+00:24:22,360 --> 00:24:23,870
+another consideration at a network
+
+634
+00:24:23,880 --> 00:24:25,950
+layer. Everything basically within
+
+635
+00:24:25,960 --> 00:24:28,510
+Kubernetes is all DNS. When you're
+
+636
+00:24:28,520 --> 00:24:31,150
+talking to a service, that's DNS. When
+
+637
+00:24:31,160 --> 00:24:32,630
+you're talking to another pod, that's
+
+638
+00:24:32,640 --> 00:24:35,790
+DNS. And that's really, really important
+
+639
+00:24:35,800 --> 00:24:38,390
+within a Kubernetes cluster itself. But
+
+640
+00:24:38,400 --> 00:24:40,270
+yeah, one of the key things you can look
+
+641
+00:24:40,280 --> 00:24:43,510
+at with intrusions is you go from pod to
+
+642
+00:24:43,520 --> 00:24:44,950
+either secret you shouldn't be able to
+
+643
+00:24:44,960 --> 00:24:48,870
+get at or you go from pod to your API
+
+644
+00:24:48,880 --> 00:24:51,030
+server. Secrets is another thing we
+
+645
+00:24:51,040 --> 00:24:52,310
+should discuss, Robert. If you want to
+
+646
+00:24:52,320 --> 00:24:53,590
+throw that in the list, we can talk
+
+647
+00:24:53,600 --> 00:24:55,550
+about that after we talk about networks.
+
+648
+00:24:55,560 --> 00:24:57,350
+But there've been some really good
+
+649
+00:24:57,360 --> 00:25:00,470
+improvements in keeping secrets secret
+
+650
+00:25:00,480 --> 00:25:02,390
+as it would be. I want to go back
+
+651
+00:25:02,400 --> 00:25:04,550
+through you made a number of points
+
+652
+00:25:04,560 --> 00:25:06,310
+there and to delve into them in a bit
+
+653
+00:25:06,320 --> 00:25:09,270
+more detail. Network security policy
+
+654
+00:25:09,280 --> 00:25:12,150
+controls which name spaces communicate
+
+655
+00:25:12,160 --> 00:25:14,350
+with other name spaces and service mesh
+
+656
+00:25:14,360 --> 00:25:17,630
+is more granular. They are similar but
+
+657
+00:25:17,640 --> 00:25:21,070
+different. Would you use one or both and
+
+658
+00:25:21,080 --> 00:25:23,669
+for what purpose each one?
+
+659
+00:25:23,679 --> 00:25:25,990
+Sure. Network service policies control
+
+660
+00:25:26,000 --> 00:25:27,710
+both inbound and outbound traffic,
+
+661
+00:25:27,720 --> 00:25:31,350
+right? Ingress and egress. From a pod
+
+662
+00:25:31,360 --> 00:25:32,950
+that the network security policy is
+
+663
+00:25:32,960 --> 00:25:35,910
+bound to. So you can restrict talking to
+
+664
+00:25:35,920 --> 00:25:39,390
+docker.io from a pod level or you can
+
+665
+00:25:39,400 --> 00:25:43,030
+restrict docker.io talking to the pod or
+
+666
+00:25:43,040 --> 00:25:45,550
+you can restrict pod A talking to
+
+667
+00:25:45,560 --> 00:25:47,870
+replica B. You can do also all of that
+
+668
+00:25:47,880 --> 00:25:50,790
+within Istio or whatever service mesh of
+
+669
+00:25:50,800 --> 00:25:52,910
+the month you pick up. I'm not a service
+
+670
+00:25:52,920 --> 00:25:55,230
+mesh expert. There are very valid use
+
+671
+00:25:55,240 --> 00:25:56,910
+cases for service mesh and there's one
+
+672
+00:25:56,920 --> 00:25:59,910
+very good security use cases where you
+
+673
+00:25:59,920 --> 00:26:01,750
+have all your traffic within your
+
+674
+00:26:01,760 --> 00:26:03,910
+clusters encrypted. That's definitely
+
+675
+00:26:03,920 --> 00:26:05,590
+use case when you're looking at
+
+676
+00:26:05,600 --> 00:26:07,590
+sensitive information that's traveling
+
+677
+00:26:07,600 --> 00:26:10,430
+in between pods. If you're not using
+
+678
+00:26:10,440 --> 00:26:12,830
+encrypted trans like your application
+
+679
+00:26:12,840 --> 00:26:16,270
+doesn't support encrypted transmission
+
+680
+00:26:16,280 --> 00:26:19,150
+across network layers, you're looking at
+
+681
+00:26:19,160 --> 00:26:21,950
+all your network traffic's unencrypted.
+
+682
+00:26:21,960 --> 00:26:25,110
+So you have a PHP web application that
+
+683
+00:26:25,120 --> 00:26:28,470
+makes authentication to a job engine
+
+684
+00:26:28,480 --> 00:26:30,110
+within your cluster and it's password
+
+685
+00:26:30,120 --> 00:26:31,910
+protected, that password is going over
+
+686
+00:26:31,920 --> 00:26:34,070
+the wire. But if you have Istio
+
+687
+00:26:34,080 --> 00:26:36,669
+installed, right? That password's now
+
+688
+00:26:36,679 --> 00:26:38,950
+encrypted or another service mesh of
+
+689
+00:26:38,960 --> 00:26:41,230
+course. So it's using that's one of the
+
+690
+00:26:41,240 --> 00:26:43,150
+things. This is drop-in, right? That's
+
+691
+00:26:43,160 --> 00:26:45,390
+one of the huge benefits you get. I'm
+
+692
+00:26:45,400 --> 00:26:47,669
+not a service mesh expert. I have other
+
+693
+00:26:47,679 --> 00:26:48,910
+good friends that are really good with
+
+694
+00:26:48,920 --> 00:26:50,270
+that stuff. There's definitely use
+
+695
+00:26:50,280 --> 00:26:52,270
+cases. But once again, you're
+
+696
+00:26:52,280 --> 00:26:54,150
+maintaining either paying for somebody
+
+697
+00:26:54,160 --> 00:26:56,150
+to maintain a service mesh for you which
+
+698
+00:26:56,160 --> 00:26:57,870
+is yet another application. You're
+
+699
+00:26:57,880 --> 00:27:00,630
+looking at more load on your system. The
+
+700
+00:27:00,640 --> 00:27:03,669
+CNI provider will that is installed
+
+701
+00:27:03,679 --> 00:27:05,950
+provides your network security policies.
+
+702
+00:27:05,960 --> 00:27:07,870
+So you're really not looking as much
+
+703
+00:27:07,880 --> 00:27:10,230
+overhead, you know, compared to running
+
+704
+00:27:10,240 --> 00:27:11,510
+a service mesh. And there's actually
+
+705
+00:27:11,520 --> 00:27:13,510
+quite a bit of overhead nowadays running
+
+706
+00:27:13,520 --> 00:27:15,470
+service meshes. Still is, it's getting a
+
+707
+00:27:15,480 --> 00:27:17,910
+lot better than it was initially. And
+
+708
+00:27:17,920 --> 00:27:19,910
+upgrade challenges as well with service
+
+709
+00:27:19,920 --> 00:27:21,630
+mesh. And you know, you're running
+
+710
+00:27:21,640 --> 00:27:23,390
+another application, Robert, right? You
+
+711
+00:27:23,400 --> 00:27:25,910
+get CVEs in it. So try to limit the
+
+712
+00:27:25,920 --> 00:27:27,310
+number of applications you're running.
+
+713
+00:27:27,320 --> 00:27:29,510
+So you know, you're limiting your the
+
+714
+00:27:29,520 --> 00:27:31,790
+number of entry points you have from a
+
+715
+00:27:31,800 --> 00:27:33,790
+security standard. I'll let our
+
+716
+00:27:33,800 --> 00:27:36,669
+listeners know that we did episode 600
+
+717
+00:27:36,679 --> 00:27:39,870
+on service mesh. Chris, now back to our
+
+718
+00:27:39,880 --> 00:27:42,110
+conversation. You mentioned that the
+
+719
+00:27:42,120 --> 00:27:44,430
+operator needs to be able to access the
+
+720
+00:27:44,440 --> 00:27:47,830
+API and so it needs our back. Whereas
+
+721
+00:27:47,840 --> 00:27:50,510
+most applications you're running do not
+
+722
+00:27:50,520 --> 00:27:54,430
+need the API. Then would you default to
+
+723
+00:27:54,440 --> 00:27:57,790
+the average pod should not have any
+
+724
+00:27:57,800 --> 00:27:59,510
+access at all to the API and therefore
+
+725
+00:27:59,520 --> 00:28:00,990
+should not have any credentials
+
+726
+00:28:01,000 --> 00:28:03,270
+available. Think I'm just at this point
+
+727
+00:28:03,280 --> 00:28:04,390
+restating what you said. Do you have
+
+728
+00:28:04,400 --> 00:28:06,910
+anything to add to that? Well, it's on
+
+729
+00:28:06,920 --> 00:28:09,510
+by default is what I have to add and we
+
+730
+00:28:09,520 --> 00:28:11,750
+and I've had conversations with security
+
+731
+00:28:11,760 --> 00:28:13,870
+folks before about that that have coded
+
+732
+00:28:13,880 --> 00:28:16,110
+it and you know that look your dog gives
+
+733
+00:28:16,120 --> 00:28:17,830
+you when it kind of turns your head and
+
+734
+00:28:17,840 --> 00:28:19,830
+goes, "Huh?" That's the kind of look I
+
+735
+00:28:19,840 --> 00:28:22,830
+often have where the service account
+
+736
+00:28:22,840 --> 00:28:26,110
+token is automatically mounted. So that
+
+737
+00:28:26,120 --> 00:28:28,669
+is not something you want. Now that is
+
+738
+00:28:28,679 --> 00:28:32,390
+most like also a pod by default will use
+
+739
+00:28:32,400 --> 00:28:34,950
+the service account for the name space.
+
+740
+00:28:34,960 --> 00:28:38,070
+So again, create a service account like
+
+741
+00:28:38,080 --> 00:28:40,270
+most helm charts or you create your own
+
+742
+00:28:40,280 --> 00:28:42,350
+deployments by hand will have service
+
+743
+00:28:42,360 --> 00:28:43,909
+accounts like you'll want to create your
+
+744
+00:28:43,919 --> 00:28:45,510
+own service account. So there's really
+
+745
+00:28:45,520 --> 00:28:47,390
+two things, right? There's does it have
+
+746
+00:28:47,400 --> 00:28:51,110
+a service account token? What group and
+
+747
+00:28:51,120 --> 00:28:52,630
+or permissions does that service account
+
+748
+00:28:52,640 --> 00:28:55,990
+token have? And are you restricting like
+
+749
+00:28:56,000 --> 00:28:57,550
+even if you mount the service account
+
+750
+00:28:57,560 --> 00:29:00,310
+token for instance, if you don't allow a
+
+751
+00:29:00,320 --> 00:29:03,430
+pod to talk to the the API server, you
+
+752
+00:29:03,440 --> 00:29:05,190
+remove that path using that security
+
+753
+00:29:05,200 --> 00:29:06,590
+policy, doesn't matter if I have a
+
+754
+00:29:06,600 --> 00:29:08,110
+security token. But yeah, don't mount
+
+755
+00:29:08,120 --> 00:29:09,630
+it. It's a bad thing if you don't need
+
+756
+00:29:09,640 --> 00:29:12,310
+it. And let's look back to operators to
+
+757
+00:29:12,320 --> 00:29:14,230
+give a little bit more color to that.
+
+758
+00:29:14,240 --> 00:29:16,630
+Typically operators create pods,
+
+759
+00:29:16,640 --> 00:29:18,909
+maintain them, need to be able to access
+
+760
+00:29:18,919 --> 00:29:20,830
+pods, do other cool things with pods. So
+
+761
+00:29:20,840 --> 00:29:23,550
+they require access to the API server in
+
+762
+00:29:23,560 --> 00:29:25,230
+order to do that. In essence, they're
+
+763
+00:29:25,240 --> 00:29:27,149
+making cube control calls if you want to
+
+764
+00:29:27,159 --> 00:29:28,430
+think about it in that way. And that's
+
+765
+00:29:28,440 --> 00:29:30,310
+how they maintain say, you know, you're
+
+766
+00:29:30,320 --> 00:29:32,190
+running Cockroach database. Worked with
+
+767
+00:29:32,200 --> 00:29:34,350
+them on their operator actually, funny
+
+768
+00:29:34,360 --> 00:29:35,550
+enough.
+
+769
+00:29:35,560 --> 00:29:38,550
+We did another entire episode, so number
+
+770
+00:29:38,560 --> 00:29:42,550
+634 about Kyverno which is a policy as
+
+771
+00:29:42,560 --> 00:29:44,790
+code layer that enables you to create
+
+772
+00:29:44,800 --> 00:29:48,030
+policies for things like every pod must
+
+773
+00:29:48,040 --> 00:29:51,310
+have a non-default service account or
+
+774
+00:29:51,320 --> 00:29:52,870
+many of these things that you are
+
+775
+00:29:52,880 --> 00:29:54,830
+recommending could be turned into a
+
+776
+00:29:54,840 --> 00:29:57,550
+policy. Do you all have a view about
+
+777
+00:29:57,560 --> 00:29:59,750
+Kyverno or tools like that and where
+
+778
+00:29:59,760 --> 00:30:01,830
+they have their place in your overall
+
+779
+00:30:01,840 --> 00:30:04,310
+security profile?
+
+780
+00:30:04,320 --> 00:30:07,190
+Sure. And I assume that Kyverno is a
+
+781
+00:30:07,200 --> 00:30:08,710
+admission controller?
+
+782
+00:30:08,720 --> 00:30:12,230
+So, you have a policy as code which is
+
+783
+00:30:12,240 --> 00:30:14,470
+just a text file and it goes in a config
+
+784
+00:30:14,480 --> 00:30:16,030
+map and it integrates with the
+
+785
+00:30:16,040 --> 00:30:19,830
+controllers to enforce the policies on I
+
+786
+00:30:19,840 --> 00:30:22,150
+believe on every single API call.
+
+787
+00:30:22,160 --> 00:30:24,590
+Sure. And that's actually So, I
+
+788
+00:30:24,600 --> 00:30:26,590
+mentioned PSPs, right? Pod Security
+
+789
+00:30:26,600 --> 00:30:30,790
+Policies. They now have a pod security
+
+790
+00:30:30,800 --> 00:30:32,670
+admission controller. And that's most
+
+791
+00:30:32,680 --> 00:30:34,190
+likely the pattern that they're using
+
+792
+00:30:34,200 --> 00:30:36,790
+for that component as well. Yes, I do
+
+793
+00:30:36,800 --> 00:30:40,070
+recommend that because for instance, you
+
+794
+00:30:40,080 --> 00:30:42,670
+I never recommend running a Docker image
+
+795
+00:30:42,680 --> 00:30:45,510
+out of Docker Hub, right? You want to I
+
+796
+00:30:45,520 --> 00:30:46,590
+mean, if you're a big enough company,
+
+797
+00:30:46,600 --> 00:30:49,150
+you want to be able to screen the bash
+
+798
+00:30:49,160 --> 00:30:50,990
+image that you need to run within your
+
+799
+00:30:51,000 --> 00:30:54,190
+system. So, what admission controller
+
+800
+00:30:54,200 --> 00:30:55,710
+can say is
+
+801
+00:30:55,720 --> 00:30:57,350
+you need your own unique service account
+
+802
+00:30:57,360 --> 00:30:59,910
+for this deployment. You need to use the
+
+803
+00:30:59,920 --> 00:31:02,230
+unique service account for this
+
+804
+00:31:02,240 --> 00:31:06,830
+namespace. You cannot launch a pod that
+
+805
+00:31:06,840 --> 00:31:10,270
+contains an image from docker.io.
+
+806
+00:31:10,280 --> 00:31:11,670
+Without an admission controller, like
+
+807
+00:31:11,680 --> 00:31:13,630
+it's it's kind of two ways, right? You
+
+808
+00:31:13,640 --> 00:31:15,430
+should be screening your YAML before
+
+809
+00:31:15,440 --> 00:31:18,310
+it's installed in Kubernetes and then
+
+810
+00:31:18,320 --> 00:31:20,030
+you should be screening your YAML once
+
+811
+00:31:20,040 --> 00:31:22,510
+it's running in Kubernetes. Cuz you can,
+
+812
+00:31:22,520 --> 00:31:24,270
+you know, somebody can come in, bad
+
+813
+00:31:24,280 --> 00:31:26,350
+actor can come in, get kubectl access,
+
+814
+00:31:26,360 --> 00:31:29,110
+edit uh the YAML on a deployment and
+
+815
+00:31:29,120 --> 00:31:31,790
+then it fires up their own image. Well,
+
+816
+00:31:31,800 --> 00:31:34,070
+if your network policy doesn't allow you
+
+817
+00:31:34,080 --> 00:31:36,190
+to download an image except for an image
+
+818
+00:31:36,200 --> 00:31:39,310
+inside your system, you know, from ECR
+
+819
+00:31:39,320 --> 00:31:41,390
+or Docker, you know, whatever Docker
+
+820
+00:31:41,400 --> 00:31:42,990
+registry of the month you're using or
+
+821
+00:31:43,000 --> 00:31:44,990
+container registry, then you prevent
+
+822
+00:31:45,000 --> 00:31:46,550
+these things. But again, admission
+
+823
+00:31:46,560 --> 00:31:48,030
+controller is really good. It's a lot of
+
+824
+00:31:48,040 --> 00:31:49,630
+maturity though. I've worked with a lot
+
+825
+00:31:49,640 --> 00:31:52,310
+of larger companies that don't have
+
+826
+00:31:52,320 --> 00:31:54,310
+security admission controllers. I would
+
+827
+00:31:54,320 --> 00:31:58,350
+say that is probably one of the most
+
+828
+00:31:58,360 --> 00:32:00,390
+mature like if you're looking at people
+
+829
+00:32:00,400 --> 00:32:03,150
+that are crawling, walking, or running,
+
+830
+00:32:03,160 --> 00:32:04,669
+that's definitely with the people that
+
+831
+00:32:04,679 --> 00:32:05,669
+are running with security. They're
+
+832
+00:32:05,679 --> 00:32:07,870
+running their admission controllers. The
+
+833
+00:32:07,880 --> 00:32:10,350
+pod security admission controller now is
+
+834
+00:32:10,360 --> 00:32:12,630
+part of Kubernetes and that it goes back
+
+835
+00:32:12,640 --> 00:32:13,990
+to the statement you made, what are they
+
+836
+00:32:14,000 --> 00:32:16,350
+trying to make simpler? It gives you
+
+837
+00:32:16,360 --> 00:32:18,910
+three stock out of the box profiles you
+
+838
+00:32:18,920 --> 00:32:20,390
+can run with your workloads that
+
+839
+00:32:20,400 --> 00:32:22,110
+enforces these types of things that you
+
+840
+00:32:22,120 --> 00:32:24,470
+mentioned, Robert. So, and I'm sure, you
+
+841
+00:32:24,480 --> 00:32:25,990
+know, the tool that you mentioned
+
+842
+00:32:26,000 --> 00:32:27,590
+earlier as well provides some out of the
+
+843
+00:32:27,600 --> 00:32:29,270
+box configurations and some best
+
+844
+00:32:29,280 --> 00:32:31,669
+practices. Again Again, it goes back to
+
+845
+00:32:31,679 --> 00:32:33,750
+leveraging folks that know what they're
+
+846
+00:32:33,760 --> 00:32:35,110
+doing. You know, I'm not going to write
+
+847
+00:32:35,120 --> 00:32:37,390
+my own container screener. I'm going to
+
+848
+00:32:37,400 --> 00:32:39,550
+use somebody else's, whether it's open
+
+849
+00:32:39,560 --> 00:32:41,310
+source or closed source, you know, I've
+
+850
+00:32:41,320 --> 00:32:42,830
+got enough going on my life. Most
+
+851
+00:32:42,840 --> 00:32:44,230
+engineers got enough going on their
+
+852
+00:32:44,240 --> 00:32:46,950
+life. We don't want to maintain some
+
+853
+00:32:46,960 --> 00:32:49,750
+one-off awesome tool. Do you have any
+
+854
+00:32:49,760 --> 00:32:52,910
+stories come to mind of uh network
+
+855
+00:32:52,920 --> 00:32:55,310
+security issue that you either debugged
+
+856
+00:32:55,320 --> 00:32:58,510
+or found doing an audit somebody else's
+
+857
+00:32:58,520 --> 00:33:00,390
+system? Oh, no, this happened to one of
+
+858
+00:33:00,400 --> 00:33:02,230
+our systems, one of a client that I was
+
+859
+00:33:02,240 --> 00:33:03,950
+working with. And this goes back to
+
+860
+00:33:03,960 --> 00:33:05,950
+admission controllers, which is don't
+
+861
+00:33:05,960 --> 00:33:08,230
+allow external services to be launched
+
+862
+00:33:08,240 --> 00:33:09,950
+if it doesn't need to be launched,
+
+863
+00:33:09,960 --> 00:33:12,350
+right? Only route your traffic through
+
+864
+00:33:12,360 --> 00:33:15,230
+ingress. A engineer in human one of the
+
+865
+00:33:15,240 --> 00:33:17,550
+DevOps engineers for some reason
+
+866
+00:33:17,560 --> 00:33:21,390
+launched a Juniper pod, Juniper Networks
+
+867
+00:33:21,400 --> 00:33:23,510
+big data science stuff, right? Launched
+
+868
+00:33:23,520 --> 00:33:26,230
+one of those, a deployment, had it on an
+
+869
+00:33:26,240 --> 00:33:28,550
+external IP address.
+
+870
+00:33:28,560 --> 00:33:30,750
+I think 30 minutes later a Bitcoin miner
+
+871
+00:33:30,760 --> 00:33:33,590
+was installed on it because
+
+872
+00:33:33,600 --> 00:33:35,830
+people are screening are going through
+
+873
+00:33:35,840 --> 00:33:38,190
+IP addresses on the cloud provider that
+
+874
+00:33:38,200 --> 00:33:41,830
+we were on. They look for Okay, this is
+
+875
+00:33:41,840 --> 00:33:45,110
+Juniper notebook, right? They hit the
+
+876
+00:33:45,120 --> 00:33:47,030
+path where you get the login screen.
+
+877
+00:33:47,040 --> 00:33:48,990
+Then they say, "Okay, I'm going to try
+
+878
+00:33:49,000 --> 00:33:50,950
+these 15 exploits on the 15 different
+
+879
+00:33:50,960 --> 00:33:53,030
+versions." We had one of the versions
+
+880
+00:33:53,040 --> 00:33:55,190
+that had an exploit in it. 30 minutes
+
+881
+00:33:55,200 --> 00:33:57,030
+later we had Bitcoin miners installed.
+
+882
+00:33:57,040 --> 00:33:59,550
+Uh yeah, our CPU usage went up just a
+
+883
+00:33:59,560 --> 00:34:02,150
+little bit. So again, like how could
+
+884
+00:34:02,160 --> 00:34:04,550
+that have been avoided? One, use
+
+885
+00:34:04,560 --> 00:34:06,870
+admission controller or network security
+
+886
+00:34:06,880 --> 00:34:10,389
+policies where a pod cannot download
+
+887
+00:34:10,399 --> 00:34:12,630
+software, right? If you don't allow a
+
+888
+00:34:12,640 --> 00:34:15,030
+pod to talk to external networks, why
+
+889
+00:34:15,040 --> 00:34:17,070
+why should a pod be able to talk to, you
+
+890
+00:34:17,080 --> 00:34:18,590
+know, Docker Hub? Why should a pod be
+
+891
+00:34:18,600 --> 00:34:20,590
+able to talk to Google? You know, why
+
+892
+00:34:20,600 --> 00:34:22,950
+should a pod be able to talk to XYZ FTP
+
+893
+00:34:22,960 --> 00:34:24,990
+site? Shouldn't. So, if you don't allow
+
+894
+00:34:25,000 --> 00:34:28,070
+that traffic, if you don't allow a pod
+
+895
+00:34:28,080 --> 00:34:31,470
+to start up with a image that is a
+
+896
+00:34:31,480 --> 00:34:33,950
+foreign image, pod won't even start,
+
+897
+00:34:33,960 --> 00:34:35,430
+right? So, you won't run into that
+
+898
+00:34:35,440 --> 00:34:37,950
+problem. If you don't have a set of base
+
+899
+00:34:37,960 --> 00:34:39,790
+images that you're constantly screening
+
+900
+00:34:39,800 --> 00:34:41,630
+for, in other words,
+
+901
+00:34:41,640 --> 00:34:43,349
+you can only run
+
+902
+00:34:43,359 --> 00:34:46,349
+company, you know, Acme's Python image
+
+903
+00:34:46,359 --> 00:34:47,230
+when you're running a Python
+
+904
+00:34:47,240 --> 00:34:49,710
+application. If you allow any Python
+
+905
+00:34:49,720 --> 00:34:51,310
+image, you're going to get CVEs in
+
+906
+00:34:51,320 --> 00:34:53,470
+in-house. And it's really tempting to do
+
+907
+00:34:53,480 --> 00:34:55,710
+that. You know, it's really tempting to
+
+908
+00:34:55,720 --> 00:34:58,630
+go to Docker Hub and download, use
+
+909
+00:34:58,640 --> 00:35:01,150
+Python slim 312. Great product, by the
+
+910
+00:35:01,160 --> 00:35:03,070
+way. I'm not knocking them at all, but I
+
+911
+00:35:03,080 --> 00:35:05,310
+know for instance, it won't pass CV
+
+912
+00:35:05,320 --> 00:35:07,950
+screening. Love that story, Chris. Let's
+
+913
+00:35:07,960 --> 00:35:09,950
+move on to the next layer in the stack
+
+914
+00:35:09,960 --> 00:35:12,470
+which we inserted in the middle of the
+
+915
+00:35:12,480 --> 00:35:15,910
+show, secrets. What are your main points
+
+916
+00:35:15,920 --> 00:35:18,750
+within the secret security and what's
+
+917
+00:35:18,760 --> 00:35:21,230
+gotten better in that area? So, back in
+
+918
+00:35:21,240 --> 00:35:23,230
+the day secrets weren't secrets and
+
+919
+00:35:23,240 --> 00:35:24,830
+they're still not if you use default
+
+920
+00:35:24,840 --> 00:35:26,790
+secrets. It's
+
+921
+00:35:26,800 --> 00:35:29,630
+base64 encoded or base I forget exactly
+
+922
+00:35:29,640 --> 00:35:31,630
+which encoding they use on it, but it's
+
+923
+00:35:31,640 --> 00:35:35,190
+plain text. You know, but now most cloud
+
+924
+00:35:35,200 --> 00:35:38,710
+providers and some folks within on prem
+
+925
+00:35:38,720 --> 00:35:42,070
+allow you to mount a
+
+926
+00:35:42,080 --> 00:35:44,550
+So, you have a cloud provider secret,
+
+927
+00:35:44,560 --> 00:35:46,470
+Kubernetes
+
+928
+00:35:46,480 --> 00:35:48,630
+allows you to mount that secret as a
+
+929
+00:35:48,640 --> 00:35:49,990
+volume.
+
+930
+00:35:50,000 --> 00:35:51,710
+So, you're on the operating system, it's
+
+931
+00:35:51,720 --> 00:35:55,470
+actually a mount point on your container
+
+932
+00:35:55,480 --> 00:35:57,150
+and that's how the secret is either
+
+933
+00:35:57,160 --> 00:35:59,270
+injected or becomes a file store.
+
+934
+00:35:59,280 --> 00:36:01,190
+Typically a file level secret that you
+
+935
+00:36:01,200 --> 00:36:03,310
+can then access with your application.
+
+936
+00:36:03,320 --> 00:36:05,390
+That's probably the slickest and it's
+
+937
+00:36:05,400 --> 00:36:08,150
+one of it's the same type of spec where
+
+938
+00:36:08,160 --> 00:36:11,349
+we have different like CSI, CNI, all the
+
+939
+00:36:11,359 --> 00:36:12,870
+different file providers. Well, now we
+
+940
+00:36:12,880 --> 00:36:15,110
+have a container file provider
+
+941
+00:36:15,120 --> 00:36:17,710
+reference. Like I said, Amazon provides
+
+942
+00:36:17,720 --> 00:36:19,950
+it, Google provides it, I'm sure Azure
+
+943
+00:36:19,960 --> 00:36:21,430
+provides it as well. So, all the big
+
+944
+00:36:21,440 --> 00:36:24,430
+providers are using that pattern now and
+
+945
+00:36:24,440 --> 00:36:26,670
+still your secrets, you know, in clear
+
+946
+00:36:26,680 --> 00:36:29,230
+text, you crack into the pod level,
+
+947
+00:36:29,240 --> 00:36:31,950
+you'll have access to it, right? But pod
+
+948
+00:36:31,960 --> 00:36:35,950
+replica A cannot talk to secret C that
+
+949
+00:36:35,960 --> 00:36:37,950
+it shouldn't be talking to and access
+
+950
+00:36:37,960 --> 00:36:40,230
+it, right? You're not able to start a
+
+951
+00:36:40,240 --> 00:36:43,030
+pod and mount any secret now. You're,
+
+952
+00:36:43,040 --> 00:36:44,270
+you know, it's
+
+953
+00:36:44,280 --> 00:36:47,750
+this pod has to have this profile and be
+
+954
+00:36:47,760 --> 00:36:49,710
+able to access this secret. And it goes
+
+955
+00:36:49,720 --> 00:36:51,870
+back to, you know,
+
+956
+00:36:51,880 --> 00:36:55,230
+pod identity within the cloud. So, for
+
+957
+00:36:55,240 --> 00:36:58,790
+instance, say your pod is accessing the
+
+958
+00:36:58,800 --> 00:37:01,430
+cloud components, right? Often CI needs
+
+959
+00:37:01,440 --> 00:37:03,950
+to download images. It needs to push
+
+960
+00:37:03,960 --> 00:37:06,990
+images into registries. So again, it
+
+961
+00:37:07,000 --> 00:37:08,950
+goes back to secrets management. You
+
+962
+00:37:08,960 --> 00:37:12,670
+don't want to put a cloud level admin, I
+
+963
+00:37:12,680 --> 00:37:16,470
+can push into ECR password in a regular
+
+964
+00:37:16,480 --> 00:37:19,030
+password. You want to use pod identity
+
+965
+00:37:19,040 --> 00:37:22,310
+management which binds a cloud role to a
+
+966
+00:37:22,320 --> 00:37:24,630
+pod itself. You then authenticate with
+
+967
+00:37:24,640 --> 00:37:26,870
+that pod role. So, it's a couple of
+
+968
+00:37:26,880 --> 00:37:28,510
+different things, you know, you need to
+
+969
+00:37:28,520 --> 00:37:32,550
+have your GitHub token or your token for
+
+970
+00:37:32,560 --> 00:37:35,390
+XYZ SaaS that your application talks to.
+
+971
+00:37:35,400 --> 00:37:38,030
+You put that into your cloud provider
+
+972
+00:37:38,040 --> 00:37:40,390
+secret, you know, you can then easily
+
+973
+00:37:40,400 --> 00:37:42,590
+roll it. There's sessions, it can be
+
+974
+00:37:42,600 --> 00:37:46,110
+refreshed. Then you put it in through a
+
+975
+00:37:46,120 --> 00:37:49,590
+file system mounted secret as well as if
+
+976
+00:37:49,600 --> 00:37:51,950
+you have your accessing your local cloud
+
+977
+00:37:51,960 --> 00:37:55,190
+provider, you want to use a role on the
+
+978
+00:37:55,200 --> 00:37:57,470
+pod and authenticate in that manner
+
+979
+00:37:57,480 --> 00:38:00,430
+rather than accessing a secret out of
+
+980
+00:38:00,440 --> 00:38:03,070
+plain text secret. Everybody is using
+
+981
+00:38:03,080 --> 00:38:05,710
+encryption at rest. So, within etcd and
+
+982
+00:38:05,720 --> 00:38:07,750
+within control plane, all the secrets
+
+983
+00:38:07,760 --> 00:38:09,349
+are now encrypted, especially if you're
+
+984
+00:38:09,359 --> 00:38:10,630
+using, you know,
+
+985
+00:38:10,640 --> 00:38:13,390
+which what I recommend is the cloud
+
+986
+00:38:13,400 --> 00:38:14,750
+providers maintaining your control
+
+987
+00:38:14,760 --> 00:38:17,150
+plane. You're not running etcd yourself.
+
+988
+00:38:17,160 --> 00:38:18,830
+That's the big gotcha. I'm glad that
+
+989
+00:38:18,840 --> 00:38:20,550
+improved, but
+
+990
+00:38:20,560 --> 00:38:22,070
+you know, with the improvements, it
+
+991
+00:38:22,080 --> 00:38:23,430
+became a little bit trickier. And
+
+992
+00:38:23,440 --> 00:38:25,550
+getting pod level identities running
+
+993
+00:38:25,560 --> 00:38:28,270
+correctly is it's a little bit more fun.
+
+994
+00:38:28,280 --> 00:38:30,190
+So, you not only have to understand
+
+995
+00:38:30,200 --> 00:38:32,190
+Kubernetes. It's kind of like wiring,
+
+996
+00:38:32,200 --> 00:38:33,550
+you know, it's Russian doll, right?
+
+997
+00:38:33,560 --> 00:38:35,230
+You've got one egg that needs to fit
+
+998
+00:38:35,240 --> 00:38:36,790
+inside another egg that needs to fit
+
+999
+00:38:36,800 --> 00:38:38,630
+inside an other egg, then you have your
+
+1000
+00:38:38,640 --> 00:38:40,870
+secret mounted correctly. Yeah, that
+
+1001
+00:38:40,880 --> 00:38:42,710
+Russian doll thing, that's totally how I
+
+1002
+00:38:42,720 --> 00:38:45,190
+feel about Kubernetes. Now, this last
+
+1003
+00:38:45,200 --> 00:38:48,030
+point, I wanted to go through it because
+
+1004
+00:38:48,040 --> 00:38:49,230
+it's a little bit complicated just to
+
+1005
+00:38:49,240 --> 00:38:51,670
+make sure I got all the pieces. Say I'm
+
+1006
+00:38:51,680 --> 00:38:53,750
+trying to access a service through the
+
+1007
+00:38:53,760 --> 00:38:55,270
+cloud provider which might be for
+
+1008
+00:38:55,280 --> 00:38:58,190
+example ECR. There may be an option to
+
+1009
+00:38:58,200 --> 00:39:00,710
+have password authentication and you
+
+1010
+00:39:00,720 --> 00:39:02,550
+could put the password in a secret and
+
+1011
+00:39:02,560 --> 00:39:04,190
+mount it onto the pod. What you're
+
+1012
+00:39:04,200 --> 00:39:06,590
+saying is don't do that. Create an
+
+1013
+00:39:06,600 --> 00:39:08,870
+identity within the cloud service
+
+1014
+00:39:08,880 --> 00:39:11,310
+provider and assign it a role that has a
+
+1015
+00:39:11,320 --> 00:39:13,670
+policy that grants it access to ECR and
+
+1016
+00:39:13,680 --> 00:39:16,310
+then bind that identity to your pod. So,
+
+1017
+00:39:16,320 --> 00:39:18,590
+it's happening now. There's still some
+
+1018
+00:39:18,600 --> 00:39:20,750
+token, but it's outside of the pod. So,
+
+1019
+00:39:20,760 --> 00:39:22,670
+somebody gets into the pod, they can't
+
+1020
+00:39:22,680 --> 00:39:25,550
+really easily get the credential. Did I
+
+1021
+00:39:25,560 --> 00:39:27,310
+get that right? You got most of it
+
+1022
+00:39:27,320 --> 00:39:27,670
+right.
+
+1023
+00:39:27,680 --> 00:39:30,630
+&gt;&gt; Okay. So, let's go there. It's actually
+
+1024
+00:39:30,640 --> 00:39:34,310
+not it still is a token within the pod,
+
+1025
+00:39:34,320 --> 00:39:36,550
+but it's a role that exists in your
+
+1026
+00:39:36,560 --> 00:39:38,790
+cloud provider. You don't have the
+
+1027
+00:39:38,800 --> 00:39:41,830
+username and password inside of a
+
+1028
+00:39:41,840 --> 00:39:43,830
+secret. It's not clear text, right?
+
+1029
+00:39:43,840 --> 00:39:46,990
+There's a token that is mounted again
+
+1030
+00:39:47,000 --> 00:39:48,710
+inside the pod, and that's where your
+
+1031
+00:39:48,720 --> 00:39:51,070
+credentials exist. And that's controlled
+
+1032
+00:39:51,080 --> 00:39:53,150
+by your cloud provider. So, you don't
+
+1033
+00:39:53,160 --> 00:39:56,150
+have to worry about 15 different points
+
+1034
+00:39:56,160 --> 00:39:59,390
+accessing that same password. Pod A has
+
+1035
+00:39:59,400 --> 00:40:01,990
+service account A. That service account
+
+1036
+00:40:02,000 --> 00:40:04,150
+has an annotation on it that includes
+
+1037
+00:40:04,160 --> 00:40:06,670
+the role binding. Because that exists
+
+1038
+00:40:06,680 --> 00:40:08,430
+and because there's an operator or
+
+1039
+00:40:08,440 --> 00:40:11,510
+controller that runs inside your, you
+
+1040
+00:40:11,520 --> 00:40:14,430
+know, cloud instance of EKS, say, it
+
+1041
+00:40:14,440 --> 00:40:16,630
+realizes, okay, this annotation exists
+
+1042
+00:40:16,640 --> 00:40:18,310
+on this service account. This service
+
+1043
+00:40:18,320 --> 00:40:21,030
+account exists to this pod. I mount this
+
+1044
+00:40:21,040 --> 00:40:23,550
+token, this AWS authentication token,
+
+1045
+00:40:23,560 --> 00:40:26,150
+within the pod when it starts. You can
+
+1046
+00:40:26,160 --> 00:40:29,470
+you now use AWS CLI, and you have the
+
+1047
+00:40:29,480 --> 00:40:32,750
+role. So, I create foo role in AIM, I
+
+1048
+00:40:32,760 --> 00:40:35,070
+give it this grant, which is
+
+1049
+00:40:35,080 --> 00:40:39,990
+list ECR images in this repo in this
+
+1050
+00:40:40,000 --> 00:40:42,790
+account only. I then have fine-grained
+
+1051
+00:40:42,800 --> 00:40:45,550
+control over where it's talking. It's
+
+1052
+00:40:45,560 --> 00:40:47,030
+the same thing, right? I have to
+
+1053
+00:40:47,040 --> 00:40:49,710
+maintain those IAM roles somewhere, but
+
+1054
+00:40:49,720 --> 00:40:51,750
+now it actually exists. The source of
+
+1055
+00:40:51,760 --> 00:40:53,630
+truth is the cloud, rather than the
+
+1056
+00:40:53,640 --> 00:40:55,510
+source of truth being, it's a cloud, oh
+
+1057
+00:40:55,520 --> 00:40:57,110
+yeah, I got to have a password, too,
+
+1058
+00:40:57,120 --> 00:40:59,190
+that I got to go change. For instance,
+
+1059
+00:40:59,200 --> 00:41:00,670
+you can automatically set it up that it
+
+1060
+00:41:00,680 --> 00:41:03,670
+has to roll. Like, it will reset itself.
+
+1061
+00:41:03,680 --> 00:41:05,270
+You know, you don't have to go through
+
+1062
+00:41:05,280 --> 00:41:07,670
+and reset stuff. Sure, we would like
+
+1063
+00:41:07,680 --> 00:41:10,390
+credentials to be short-lived. Does this
+
+1064
+00:41:10,400 --> 00:41:12,950
+mean we all need to be coding our
+
+1065
+00:41:12,960 --> 00:41:16,830
+services or using libraries which either
+
+1066
+00:41:16,840 --> 00:41:18,830
+get some kind of a notification if a
+
+1067
+00:41:18,840 --> 00:41:21,870
+secret changes underneath and refresh or
+
+1068
+00:41:21,880 --> 00:41:25,470
+reread it from the file system every few
+
+1069
+00:41:25,480 --> 00:41:27,430
+minutes to ensure that we're always
+
+1070
+00:41:27,440 --> 00:41:29,190
+using the latest?
+
+1071
+00:41:29,200 --> 00:41:31,750
+And that's the DNS controller that runs
+
+1072
+00:41:31,760 --> 00:41:34,270
+within Kuber Actually, it's not the DNS
+
+1073
+00:41:34,280 --> 00:41:35,670
+controller. I forget which one it is,
+
+1074
+00:41:35,680 --> 00:41:37,390
+but it has a config map mounted to it,
+
+1075
+00:41:37,400 --> 00:41:39,350
+and it refresh It deliberately refreshes
+
+1076
+00:41:39,360 --> 00:41:41,110
+that config map. So, that's the type of
+
+1077
+00:41:41,120 --> 00:41:42,870
+pattern that you're talking about where,
+
+1078
+00:41:42,880 --> 00:41:45,950
+hey, did my metadata get updated? Yes.
+
+1079
+00:41:45,960 --> 00:41:47,590
+But, the thing is with most cloud
+
+1080
+00:41:47,600 --> 00:41:49,790
+libraries, at least, they do that
+
+1081
+00:41:49,800 --> 00:41:51,670
+refresh automatically, right? If you're
+
+1082
+00:41:51,680 --> 00:41:55,870
+using a web token in AWS with their API,
+
+1083
+00:41:55,880 --> 00:41:57,790
+they understand refreshes. But, yes, it
+
+1084
+00:41:57,800 --> 00:41:59,950
+is a short-living lived token. It is
+
+1085
+00:41:59,960 --> 00:42:01,910
+session-based. There is a duration on
+
+1086
+00:42:01,920 --> 00:42:04,270
+it. So, yes, you do have to refresh it.
+
+1087
+00:42:04,280 --> 00:42:07,110
+But, you know, again, there's I've even
+
+1088
+00:42:07,120 --> 00:42:09,510
+seen libraries that allow authentication
+
+1089
+00:42:09,520 --> 00:42:12,310
+from a database into a cloud database
+
+1090
+00:42:12,320 --> 00:42:15,990
+that uniquely binds into the pod
+
+1091
+00:42:16,000 --> 00:42:18,710
+identity. So, yes. We have to be aware
+
+1092
+00:42:18,720 --> 00:42:21,430
+of it. As a cloud-native application
+
+1093
+00:42:21,440 --> 00:42:22,910
+engineer, this is the same type of thing
+
+1094
+00:42:22,920 --> 00:42:25,150
+that you have to think about as the fact
+
+1095
+00:42:25,160 --> 00:42:28,150
+that you've got to understand you're
+
+1096
+00:42:28,160 --> 00:42:30,350
+going to restart. You're going to leave
+
+1097
+00:42:30,360 --> 00:42:32,950
+your server at a, you know, within 60
+
+1098
+00:42:32,960 --> 00:42:34,630
+seconds. That's the type of application
+
+1099
+00:42:34,640 --> 00:42:36,430
+that you want to design. You want to be
+
+1100
+00:42:36,440 --> 00:42:38,270
+fairly stateless. You know, and it goes
+
+1101
+00:42:38,280 --> 00:42:40,110
+back to that. If you're using a you're
+
+1102
+00:42:40,120 --> 00:42:42,870
+running a long job for CI, you've got
+
+1103
+00:42:42,880 --> 00:42:47,470
+60-minute job, your session token is for
+
+1104
+00:42:47,480 --> 00:42:49,950
+30 minutes, guess what? Halfway through,
+
+1105
+00:42:49,960 --> 00:42:51,270
+you better check to make sure your
+
+1106
+00:42:51,280 --> 00:42:52,990
+session token is active before you try
+
+1107
+00:42:53,000 --> 00:42:57,390
+again, right? Absolutely. The last major
+
+1108
+00:42:57,400 --> 00:42:59,390
+area we're going to hit, possibly two
+
+1109
+00:42:59,400 --> 00:43:02,230
+areas, container and pod security. Is
+
+1110
+00:43:02,240 --> 00:43:05,150
+that one or two distinct topics, Chris?
+
+1111
+00:43:05,160 --> 00:43:06,470
+They're really two different distinct
+
+1112
+00:43:06,480 --> 00:43:09,070
+topics. Pod security, and we've already
+
+1113
+00:43:09,080 --> 00:43:11,270
+been call covering a bit of pod security
+
+1114
+00:43:11,280 --> 00:43:12,470
+because you brought up the service
+
+1115
+00:43:12,480 --> 00:43:14,510
+account token. We talked about our back.
+
+1116
+00:43:14,520 --> 00:43:16,590
+That's directly integrated into whether
+
+1117
+00:43:16,600 --> 00:43:18,830
+you run a stateful set, a deployment, a
+
+1118
+00:43:18,840 --> 00:43:21,630
+job, a pod, whether mounting that. But,
+
+1119
+00:43:21,640 --> 00:43:23,550
+it and we talked about pod security when
+
+1120
+00:43:23,560 --> 00:43:25,110
+we're talking about choosing which
+
+1121
+00:43:25,120 --> 00:43:27,470
+network the pod runs on top of. That's
+
+1122
+00:43:27,480 --> 00:43:29,190
+another yet another configuration,
+
+1123
+00:43:29,200 --> 00:43:30,910
+whether it's a host network or pod
+
+1124
+00:43:30,920 --> 00:43:32,790
+network. It's in actually in a
+
+1125
+00:43:32,800 --> 00:43:34,830
+deployment or a pod YAML. So, we've
+
+1126
+00:43:34,840 --> 00:43:36,030
+already been talking about a bunch of
+
+1127
+00:43:36,040 --> 00:43:38,910
+that. What we haven't talked about are
+
+1128
+00:43:38,920 --> 00:43:41,630
+specialized pods. You know, some pods
+
+1129
+00:43:41,640 --> 00:43:43,710
+you want to be able to run, for
+
+1130
+00:43:43,720 --> 00:43:46,510
+instance, system-level Linux commands.
+
+1131
+00:43:46,520 --> 00:43:49,350
+If you're installing Nvidia drivers with
+
+1132
+00:43:49,360 --> 00:43:51,590
+XYZ pod, that pod is going to have to
+
+1133
+00:43:51,600 --> 00:43:53,510
+have run on the host network. It's also
+
+1134
+00:43:53,520 --> 00:43:55,110
+going to have to have specific
+
+1135
+00:43:55,120 --> 00:43:57,830
+capabilities through your container
+
+1136
+00:43:57,840 --> 00:43:59,590
+engine that you're running, you know,
+
+1137
+00:43:59,600 --> 00:44:01,510
+dot run C, whatever you're running to
+
+1138
+00:44:01,520 --> 00:44:04,150
+run your images. You actually define
+
+1139
+00:44:04,160 --> 00:44:07,070
+those Unix-level permissions within the
+
+1140
+00:44:07,080 --> 00:44:08,990
+pod. Also, you can look at stuff like SE
+
+1141
+00:44:09,000 --> 00:44:11,270
+Linux, and you can look at AppArmor, you
+
+1142
+00:44:11,280 --> 00:44:12,910
+know, all of that's derived can be
+
+1143
+00:44:12,920 --> 00:44:15,750
+derived through the newer pod security
+
+1144
+00:44:15,760 --> 00:44:18,910
+admission controller. So, now that kind
+
+1145
+00:44:18,920 --> 00:44:20,270
+of stuff, you know, you want to talk
+
+1146
+00:44:20,280 --> 00:44:22,430
+about again, people that are crawling,
+
+1147
+00:44:22,440 --> 00:44:24,550
+walking, running, that's like sprinting,
+
+1148
+00:44:24,560 --> 00:44:26,870
+right? I know a very few people, at
+
+1149
+00:44:26,880 --> 00:44:28,510
+least I've run into very few people that
+
+1150
+00:44:28,520 --> 00:44:30,349
+are running AppArmor profiles, for
+
+1151
+00:44:30,359 --> 00:44:33,470
+instance. But, if you're, you know, you
+
+1152
+00:44:33,480 --> 00:44:34,750
+know that your workloads are going to be
+
+1153
+00:44:34,760 --> 00:44:37,310
+attacked. Your Nginx servers are going
+
+1154
+00:44:37,320 --> 00:44:39,230
+to be attacked on a fairly, you know,
+
+1155
+00:44:39,240 --> 00:44:42,110
+strong basis, might not be a bad idea to
+
+1156
+00:44:42,120 --> 00:44:44,950
+look up how to run AppArmor for Nginx.
+
+1157
+00:44:44,960 --> 00:44:47,390
+That way, your workload is isolated
+
+1158
+00:44:47,400 --> 00:44:50,270
+better. I did some reading on this area
+
+1159
+00:44:50,280 --> 00:44:52,550
+which discussed a technique where pods
+
+1160
+00:44:52,560 --> 00:44:55,430
+are granted temporarily
+
+1161
+00:44:55,440 --> 00:44:57,990
+the ability to perform operations at
+
+1162
+00:44:58,000 --> 00:44:59,870
+root level, and even then only to a
+
+1163
+00:44:59,880 --> 00:45:02,630
+subset of system calls. Right.
+
+1164
+00:45:02,640 --> 00:45:04,670
+&gt;&gt; Could you go into more What's that about
+
+1165
+00:45:04,680 --> 00:45:07,750
+and how to use it? So, that's actually
+
+1166
+00:45:07,760 --> 00:45:09,950
+just low-level Linux stuff. It's been
+
+1167
+00:45:09,960 --> 00:45:11,830
+around forever. What you're talking
+
+1168
+00:45:11,840 --> 00:45:14,710
+about now is we're granting, so at a
+
+1169
+00:45:14,720 --> 00:45:17,510
+Linux kernel level, a process is You
+
+1170
+00:45:17,520 --> 00:45:19,070
+brought up root, right? You should never
+
+1171
+00:45:19,080 --> 00:45:22,349
+run your pod as root. So, within And
+
+1172
+00:45:22,359 --> 00:45:24,270
+that's another configuration within
+
+1173
+00:45:24,280 --> 00:45:26,070
+Kubernetes is whether you run your
+
+1174
+00:45:26,080 --> 00:45:29,550
+process within your container as what
+
+1175
+00:45:29,560 --> 00:45:31,230
+user. You should always use a different
+
+1176
+00:45:31,240 --> 00:45:35,630
+user. If you run as root, you also want
+
+1177
+00:45:35,640 --> 00:45:38,270
+to see what permissions, like, sometimes
+
+1178
+00:45:38,280 --> 00:45:40,430
+I've known controllers that restart
+
+1179
+00:45:40,440 --> 00:45:41,470
+nodes.
+
+1180
+00:45:41,480 --> 00:45:43,430
+Kind of crazy, but there's use cases for
+
+1181
+00:45:43,440 --> 00:45:46,630
+it, right? Back in the day, I know folks
+
+1182
+00:45:46,640 --> 00:45:48,630
+over at Comcast were mounting two
+
+1183
+00:45:48,640 --> 00:45:52,030
+different video cards to a node, and it
+
+1184
+00:45:52,040 --> 00:45:53,830
+would require a restart at times cuz
+
+1185
+00:45:53,840 --> 00:45:56,070
+this is actually a physical video card.
+
+1186
+00:45:56,080 --> 00:45:57,710
+When they're streaming and encrypting
+
+1187
+00:45:57,720 --> 00:45:59,710
+movies, you would be
+
+1188
+00:45:59,720 --> 00:46:01,870
+talking to an actual video card that
+
+1189
+00:46:01,880 --> 00:46:03,550
+would be streaming you that movie. I'm
+
+1190
+00:46:03,560 --> 00:46:05,870
+sure it's changed a bit over the years,
+
+1191
+00:46:05,880 --> 00:46:08,349
+but, you know, restarting, there are use
+
+1192
+00:46:08,359 --> 00:46:10,470
+cases. That's actually one of the Linux
+
+1193
+00:46:10,480 --> 00:46:11,950
+level permissions, whether you have
+
+1194
+00:46:11,960 --> 00:46:14,630
+permission to restart Linux. So, again,
+
+1195
+00:46:14,640 --> 00:46:17,070
+you're able to do that fine-grained type
+
+1196
+00:46:17,080 --> 00:46:20,270
+specification within a pod on what type
+
+1197
+00:46:20,280 --> 00:46:23,070
+of permissions it has. And goes back to
+
+1198
+00:46:23,080 --> 00:46:24,870
+don't run as root within a container.
+
+1199
+00:46:24,880 --> 00:46:27,310
+But, that That's both pod configurations
+
+1200
+00:46:27,320 --> 00:46:29,710
+as well as container configurations. So,
+
+1201
+00:46:29,720 --> 00:46:32,710
+don't, you know, and there's a lot of
+
+1202
+00:46:32,720 --> 00:46:34,590
+people that are a lot better experts
+
+1203
+00:46:34,600 --> 00:46:36,310
+than I am when it comes to container
+
+1204
+00:46:36,320 --> 00:46:37,710
+level security because that's such a
+
+1205
+00:46:37,720 --> 00:46:39,870
+broad topic now. But, there's just some
+
+1206
+00:46:39,880 --> 00:46:42,750
+basics, you know, as well with container
+
+1207
+00:46:42,760 --> 00:46:44,470
+level security. But, yeah, you're able
+
+1208
+00:46:44,480 --> 00:46:47,590
+to go through, do AppArmor pro profiles,
+
+1209
+00:46:47,600 --> 00:46:49,910
+SE Linux profiles. There's a lot of
+
+1210
+00:46:49,920 --> 00:46:53,030
+fine-tuning you can do to isolate your
+
+1211
+00:46:53,040 --> 00:46:55,870
+workloads and specify the workloads that
+
+1212
+00:46:55,880 --> 00:46:56,990
+are given
+
+1213
+00:46:57,000 --> 00:47:00,150
+elevated permissions are controlled with
+
+1214
+00:47:00,160 --> 00:47:02,630
+only the elevated permissions they need.
+
+1215
+00:47:02,640 --> 00:47:04,910
+In the short amount that we have left,
+
+1216
+00:47:04,920 --> 00:47:07,030
+I'd like to do a couple quick hits on
+
+1217
+00:47:07,040 --> 00:47:09,550
+container security. We did already
+
+1218
+00:47:09,560 --> 00:47:11,750
+discuss some issues around containers,
+
+1219
+00:47:11,760 --> 00:47:13,430
+such as whether they contain known
+
+1220
+00:47:13,440 --> 00:47:15,430
+vulnerabilities, where you get them
+
+1221
+00:47:15,440 --> 00:47:17,750
+from, who can pull them down. One other
+
+1222
+00:47:17,760 --> 00:47:20,349
+issue I had in my outline is the idea of
+
+1223
+00:47:20,359 --> 00:47:24,349
+container escape into the host. How big
+
+1224
+00:47:24,359 --> 00:47:26,430
+of a problem is that and what can you do
+
+1225
+00:47:26,440 --> 00:47:29,590
+about it? Don't run on host network. So,
+
+1226
+00:47:29,600 --> 00:47:31,710
+if you're not on the host network, the
+
+1227
+00:47:31,720 --> 00:47:34,550
+capability to escape to the host reduces
+
+1228
+00:47:34,560 --> 00:47:37,150
+tremendously because of how the
+
+1229
+00:47:37,160 --> 00:47:39,470
+networking and the virtualization almost
+
+1230
+00:47:39,480 --> 00:47:41,550
+quasi virtualization works. You know,
+
+1231
+00:47:41,560 --> 00:47:43,670
+the routing isn't there. So, that's it.
+
+1232
+00:47:43,680 --> 00:47:45,590
+Also, there's some container systems
+
+1233
+00:47:45,600 --> 00:47:47,270
+provide the capability of isolating the
+
+1234
+00:47:47,280 --> 00:47:49,430
+workloads. As well as if you have
+
+1235
+00:47:49,440 --> 00:47:51,670
+workloads, you know, you can isolate
+
+1236
+00:47:51,680 --> 00:47:54,670
+workloads to run on specific nodes. So,
+
+1237
+00:47:54,680 --> 00:47:56,950
+if you do get to the host, you don't
+
+1238
+00:47:56,960 --> 00:47:59,550
+like say you have workload A that cannot
+
+1239
+00:47:59,560 --> 00:48:02,230
+talk to workload B. Like, it just can't
+
+1240
+00:48:02,240 --> 00:48:04,870
+happen, right? So, don't put workload A
+
+1241
+00:48:04,880 --> 00:48:07,270
+on the same nodes that workload B is on.
+
+1242
+00:48:07,280 --> 00:48:09,390
+Pretty simple. I knew of a bank that
+
+1243
+00:48:09,400 --> 00:48:11,590
+every application had its own Kubernetes
+
+1244
+00:48:11,600 --> 00:48:14,230
+cluster. Really interesting pattern. You
+
+1245
+00:48:14,240 --> 00:48:18,070
+know, not a bad thing. If you need to
+
+1246
+00:48:18,080 --> 00:48:19,790
+isolate your workloads at such a low
+
+1247
+00:48:19,800 --> 00:48:22,349
+level, then possibly look at that.
+
+1248
+00:48:22,359 --> 00:48:24,390
+There's also Kubernetes virtualization
+
+1249
+00:48:24,400 --> 00:48:26,349
+within Kubernetes now, where you can run
+
+1250
+00:48:26,359 --> 00:48:27,830
+a Kubernetes cluster inside of
+
+1251
+00:48:27,840 --> 00:48:29,510
+Kubernetes cuz that's multi-homing. But,
+
+1252
+00:48:29,520 --> 00:48:31,230
+I've I've digressed. Let's go back to
+
+1253
+00:48:31,240 --> 00:48:32,710
+image level security and container
+
+1254
+00:48:32,720 --> 00:48:36,310
+security. Upgrade. Have the capability
+
+1255
+00:48:36,320 --> 00:48:40,830
+where you run CI and CD often. Have a
+
+1256
+00:48:40,840 --> 00:48:42,670
+set of base images. You know, if your
+
+1257
+00:48:42,680 --> 00:48:46,310
+shop works in Python, works in Go, works
+
+1258
+00:48:46,320 --> 00:48:49,349
+in Java, have base images for your
+
+1259
+00:48:49,359 --> 00:48:52,390
+developers. Have your golden Java image.
+
+1260
+00:48:52,400 --> 00:48:54,150
+Have your golden Python image. Have
+
+1261
+00:48:54,160 --> 00:48:56,470
+those screened on a regular basis. Have
+
+1262
+00:48:56,480 --> 00:48:58,790
+those upgraded on a regular basis. It's
+
+1263
+00:48:58,800 --> 00:49:01,190
+really important. People I go into large
+
+1264
+00:49:01,200 --> 00:49:02,990
+companies, and people are still not
+
+1265
+00:49:03,000 --> 00:49:04,550
+screening their images. They screen
+
+1266
+00:49:04,560 --> 00:49:06,390
+their operating systems, so goodness
+
+1267
+00:49:06,400 --> 00:49:07,710
+gracious, their nodes are being
+
+1268
+00:49:07,720 --> 00:49:10,349
+screened, but bash inside of an image
+
+1269
+00:49:10,359 --> 00:49:12,150
+isn't being screened. Also, don't
+
+1270
+00:49:12,160 --> 00:49:14,110
+install bash if you don't need it. Don't
+
+1271
+00:49:14,120 --> 00:49:16,470
+install whois if you don't need it,
+
+1272
+00:49:16,480 --> 00:49:18,750
+right? For instance, Golang's one of the
+
+1273
+00:49:18,760 --> 00:49:21,630
+neat languages where you can compile and
+
+1274
+00:49:21,640 --> 00:49:23,590
+have it run on virtually nothing. The
+
+1275
+00:49:23,600 --> 00:49:26,470
+less binaries that are in a an image,
+
+1276
+00:49:26,480 --> 00:49:29,030
+use it. Use multi-layer images for your
+
+1277
+00:49:29,040 --> 00:49:31,070
+builds, right? So, you have a build
+
+1278
+00:49:31,080 --> 00:49:34,590
+image where you have your, you know,
+
+1279
+00:49:34,600 --> 00:49:36,870
+libraries that you your your shared
+
+1280
+00:49:36,880 --> 00:49:38,630
+build libraries that you need for Python
+
+1281
+00:49:38,640 --> 00:49:40,950
+dependencies, but in the next image that
+
+1282
+00:49:40,960 --> 00:49:41,790
+you're actually deploying in a
+
+1283
+00:49:41,800 --> 00:49:43,950
+production and using, don't have those
+
+1284
+00:49:43,960 --> 00:49:45,390
+libraries in it. Don't have get
+
+1285
+00:49:45,400 --> 00:49:47,630
+installed. Don't have curl installed.
+
+1286
+00:49:47,640 --> 00:49:49,870
+Don't have, you know, wget installed.
+
+1287
+00:49:49,880 --> 00:49:51,990
+Just don't, right? But sometimes you
+
+1288
+00:49:52,000 --> 00:49:54,750
+have images, you know, CI's probably the
+
+1289
+00:49:54,760 --> 00:49:57,630
+worst, right? Because CI images need to,
+
+1290
+00:49:57,640 --> 00:49:59,390
+for instance, talk to GitHub. They need
+
+1291
+00:49:59,400 --> 00:50:01,750
+to do XYZ. They need to do all these
+
+1292
+00:50:01,760 --> 00:50:04,670
+different things. So, be rigorous about
+
+1293
+00:50:04,680 --> 00:50:06,510
+maintaining your own images and and
+
+1294
+00:50:06,520 --> 00:50:08,990
+upgrades. Don't run images as root, as
+
+1295
+00:50:09,000 --> 00:50:11,710
+we mentioned. Don't allow your images to
+
+1296
+00:50:11,720 --> 00:50:14,550
+do a lot. It should be run application.
+
+1297
+00:50:14,560 --> 00:50:16,030
+That's it.
+
+1298
+00:50:16,040 --> 00:50:20,390
+If you, you know, run Python 3.12, when
+
+1299
+00:50:20,400 --> 00:50:22,670
+you have time, I can and make sure that
+
+1300
+00:50:22,680 --> 00:50:24,950
+you have a backlog to upgrade to Python
+
+1301
+00:50:24,960 --> 00:50:26,830
+3.13. You know, there's a reason that
+
+1302
+00:50:26,840 --> 00:50:29,150
+you want to keep upgrading. Also, have
+
+1303
+00:50:29,160 --> 00:50:31,750
+it simple as possible to redeploy your
+
+1304
+00:50:31,760 --> 00:50:34,550
+entire stack. It's good for DR, but it's
+
+1305
+00:50:34,560 --> 00:50:36,790
+also good when there's a huge bug that
+
+1306
+00:50:36,800 --> 00:50:39,350
+comes out that allows to remote
+
+1307
+00:50:39,360 --> 00:50:41,670
+execution and you run that library
+
+1308
+00:50:41,680 --> 00:50:44,070
+everywhere. Log for J comes to mind.
+
+1309
+00:50:44,080 --> 00:50:46,510
+You've got to be able to push a button
+
+1310
+00:50:46,520 --> 00:50:48,790
+and as quickly as possible redeploy your
+
+1311
+00:50:48,800 --> 00:50:50,630
+entire stack. Kubernetes is really good
+
+1312
+00:50:50,640 --> 00:50:52,470
+for allowing to you to do that. Don't
+
+1313
+00:50:52,480 --> 00:50:55,630
+get me wrong, but it's still, you know,
+
+1314
+00:50:55,640 --> 00:50:57,270
+down to other principles, which is your
+
+1315
+00:50:57,280 --> 00:50:59,430
+CI and CD system. Make sure that that's
+
+1316
+00:50:59,440 --> 00:51:01,310
+tuned in so you can do it. And the way
+
+1317
+00:51:01,320 --> 00:51:04,150
+you get to do that more often is is
+
+1318
+00:51:04,160 --> 00:51:06,430
+upgrading often, right? So, if you're
+
+1319
+00:51:06,440 --> 00:51:08,230
+upgrading regularly, you know you can
+
+1320
+00:51:08,240 --> 00:51:10,150
+redeploy your workloads regularly as
+
+1321
+00:51:10,160 --> 00:51:12,830
+well. We've hit on some pretty big
+
+1322
+00:51:12,840 --> 00:51:14,870
+mountains in the landscape of Kubernetes
+
+1323
+00:51:14,880 --> 00:51:17,510
+security, Chris. In uh
+
+1324
+00:51:17,520 --> 00:51:19,670
+time that we have left to wrap up, is
+
+1325
+00:51:19,680 --> 00:51:21,270
+there any parting words you'd like the
+
+1326
+00:51:21,280 --> 00:51:23,470
+listeners to have of top three things to
+
+1327
+00:51:23,480 --> 00:51:25,630
+think about in securing your Kubernetes
+
+1328
+00:51:25,640 --> 00:51:28,430
+cluster? Upgrades, protect your control
+
+1329
+00:51:28,440 --> 00:51:32,110
+plane, and you know, step back and make
+
+1330
+00:51:32,120 --> 00:51:33,990
+sure like you do what you can when you
+
+1331
+00:51:34,000 --> 00:51:35,710
+set up your cluster initially. Those are
+
+1332
+00:51:35,720 --> 00:51:37,070
+probably the three things. Upgrade your
+
+1333
+00:51:37,080 --> 00:51:39,430
+nodes, you know, keep up to date. I've
+
+1334
+00:51:39,440 --> 00:51:40,950
+walked into environments where they're
+
+1335
+00:51:40,960 --> 00:51:43,630
+running a control plane that isn't even
+
+1336
+00:51:43,640 --> 00:51:44,990
+supported anymore.
+
+1337
+00:51:45,000 --> 00:51:48,110
+It's so old. It's over a year old and,
+
+1338
+00:51:48,120 --> 00:51:49,790
+you know, gosh, that ain't that old,
+
+1339
+00:51:49,800 --> 00:51:52,870
+right? But over a year old Kubernetes
+
+1340
+00:51:52,880 --> 00:51:54,710
+isn't might not be supported anymore,
+
+1341
+00:51:54,720 --> 00:51:56,110
+depending on what version you rolled out
+
+1342
+00:51:56,120 --> 00:51:58,270
+at that time. Upgrade your Python.
+
+1343
+00:51:58,280 --> 00:51:59,750
+Upgrade, you know, if you got bash in
+
+1344
+00:51:59,760 --> 00:52:02,950
+your image, upgrade it. And as well as,
+
+1345
+00:52:02,960 --> 00:52:04,310
+you know, we really haven't talked about
+
+1346
+00:52:04,320 --> 00:52:06,510
+this, but there's other systems where
+
+1347
+00:52:06,520 --> 00:52:08,230
+you've got app level security you got to
+
+1348
+00:52:08,240 --> 00:52:09,590
+be concerned about. You've got
+
+1349
+00:52:09,600 --> 00:52:11,550
+Kubernetes level security. You've got
+
+1350
+00:52:11,560 --> 00:52:14,670
+intrusion detection. All of that matters
+
+1351
+00:52:14,680 --> 00:52:16,910
+if you're at the type at the level of
+
+1352
+00:52:16,920 --> 00:52:19,470
+organization where you've got the time,
+
+1353
+00:52:19,480 --> 00:52:21,310
+staffing, and money to do that type of
+
+1354
+00:52:21,320 --> 00:52:23,270
+work. It's a pretty broad topic. And
+
+1355
+00:52:23,280 --> 00:52:26,110
+leverage leverage experts, right? I, you
+
+1356
+00:52:26,120 --> 00:52:27,670
+know, there's a reason I run Kubernetes.
+
+1357
+00:52:27,680 --> 00:52:29,270
+It's it's written by people that are a
+
+1358
+00:52:29,280 --> 00:52:31,150
+lot smarter than me, you know, and I
+
+1359
+00:52:31,160 --> 00:52:33,150
+realize that I'm not the one that's
+
+1360
+00:52:33,160 --> 00:52:36,630
+going to go write the latest AI tool cuz
+
+1361
+00:52:36,640 --> 00:52:38,830
+that's just not my expertise. I go back
+
+1362
+00:52:38,840 --> 00:52:40,430
+to I'm a a building kind of a
+
+1363
+00:52:40,440 --> 00:52:42,670
+construction engineer for computers.
+
+1364
+00:52:42,680 --> 00:52:44,630
+I'll build a cool play set cool
+
+1365
+00:52:44,640 --> 00:52:46,790
+applications can run on top of. But in
+
+1366
+00:52:46,800 --> 00:52:48,470
+order to do that, I've got to have some
+
+1367
+00:52:48,480 --> 00:52:49,870
+groundwork. I've got to have some base
+
+1368
+00:52:49,880 --> 00:52:51,070
+layers. I've got to have some base
+
+1369
+00:52:51,080 --> 00:52:52,750
+systems that will support me. And it
+
+1370
+00:52:52,760 --> 00:52:54,710
+kind of goes back to a DevSecOps or
+
+1371
+00:52:54,720 --> 00:52:56,470
+DevOps principle where we need to
+
+1372
+00:52:56,480 --> 00:52:58,110
+automate stuff. You know, it keeps me
+
+1373
+00:52:58,120 --> 00:53:00,070
+out of trouble. Where can listeners find
+
+1374
+00:53:00,080 --> 00:53:02,150
+your book Core Kubernetes? It's
+
+1375
+00:53:02,160 --> 00:53:03,910
+available on the Manning's website.
+
+1376
+00:53:03,920 --> 00:53:06,510
+Just, you know, go to manning.com and
+
+1377
+00:53:06,520 --> 00:53:08,270
+type in Core Kubernetes. Really want to
+
+1378
+00:53:08,280 --> 00:53:10,790
+thank Jay for dragging me in to write a
+
+1379
+00:53:10,800 --> 00:53:12,710
+book. It was quite an experience. It
+
+1380
+00:53:12,720 --> 00:53:14,310
+would take a lot for again for me to
+
+1381
+00:53:14,320 --> 00:53:16,750
+write another book. As well as, you
+
+1382
+00:53:16,760 --> 00:53:19,150
+know, they can find me on Chris Love CNM
+
+1383
+00:53:19,160 --> 00:53:21,270
+on all the different socials. Any other
+
+1384
+00:53:21,280 --> 00:53:22,870
+place on the internet you'd like to
+
+1385
+00:53:22,880 --> 00:53:25,270
+point people to? Sure. Wonderful company
+
+1386
+00:53:25,280 --> 00:53:28,070
+I work for, which is modernized.io. Love
+
+1387
+00:53:28,080 --> 00:53:29,510
+working there. It's been a real
+
+1388
+00:53:29,520 --> 00:53:32,710
+blessing. We're a consulting company.
+
+1389
+00:53:32,720 --> 00:53:34,710
+Think of us as a boutique version of
+
+1390
+00:53:34,720 --> 00:53:37,790
+Deloitte, as you would say. And, you
+
+1391
+00:53:37,800 --> 00:53:40,110
+know, happy really really happy to join
+
+1392
+00:53:40,120 --> 00:53:42,190
+you here today, Robert. Appreciate the
+
+1393
+00:53:42,200 --> 00:53:43,830
+time that and the great questions you've
+
+1394
+00:53:43,840 --> 00:53:45,630
+asked me today. Thank you, Chris. It's
+
+1395
+00:53:45,640 --> 00:53:47,670
+been a pleasure. Thank you for speaking
+
+1396
+00:53:47,680 --> 00:53:50,110
+to Software Engineering Radio. And for
+
+1397
+00:53:50,120 --> 00:53:51,830
+Software Engineering Radio, this has
+
+1398
+00:53:51,840 --> 00:53:53,590
+been Robert Blumen. Thank you for
+
+1399
+00:53:53,600 --> 00:53:55,550
+listening.
+
+1400
+00:53:55,560 --> 00:53:56,910
+Thanks for listening to SE Radio, an
+
+1401
+00:53:56,920 --> 00:53:58,550
+educational program brought to you by
+
+1402
+00:53:58,560 --> 00:54:00,950
+IEEE Software Magazine. For more about
+
+1403
+00:54:00,960 --> 00:54:02,670
+the podcast, including other episodes,
+
+1404
+00:54:02,680 --> 00:54:06,510
+visit our website at se-radio.net.
+
+1405
+00:54:06,520 --> 00:54:08,030
+To provide feedback, you can comment on
+
+1406
+00:54:08,040 --> 00:54:09,990
+each episode on the website or reach us
+
+1407
+00:54:10,000 --> 00:54:12,670
+on LinkedIn, Facebook, Twitter, or
+
+1408
+00:54:12,680 --> 00:54:14,230
+through our Slack channel at SE
+
+1409
+00:54:14,240 --> 00:54:17,150
+Radio.slack.com.
+
+1410
+00:54:17,160 --> 00:54:18,349
+You can also email us at
+
+1411
+00:54:18,359 --> 00:54:21,790
+team@se-radio.net.
+
+1412
+00:54:23,590 --> 00:54:23,600
+This and all other episodes of SE Radio
+
+1413
+00:54:23,600 --> 00:54:25,190
+is licensed under Creative Commons
+
+1414
+00:54:25,200 --> 00:54:27,230
+License 2.5.
+
+1415
+00:54:27,240 --> 00:54:30,000
+Thanks for listening.

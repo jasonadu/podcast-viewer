@@ -1,0 +1,7267 @@
+1
+00:00:00,990 --> 00:00:01,000
+[Music]
+
+2
+00:00:01,000 --> 00:00:02,909
+this is software engineering radio the
+
+3
+00:00:02,919 --> 00:00:04,829
+podcast for professional developers on
+
+4
+00:00:04,839 --> 00:00:06,749
+the web at se-
+
+5
+00:00:06,759 --> 00:00:09,110
+radio.net SC radio is brought to you by
+
+6
+00:00:09,120 --> 00:00:11,509
+the it computer society and by It
+
+7
+00:00:11,519 --> 00:00:15,740
+software Magazine online at computer.org
+
+8
+00:00:15,750 --> 00:00:18,150
+[Music]
+
+9
+00:00:18,160 --> 00:00:20,509
+software welcome to software engineering
+
+10
+00:00:20,519 --> 00:00:22,429
+radio I'm your host jaavan aspon and
+
+11
+00:00:22,439 --> 00:00:24,710
+today I will be discussing observability
+
+12
+00:00:24,720 --> 00:00:26,669
+for large language models with Philip
+
+13
+00:00:26,679 --> 00:00:28,950
+Carter Philip is a product manager and
+
+14
+00:00:28,960 --> 00:00:31,470
+open source software developer and he's
+
+15
+00:00:31,480 --> 00:00:33,110
+been working on developer tools and
+
+16
+00:00:33,120 --> 00:00:35,470
+experiences his entire career building
+
+17
+00:00:35,480 --> 00:00:37,389
+everything from compilers to high level
+
+18
+00:00:37,399 --> 00:00:39,709
+ID tooling now he's working out how to
+
+19
+00:00:39,719 --> 00:00:41,990
+give developers the best experience
+
+20
+00:00:42,000 --> 00:00:43,910
+possible with observability tooling
+
+21
+00:00:43,920 --> 00:00:45,950
+Philip is the author of observability
+
+22
+00:00:45,960 --> 00:00:47,910
+for large language models published by
+
+23
+00:00:47,920 --> 00:00:50,110
+Riley Philip welcome to software
+
+24
+00:00:50,120 --> 00:00:52,110
+engineering radio is there anything am
+
+25
+00:00:52,120 --> 00:00:53,990
+miss that you'd like to add no I think
+
+26
+00:00:54,000 --> 00:00:55,590
+that about covers it thanks for having
+
+27
+00:00:55,600 --> 00:00:58,750
+me thank you for joining us today let's
+
+28
+00:00:58,760 --> 00:01:02,310
+start with some ter ology and context to
+
+29
+00:01:02,320 --> 00:01:04,030
+introduce the subject so first of all
+
+30
+00:01:04,040 --> 00:01:06,350
+can you give us a quick refresher on
+
+31
+00:01:06,360 --> 00:01:08,390
+observability in general not
+
+32
+00:01:08,400 --> 00:01:10,990
+specifically for larg language models
+
+33
+00:01:11,000 --> 00:01:15,109
+yeah absolutely so observability is well
+
+34
+00:01:15,119 --> 00:01:16,910
+unfortunately in the market it's kind of
+
+35
+00:01:16,920 --> 00:01:19,950
+a word that every company that sells
+
+36
+00:01:19,960 --> 00:01:21,749
+observability tools sort of has their
+
+37
+00:01:21,759 --> 00:01:23,429
+own definition for and it can be a
+
+38
+00:01:23,439 --> 00:01:24,990
+little bit confusing observability can
+
+39
+00:01:25,000 --> 00:01:26,670
+sort of mean anything that a given
+
+40
+00:01:26,680 --> 00:01:28,910
+company says that it means but there is
+
+41
+00:01:28,920 --> 00:01:30,630
+actually sort of a real definition and a
+
+42
+00:01:30,640 --> 00:01:32,230
+real set of problems that are being
+
+43
+00:01:32,240 --> 00:01:33,990
+solved for that I think it's better to
+
+44
+00:01:34,000 --> 00:01:36,789
+sort of root such a definition within so
+
+45
+00:01:36,799 --> 00:01:39,429
+the general principle is that when
+
+46
+00:01:39,439 --> 00:01:42,069
+you're debugging code and it's easy to
+
+47
+00:01:42,079 --> 00:01:43,590
+reproduce something on your own local
+
+48
+00:01:43,600 --> 00:01:45,950
+machine that's great you just have the
+
+49
+00:01:45,960 --> 00:01:47,990
+code there you run the application you
+
+50
+00:01:48,000 --> 00:01:49,749
+have your debugger maybe you have a
+
+51
+00:01:49,759 --> 00:01:51,950
+fancy debugger in your IDE or something
+
+52
+00:01:51,960 --> 00:01:53,389
+that helps you with that and gives you
+
+53
+00:01:53,399 --> 00:01:55,990
+more information but that's sort of it
+
+54
+00:01:56,000 --> 00:01:58,709
+but what if you can't do that or what if
+
+55
+00:01:58,719 --> 00:02:00,429
+the problem is because some
+
+56
+00:02:00,439 --> 00:02:02,590
+interconnectivity issue between other
+
+57
+00:02:02,600 --> 00:02:04,190
+components of your systems in your own
+
+58
+00:02:04,200 --> 00:02:06,990
+system or what if it is something that
+
+59
+00:02:07,000 --> 00:02:08,589
+you could pull down on your machine but
+
+60
+00:02:08,599 --> 00:02:10,469
+you can't necessarily debug it and
+
+61
+00:02:10,479 --> 00:02:11,869
+reproduce the problem that that you're
+
+62
+00:02:11,879 --> 00:02:13,750
+observing because there's maybe like 10
+
+63
+00:02:13,760 --> 00:02:16,630
+or 15 factors that are all going into a
+
+64
+00:02:16,640 --> 00:02:19,030
+particular behavior that an end user is
+
+65
+00:02:19,040 --> 00:02:20,949
+experiencing but that you can't seem to
+
+66
+00:02:20,959 --> 00:02:23,070
+actually reproduce yourself how do you
+
+67
+00:02:23,080 --> 00:02:25,270
+debug that like how do you actually make
+
+68
+00:02:25,280 --> 00:02:26,270
+progress when you have that thing
+
+69
+00:02:26,280 --> 00:02:27,750
+because you can't just have that poor
+
+70
+00:02:27,760 --> 00:02:29,949
+Behavior exist in production forever
+
+71
+00:02:29,959 --> 00:02:32,190
+perpetuity because your business is
+
+72
+00:02:32,200 --> 00:02:33,750
+probably just going to go away if if
+
+73
+00:02:33,760 --> 00:02:35,229
+that's the case people are going to move
+
+74
+00:02:35,239 --> 00:02:37,350
+on so that's what observability is
+
+75
+00:02:37,360 --> 00:02:39,670
+trying to solve it's about being able to
+
+76
+00:02:39,680 --> 00:02:41,630
+determine what is happening like what is
+
+77
+00:02:41,640 --> 00:02:43,270
+the ground truth of what is actually
+
+78
+00:02:43,280 --> 00:02:44,869
+going on when your users are using
+
+79
+00:02:44,879 --> 00:02:47,110
+things that are live without needing to
+
+80
+00:02:47,120 --> 00:02:49,910
+like change that system or like debug it
+
+81
+00:02:49,920 --> 00:02:52,190
+in sort of a traditional sense and so
+
+82
+00:02:52,200 --> 00:02:53,949
+the way that you accomplish that is by
+
+83
+00:02:53,959 --> 00:02:56,390
+gathering signals or Telemetry that
+
+84
+00:02:56,400 --> 00:02:58,509
+capture important information at various
+
+85
+00:02:58,519 --> 00:03:00,589
+stages of your application and you have
+
+86
+00:03:00,599 --> 00:03:02,309
+a tool that can then take that data and
+
+87
+00:03:02,319 --> 00:03:04,149
+analyze it and then you can say okay we
+
+88
+00:03:04,159 --> 00:03:06,309
+are observing sort of let's say a spike
+
+89
+00:03:06,319 --> 00:03:08,789
+in latency or something like that but
+
+90
+00:03:08,799 --> 00:03:10,550
+where is that coming from what are the
+
+91
+00:03:10,560 --> 00:03:12,670
+factors that that go into that what are
+
+92
+00:03:12,680 --> 00:03:14,149
+things that are happening on the output
+
+93
+00:03:14,159 --> 00:03:15,390
+that can give us a little bit better
+
+94
+00:03:15,400 --> 00:03:17,990
+signal as to why something is happening
+
+95
+00:03:18,000 --> 00:03:19,710
+and you're really sort of answering two
+
+96
+00:03:19,720 --> 00:03:21,990
+fundamental questions where is something
+
+97
+00:03:22,000 --> 00:03:24,949
+occurring and to the extent that you can
+
+98
+00:03:24,959 --> 00:03:27,350
+why is it occurring in that way and
+
+99
+00:03:27,360 --> 00:03:28,869
+depending on the observability tool that
+
+100
+00:03:28,879 --> 00:03:30,990
+you have and the the richness of the
+
+101
+00:03:31,000 --> 00:03:32,949
+data that you have you may be able to
+
+102
+00:03:32,959 --> 00:03:35,309
+get to a very fine grain detail to like
+
+103
+00:03:35,319 --> 00:03:37,949
+the this specific user ID in this
+
+104
+00:03:37,959 --> 00:03:39,830
+specific region in this specific
+
+105
+00:03:39,840 --> 00:03:41,550
+availability Zone where you've deployed
+
+106
+00:03:41,560 --> 00:03:43,830
+into the cloud or something like that is
+
+107
+00:03:43,840 --> 00:03:45,550
+what is the most correlated with the
+
+108
+00:03:45,560 --> 00:03:47,110
+spike and latency and that allows you to
+
+109
+00:03:47,120 --> 00:03:48,710
+sort of like very narrow down and
+
+110
+00:03:48,720 --> 00:03:50,589
+isolate something that's going on there
+
+111
+00:03:50,599 --> 00:03:53,229
+is a more academic definition of
+
+112
+00:03:53,239 --> 00:03:55,069
+observability that comes from control
+
+113
+00:03:55,079 --> 00:03:57,270
+theory which is that you can understand
+
+114
+00:03:57,280 --> 00:03:58,789
+the state of a system without having to
+
+115
+00:03:58,799 --> 00:04:00,670
+change that system I find that to be
+
+116
+00:04:00,680 --> 00:04:02,069
+less helpful though because most
+
+117
+00:04:02,079 --> 00:04:04,429
+developers I think care about problems
+
+118
+00:04:04,439 --> 00:04:05,910
+that they observe in the real world sort
+
+119
+00:04:05,920 --> 00:04:07,589
+of what what I mentioned and what they
+
+120
+00:04:07,599 --> 00:04:09,630
+can do about those problems and so
+
+121
+00:04:09,640 --> 00:04:11,470
+that's what I try to keep a definition
+
+122
+00:04:11,480 --> 00:04:13,830
+of observability rooted in it's about
+
+123
+00:04:13,840 --> 00:04:15,710
+asking questions about what's going on
+
+124
+00:04:15,720 --> 00:04:17,670
+and continually getting answers that
+
+125
+00:04:17,680 --> 00:04:19,310
+help you narrow down behavior that
+
+126
+00:04:19,320 --> 00:04:21,189
+you're seeing whether that's an error or
+
+127
+00:04:21,199 --> 00:04:23,390
+a spike in latency or maybe something is
+
+128
+00:04:23,400 --> 00:04:24,950
+actually fine but you're just curious
+
+129
+00:04:24,960 --> 00:04:26,950
+how things are actually performing and
+
+130
+00:04:26,960 --> 00:04:29,110
+what healthy performance even means for
+
+131
+00:04:29,120 --> 00:04:31,110
+your system finding a way to quantify
+
+132
+00:04:31,120 --> 00:04:32,550
+that that that's sort of what the heart
+
+133
+00:04:32,560 --> 00:04:35,350
+of observability is and what's important
+
+134
+00:04:35,360 --> 00:04:37,189
+is that it's not just something that you
+
+135
+00:04:37,199 --> 00:04:39,230
+do sort of on a reactive basis like you
+
+136
+00:04:39,240 --> 00:04:40,629
+get paged and you need to go do
+
+137
+00:04:40,639 --> 00:04:42,950
+something but you can also use it as one
+
+138
+00:04:42,960 --> 00:04:44,390
+of your foundations for building your
+
+139
+00:04:44,400 --> 00:04:46,790
+software because as we all know there
+
+140
+00:04:46,800 --> 00:04:48,590
+there's things like unit testing and
+
+141
+00:04:48,600 --> 00:04:50,629
+integration testing and things like that
+
+142
+00:04:50,639 --> 00:04:52,070
+that help when you're building software
+
+143
+00:04:52,080 --> 00:04:53,390
+and I think most software Engineers
+
+144
+00:04:53,400 --> 00:04:54,830
+would agree that you want to build
+
+145
+00:04:54,840 --> 00:04:56,909
+modern software with those things but
+
+146
+00:04:56,919 --> 00:04:59,350
+there's another component which is what
+
+147
+00:04:59,360 --> 00:05:01,390
+if I want to deploy these changes that
+
+148
+00:05:01,400 --> 00:05:03,070
+are going to impact a part of the system
+
+149
+00:05:03,080 --> 00:05:04,469
+but it may not necessarily be a part of
+
+150
+00:05:04,479 --> 00:05:06,270
+a feature or you know we're not ready to
+
+151
+00:05:06,280 --> 00:05:07,909
+release the feature yet but we want that
+
+152
+00:05:07,919 --> 00:05:11,070
+feature release to be stable and like
+
+153
+00:05:11,080 --> 00:05:13,270
+easy and not a surprise and all of that
+
+154
+00:05:13,280 --> 00:05:15,029
+from like a system Behavior standpoint
+
+155
+00:05:15,039 --> 00:05:18,270
+how do I build with production in mind
+
+156
+00:05:18,280 --> 00:05:20,150
+and and use that to influence things
+
+157
+00:05:20,160 --> 00:05:22,830
+before I like flip a feature flag that
+
+158
+00:05:22,840 --> 00:05:24,790
+allows something to be exposed to a user
+
+159
+00:05:24,800 --> 00:05:26,189
+again that's sort of where observability
+
+160
+00:05:26,199 --> 00:05:28,870
+can sort of fit in there and so I think
+
+161
+00:05:28,880 --> 00:05:30,950
+part of why this had such sort of a
+
+162
+00:05:30,960 --> 00:05:32,909
+long-winded definition if you will or
+
+163
+00:05:32,919 --> 00:05:34,990
+explanation is because it is a
+
+164
+00:05:35,000 --> 00:05:37,270
+relatively new phenomenon there have
+
+165
+00:05:37,280 --> 00:05:39,790
+been organizations such as Google and
+
+166
+00:05:39,800 --> 00:05:41,350
+Facebook and all of that who have been
+
+167
+00:05:41,360 --> 00:05:42,830
+practicing these sorts of stuff for
+
+168
+00:05:42,840 --> 00:05:44,070
+quite a while these practices and
+
+169
+00:05:44,080 --> 00:05:46,070
+building tools around them but now we're
+
+170
+00:05:46,080 --> 00:05:48,710
+we're seeing a broader software industry
+
+171
+00:05:48,720 --> 00:05:50,990
+adoption of this stuff because it's
+
+172
+00:05:51,000 --> 00:05:53,150
+needed to be able to go in the direction
+
+173
+00:05:53,160 --> 00:05:55,550
+that people want to actually go and so
+
+174
+00:05:55,560 --> 00:05:57,510
+because of that definitions are sort of
+
+175
+00:05:57,520 --> 00:05:59,270
+Shifting and problems are shifting
+
+176
+00:05:59,280 --> 00:06:01,070
+because not everybody has exact same
+
+177
+00:06:01,080 --> 00:06:03,150
+problems as your Googles or Facebooks or
+
+178
+00:06:03,160 --> 00:06:06,270
+or whatnot and so it's a exciting place
+
+179
+00:06:06,280 --> 00:06:08,950
+to be in okay that's fine then now let's
+
+180
+00:06:08,960 --> 00:06:12,150
+go to the next bit llms large language
+
+181
+00:06:12,160 --> 00:06:14,309
+model what is a large language model I
+
+182
+00:06:14,319 --> 00:06:16,430
+mean everybody nowadays talks about CH
+
+183
+00:06:16,440 --> 00:06:18,710
+GPT that seems to be all over the place
+
+184
+00:06:18,720 --> 00:06:20,749
+but I'm not sure that everybody
+
+185
+00:06:20,759 --> 00:06:22,390
+understands at least you know to a high
+
+186
+00:06:22,400 --> 00:06:24,670
+level yeah what the large language model
+
+187
+00:06:24,680 --> 00:06:28,070
+is can you tell us a bit so a large
+
+188
+00:06:28,080 --> 00:06:30,629
+language model can be thought of
+
+189
+00:06:30,639 --> 00:06:32,830
+in a couple different ways I'll say
+
+190
+00:06:32,840 --> 00:06:34,430
+there's a very easy way to think of them
+
+191
+00:06:34,440 --> 00:06:36,469
+and then there's a a more fundamental
+
+192
+00:06:36,479 --> 00:06:38,189
+way to think of them so the easy way to
+
+193
+00:06:38,199 --> 00:06:40,390
+think of them is from an end user
+
+194
+00:06:40,400 --> 00:06:42,430
+perspective where you already have
+
+195
+00:06:42,440 --> 00:06:43,790
+something that's largely good enough for
+
+196
+00:06:43,800 --> 00:06:46,270
+your task it is a black box that you
+
+197
+00:06:46,280 --> 00:06:49,430
+submit text to and then it has a lot of
+
+198
+00:06:49,440 --> 00:06:51,950
+information compressed inside of it that
+
+199
+00:06:51,960 --> 00:06:54,270
+allows it to analyze that text and then
+
+200
+00:06:54,280 --> 00:06:55,990
+perform an action that you give it like
+
+201
+00:06:56,000 --> 00:06:58,550
+a set of instructions such that it can
+
+202
+00:06:58,560 --> 00:07:01,430
+emit text in particular format that
+
+203
+00:07:01,440 --> 00:07:03,150
+contains certain information that you're
+
+204
+00:07:03,160 --> 00:07:06,589
+looking for and so there can be some
+
+205
+00:07:06,599 --> 00:07:08,070
+interesting things that you can do with
+
+206
+00:07:08,080 --> 00:07:09,589
+that different language models are
+
+207
+00:07:09,599 --> 00:07:11,909
+better for like emitting code versus
+
+208
+00:07:11,919 --> 00:07:15,270
+emitting poetry some like chat GPT are
+
+209
+00:07:15,280 --> 00:07:17,350
+super super large and they can do both
+
+210
+00:07:17,360 --> 00:07:19,469
+very very well but there are specialized
+
+211
+00:07:19,479 --> 00:07:21,430
+ones that can often be better for very
+
+212
+00:07:21,440 --> 00:07:24,070
+specific things and there are also ways
+
+213
+00:07:24,080 --> 00:07:26,589
+to feed in data that was not a part of
+
+214
+00:07:26,599 --> 00:07:29,110
+what this model was trained on to sort
+
+215
+00:07:29,120 --> 00:07:31,790
+of ground a result in in a particular
+
+216
+00:07:31,800 --> 00:07:33,830
+set of information that you want an
+
+217
+00:07:33,840 --> 00:07:37,189
+output to be in and it's basically just
+
+218
+00:07:37,199 --> 00:07:39,629
+this engine that allows you to do these
+
+219
+00:07:39,639 --> 00:07:41,589
+sorts of things and it's very general
+
+220
+00:07:41,599 --> 00:07:44,189
+purpose so if you need for example to
+
+221
+00:07:44,199 --> 00:07:47,430
+emit Json that you want to insert into
+
+222
+00:07:47,440 --> 00:07:48,990
+another part of your application
+
+223
+00:07:49,000 --> 00:07:51,430
+somewhere it's generally applicable
+
+224
+00:07:51,440 --> 00:07:53,070
+whether you are building a health care
+
+225
+00:07:53,080 --> 00:07:55,230
+app or a financial services app or if
+
+226
+00:07:55,240 --> 00:07:56,749
+you're in consumer technology or
+
+227
+00:07:56,759 --> 00:07:58,830
+something like that it's broadly
+
+228
+00:07:58,840 --> 00:08:00,550
+applicable with which is why it's so
+
+229
+00:08:00,560 --> 00:08:03,230
+interesting now there's also a bit more
+
+230
+00:08:03,240 --> 00:08:05,790
+of a fundamental definition of this
+
+231
+00:08:05,800 --> 00:08:08,790
+stuff so the idea is language models you
+
+232
+00:08:08,800 --> 00:08:10,790
+know they're not necessarily new they've
+
+233
+00:08:10,800 --> 00:08:13,710
+been around since at least 2017 arguably
+
+234
+00:08:13,720 --> 00:08:16,189
+earlier than that and they are based on
+
+235
+00:08:16,199 --> 00:08:18,070
+what is called the Transformer
+
+236
+00:08:18,080 --> 00:08:21,230
+architecture and a principle or a
+
+237
+00:08:21,240 --> 00:08:22,350
+practice I guess you could say in
+
+238
+00:08:22,360 --> 00:08:24,309
+machine learning called attention and so
+
+239
+00:08:24,319 --> 00:08:28,670
+the idea generally speaking is that
+
+240
+00:08:28,680 --> 00:08:30,070
+there were a lot of problems in
+
+241
+00:08:30,080 --> 00:08:31,869
+processing text and natural language
+
+242
+00:08:31,879 --> 00:08:33,909
+processing with previous machine
+
+243
+00:08:33,919 --> 00:08:36,070
+learning model architectures and the
+
+244
+00:08:36,080 --> 00:08:37,790
+problem is that if you give like a
+
+245
+00:08:37,800 --> 00:08:39,949
+sentence that contains several pieces of
+
+246
+00:08:39,959 --> 00:08:41,630
+information inside of that there may be
+
+247
+00:08:41,640 --> 00:08:44,190
+a part of this sentence that refers to
+
+248
+00:08:44,200 --> 00:08:45,750
+another part of the sentence like
+
+249
+00:08:45,760 --> 00:08:48,350
+backwards or forwards and like the whole
+
+250
+00:08:48,360 --> 00:08:50,829
+thing contains this like strong semantic
+
+251
+00:08:50,839 --> 00:08:53,910
+relevance that as humans we can we can
+
+252
+00:08:53,920 --> 00:08:55,110
+understand and and form those
+
+253
+00:08:55,120 --> 00:08:57,110
+connections very naturally but
+
+254
+00:08:57,120 --> 00:08:59,389
+computationally speaking it's an extreme
+
+255
+00:08:59,399 --> 00:09:01,710
+extremely complex problem and there have
+
+256
+00:09:01,720 --> 00:09:03,430
+been all these variations in trying to
+
+257
+00:09:03,440 --> 00:09:05,829
+figure out how to efficiently do it and
+
+258
+00:09:05,839 --> 00:09:08,190
+attention is this principle that allows
+
+259
+00:09:08,200 --> 00:09:10,550
+you to say well we're going to
+
+260
+00:09:10,560 --> 00:09:12,470
+effectively hold in memory all of the
+
+261
+00:09:12,480 --> 00:09:14,550
+permutations of like this semantic
+
+262
+00:09:14,560 --> 00:09:16,829
+meaning of a given sentence that we have
+
+263
+00:09:16,839 --> 00:09:18,790
+and we're going to be able to pluck from
+
+264
+00:09:18,800 --> 00:09:21,150
+that memory that we've developed at any
+
+265
+00:09:21,160 --> 00:09:23,509
+given moment as we generate so as we
+
+266
+00:09:23,519 --> 00:09:25,269
+generate an output we look at what the
+
+267
+00:09:25,279 --> 00:09:27,750
+input was we basically hold in memory
+
+268
+00:09:27,760 --> 00:09:30,110
+what all of those things were now that's
+
+269
+00:09:30,120 --> 00:09:32,710
+a gross oversimplification there is
+
+270
+00:09:32,720 --> 00:09:34,389
+piles and piles of engineering work to
+
+271
+00:09:34,399 --> 00:09:36,110
+do that as efficiently as possible and
+
+272
+00:09:36,120 --> 00:09:37,710
+Implement all these shortcuts and all of
+
+273
+00:09:37,720 --> 00:09:39,870
+that but if you could imagine if you
+
+274
+00:09:39,880 --> 00:09:41,710
+have a program that has no memory
+
+275
+00:09:41,720 --> 00:09:43,990
+limitations if you have let's say an
+
+276
+00:09:44,000 --> 00:09:46,230
+nsquared memory algorithm that allows
+
+277
+00:09:46,240 --> 00:09:47,990
+you to sort of hold everything in memory
+
+278
+00:09:48,000 --> 00:09:49,389
+as much as you want and refer to
+
+279
+00:09:49,399 --> 00:09:51,310
+anything at any point in time and refer
+
+280
+00:09:51,320 --> 00:09:52,630
+to all the connections to all the
+
+281
+00:09:52,640 --> 00:09:55,430
+different things then you can in theory
+
+282
+00:09:55,440 --> 00:09:57,069
+output something that is much more
+
+283
+00:09:57,079 --> 00:09:58,990
+useful than previous generations of
+
+284
+00:09:59,000 --> 00:10:00,389
+models and that's sort of the principle
+
+285
+00:10:00,399 --> 00:10:02,350
+that underlies large language models and
+
+286
+00:10:02,360 --> 00:10:04,750
+why they work so well referring to these
+
+287
+00:10:04,760 --> 00:10:07,430
+models now I'd like to definitions of
+
+288
+00:10:07,440 --> 00:10:09,230
+two more terms that we hear all the time
+
+289
+00:10:09,240 --> 00:10:12,230
+so the first one is fine-tuning I think
+
+290
+00:10:12,240 --> 00:10:14,949
+you hinted at it before when you were
+
+291
+00:10:14,959 --> 00:10:16,389
+explaining what to do with a model so
+
+292
+00:10:16,399 --> 00:10:18,550
+can you give us what does it mean to
+
+293
+00:10:18,560 --> 00:10:22,269
+fine-tune a model yes so it's important
+
+294
+00:10:22,279 --> 00:10:25,269
+to understand the phases that a language
+
+295
+00:10:25,279 --> 00:10:27,110
+model or a large language model goes
+
+296
+00:10:27,120 --> 00:10:29,630
+through in sort of its productionizing
+
+297
+00:10:29,640 --> 00:10:31,470
+if you will there is the initial
+
+298
+00:10:31,480 --> 00:10:33,269
+training sometimes it's broken up into
+
+299
+00:10:33,279 --> 00:10:35,069
+what's called pre-training and training
+
+300
+00:10:35,079 --> 00:10:37,629
+but it's basically you take your large
+
+301
+00:10:37,639 --> 00:10:40,230
+Corpus of text let's say a snapshot of
+
+302
+00:10:40,240 --> 00:10:43,110
+the internet and that is data that is
+
+303
+00:10:43,120 --> 00:10:47,590
+fed in to create a very large model that
+
+304
+00:10:47,600 --> 00:10:49,590
+that operates on language hence the name
+
+305
+00:10:49,600 --> 00:10:51,710
+language model or large language model
+
+306
+00:10:51,720 --> 00:10:54,590
+then there's a phase that is often it's
+
+307
+00:10:54,600 --> 00:10:55,710
+within the field of what's called
+
+308
+00:10:55,720 --> 00:10:57,870
+alignment which is basically you have a
+
+309
+00:10:57,880 --> 00:10:59,509
+goal like you want this thing to be able
+
+310
+00:10:59,519 --> 00:11:02,110
+to be good at certain things or say you
+
+311
+00:11:02,120 --> 00:11:03,590
+want it to minimize harm you don't want
+
+312
+00:11:03,600 --> 00:11:05,509
+it to tell you how to create bombs or
+
+313
+00:11:05,519 --> 00:11:06,790
+like you know that snapshot of the
+
+314
+00:11:06,800 --> 00:11:08,230
+internet might contain some things that
+
+315
+00:11:08,240 --> 00:11:09,910
+are frankly rather horrible and you
+
+316
+00:11:09,920 --> 00:11:11,509
+don't want that to be a part of the
+
+317
+00:11:11,519 --> 00:11:13,710
+outputs of the system and so this sort
+
+318
+00:11:13,720 --> 00:11:16,430
+of alignment thing is a form of tuning
+
+319
+00:11:16,440 --> 00:11:18,750
+it's not quite fine-tuning but it's a
+
+320
+00:11:18,760 --> 00:11:20,509
+sort of a way to tune it such that the
+
+321
+00:11:20,519 --> 00:11:22,069
+outputs are going to be aligned with
+
+322
+00:11:22,079 --> 00:11:23,750
+what your goals and principles are
+
+323
+00:11:23,760 --> 00:11:26,110
+behind this system that you're creating
+
+324
+00:11:26,120 --> 00:11:28,550
+now then you get into forms of
+
+325
+00:11:28,560 --> 00:11:30,230
+specialization which is where fine
+
+326
+00:11:30,240 --> 00:11:32,310
+tuning comes in and depending on the
+
+327
+00:11:32,320 --> 00:11:35,269
+model architecture it may be something
+
+328
+00:11:35,279 --> 00:11:36,910
+that like once you f tuned it in a
+
+329
+00:11:36,920 --> 00:11:38,670
+particular way you can't like really
+
+330
+00:11:38,680 --> 00:11:40,710
+fine-tune it in another way like like
+
+331
+00:11:40,720 --> 00:11:42,350
+it's sort of optimized for one
+
+332
+00:11:42,360 --> 00:11:44,710
+particular kind of thing so that's why
+
+333
+00:11:44,720 --> 00:11:46,190
+if you're curious looking at all the
+
+334
+00:11:46,200 --> 00:11:47,430
+different kinds of fine tuning that's
+
+335
+00:11:47,440 --> 00:11:48,790
+going on there's there's so many
+
+336
+00:11:48,800 --> 00:11:49,670
+different models that you could
+
+337
+00:11:49,680 --> 00:11:52,269
+potentially fine-tune but fine-tuning is
+
+338
+00:11:52,279 --> 00:11:55,030
+that act of specialization so it's been
+
+339
+00:11:55,040 --> 00:11:57,389
+trained it's been aligned to a general
+
+340
+00:11:57,399 --> 00:12:00,069
+particular goal but now you have a like
+
+341
+00:12:00,079 --> 00:12:02,150
+a very much more narrow set of problems
+
+342
+00:12:02,160 --> 00:12:04,629
+that you want it to focus on and what's
+
+343
+00:12:04,639 --> 00:12:06,670
+critical about fine-tuning is it allows
+
+344
+00:12:06,680 --> 00:12:09,069
+you to bring your own data so if you
+
+345
+00:12:09,079 --> 00:12:11,550
+have a model that is good at outputting
+
+346
+00:12:11,560 --> 00:12:14,910
+text in a Json format for example well
+
+347
+00:12:14,920 --> 00:12:16,710
+it may not necessarily know about the
+
+348
+00:12:16,720 --> 00:12:18,509
+specific domain that you want it to
+
+349
+00:12:18,519 --> 00:12:20,750
+actually output within like you care
+
+350
+00:12:20,760 --> 00:12:22,430
+about emitting Json but it needs to have
+
+351
+00:12:22,440 --> 00:12:24,670
+a particular structure and maybe this
+
+352
+00:12:24,680 --> 00:12:26,949
+field and this subfield need to like
+
+353
+00:12:26,959 --> 00:12:28,870
+have a particular Association and they
+
+354
+00:12:28,880 --> 00:12:30,069
+they have some sort of underlying
+
+355
+00:12:30,079 --> 00:12:31,790
+meaning behind them now if you have a
+
+356
+00:12:31,800 --> 00:12:34,470
+corpus of knowledge of textual knowledge
+
+357
+00:12:34,480 --> 00:12:37,150
+that explains that what you can do is
+
+358
+00:12:37,160 --> 00:12:39,590
+fine-tuning allows you to specialize
+
+359
+00:12:39,600 --> 00:12:41,550
+that model so it understands that Corpus
+
+360
+00:12:41,560 --> 00:12:43,509
+of knowledge and is almost in a way sort
+
+361
+00:12:43,519 --> 00:12:46,430
+of overfitted on it so that the output
+
+362
+00:12:46,440 --> 00:12:49,829
+is a a language model that is very very
+
+363
+00:12:49,839 --> 00:12:53,269
+good at the understanding the data that
+
+364
+00:12:53,279 --> 00:12:55,030
+you gave it and the tasks that you want
+
+365
+00:12:55,040 --> 00:12:57,710
+it to perform but it loses some of the
+
+366
+00:12:57,720 --> 00:13:00,189
+ability especially from a output
+
+367
+00:13:00,199 --> 00:13:01,949
+standpoint that that it may have started
+
+368
+00:13:01,959 --> 00:13:04,030
+from so you basically overfit it towards
+
+369
+00:13:04,040 --> 00:13:06,230
+a particular use case and so the reason
+
+370
+00:13:06,240 --> 00:13:07,949
+why this is interesting and potentially
+
+371
+00:13:07,959 --> 00:13:10,430
+a trade-off is you can in theory get
+
+372
+00:13:10,440 --> 00:13:12,230
+much better outputs than if you were to
+
+373
+00:13:12,240 --> 00:13:13,069
+not
+
+374
+00:13:13,079 --> 00:13:16,150
+fine-tune but that often comes at the
+
+375
+00:13:16,160 --> 00:13:18,990
+expense of if you didn't quite fine-tune
+
+376
+00:13:19,000 --> 00:13:21,350
+it right it can be overfit for a very
+
+377
+00:13:21,360 --> 00:13:23,069
+specific kind of thing and then a user
+
+378
+00:13:23,079 --> 00:13:24,750
+might expect like a slightly more
+
+379
+00:13:24,760 --> 00:13:26,670
+General answer and it may be incapable
+
+380
+00:13:26,680 --> 00:13:29,230
+of actually producing such an answer and
+
+381
+00:13:29,240 --> 00:13:31,150
+so anyways it's kind of longwinded but I
+
+382
+00:13:31,160 --> 00:13:32,310
+think it's important to understand that
+
+383
+00:13:32,320 --> 00:13:34,590
+fine tuning fits in in sort of this like
+
+384
+00:13:34,600 --> 00:13:36,110
+pipeline if you will of like different
+
+385
+00:13:36,120 --> 00:13:38,069
+stages of producing a model and the
+
+386
+00:13:38,079 --> 00:13:40,870
+output itself is a language model it's
+
+387
+00:13:40,880 --> 00:13:42,389
+really like the model is different
+
+388
+00:13:42,399 --> 00:13:44,670
+depending on each phase that you're in
+
+389
+00:13:44,680 --> 00:13:46,750
+and so that's largely what fine tuning
+
+390
+00:13:46,760 --> 00:13:48,910
+is and where it fits in and then the
+
+391
+00:13:48,920 --> 00:13:51,230
+final term I'd like to Define here we
+
+392
+00:13:51,240 --> 00:13:53,509
+hear a lot is prompt
+
+393
+00:13:53,519 --> 00:13:56,990
+engineering so what is it about I mean
+
+394
+00:13:57,000 --> 00:13:59,350
+sometimes looks like a kind of sorcery
+
+395
+00:13:59,360 --> 00:14:01,470
+he's if you have to ask be able to ask
+
+396
+00:14:01,480 --> 00:14:02,949
+the right questions to have the answers
+
+397
+00:14:02,959 --> 00:14:05,269
+you want but what is a good definition
+
+398
+00:14:05,279 --> 00:14:09,110
+for it so prompt engineering I like to
+
+399
+00:14:09,120 --> 00:14:11,870
+think of it by analogy and then with a
+
+400
+00:14:11,880 --> 00:14:14,550
+very specific definition so through
+
+401
+00:14:14,560 --> 00:14:16,790
+analogy when you want to get an answer
+
+402
+00:14:16,800 --> 00:14:19,870
+out of a database that uses SQL as its
+
+403
+00:14:19,880 --> 00:14:22,710
+input you construct a SQL statement uh
+
+404
+00:14:22,720 --> 00:14:24,590
+SQL expression and you run that on the
+
+405
+00:14:24,600 --> 00:14:25,949
+it knows how to interpret that
+
+406
+00:14:25,959 --> 00:14:27,829
+expression and optimize it and then pull
+
+407
+00:14:27,839 --> 00:14:30,430
+out the data that you need and maybe if
+
+408
+00:14:30,440 --> 00:14:31,910
+you have different data in a different
+
+409
+00:14:31,920 --> 00:14:33,910
+shape or you're using different
+
+410
+00:14:33,920 --> 00:14:35,670
+databases you might have slightly
+
+411
+00:14:35,680 --> 00:14:37,269
+different Expressions that you sort of
+
+412
+00:14:37,279 --> 00:14:38,870
+give this database engine depending on
+
+413
+00:14:38,880 --> 00:14:40,949
+which one you're using but that's how
+
+414
+00:14:40,959 --> 00:14:43,230
+you you interact with that system
+
+415
+00:14:43,240 --> 00:14:46,069
+language models are similar to the
+
+416
+00:14:46,079 --> 00:14:48,990
+database and the prompt which is just
+
+417
+00:14:49,000 --> 00:14:50,910
+English usually but you can also do it
+
+418
+00:14:50,920 --> 00:14:52,870
+in other languages is sort of like your
+
+419
+00:14:52,880 --> 00:14:54,910
+sequel statement that you're giving it
+
+420
+00:14:54,920 --> 00:14:57,710
+and so depending on the model you might
+
+421
+00:14:57,720 --> 00:14:59,590
+have a different prompt that you need
+
+422
+00:14:59,600 --> 00:15:01,509
+because it may interpret things a little
+
+423
+00:15:01,519 --> 00:15:03,949
+differently and also just like when
+
+424
+00:15:03,959 --> 00:15:05,670
+you're doing database work right it's
+
+425
+00:15:05,680 --> 00:15:07,110
+not just any SQL that you need to
+
+426
+00:15:07,120 --> 00:15:08,910
+generate especially if you have a fairly
+
+427
+00:15:08,920 --> 00:15:10,910
+complex task that you want it to do you
+
+428
+00:15:10,920 --> 00:15:12,350
+need to spend a lot of time really
+
+429
+00:15:12,360 --> 00:15:14,790
+crafting good SQL and like you may get
+
+430
+00:15:14,800 --> 00:15:16,189
+the right answer but maybe really
+
+431
+00:15:16,199 --> 00:15:18,150
+inefficient and and so there's a lot of
+
+432
+00:15:18,160 --> 00:15:19,749
+work involved there and a lot of people
+
+433
+00:15:19,759 --> 00:15:22,110
+who can specialize in that field it's
+
+434
+00:15:22,120 --> 00:15:23,590
+the exact same thing with language
+
+435
+00:15:23,600 --> 00:15:26,189
+models where you construct basically a
+
+436
+00:15:26,199 --> 00:15:27,790
+set of instructions and maybe you have
+
+437
+00:15:27,800 --> 00:15:30,189
+some data that you pass as well through
+
+438
+00:15:30,199 --> 00:15:31,790
+a task called retrieval augmented
+
+439
+00:15:31,800 --> 00:15:34,430
+generation or rag as it's often called
+
+440
+00:15:34,440 --> 00:15:36,629
+but it's all in service towards getting
+
+441
+00:15:36,639 --> 00:15:39,509
+this blackbox to emit what you want as
+
+442
+00:15:39,519 --> 00:15:41,230
+as effectively and efficiently as
+
+443
+00:15:41,240 --> 00:15:43,790
+possible and instead of using a language
+
+444
+00:15:43,800 --> 00:15:47,990
+like SQL to generate that stuff you use
+
+445
+00:15:48,000 --> 00:15:49,790
+English and where it's a little bit
+
+446
+00:15:49,800 --> 00:15:51,150
+different and I think where that analogy
+
+447
+00:15:51,160 --> 00:15:53,710
+kind of breaks apart is when you try to
+
+448
+00:15:53,720 --> 00:15:56,509
+get a person or let's say a toddler like
+
+449
+00:15:56,519 --> 00:15:58,189
+a three or foury old to go and do
+
+450
+00:15:58,199 --> 00:16:00,269
+something you need to be very clear in
+
+451
+00:16:00,279 --> 00:16:01,629
+your instructions you might need to
+
+452
+00:16:01,639 --> 00:16:03,550
+repeat yourself you may have thought you
+
+453
+00:16:03,560 --> 00:16:04,910
+were being clear but they did not
+
+454
+00:16:04,920 --> 00:16:06,309
+interpret it in a way that you thought
+
+455
+00:16:06,319 --> 00:16:07,829
+they were going to interpret it and so
+
+456
+00:16:07,839 --> 00:16:09,829
+on right that's sort of what prompt
+
+457
+00:16:09,839 --> 00:16:11,629
+engineering kind of is if you could also
+
+458
+00:16:11,639 --> 00:16:13,189
+Imagine This database that's really
+
+459
+00:16:13,199 --> 00:16:14,790
+smart at emitting certain things is sort
+
+460
+00:16:14,800 --> 00:16:16,670
+of like a little toddler as well it may
+
+461
+00:16:16,680 --> 00:16:18,030
+not be very good at following your
+
+462
+00:16:18,040 --> 00:16:20,590
+instructions so you need to get creative
+
+463
+00:16:20,600 --> 00:16:23,629
+in how you are instructing it to do
+
+464
+00:16:23,639 --> 00:16:25,430
+certain things that's sort of the field
+
+465
+00:16:25,440 --> 00:16:27,509
+of prompt engineering and the the act of
+
+466
+00:16:27,519 --> 00:16:30,069
+prompt engineering and it can involve a
+
+467
+00:16:30,079 --> 00:16:31,949
+lot of different things to the point
+
+468
+00:16:31,959 --> 00:16:33,509
+where calling it an engineering
+
+469
+00:16:33,519 --> 00:16:35,069
+discipline I think is actually quite
+
+470
+00:16:35,079 --> 00:16:37,670
+valid and I've come to prefer the term
+
+471
+00:16:37,680 --> 00:16:40,110
+AI engineering instead of prompt
+
+472
+00:16:40,120 --> 00:16:42,550
+engineering because it encompasses a lot
+
+473
+00:16:42,560 --> 00:16:44,189
+of things that happen Upstream before
+
+474
+00:16:44,199 --> 00:16:45,870
+you actually submit a prompt to a
+
+475
+00:16:45,880 --> 00:16:47,590
+language model to get an output but
+
+476
+00:16:47,600 --> 00:16:49,069
+that's the way I like to think of it
+
+477
+00:16:49,079 --> 00:16:50,990
+what is observability in the context of
+
+478
+00:16:51,000 --> 00:16:53,470
+large language models and why does it
+
+479
+00:16:53,480 --> 00:16:56,389
+matter so if you recall when I was
+
+480
+00:16:56,399 --> 00:16:58,949
+talking about observability you may have
+
+481
+00:16:58,959 --> 00:17:00,710
+have a lot of things going on in
+
+482
+00:17:00,720 --> 00:17:02,790
+production that are influencing the
+
+483
+00:17:02,800 --> 00:17:04,470
+behavior of your system in a way that
+
+484
+00:17:04,480 --> 00:17:06,189
+you can't like debug on your local
+
+485
+00:17:06,199 --> 00:17:08,429
+machine you can't reproduce it and so on
+
+486
+00:17:08,439 --> 00:17:10,590
+this is true for any modern Software
+
+487
+00:17:10,600 --> 00:17:12,909
+System with large language models it's
+
+488
+00:17:12,919 --> 00:17:16,230
+that exact same principle except the
+
+489
+00:17:16,240 --> 00:17:19,630
+pains are felt much more acutely because
+
+490
+00:17:19,640 --> 00:17:22,429
+now in practice with normal software yes
+
+491
+00:17:22,439 --> 00:17:23,949
+you may not be able to debug this thing
+
+492
+00:17:23,959 --> 00:17:25,189
+that's happening right now but you might
+
+493
+00:17:25,199 --> 00:17:26,630
+be able to debug some of it in the
+
+494
+00:17:26,640 --> 00:17:30,070
+traditional sense or maybe actually can
+
+495
+00:17:30,080 --> 00:17:31,789
+reproduce certain things you may not be
+
+496
+00:17:31,799 --> 00:17:33,390
+able to do it all the time but maybe you
+
+497
+00:17:33,400 --> 00:17:36,430
+can in large language models that that
+
+498
+00:17:36,440 --> 00:17:40,110
+sort of everything is in a sense
+
+499
+00:17:40,120 --> 00:17:41,350
+unreproducible
+
+500
+00:17:41,360 --> 00:17:45,470
+non- debuggable non-deterministic in its
+
+501
+00:17:45,480 --> 00:17:48,310
+outputs and on the input side your users
+
+502
+00:17:48,320 --> 00:17:50,430
+are doing things that are likely very
+
+503
+00:17:50,440 --> 00:17:52,310
+very different from how they would
+
+504
+00:17:52,320 --> 00:17:53,990
+interact with normal software right if
+
+505
+00:17:54,000 --> 00:17:55,830
+you consider a UI there's only so many
+
+506
+00:17:55,840 --> 00:17:57,789
+ways that you can click a button or or
+
+507
+00:17:57,799 --> 00:17:59,909
+select a drop down and a UI you can
+
+508
+00:17:59,919 --> 00:18:01,310
+actually account for all of that in your
+
+509
+00:18:01,320 --> 00:18:03,390
+test cases but if you give someone a
+
+510
+00:18:03,400 --> 00:18:06,110
+text box and you say input whatever you
+
+511
+00:18:06,120 --> 00:18:07,750
+like and we're going to do our best to
+
+512
+00:18:07,760 --> 00:18:09,430
+give you a reasonable answer from that
+
+513
+00:18:09,440 --> 00:18:12,149
+inputs you cannot possibly unit test for
+
+514
+00:18:12,159 --> 00:18:13,510
+all the things your users are going to
+
+515
+00:18:13,520 --> 00:18:16,470
+do and in fact it's a big disservice to
+
+516
+00:18:16,480 --> 00:18:18,909
+the system that you're building to try
+
+517
+00:18:18,919 --> 00:18:20,510
+to understand what your users are going
+
+518
+00:18:20,520 --> 00:18:22,230
+to do before you actually go live and
+
+519
+00:18:22,240 --> 00:18:24,270
+give them the dam thing and let them
+
+520
+00:18:24,280 --> 00:18:26,149
+bang around on it and see what actually
+
+521
+00:18:26,159 --> 00:18:29,510
+comes out and so as it turns out
+
+522
+00:18:29,520 --> 00:18:31,990
+this way that these models behave is
+
+523
+00:18:32,000 --> 00:18:33,990
+actually a perfect fit for observability
+
+524
+00:18:34,000 --> 00:18:36,430
+because if observability is about
+
+525
+00:18:36,440 --> 00:18:37,950
+understanding why a system is behaving
+
+526
+00:18:37,960 --> 00:18:39,590
+the way it is without needing to change
+
+527
+00:18:39,600 --> 00:18:41,630
+that system well if you can't change the
+
+528
+00:18:41,640 --> 00:18:44,270
+language model which you usually cannot
+
+529
+00:18:44,280 --> 00:18:46,350
+or if you can it's a very expensive and
+
+530
+00:18:46,360 --> 00:18:48,630
+timec consuming process how do you make
+
+531
+00:18:48,640 --> 00:18:50,630
+progress because your users expect it to
+
+532
+00:18:50,640 --> 00:18:52,630
+improve over time it's what you release
+
+533
+00:18:52,640 --> 00:18:54,710
+first is likely not going to be perfect
+
+534
+00:18:54,720 --> 00:18:56,390
+it may be better than than you thought
+
+535
+00:18:56,400 --> 00:18:57,710
+but it may be worse than you thought how
+
+536
+00:18:57,720 --> 00:18:59,430
+do you do that observability and
+
+537
+00:18:59,440 --> 00:19:02,350
+Gathering signals on what are all the
+
+538
+00:19:02,360 --> 00:19:04,909
+factors going into this input right what
+
+539
+00:19:04,919 --> 00:19:06,270
+are all the things that are that are
+
+540
+00:19:06,280 --> 00:19:08,310
+meaningful Upstream of my call to a
+
+541
+00:19:08,320 --> 00:19:10,270
+large language model that potentially
+
+542
+00:19:10,280 --> 00:19:12,149
+influence that call and then what are
+
+543
+00:19:12,159 --> 00:19:13,830
+all the things that happen Downstream
+
+544
+00:19:13,840 --> 00:19:15,590
+and what do I do with that output what
+
+545
+00:19:15,600 --> 00:19:17,990
+is that actual output and Gathering all
+
+546
+00:19:18,000 --> 00:19:20,110
+of those signals so not just user input
+
+547
+00:19:20,120 --> 00:19:22,430
+and large language model output but if
+
+548
+00:19:22,440 --> 00:19:24,789
+you made 10 decisions Upstream in terms
+
+549
+00:19:24,799 --> 00:19:26,750
+of gathering contextual information that
+
+550
+00:19:26,760 --> 00:19:28,270
+you want to feed into the large language
+
+551
+00:19:28,280 --> 00:19:30,630
+model what were those decision points
+
+552
+00:19:30,640 --> 00:19:32,590
+because if you made a wrong decision
+
+553
+00:19:32,600 --> 00:19:33,950
+that will influence the out like the
+
+554
+00:19:33,960 --> 00:19:35,350
+model might have actually done the best
+
+555
+00:19:35,360 --> 00:19:37,070
+job that it could but you fed it bad
+
+556
+00:19:37,080 --> 00:19:38,430
+information how do you know that you're
+
+557
+00:19:38,440 --> 00:19:40,549
+feeding it bad information you capture
+
+558
+00:19:40,559 --> 00:19:42,270
+the user input what kind of inputs are
+
+559
+00:19:42,280 --> 00:19:43,710
+people doing are there patterns in their
+
+560
+00:19:43,720 --> 00:19:46,149
+input are they expecting it to do
+
+561
+00:19:46,159 --> 00:19:48,390
+something even though they gave it vague
+
+562
+00:19:48,400 --> 00:19:50,350
+instructions basically is that something
+
+563
+00:19:50,360 --> 00:19:51,750
+you want to solve for or is that
+
+564
+00:19:51,760 --> 00:19:53,470
+something that you want to error out on
+
+565
+00:19:53,480 --> 00:19:55,470
+if you get the output and the output is
+
+566
+00:19:55,480 --> 00:19:57,830
+what I like to call mostly correct right
+
+567
+00:19:57,840 --> 00:19:59,470
+you expect it to follow a particular
+
+568
+00:19:59,480 --> 00:20:00,950
+structure but one piece of it is a
+
+569
+00:20:00,960 --> 00:20:02,870
+little bit wrong are there ways that you
+
+570
+00:20:02,880 --> 00:20:05,430
+can actually correct that and make it
+
+571
+00:20:05,440 --> 00:20:06,950
+seem as though the language model
+
+572
+00:20:06,960 --> 00:20:08,710
+actually did produce the correct output
+
+573
+00:20:08,720 --> 00:20:10,230
+even if it didn't quite give you the
+
+574
+00:20:10,240 --> 00:20:11,590
+right thing that you were expecting
+
+575
+00:20:11,600 --> 00:20:13,110
+these are interesting questions that you
+
+576
+00:20:13,120 --> 00:20:15,549
+need to explore and really the only way
+
+577
+00:20:15,559 --> 00:20:17,430
+that you can do that is by practicing
+
+578
+00:20:17,440 --> 00:20:19,830
+good observability and capturing data
+
+579
+00:20:19,840 --> 00:20:21,390
+about everything that happened Upstream
+
+580
+00:20:21,400 --> 00:20:23,270
+to your call to a language model and
+
+581
+00:20:23,280 --> 00:20:25,789
+things that happen on the output side of
+
+582
+00:20:25,799 --> 00:20:28,310
+it so you can see what influences that
+
+583
+00:20:28,320 --> 00:20:29,270
+output
+
+584
+00:20:29,280 --> 00:20:31,310
+and then that when you can isolate that
+
+585
+00:20:31,320 --> 00:20:32,909
+with an observability tool and you can
+
+586
+00:20:32,919 --> 00:20:34,909
+say okay when I have an input that looks
+
+587
+00:20:34,919 --> 00:20:36,870
+like this and I have these kinds of
+
+588
+00:20:36,880 --> 00:20:39,310
+decisions and then this output pretty
+
+589
+00:20:39,320 --> 00:20:41,909
+reliably is bad in this particular way
+
+590
+00:20:41,919 --> 00:20:44,029
+cool this is a very specific bug that I
+
+591
+00:20:44,039 --> 00:20:47,430
+can now go and try to fix and my act for
+
+592
+00:20:47,440 --> 00:20:49,430
+fixing that is frankly a whole other
+
+593
+00:20:49,440 --> 00:20:51,990
+topic but now I have something concrete
+
+594
+00:20:52,000 --> 00:20:53,909
+that I can address rather than just
+
+595
+00:20:53,919 --> 00:20:55,390
+throwing stuff at the wall and doing
+
+596
+00:20:55,400 --> 00:20:57,029
+guess work and hoping that I improve a
+
+597
+00:20:57,039 --> 00:20:59,870
+system so that that's why observability
+
+598
+00:20:59,880 --> 00:21:02,110
+intersects with systems that use
+
+599
+00:21:02,120 --> 00:21:04,750
+language models so well are there any
+
+600
+00:21:04,760 --> 00:21:07,390
+similarities of observability for larg
+
+601
+00:21:07,400 --> 00:21:09,270
+language models with observability for
+
+602
+00:21:09,280 --> 00:21:11,350
+let's say more well in quotes
+
+603
+00:21:11,360 --> 00:21:14,269
+conventional systems there certainly can
+
+604
+00:21:14,279 --> 00:21:17,630
+be so I'll use the database analogy
+
+605
+00:21:17,640 --> 00:21:19,830
+again so imagine your system makes a
+
+606
+00:21:19,840 --> 00:21:21,430
+call to a database and it gets back a
+
+607
+00:21:21,440 --> 00:21:23,430
+result and you transform that result in
+
+608
+00:21:23,440 --> 00:21:25,750
+some way and feed it back to the user
+
+609
+00:21:25,760 --> 00:21:28,710
+somehow well you may be making decisions
+
+610
+00:21:28,720 --> 00:21:32,190
+Upstream of that database call that
+
+611
+00:21:32,200 --> 00:21:34,990
+influence how you call the database and
+
+612
+00:21:35,000 --> 00:21:37,149
+the net result is like a bad result for
+
+613
+00:21:37,159 --> 00:21:39,149
+the user even though like your database
+
+614
+00:21:39,159 --> 00:21:42,029
+query was not wrong it was just the data
+
+615
+00:21:42,039 --> 00:21:43,630
+that you parameterized into it or
+
+616
+00:21:43,640 --> 00:21:45,190
+something like that or or the decision
+
+617
+00:21:45,200 --> 00:21:46,750
+that you made to like call it this way
+
+618
+00:21:46,760 --> 00:21:48,350
+instead of this way that's a thing
+
+619
+00:21:48,360 --> 00:21:51,149
+that's actually wrong and now you can go
+
+620
+00:21:51,159 --> 00:21:53,390
+and fix that and and it may it may have
+
+621
+00:21:53,400 --> 00:21:54,990
+manifested in a way that made it look
+
+622
+00:21:55,000 --> 00:21:57,510
+like the database was at fault but
+
+623
+00:21:57,520 --> 00:21:59,390
+something else was at fault another way
+
+624
+00:21:59,400 --> 00:22:01,590
+that this this can manifest is in
+
+625
+00:22:01,600 --> 00:22:05,350
+latency so language models like frankly
+
+626
+00:22:05,360 --> 00:22:06,950
+other things have a latency component
+
+627
+00:22:06,960 --> 00:22:08,430
+associated with them and people don't
+
+628
+00:22:08,440 --> 00:22:10,830
+like it when stuff is slow so you might
+
+629
+00:22:10,840 --> 00:22:12,549
+think oh well the language model we know
+
+630
+00:22:12,559 --> 00:22:14,350
+that that has high latency it's being
+
+631
+00:22:14,360 --> 00:22:16,070
+really slow opening eyes being really
+
+632
+00:22:16,080 --> 00:22:17,990
+slow and then you go and look at it and
+
+633
+00:22:18,000 --> 00:22:19,950
+it's actually not that slow you're like
+
+634
+00:22:19,960 --> 00:22:22,630
+huh well this took five seconds but only
+
+635
+00:22:22,640 --> 00:22:24,269
+2 seconds was a generation where the
+
+636
+00:22:24,279 --> 00:22:25,710
+heck are those other 3 seconds coming
+
+637
+00:22:25,720 --> 00:22:27,950
+from now swap out the language model for
+
+638
+00:22:27,960 --> 00:22:29,549
+any other component where there's
+
+639
+00:22:29,559 --> 00:22:31,549
+potential for high latency and you may
+
+640
+00:22:31,559 --> 00:22:33,310
+think that that component is responsible
+
+641
+00:22:33,320 --> 00:22:35,470
+but it's actually not it's like oh
+
+642
+00:22:35,480 --> 00:22:39,230
+Upstream we made five Network calls when
+
+643
+00:22:39,240 --> 00:22:42,269
+we thought we were only making one oops
+
+644
+00:22:42,279 --> 00:22:43,789
+well that's great we were able to fix
+
+645
+00:22:43,799 --> 00:22:46,070
+the problem it was actually us I've run
+
+646
+00:22:46,080 --> 00:22:47,950
+into this several times at honeycomb we
+
+647
+00:22:47,960 --> 00:22:49,510
+actually have one of our customers who
+
+648
+00:22:49,520 --> 00:22:51,669
+uses language models extensively in in
+
+649
+00:22:51,679 --> 00:22:53,590
+their applications they actually had
+
+650
+00:22:53,600 --> 00:22:55,470
+this exact workflow where their users
+
+651
+00:22:55,480 --> 00:22:57,310
+were reporting that things were slow and
+
+652
+00:22:57,320 --> 00:22:59,149
+they were complaining to open about it
+
+653
+00:22:59,159 --> 00:23:01,470
+and open AI was telling them we're like
+
+654
+00:23:01,480 --> 00:23:03,310
+we're actually serving you fast requests
+
+655
+00:23:03,320 --> 00:23:04,350
+I don't know what's going on but it's
+
+656
+00:23:04,360 --> 00:23:06,310
+your fault and so they instrumented with
+
+657
+00:23:06,320 --> 00:23:08,630
+open Telemetry and tracing of of their
+
+658
+00:23:08,640 --> 00:23:09,990
+systems and they found that they were
+
+659
+00:23:10,000 --> 00:23:11,789
+making tons of network calls before they
+
+660
+00:23:11,799 --> 00:23:13,510
+ever called The Machine learning model
+
+661
+00:23:13,520 --> 00:23:14,830
+and they're like well wait a minute what
+
+662
+00:23:14,840 --> 00:23:16,870
+the heck and so they fixed that and all
+
+663
+00:23:16,880 --> 00:23:18,269
+of a sudden their user experience was
+
+664
+00:23:18,279 --> 00:23:21,230
+way better now about the challenges that
+
+665
+00:23:21,240 --> 00:23:23,230
+observability for large language models
+
+666
+00:23:23,240 --> 00:23:24,590
+helps to address so I think you
+
+667
+00:23:24,600 --> 00:23:26,350
+mentioned before the fact that with
+
+668
+00:23:26,360 --> 00:23:28,750
+these models is you know unit testing
+
+669
+00:23:28,760 --> 00:23:31,510
+for example or any kind of say testing
+
+670
+00:23:31,520 --> 00:23:34,029
+as some strong limitations with what we
+
+671
+00:23:34,039 --> 00:23:36,230
+can do we you cannot test a text box
+
+672
+00:23:36,240 --> 00:23:38,669
+where you can put random questions tests
+
+673
+00:23:38,679 --> 00:23:40,110
+and the model response to those so you
+
+674
+00:23:40,120 --> 00:23:42,630
+cannot have a a good set of tests for
+
+675
+00:23:42,640 --> 00:23:44,470
+that so there there is that but what
+
+676
+00:23:44,480 --> 00:23:48,029
+other kind of challenges observability
+
+677
+00:23:48,039 --> 00:23:50,510
+helps to address two important ones come
+
+678
+00:23:50,520 --> 00:23:55,029
+to mind so the first is one of latency
+
+679
+00:23:55,039 --> 00:23:57,710
+so I kind of mentioned that before but
+
+680
+00:23:57,720 --> 00:24:00,789
+large language models have high latency
+
+681
+00:24:00,799 --> 00:24:02,350
+and there's a lot of work being done to
+
+682
+00:24:02,360 --> 00:24:03,590
+improve that right now but if you want
+
+683
+00:24:03,600 --> 00:24:05,510
+to use them today you're going to have
+
+684
+00:24:05,520 --> 00:24:07,990
+to introduce latency on the order of
+
+685
+00:24:08,000 --> 00:24:11,070
+seconds into your system and if your
+
+686
+00:24:11,080 --> 00:24:12,590
+users are used to getting everything on
+
+687
+00:24:12,600 --> 00:24:15,950
+the order of milliseconds well that
+
+688
+00:24:15,960 --> 00:24:17,630
+could potentially be a problem now I
+
+689
+00:24:17,640 --> 00:24:19,110
+would argue that if it's clear that
+
+690
+00:24:19,120 --> 00:24:21,230
+something is an AI the phrase with large
+
+691
+00:24:21,240 --> 00:24:22,669
+language models usually most people
+
+692
+00:24:22,679 --> 00:24:25,389
+associate with AI a lot of users now
+
+693
+00:24:25,399 --> 00:24:27,070
+sort of are expecting okay this might
+
+694
+00:24:27,080 --> 00:24:29,110
+take a little while to get an answer
+
+695
+00:24:29,120 --> 00:24:31,070
+but still if if they're sitting around
+
+696
+00:24:31,080 --> 00:24:32,549
+tapping their feet waiting for this
+
+697
+00:24:32,559 --> 00:24:34,630
+thing to finish that's not a good
+
+698
+00:24:34,640 --> 00:24:37,110
+experience for someone and the right
+
+699
+00:24:37,120 --> 00:24:38,750
+latency for your system is going to
+
+700
+00:24:38,760 --> 00:24:40,950
+depend on what their users are actually
+
+701
+00:24:40,960 --> 00:24:42,389
+trying to do and what they're expecting
+
+702
+00:24:42,399 --> 00:24:44,669
+and all of that but what that means is
+
+703
+00:24:44,679 --> 00:24:46,950
+kind of to that point about you can be
+
+704
+00:24:46,960 --> 00:24:48,590
+making a mistake unrelated to the
+
+705
+00:24:48,600 --> 00:24:50,350
+language model that gives the impression
+
+706
+00:24:50,360 --> 00:24:52,470
+of a higher latency that makes those
+
+707
+00:24:52,480 --> 00:24:55,470
+problems more severe because now that
+
+708
+00:24:55,480 --> 00:24:57,789
+you have created a step change in your
+
+709
+00:24:57,799 --> 00:24:59,669
+latency on the order of seconds and you
+
+710
+00:24:59,679 --> 00:25:01,870
+have other stuff layered on top of that
+
+711
+00:25:01,880 --> 00:25:03,750
+your users might be like wow this AI
+
+712
+00:25:03,760 --> 00:25:05,430
+feature sucks because it's really slow I
+
+713
+00:25:05,440 --> 00:25:07,070
+don't know if I like it very much
+
+714
+00:25:07,080 --> 00:25:09,110
+getting a handle on that is very
+
+715
+00:25:09,120 --> 00:25:12,909
+difficult now in addition to that the
+
+716
+00:25:12,919 --> 00:25:16,070
+way that a model is spoken to right the
+
+717
+00:25:16,080 --> 00:25:17,990
+The Prompt that you feed it and the
+
+718
+00:25:18,000 --> 00:25:19,990
+amount of output that it has to generate
+
+719
+00:25:20,000 --> 00:25:22,070
+to be able to get a complete answer
+
+720
+00:25:22,080 --> 00:25:24,549
+greatly influences the latency as well
+
+721
+00:25:24,559 --> 00:25:27,110
+so for example there is a prompting
+
+722
+00:25:27,120 --> 00:25:28,950
+technique called Chain of Thought
+
+723
+00:25:28,960 --> 00:25:31,630
+prompting now Chain of Thought prompting
+
+724
+00:25:31,640 --> 00:25:33,750
+you can go look it up but the idea is
+
+725
+00:25:33,760 --> 00:25:36,549
+that it forces the model to so-call like
+
+726
+00:25:36,559 --> 00:25:39,029
+think step by step for every output that
+
+727
+00:25:39,039 --> 00:25:41,070
+it produces and so that's great because
+
+728
+00:25:41,080 --> 00:25:42,950
+it can it can increase the accuracy of
+
+729
+00:25:42,960 --> 00:25:45,350
+outputs and make it more reliable but
+
+730
+00:25:45,360 --> 00:25:46,710
+that comes at the cost of a lot more
+
+731
+00:25:46,720 --> 00:25:48,310
+latency because it does a lot more
+
+732
+00:25:48,320 --> 00:25:50,909
+computational work to do that um
+
+733
+00:25:50,919 --> 00:25:52,750
+similarly like you know imagine you're
+
+734
+00:25:52,760 --> 00:25:54,510
+solving a math problem think step by
+
+735
+00:25:54,520 --> 00:25:55,950
+step instead of intuitively it's going
+
+736
+00:25:55,960 --> 00:25:57,510
+to take you longer to actually get a
+
+737
+00:25:57,520 --> 00:25:58,789
+final result
+
+738
+00:25:58,799 --> 00:26:00,830
+that's exactly how these things work and
+
+739
+00:26:00,840 --> 00:26:03,470
+so you may perhaps want to AB test
+
+740
+00:26:03,480 --> 00:26:04,389
+because you're trying to improve
+
+741
+00:26:04,399 --> 00:26:06,149
+reliability okay what if we do Chain of
+
+742
+00:26:06,159 --> 00:26:07,710
+Thought prompting now our latency went
+
+743
+00:26:07,720 --> 00:26:10,350
+up a whole lot what like how do you
+
+744
+00:26:10,360 --> 00:26:12,630
+systematically understand that impact
+
+745
+00:26:12,640 --> 00:26:15,230
+that's where observability comes in also
+
+746
+00:26:15,240 --> 00:26:17,430
+on the output side you need to be
+
+747
+00:26:17,440 --> 00:26:19,269
+creative in terms of how it generates
+
+748
+00:26:19,279 --> 00:26:21,350
+outputs right things like chat GPT and
+
+749
+00:26:21,360 --> 00:26:23,310
+stuff they will output a dump of text
+
+750
+00:26:23,320 --> 00:26:25,389
+but that's usually not appropriate for
+
+751
+00:26:25,399 --> 00:26:26,990
+any especially any kind of Enterprise
+
+752
+00:26:27,000 --> 00:26:29,950
+use case and so there's this question of
+
+753
+00:26:29,960 --> 00:26:32,350
+okay how do we influence our prompting
+
+754
+00:26:32,360 --> 00:26:34,630
+or perhaps our fine-tuning such that we
+
+755
+00:26:34,640 --> 00:26:36,750
+can get the most minimal output possible
+
+756
+00:26:36,760 --> 00:26:38,070
+because that's actually where the
+
+757
+00:26:38,080 --> 00:26:40,110
+majority of latency comes in from a
+
+758
+00:26:40,120 --> 00:26:42,510
+language model it's generation task
+
+759
+00:26:42,520 --> 00:26:44,029
+depending on how it generates and how
+
+760
+00:26:44,039 --> 00:26:46,789
+much it needs to generate can introduce
+
+761
+00:26:46,799 --> 00:26:48,510
+a large amount of latency into your
+
+762
+00:26:48,520 --> 00:26:49,870
+system so instead of a large language
+
+763
+00:26:49,880 --> 00:26:51,389
+model you have a large latency model and
+
+764
+00:26:51,399 --> 00:26:54,190
+nobody likes that so again how do you
+
+765
+00:26:54,200 --> 00:26:56,750
+make sense of that the only way to do
+
+766
+00:26:56,760 --> 00:26:58,710
+that is by gathering real real world
+
+767
+00:26:58,720 --> 00:27:00,110
+data these is what real people are
+
+768
+00:27:00,120 --> 00:27:01,710
+entering in these are the real decisions
+
+769
+00:27:01,720 --> 00:27:03,029
+that we made based off of their
+
+770
+00:27:03,039 --> 00:27:04,630
+interactions and this is the real output
+
+771
+00:27:04,640 --> 00:27:06,750
+that we got this is how long it took
+
+772
+00:27:06,760 --> 00:27:08,549
+that's a problem that needs solving and
+
+773
+00:27:08,559 --> 00:27:10,149
+observability is really the only way to
+
+774
+00:27:10,159 --> 00:27:13,870
+get that the second piece that this
+
+775
+00:27:13,880 --> 00:27:15,909
+solves it gets to the to the
+
+776
+00:27:15,919 --> 00:27:17,789
+observability driven development kind of
+
+777
+00:27:17,799 --> 00:27:20,230
+thing so observability driven
+
+778
+00:27:20,240 --> 00:27:23,070
+development is a practice that is fairly
+
+779
+00:27:23,080 --> 00:27:26,389
+nent but the idea is that if you break
+
+780
+00:27:26,399 --> 00:27:27,909
+down the barrier between development and
+
+781
+00:27:27,919 --> 00:27:30,950
+produ C and you say that okay well this
+
+782
+00:27:30,960 --> 00:27:32,590
+software that I'm writing is not the
+
+783
+00:27:32,600 --> 00:27:34,590
+code on my machine that I then push to
+
+784
+00:27:34,600 --> 00:27:36,070
+something else and then it goes live
+
+785
+00:27:36,080 --> 00:27:39,350
+somehow but really I am developing with
+
+786
+00:27:39,360 --> 00:27:42,750
+a live system in mind then that's likely
+
+787
+00:27:42,760 --> 00:27:44,990
+going to influence what I work on and
+
+788
+00:27:45,000 --> 00:27:46,509
+make sure that I'm focusing on the right
+
+789
+00:27:46,519 --> 00:27:49,190
+things and improving the right problems
+
+790
+00:27:49,200 --> 00:27:51,350
+that's something that large language
+
+791
+00:27:51,360 --> 00:27:54,149
+models really sort of force an issue on
+
+792
+00:27:54,159 --> 00:27:55,950
+because you have this live system that
+
+793
+00:27:55,960 --> 00:27:57,590
+you're probably pretty motivated to
+
+794
+00:27:57,600 --> 00:27:59,470
+improve and it's behaving in a way right
+
+795
+00:27:59,480 --> 00:28:02,549
+now that is perhaps not necessarily good
+
+796
+00:28:02,559 --> 00:28:04,389
+and so how do I make sure that when I'm
+
+797
+00:28:04,399 --> 00:28:06,430
+developing I know that I'm focusing on
+
+798
+00:28:06,440 --> 00:28:07,590
+things that are going to be impactful
+
+799
+00:28:07,600 --> 00:28:09,830
+for people that's where observability
+
+800
+00:28:09,840 --> 00:28:11,590
+comes in I get those signals I get sort
+
+801
+00:28:11,600 --> 00:28:12,750
+of what I mentioned that sort of way
+
+802
+00:28:12,760 --> 00:28:14,509
+that I can isolate a very specific
+
+803
+00:28:14,519 --> 00:28:16,269
+pattern of behavior and say okay that's
+
+804
+00:28:16,279 --> 00:28:18,389
+a bug that I can work on getting that
+
+805
+00:28:18,399 --> 00:28:20,590
+specificity and getting that Clarity
+
+806
+00:28:20,600 --> 00:28:22,509
+that this is what is actually occurring
+
+807
+00:28:22,519 --> 00:28:25,950
+out in the world is crucial for any kind
+
+808
+00:28:25,960 --> 00:28:27,269
+of development activity that you do
+
+809
+00:28:27,279 --> 00:28:28,269
+because otherwise you're just just going
+
+810
+00:28:28,279 --> 00:28:30,149
+to be improving things at the margins is
+
+811
+00:28:30,159 --> 00:28:32,909
+this related to I read your book so is
+
+812
+00:28:32,919 --> 00:28:35,110
+related to your book to the you know the
+
+813
+00:28:35,120 --> 00:28:37,190
+Early Access program example you give
+
+814
+00:28:37,200 --> 00:28:39,509
+where say with limited user testing
+
+815
+00:28:39,519 --> 00:28:42,110
+especially large language models you
+
+816
+00:28:42,120 --> 00:28:44,230
+cannot possibly get all the possible
+
+817
+00:28:44,240 --> 00:28:46,990
+user behaviors because of you know the
+
+818
+00:28:47,000 --> 00:28:48,789
+fact that is a large language model is
+
+819
+00:28:48,799 --> 00:28:50,990
+not a standard application so this seems
+
+820
+00:28:51,000 --> 00:28:53,350
+like this case of observability driven
+
+821
+00:28:53,360 --> 00:28:55,950
+development is you get a go out with
+
+822
+00:28:55,960 --> 00:28:57,549
+something but then you check what the
+
+823
+00:28:57,559 --> 00:28:59,269
+users do and somehow use that
+
+824
+00:28:59,279 --> 00:29:01,470
+information to refine your system and
+
+825
+00:29:01,480 --> 00:29:03,549
+make it better for the users am I
+
+826
+00:29:03,559 --> 00:29:05,110
+understanding that correctly that's
+
+827
+00:29:05,120 --> 00:29:07,070
+correct I think a lot of organizations
+
+828
+00:29:07,080 --> 00:29:08,909
+in fact are used to the idea of An Early
+
+829
+00:29:08,919 --> 00:29:11,029
+Access program like a closed beta or
+
+830
+00:29:11,039 --> 00:29:12,389
+something like that as a way to reduce
+
+831
+00:29:12,399 --> 00:29:16,669
+risk and so that could in theory be
+
+832
+00:29:16,679 --> 00:29:18,430
+helpful with large language models if
+
+833
+00:29:18,440 --> 00:29:19,990
+it's a large enough program with a
+
+834
+00:29:20,000 --> 00:29:22,430
+diverse enough amount of users but
+
+835
+00:29:22,440 --> 00:29:26,350
+getting that degree of population like
+
+836
+00:29:26,360 --> 00:29:28,350
+enough people with a diverse enough set
+
+837
+00:29:28,360 --> 00:29:29,710
+of like interests and things that
+
+838
+00:29:29,720 --> 00:29:32,149
+they're trying to accomplish is often so
+
+839
+00:29:32,159 --> 00:29:34,830
+difficult and time consuming that you
+
+840
+00:29:34,840 --> 00:29:37,029
+might as well have just gone live and
+
+841
+00:29:37,039 --> 00:29:38,509
+seeing what people are doing and just
+
+842
+00:29:38,519 --> 00:29:40,990
+acted on that right away and what that
+
+843
+00:29:41,000 --> 00:29:44,110
+what that means though is that you need
+
+844
+00:29:44,120 --> 00:29:45,950
+to commit to the fact that you are not
+
+845
+00:29:45,960 --> 00:29:47,389
+done just because you've released
+
+846
+00:29:47,399 --> 00:29:49,149
+something and I think a lot of Engineers
+
+847
+00:29:49,159 --> 00:29:50,909
+right now are used to the idea that
+
+848
+00:29:50,919 --> 00:29:52,269
+something goes live in production the
+
+849
+00:29:52,279 --> 00:29:54,149
+featur is launched maybe there's you
+
+850
+00:29:54,159 --> 00:29:55,630
+sprinkle a little bit of monitoring on
+
+851
+00:29:55,640 --> 00:29:56,950
+that but that might be another team's
+
+852
+00:29:56,960 --> 00:29:58,470
+concern anyways I can can just move on
+
+853
+00:29:58,480 --> 00:30:00,789
+to the next task that is absolutely not
+
+854
+00:30:00,799 --> 00:30:02,830
+what's going on here the real work
+
+855
+00:30:02,840 --> 00:30:04,389
+actually begins once you are live in
+
+856
+00:30:04,399 --> 00:30:06,149
+production because I would posit that I
+
+857
+00:30:06,159 --> 00:30:07,750
+didn't write this in the book but I
+
+858
+00:30:07,760 --> 00:30:09,630
+would posit that it's actually easy to
+
+859
+00:30:09,640 --> 00:30:10,909
+bring something to Market when you use
+
+860
+00:30:10,919 --> 00:30:13,190
+large language models because they are
+
+861
+00:30:13,200 --> 00:30:15,070
+so damn powerful for what they can do
+
+862
+00:30:15,080 --> 00:30:17,070
+right now that for you to create even
+
+863
+00:30:17,080 --> 00:30:18,669
+just a marginally better experience for
+
+864
+00:30:18,679 --> 00:30:20,950
+people you can do that in about a week
+
+865
+00:30:20,960 --> 00:30:23,870
+with a bad UI and then expand that out
+
+866
+00:30:23,880 --> 00:30:25,710
+to a month with an engineering team and
+
+867
+00:30:25,720 --> 00:30:27,470
+you probably have a decent enough UI
+
+868
+00:30:27,480 --> 00:30:29,549
+that that's be acceptable for your users
+
+869
+00:30:29,559 --> 00:30:30,990
+so you have about a month that you can
+
+870
+00:30:31,000 --> 00:30:32,590
+use to take something to market for I
+
+871
+00:30:32,600 --> 00:30:34,350
+would wager a large majority of the
+
+872
+00:30:34,360 --> 00:30:35,710
+features that people use large language
+
+873
+00:30:35,720 --> 00:30:37,750
+mods for actually I have a question
+
+874
+00:30:37,760 --> 00:30:39,630
+related to this now that just came to my
+
+875
+00:30:39,640 --> 00:30:42,590
+mind so basically seems that we need to
+
+876
+00:30:42,600 --> 00:30:44,789
+replace the attitude of okay we've done
+
+877
+00:30:44,799 --> 00:30:46,310
+the feature the feature is ready
+
+878
+00:30:46,320 --> 00:30:49,590
+somebody will test in QA QA is happy you
+
+879
+00:30:49,600 --> 00:30:52,509
+release it because for this there is no
+
+880
+00:30:52,519 --> 00:30:55,430
+real QA per se because we can't really
+
+881
+00:30:55,440 --> 00:30:57,509
+do a lot I mean we can try a bit we can
+
+882
+00:30:57,519 --> 00:30:59,549
+play with a Model A little bit and and
+
+883
+00:30:59,559 --> 00:31:01,190
+say okay it seems to be good but in
+
+884
+00:31:01,200 --> 00:31:03,269
+reality until there are lots of people
+
+885
+00:31:03,279 --> 00:31:06,190
+using it we have no no idea of how it
+
+886
+00:31:06,200 --> 00:31:08,990
+performs oh yeah absolutely and what you
+
+887
+00:31:09,000 --> 00:31:11,710
+will find is that people are going to
+
+888
+00:31:11,720 --> 00:31:14,509
+find use cases that work that you had no
+
+889
+00:31:14,519 --> 00:31:17,470
+idea we going to work we observe this a
+
+890
+00:31:17,480 --> 00:31:19,149
+lot with our own feature at honeycomb
+
+891
+00:31:19,159 --> 00:31:20,629
+with our query assistant feature that's
+
+892
+00:31:20,639 --> 00:31:23,110
+our natural language data querying there
+
+893
+00:31:23,120 --> 00:31:25,509
+are use cases that we did not possibly
+
+894
+00:31:25,519 --> 00:31:27,470
+think of that apparently quite a few
+
+895
+00:31:27,480 --> 00:31:30,149
+people are doing and it works just fine
+
+896
+00:31:30,159 --> 00:31:31,950
+and there's no way we would have figured
+
+897
+00:31:31,960 --> 00:31:34,269
+that out unless we went live if you come
+
+898
+00:31:34,279 --> 00:31:36,669
+across I don't know among your customers
+
+899
+00:31:36,679 --> 00:31:38,389
+customers that had the more kind of
+
+900
+00:31:38,399 --> 00:31:40,310
+let's say traditional mindset with
+
+901
+00:31:40,320 --> 00:31:42,870
+development QA approach and then going
+
+902
+00:31:42,880 --> 00:31:45,430
+to production going to this large
+
+903
+00:31:45,440 --> 00:31:47,669
+language model and being may be confused
+
+904
+00:31:47,679 --> 00:31:51,990
+by you know not having the QA accepted
+
+905
+00:31:52,000 --> 00:31:54,230
+part before going to production I don't
+
+906
+00:31:54,240 --> 00:31:56,149
+know is something that you experienced
+
+907
+00:31:56,159 --> 00:31:58,070
+I've definitely experienced that so
+
+908
+00:31:58,080 --> 00:31:59,629
+there's really two things that I found
+
+909
+00:31:59,639 --> 00:32:01,789
+so first of all for most like larger
+
+910
+00:32:01,799 --> 00:32:04,149
+Enterprise organizations there's usually
+
+911
+00:32:04,159 --> 00:32:05,870
+some degree of excitement at the higher
+
+912
+00:32:05,880 --> 00:32:07,710
+level like the executive staff level to
+
+913
+00:32:07,720 --> 00:32:09,149
+adopt this technology in a way that's
+
+914
+00:32:09,159 --> 00:32:10,990
+useful but then there's also sort of a
+
+915
+00:32:11,000 --> 00:32:12,549
+pincher motion there there's usually
+
+916
+00:32:12,559 --> 00:32:14,950
+some team at the bottom that wants to
+
+917
+00:32:14,960 --> 00:32:17,470
+explore and wants to experiment anyways
+
+918
+00:32:17,480 --> 00:32:20,190
+and so what usually happens is they have
+
+919
+00:32:20,200 --> 00:32:23,629
+that goal and on the executive side I
+
+920
+00:32:23,639 --> 00:32:25,509
+think most technology Executives have
+
+921
+00:32:25,519 --> 00:32:28,470
+understood the fact that this software
+
+922
+00:32:28,480 --> 00:32:30,230
+is fundamentally different from other
+
+923
+00:32:30,240 --> 00:32:32,830
+software and so teams may need to change
+
+924
+00:32:32,840 --> 00:32:34,149
+their practices and they don't really
+
+925
+00:32:34,159 --> 00:32:36,870
+know how but they're willing to say hey
+
+926
+00:32:36,880 --> 00:32:38,549
+we have this typical process that we
+
+927
+00:32:38,559 --> 00:32:40,350
+follow but we're not going to follow
+
+928
+00:32:40,360 --> 00:32:41,509
+that practice right now we need to
+
+929
+00:32:41,519 --> 00:32:42,909
+figure out what the right process
+
+930
+00:32:42,919 --> 00:32:45,430
+actually is for this software and so
+
+931
+00:32:45,440 --> 00:32:46,990
+we're going to let a team go and figure
+
+932
+00:32:47,000 --> 00:32:49,190
+that out that team that goes and figures
+
+933
+00:32:49,200 --> 00:32:51,909
+that out on the other end I found when I
+
+934
+00:32:51,919 --> 00:32:53,389
+went and did a bunch of user interviews
+
+935
+00:32:53,399 --> 00:32:55,950
+they find out very very quickly that
+
+936
+00:32:55,960 --> 00:32:57,830
+their tool set for making software more
+
+937
+00:32:57,840 --> 00:32:59,509
+reliable practically needs to get thrown
+
+938
+00:32:59,519 --> 00:33:01,710
+out the window now not entirely there's
+
+939
+00:33:01,720 --> 00:33:03,350
+certain things that certainly are better
+
+940
+00:33:03,360 --> 00:33:05,029
+for example with prompt engineering
+
+941
+00:33:05,039 --> 00:33:07,230
+Source control is very important it's
+
+942
+00:33:07,240 --> 00:33:08,870
+very important for software it's also
+
+943
+00:33:08,880 --> 00:33:10,669
+very important for prompt engineering
+
+944
+00:33:10,679 --> 00:33:12,389
+get Ops based workflows that kind of
+
+945
+00:33:12,399 --> 00:33:13,950
+stuff are actually very good for prompt
+
+946
+00:33:13,960 --> 00:33:16,110
+engineering workflows and especially
+
+947
+00:33:16,120 --> 00:33:17,590
+different kinds of tagging like you may
+
+948
+00:33:17,600 --> 00:33:19,629
+have had a prompt that was a month old
+
+949
+00:33:19,639 --> 00:33:21,190
+but like it actually performs better
+
+950
+00:33:21,200 --> 00:33:22,310
+than the thing that you've been working
+
+951
+00:33:22,320 --> 00:33:24,669
+on and how do you sort of systematically
+
+952
+00:33:24,679 --> 00:33:26,629
+keep track of that so people are finding
+
+953
+00:33:26,639 --> 00:33:28,269
+that out but they're finding out very
+
+954
+00:33:28,279 --> 00:33:29,430
+very quickly that they can't
+
+955
+00:33:29,440 --> 00:33:30,830
+meaningfully unit test they can't
+
+956
+00:33:30,840 --> 00:33:32,310
+meaningfully do integration tests they
+
+957
+00:33:32,320 --> 00:33:34,430
+can't rely on a QA thing they need to
+
+958
+00:33:34,440 --> 00:33:36,629
+have just a bunch of users come in and
+
+959
+00:33:36,639 --> 00:33:38,750
+just do whatever they feel like with it
+
+960
+00:33:38,760 --> 00:33:40,389
+and capture as much information as they
+
+961
+00:33:40,399 --> 00:33:41,950
+can and the way that they're capturing
+
+962
+00:33:41,960 --> 00:33:44,310
+that information may not be ideal some
+
+963
+00:33:44,320 --> 00:33:46,590
+are actually realizing that we talked
+
+964
+00:33:46,600 --> 00:33:48,669
+with one organization that was just
+
+965
+00:33:48,679 --> 00:33:50,789
+logging everything and then finding out
+
+966
+00:33:50,799 --> 00:33:52,269
+that sort of what I mentioned that
+
+967
+00:33:52,279 --> 00:33:53,789
+there's often these Upstream decisions
+
+968
+00:33:53,799 --> 00:33:55,310
+that you make prior to a call that
+
+969
+00:33:55,320 --> 00:33:57,350
+influence the output and they would have
+
+970
+00:33:57,360 --> 00:33:59,110
+to like manually correlate this stuff
+
+971
+00:33:59,120 --> 00:34:00,789
+and eventually they realized oh this is
+
+972
+00:34:00,799 --> 00:34:02,549
+actually a tracing use case so let's
+
+973
+00:34:02,559 --> 00:34:03,669
+figure out what's a good tracing
+
+974
+00:34:03,679 --> 00:34:05,149
+framework where we can capture the same
+
+975
+00:34:05,159 --> 00:34:07,350
+data and almost sort of stumbled their
+
+976
+00:34:07,360 --> 00:34:10,230
+way into a best practice that some teams
+
+977
+00:34:10,240 --> 00:34:12,550
+may know is appropriate but like so
+
+978
+00:34:12,560 --> 00:34:14,109
+there's this pains that people are
+
+979
+00:34:14,119 --> 00:34:15,790
+feeling and recognition that they have
+
+980
+00:34:15,800 --> 00:34:17,149
+to do something different that I think
+
+981
+00:34:17,159 --> 00:34:19,470
+is really important because I don't
+
+982
+00:34:19,480 --> 00:34:20,909
+think it's very often that software
+
+983
+00:34:20,919 --> 00:34:23,430
+comes along and forces engineers and
+
+984
+00:34:23,440 --> 00:34:25,389
+entire organizations to realize that
+
+985
+00:34:25,399 --> 00:34:26,990
+their practices have to change to be
+
+986
+00:34:27,000 --> 00:34:29,190
+successful in ad adopting the stch yeah
+
+987
+00:34:29,200 --> 00:34:31,470
+because I can see that a big change in
+
+988
+00:34:31,480 --> 00:34:33,790
+attitude in mindset in how we approach
+
+989
+00:34:33,800 --> 00:34:36,750
+the all release to production what about
+
+990
+00:34:36,760 --> 00:34:39,030
+things like incremental development
+
+991
+00:34:39,040 --> 00:34:40,710
+incremental releases is this the
+
+992
+00:34:40,720 --> 00:34:42,950
+incremental bit still valid with larger
+
+993
+00:34:42,960 --> 00:34:45,629
+language models or I would say
+
+994
+00:34:45,639 --> 00:34:49,710
+incrementality and fast releases are
+
+995
+00:34:49,720 --> 00:34:50,909
+much more important when you have
+
+996
+00:34:50,919 --> 00:34:52,550
+language models than they are when you
+
+997
+00:34:52,560 --> 00:34:55,669
+don't in fact I would actually say that
+
+998
+00:34:55,679 --> 00:34:58,390
+if you are incapable
+
+999
+00:34:58,400 --> 00:35:01,030
+of creating a release that can go live
+
+1000
+00:35:01,040 --> 00:35:03,710
+to all users on a daily basis now you
+
+1001
+00:35:03,720 --> 00:35:05,109
+may not necessarily do this but you need
+
+1002
+00:35:05,119 --> 00:35:07,310
+to be capable of doing that if you're
+
+1003
+00:35:07,320 --> 00:35:08,870
+incapable of doing that then maybe
+
+1004
+00:35:08,880 --> 00:35:10,150
+language models are not the thing that
+
+1005
+00:35:10,160 --> 00:35:11,750
+you should adopt right now and the
+
+1006
+00:35:11,760 --> 00:35:13,910
+reason why I say that is because you
+
+1007
+00:35:13,920 --> 00:35:15,750
+will literally get from dayto day
+
+1008
+00:35:15,760 --> 00:35:17,670
+different patterns in user behavior and
+
+1009
+00:35:17,680 --> 00:35:19,310
+shifts in that user behavior and you
+
+1010
+00:35:19,320 --> 00:35:21,870
+need to be able to react to that and you
+
+1011
+00:35:21,880 --> 00:35:23,510
+can end up being frankly in a more
+
+1012
+00:35:23,520 --> 00:35:25,870
+proactive workflow eventually where you
+
+1013
+00:35:25,880 --> 00:35:27,950
+can proactively observe okay these were
+
+1014
+00:35:27,960 --> 00:35:30,390
+the past 24 hours of user interactions
+
+1015
+00:35:30,400 --> 00:35:32,069
+we're going to now look for any patterns
+
+1016
+00:35:32,079 --> 00:35:33,310
+that are different from the patterns
+
+1017
+00:35:33,320 --> 00:35:36,069
+that we observed in the past and we find
+
+1018
+00:35:36,079 --> 00:35:38,510
+one and we say okay cool that's a bug
+
+1019
+00:35:38,520 --> 00:35:40,829
+file it away and keep repeating that and
+
+1020
+00:35:40,839 --> 00:35:42,589
+then basically you get into a workflow
+
+1021
+00:35:42,599 --> 00:35:44,990
+where you analyze what's going on you
+
+1022
+00:35:45,000 --> 00:35:46,349
+figure out what your bugs are for that
+
+1023
+00:35:46,359 --> 00:35:48,990
+day you then go and solve one of them or
+
+1024
+00:35:49,000 --> 00:35:50,309
+maybe it was one from the other day who
+
+1025
+00:35:50,319 --> 00:35:52,670
+cares and then you deploy that change
+
+1026
+00:35:52,680 --> 00:35:54,870
+and now you're not only checking to see
+
+1027
+00:35:54,880 --> 00:35:56,309
+what the new patterns are you are
+
+1028
+00:35:56,319 --> 00:35:58,069
+monitoring for two things you're
+
+1029
+00:35:58,079 --> 00:36:01,069
+monitoring for number one did I actually
+
+1030
+00:36:01,079 --> 00:36:03,230
+solve the pattern and behavior that I
+
+1031
+00:36:03,240 --> 00:36:06,069
+wanted to solve for and two did my
+
+1032
+00:36:06,079 --> 00:36:08,069
+change accidentally regress something
+
+1033
+00:36:08,079 --> 00:36:10,309
+that was already working and that's I
+
+1034
+00:36:10,319 --> 00:36:12,270
+think is something that is kind of an
+
+1035
+00:36:12,280 --> 00:36:14,309
+existential problem that Engineers need
+
+1036
+00:36:14,319 --> 00:36:15,510
+to be able to figure out and that's
+
+1037
+00:36:15,520 --> 00:36:17,870
+where observability tools like service
+
+1038
+00:36:17,880 --> 00:36:19,630
+level objectives really really come in
+
+1039
+00:36:19,640 --> 00:36:21,829
+handy because if you have a way to
+
+1040
+00:36:21,839 --> 00:36:24,069
+describe what success means
+
+1041
+00:36:24,079 --> 00:36:26,670
+systematically and through data for this
+
+1042
+00:36:26,680 --> 00:36:28,750
+particular feature you can then capture
+
+1043
+00:36:28,760 --> 00:36:30,750
+all of the signals that correlate with
+
+1044
+00:36:30,760 --> 00:36:33,150
+non-success with failing to meet that
+
+1045
+00:36:33,160 --> 00:36:36,309
+objective and then you can actually use
+
+1046
+00:36:36,319 --> 00:36:38,109
+that to monitor for regressions on
+
+1047
+00:36:38,119 --> 00:36:39,510
+things that were already working in the
+
+1048
+00:36:39,520 --> 00:36:43,790
+past and so creating that flywheel of
+
+1049
+00:36:43,800 --> 00:36:46,589
+looking at data isolating use cases
+
+1050
+00:36:46,599 --> 00:36:48,950
+fixing a use case going in through the
+
+1051
+00:36:48,960 --> 00:36:50,910
+next day ensuring that a you fix that
+
+1052
+00:36:50,920 --> 00:36:52,430
+use case but B you did not break
+
+1053
+00:36:52,440 --> 00:36:53,990
+something that was already working
+
+1054
+00:36:54,000 --> 00:36:55,270
+that's something that's really important
+
+1055
+00:36:55,280 --> 00:36:56,550
+because especially in the worlds of
+
+1056
+00:36:56,560 --> 00:36:59,030
+language models and engineering because
+
+1057
+00:36:59,040 --> 00:37:00,550
+there's a lot of variability there's a
+
+1058
+00:37:00,560 --> 00:37:02,589
+lot of users doing weird things there's
+
+1059
+00:37:02,599 --> 00:37:03,670
+other parts of the system that are
+
+1060
+00:37:03,680 --> 00:37:05,190
+changing the model itself is
+
+1061
+00:37:05,200 --> 00:37:06,870
+non-deterministic it's actually very
+
+1062
+00:37:06,880 --> 00:37:08,230
+easy to regress something that was
+
+1063
+00:37:08,240 --> 00:37:09,470
+previously working without you
+
+1064
+00:37:09,480 --> 00:37:12,190
+necessarily knowing it up front and so
+
+1065
+00:37:12,200 --> 00:37:14,550
+when you get that motion of releasing
+
+1066
+00:37:14,560 --> 00:37:16,790
+every day and and being very incremental
+
+1067
+00:37:16,800 --> 00:37:18,550
+in your changes and proactively
+
+1068
+00:37:18,560 --> 00:37:19,950
+monitoring things and knowing what's
+
+1069
+00:37:19,960 --> 00:37:22,349
+going on that's how you make progress
+
+1070
+00:37:22,359 --> 00:37:24,349
+where you can walk that balance between
+
+1071
+00:37:24,359 --> 00:37:26,190
+making something more reliable but not
+
+1072
+00:37:26,200 --> 00:37:28,510
+sort of hurting the creativity and the
+
+1073
+00:37:28,520 --> 00:37:30,230
+outputs that users expect from the
+
+1074
+00:37:30,240 --> 00:37:32,670
+system okay and observability and you
+
+1075
+00:37:32,680 --> 00:37:34,230
+know and collecting and analyzing data
+
+1076
+00:37:34,240 --> 00:37:36,069
+seems to play quite a crucial role to be
+
+1077
+00:37:36,079 --> 00:37:38,109
+able to do that to do these incremental
+
+1078
+00:37:38,119 --> 00:37:39,910
+steps especially with larger language
+
+1079
+00:37:39,920 --> 00:37:42,630
+models also how use observability to
+
+1080
+00:37:42,640 --> 00:37:45,230
+feed this datab back also for you know
+
+1081
+00:37:45,240 --> 00:37:47,950
+product development maybe product
+
+1082
+00:37:47,960 --> 00:37:50,950
+Improvement new features or something so
+
+1083
+00:37:50,960 --> 00:37:52,870
+can you feed that data back also for
+
+1084
+00:37:52,880 --> 00:37:54,630
+that purpose so far we have talk about
+
+1085
+00:37:54,640 --> 00:37:57,069
+you know replacing the fact that we
+
+1086
+00:37:57,079 --> 00:38:01,270
+cannot really test the system or finding
+
+1087
+00:38:01,280 --> 00:38:04,750
+out if this performing well in terms of
+
+1088
+00:38:04,760 --> 00:38:07,710
+expectations but what about product
+
+1089
+00:38:07,720 --> 00:38:10,710
+development so maybe new ideas new need
+
+1090
+00:38:10,720 --> 00:38:13,470
+to set users find ways of actually doing
+
+1091
+00:38:13,480 --> 00:38:15,710
+stuff with large language models that
+
+1092
+00:38:15,720 --> 00:38:18,230
+you didn't even think of so how can we
+
+1093
+00:38:18,240 --> 00:38:20,150
+use this information to improve the
+
+1094
+00:38:20,160 --> 00:38:23,349
+product so there's really two ways that
+
+1095
+00:38:23,359 --> 00:38:25,390
+I've experienced that you can do this
+
+1096
+00:38:25,400 --> 00:38:27,030
+with our own large language model
+
+1097
+00:38:27,040 --> 00:38:28,270
+features
+
+1098
+00:38:28,280 --> 00:38:32,670
+honeycomb so the first is that yes what
+
+1099
+00:38:32,680 --> 00:38:34,349
+you release first is not going to solve
+
+1100
+00:38:34,359 --> 00:38:36,109
+everything that your users want and so
+
+1101
+00:38:36,119 --> 00:38:37,790
+yes you iterate and you iterate you
+
+1102
+00:38:37,800 --> 00:38:39,390
+iterate you iterate until you sort of
+
+1103
+00:38:39,400 --> 00:38:42,109
+reach I guess a steady state if you will
+
+1104
+00:38:42,119 --> 00:38:44,309
+where the thing that you've built has
+
+1105
+00:38:44,319 --> 00:38:46,870
+some characteristics and it's probably
+
+1106
+00:38:46,880 --> 00:38:49,230
+going to be pretty good at a lot of
+
+1107
+00:38:49,240 --> 00:38:51,510
+things but there will likely be some
+
+1108
+00:38:51,520 --> 00:38:53,109
+fundamental limitations that you
+
+1109
+00:38:53,119 --> 00:38:55,510
+encounter along the way where somebody's
+
+1110
+00:38:55,520 --> 00:38:58,470
+asking a question that is simply unable
+
+1111
+00:38:58,480 --> 00:39:00,670
+with the system that you've built now in
+
+1112
+00:39:00,680 --> 00:39:02,190
+the case of honeycomb I'll ground this
+
+1113
+00:39:02,200 --> 00:39:03,950
+in something real with our natural
+
+1114
+00:39:03,960 --> 00:39:06,349
+language quering feature what people
+
+1115
+00:39:06,359 --> 00:39:10,349
+typically ask for is sort of like a
+
+1116
+00:39:10,359 --> 00:39:13,550
+starting point where they'll say oh well
+
+1117
+00:39:13,560 --> 00:39:16,950
+you know show me the latency for this
+
+1118
+00:39:16,960 --> 00:39:19,150
+service you know what were these like
+
+1119
+00:39:19,160 --> 00:39:22,470
+slow requests or you know what were the
+
+1120
+00:39:22,480 --> 00:39:24,670
+statements that led to slow database
+
+1121
+00:39:24,680 --> 00:39:27,470
+calls and they often take it from there
+
+1122
+00:39:27,480 --> 00:39:28,870
+will they'll manually manipulate the
+
+1123
+00:39:28,880 --> 00:39:31,430
+query because the AI feature sort of got
+
+1124
+00:39:31,440 --> 00:39:33,870
+them to that initial scaffolding we do
+
+1125
+00:39:33,880 --> 00:39:35,510
+also allow you to modify with natural
+
+1126
+00:39:35,520 --> 00:39:37,190
+language so they will often modify and
+
+1127
+00:39:37,200 --> 00:39:39,550
+say oh now groupy this thing or also
+
+1128
+00:39:39,560 --> 00:39:42,470
+show me this or oh I'd like to see a P95
+
+1129
+00:39:42,480 --> 00:39:45,030
+of durations or something like that but
+
+1130
+00:39:45,040 --> 00:39:46,870
+sometimes people will ask a question
+
+1131
+00:39:46,880 --> 00:39:50,470
+where they'll say oh well why is it slow
+
+1132
+00:39:50,480 --> 00:39:54,430
+or what are the user IDs that most
+
+1133
+00:39:54,440 --> 00:39:56,710
+correlate with the slowness or something
+
+1134
+00:39:56,720 --> 00:39:57,950
+like that
+
+1135
+00:39:57,960 --> 00:39:59,910
+and the thing that we built is just
+
+1136
+00:39:59,920 --> 00:40:01,589
+fundamentally incapable of answering
+
+1137
+00:40:01,599 --> 00:40:03,670
+that question in fact that question is
+
+1138
+00:40:03,680 --> 00:40:06,309
+very difficult to answer because first
+
+1139
+00:40:06,319 --> 00:40:07,750
+of all you're not going to be guaranteed
+
+1140
+00:40:07,760 --> 00:40:10,109
+an answer why and second of all we do
+
+1141
+00:40:10,119 --> 00:40:12,109
+actually as a part of our UI have a way
+
+1142
+00:40:12,119 --> 00:40:13,550
+there's this feature called Bubble Up
+
+1143
+00:40:13,560 --> 00:40:14,630
+that will
+
+1144
+00:40:14,640 --> 00:40:17,510
+automatically scan all of the dimensions
+
+1145
+00:40:17,520 --> 00:40:20,670
+in your data and then pluck out you know
+
+1146
+00:40:20,680 --> 00:40:22,190
+oh well we're holding this thing
+
+1147
+00:40:22,200 --> 00:40:24,470
+constant let's say it's Error is
+
+1148
+00:40:24,480 --> 00:40:26,510
+constant what are all the dimensions in
+
+1149
+00:40:26,520 --> 00:40:27,950
+your data and all the the values of
+
+1150
+00:40:27,960 --> 00:40:29,790
+those Dimensions that correlate the most
+
+1151
+00:40:29,800 --> 00:40:31,550
+with that and generate little histograms
+
+1152
+00:40:31,560 --> 00:40:33,910
+that sort of show you that okay yes user
+
+1153
+00:40:33,920 --> 00:40:35,990
+ID correlates with error a whole lot but
+
+1154
+00:40:36,000 --> 00:40:38,230
+it's actually these like four user IDs
+
+1155
+00:40:38,240 --> 00:40:39,390
+that are the ones that correlate the
+
+1156
+00:40:39,400 --> 00:40:41,270
+most and that's your signal that you
+
+1157
+00:40:41,280 --> 00:40:43,630
+should go debug a little bit further
+
+1158
+00:40:43,640 --> 00:40:44,910
+that's the sort of answer that a lot of
+
+1159
+00:40:44,920 --> 00:40:47,309
+people are asking for some signal as to
+
+1160
+00:40:47,319 --> 00:40:49,309
+why and what that actually implies from
+
+1161
+00:40:49,319 --> 00:40:52,150
+an AI system is not just generate a
+
+1162
+00:40:52,160 --> 00:40:53,630
+query they may actually already have a
+
+1163
+00:40:53,640 --> 00:40:56,710
+query but to sort of identify ah based
+
+1164
+00:40:56,720 --> 00:40:59,150
+on this somebody is looking to hold this
+
+1165
+00:40:59,160 --> 00:41:01,309
+dimension in the data constant and what
+
+1166
+00:41:01,319 --> 00:41:02,550
+they actually want to do is they want to
+
+1167
+00:41:02,560 --> 00:41:04,430
+get this thing into Bubble Up mode and
+
+1168
+00:41:04,440 --> 00:41:06,109
+they want it to execute that Bubble Up
+
+1169
+00:41:06,119 --> 00:41:08,510
+query against this dimension in the data
+
+1170
+00:41:08,520 --> 00:41:10,550
+and show those results in a useful way
+
+1171
+00:41:10,560 --> 00:41:11,950
+and that is actually just a
+
+1172
+00:41:11,960 --> 00:41:14,230
+fundamentally different problem than
+
+1173
+00:41:14,240 --> 00:41:15,829
+create a query based off of somebody's
+
+1174
+00:41:15,839 --> 00:41:17,870
+inputs even though it's the same text
+
+1175
+00:41:17,880 --> 00:41:19,790
+box that people are in yeah yeah this
+
+1176
+00:41:19,800 --> 00:41:22,870
+seems to be more about guessing the goal
+
+1177
+00:41:22,880 --> 00:41:25,829
+of the user so it's not about the mean
+
+1178
+00:41:25,839 --> 00:41:27,630
+the rest is the means to an end here you
+
+1179
+00:41:27,640 --> 00:41:30,950
+are talking about understanding the end
+
+1180
+00:41:30,960 --> 00:41:33,550
+they have and then work on that you know
+
+1181
+00:41:33,560 --> 00:41:35,990
+give them the answer they're looking for
+
+1182
+00:41:36,000 --> 00:41:37,790
+right that's true and so the two
+
+1183
+00:41:37,800 --> 00:41:39,270
+approaches that people generally fall
+
+1184
+00:41:39,280 --> 00:41:40,910
+under is they try to create an AI
+
+1185
+00:41:40,920 --> 00:41:43,990
+feature that's like chat gbt but for you
+
+1186
+00:41:44,000 --> 00:41:46,470
+know their their system that can
+
+1187
+00:41:46,480 --> 00:41:47,790
+understand intent and knows how to
+
+1188
+00:41:47,800 --> 00:41:49,230
+figure out which part of the product to
+
+1189
+00:41:49,240 --> 00:41:51,270
+sort of activate based off of intent all
+
+1190
+00:41:51,280 --> 00:41:53,270
+of those initiatives have failed so far
+
+1191
+00:41:53,280 --> 00:41:55,550
+largely because it's so hard to build
+
+1192
+00:41:55,560 --> 00:41:57,030
+and people don't have the expertise for
+
+1193
+00:41:57,040 --> 00:41:59,630
+that so to me looks like that particular
+
+1194
+00:41:59,640 --> 00:42:01,829
+feature requires a certain amount of
+
+1195
+00:42:01,839 --> 00:42:04,470
+context that can be slightly different
+
+1196
+00:42:04,480 --> 00:42:06,550
+from even person to person so not
+
+1197
+00:42:06,560 --> 00:42:08,470
+everybody different users are looking
+
+1198
+00:42:08,480 --> 00:42:12,109
+for something similar yeah but the
+
+1199
+00:42:12,119 --> 00:42:14,510
+similarity means also that there is some
+
+1200
+00:42:14,520 --> 00:42:16,750
+difference anyway and so creating a
+
+1201
+00:42:16,760 --> 00:42:19,510
+system that is able to do that probably
+
+1202
+00:42:19,520 --> 00:42:22,950
+is less obvious than what it seems yes
+
+1203
+00:42:22,960 --> 00:42:25,430
+it absolutely is and so you know back to
+
+1204
+00:42:25,440 --> 00:42:26,950
+this whole notion of incrementality
+
+1205
+00:42:26,960 --> 00:42:28,069
+right
+
+1206
+00:42:28,079 --> 00:42:29,950
+you do want to deliver some value like
+
+1207
+00:42:29,960 --> 00:42:31,790
+you don't want to solve every possible
+
+1208
+00:42:31,800 --> 00:42:34,910
+use case all up front but eventually
+
+1209
+00:42:34,920 --> 00:42:36,349
+you're going to run into these use cases
+
+1210
+00:42:36,359 --> 00:42:38,230
+that you're not solving for and if
+
+1211
+00:42:38,240 --> 00:42:39,589
+there's enough of them like through
+
+1212
+00:42:39,599 --> 00:42:40,950
+observability you can capture those
+
+1213
+00:42:40,960 --> 00:42:42,870
+signals you can see like what are the
+
+1214
+00:42:42,880 --> 00:42:44,790
+things that associate the most with
+
+1215
+00:42:44,800 --> 00:42:46,349
+somebody answering that kind of question
+
+1216
+00:42:46,359 --> 00:42:48,069
+that's fundamentally unanswerable and
+
+1217
+00:42:48,079 --> 00:42:49,510
+that gives you more information to feed
+
+1218
+00:42:49,520 --> 00:42:51,510
+into product development now the other
+
+1219
+00:42:51,520 --> 00:42:54,230
+way that this thing manifests as well is
+
+1220
+00:42:54,240 --> 00:42:56,230
+there's this period of time when you
+
+1221
+00:42:56,240 --> 00:42:58,790
+release a new AI feature where it's like
+
+1222
+00:42:58,800 --> 00:43:02,710
+fancy and new and expectations are like
+
+1223
+00:43:02,720 --> 00:43:04,950
+this weird mix of super high and also
+
+1224
+00:43:04,960 --> 00:43:06,589
+super low kind of depending on who the
+
+1225
+00:43:06,599 --> 00:43:08,910
+user is and you end up surprising your
+
+1226
+00:43:08,920 --> 00:43:10,549
+users in both
+
+1227
+00:43:10,559 --> 00:43:13,829
+directions but eventually it becomes The
+
+1228
+00:43:13,839 --> 00:43:16,030
+New Normal right in the case of
+
+1229
+00:43:16,040 --> 00:43:17,390
+honeycomb we've had this natural
+
+1230
+00:43:17,400 --> 00:43:19,470
+language quering feature since May of
+
+1231
+00:43:19,480 --> 00:43:22,870
+2023 and it's just what users start out
+
+1232
+00:43:22,880 --> 00:43:24,470
+with quering their data with now that's
+
+1233
+00:43:24,480 --> 00:43:27,710
+just how they do it and because of that
+
+1234
+00:43:27,720 --> 00:43:29,309
+there's some limitations right like
+
+1235
+00:43:29,319 --> 00:43:30,950
+there are other parts of the product
+
+1236
+00:43:30,960 --> 00:43:32,829
+where you can actually enter in and get
+
+1237
+00:43:32,839 --> 00:43:35,190
+a query into your data and this quering
+
+1238
+00:43:35,200 --> 00:43:37,710
+feature is not really integrated there
+
+1239
+00:43:37,720 --> 00:43:39,349
+and some people like for example our
+
+1240
+00:43:39,359 --> 00:43:41,190
+homepage does not have the text box you
+
+1241
+00:43:41,200 --> 00:43:43,109
+have to go into our querying UI to
+
+1242
+00:43:43,119 --> 00:43:44,470
+actually get that even though the
+
+1243
+00:43:44,480 --> 00:43:46,150
+homepage does show some queries that you
+
+1244
+00:43:46,160 --> 00:43:48,710
+can interact with we've had users Say
+
+1245
+00:43:48,720 --> 00:43:51,349
+Hey I want this here but we don't
+
+1246
+00:43:51,359 --> 00:43:52,630
+actually really know what the right
+
+1247
+00:43:52,640 --> 00:43:54,990
+design for that is like the homepage was
+
+1248
+00:43:55,000 --> 00:43:56,470
+not really built with anything like that
+
+1249
+00:43:56,480 --> 00:43:57,589
+in mind ever
+
+1250
+00:43:57,599 --> 00:43:59,510
+and yet there actually is a need there
+
+1251
+00:43:59,520 --> 00:44:02,270
+and so this influences it because I mean
+
+1252
+00:44:02,280 --> 00:44:03,630
+this in a way this isn't really any
+
+1253
+00:44:03,640 --> 00:44:04,990
+different from other product development
+
+1254
+00:44:05,000 --> 00:44:06,589
+right you release a new feature it's new
+
+1255
+00:44:06,599 --> 00:44:08,390
+eventually it sort of creates your
+
+1256
+00:44:08,400 --> 00:44:09,829
+product now has a slightly different
+
+1257
+00:44:09,839 --> 00:44:11,750
+characteristic about it you've created a
+
+1258
+00:44:11,760 --> 00:44:14,069
+need because it's not sufficient in some
+
+1259
+00:44:14,079 --> 00:44:15,510
+ways for some users and they want it to
+
+1260
+00:44:15,520 --> 00:44:17,910
+show up somewhere else and that creates
+
+1261
+00:44:17,920 --> 00:44:19,510
+sort of a puzzle of how you figure out
+
+1262
+00:44:19,520 --> 00:44:20,910
+how that feature is going to fit into
+
+1263
+00:44:20,920 --> 00:44:22,750
+these other places of your product is
+
+1264
+00:44:22,760 --> 00:44:24,670
+the exact same principle with the AI
+
+1265
+00:44:24,680 --> 00:44:26,549
+stuff I would just say the main thing
+
+1266
+00:44:26,559 --> 00:44:29,309
+that's a littleit different is that
+
+1267
+00:44:29,319 --> 00:44:33,470
+instead of having very very direct and
+
+1268
+00:44:33,480 --> 00:44:36,470
+often exact needs that people have that
+
+1269
+00:44:36,480 --> 00:44:38,069
+needs that people have or questions that
+
+1270
+00:44:38,079 --> 00:44:39,349
+people want answered are going to have a
+
+1271
+00:44:39,359 --> 00:44:41,470
+lot more variability in them and so that
+
+1272
+00:44:41,480 --> 00:44:43,270
+can sometimes increase the difficulty of
+
+1273
+00:44:43,280 --> 00:44:45,230
+how you choose to integrate it more more
+
+1274
+00:44:45,240 --> 00:44:46,309
+deeply through other parts of your
+
+1275
+00:44:46,319 --> 00:44:48,549
+product okay and talking more a bit more
+
+1276
+00:44:48,559 --> 00:44:51,549
+about prompt engineering so so we said
+
+1277
+00:44:51,559 --> 00:44:54,109
+is at the moment probably is more of an
+
+1278
+00:44:54,119 --> 00:44:56,470
+art than a science right now is because
+
+1279
+00:44:56,480 --> 00:44:59,069
+of the models but how can people use
+
+1280
+00:44:59,079 --> 00:45:02,510
+observability to actually improve their
+
+1281
+00:45:02,520 --> 00:45:06,510
+prompts so because observability it
+
+1282
+00:45:06,520 --> 00:45:08,510
+involves capturing all of these signals
+
+1283
+00:45:08,520 --> 00:45:11,069
+that feed into an input to that system
+
+1284
+00:45:11,079 --> 00:45:14,230
+one of those inputs is the entire prompt
+
+1285
+00:45:14,240 --> 00:45:17,349
+that you send right so for example in a
+
+1286
+00:45:17,359 --> 00:45:19,270
+lot of systems I would say probably most
+
+1287
+00:45:19,280 --> 00:45:20,710
+systems at this point that are being
+
+1288
+00:45:20,720 --> 00:45:23,150
+built people dynamically generate a
+
+1289
+00:45:23,160 --> 00:45:24,950
+prompt or they programmatically generate
+
+1290
+00:45:24,960 --> 00:45:27,549
+it so what that means is okay for a
+
+1291
+00:45:27,559 --> 00:45:29,230
+given user they may be part of an
+
+1292
+00:45:29,240 --> 00:45:31,549
+organization in your application that
+
+1293
+00:45:31,559 --> 00:45:33,549
+organization may have certain data
+
+1294
+00:45:33,559 --> 00:45:36,309
+within it or like a schema for something
+
+1295
+00:45:36,319 --> 00:45:39,190
+or certain settings or things like that
+
+1296
+00:45:39,200 --> 00:45:41,510
+all of those influence how a prompt gets
+
+1297
+00:45:41,520 --> 00:45:43,109
+generated because you want to have a
+
+1298
+00:45:43,119 --> 00:45:45,270
+prompt that is appropriate for the
+
+1299
+00:45:45,280 --> 00:45:47,670
+context in which a user is acting and
+
+1300
+00:45:47,680 --> 00:45:49,470
+you know one user versus another user
+
+1301
+00:45:49,480 --> 00:45:51,309
+they may have different contexts within
+
+1302
+00:45:51,319 --> 00:45:53,589
+your product and so you programmatically
+
+1303
+00:45:53,599 --> 00:45:56,430
+generate that thing so a there's steps
+
+1304
+00:45:56,440 --> 00:45:57,750
+that are involved in programmatic
+
+1305
+00:45:57,760 --> 00:45:59,870
+generation that actually is prompt
+
+1306
+00:45:59,880 --> 00:46:01,910
+engineering even though like it's not
+
+1307
+00:46:01,920 --> 00:46:03,710
+the literal like text itself like
+
+1308
+00:46:03,720 --> 00:46:05,270
+literally just like selecting which
+
+1309
+00:46:05,280 --> 00:46:07,510
+sentence gets Incorporated in the final
+
+1310
+00:46:07,520 --> 00:46:10,190
+product that we send off that is an act
+
+1311
+00:46:10,200 --> 00:46:12,589
+of prompt engineering and so you need to
+
+1312
+00:46:12,599 --> 00:46:14,589
+understand which one was picked for this
+
+1313
+00:46:14,599 --> 00:46:16,710
+user then the second thing though is
+
+1314
+00:46:16,720 --> 00:46:18,990
+when you have the final prompt your
+
+1315
+00:46:19,000 --> 00:46:22,670
+input to a model is literally just one
+
+1316
+00:46:22,680 --> 00:46:24,910
+string it's a giant string well not
+
+1317
+00:46:24,920 --> 00:46:27,710
+necessarily giant but it's a big string
+
+1318
+00:46:27,720 --> 00:46:28,950
+that contains the full set of
+
+1319
+00:46:28,960 --> 00:46:30,549
+instructions maybe there's data that
+
+1320
+00:46:30,559 --> 00:46:32,030
+you've parameterized within maybe
+
+1321
+00:46:32,040 --> 00:46:34,230
+there's a bunch of like special things
+
+1322
+00:46:34,240 --> 00:46:35,829
+you might have examples as a part of
+
+1323
+00:46:35,839 --> 00:46:37,390
+this prompt and you may have
+
+1324
+00:46:37,400 --> 00:46:39,190
+parameterized those examples because you
+
+1325
+00:46:39,200 --> 00:46:40,430
+may have a way to programmatically
+
+1326
+00:46:40,440 --> 00:46:42,030
+generate them based off of somebody's
+
+1327
+00:46:42,040 --> 00:46:44,670
+context and so that right there is
+
+1328
+00:46:44,680 --> 00:46:47,069
+really important because how that got
+
+1329
+00:46:47,079 --> 00:46:49,589
+generated is what's going to influence
+
+1330
+00:46:49,599 --> 00:46:52,349
+the end behavior that you get and your
+
+1331
+00:46:52,359 --> 00:46:54,510
+act of prompt engineering is generating
+
+1332
+00:46:54,520 --> 00:46:57,030
+that thing a little bit better but also
+
+1333
+00:46:57,040 --> 00:46:59,230
+when you have that full text you now
+
+1334
+00:46:59,240 --> 00:47:00,990
+have a way to replay that specific
+
+1335
+00:47:01,000 --> 00:47:03,670
+request in your own environment and so
+
+1336
+00:47:03,680 --> 00:47:04,870
+even though the system that you're
+
+1337
+00:47:04,880 --> 00:47:07,309
+working with is non-deterministic you
+
+1338
+00:47:07,319 --> 00:47:09,670
+might actually get the same result or a
+
+1339
+00:47:09,680 --> 00:47:11,349
+similar enough result to the point where
+
+1340
+00:47:11,359 --> 00:47:13,390
+you can say okay I'm maybe not
+
+1341
+00:47:13,400 --> 00:47:17,309
+necessarily reproducing this bug but I
+
+1342
+00:47:17,319 --> 00:47:19,589
+am reproducing bad behavior with this
+
+1343
+00:47:19,599 --> 00:47:22,230
+thing consistently and so how do I make
+
+1344
+00:47:22,240 --> 00:47:23,910
+this thing more consistently produce
+
+1345
+00:47:23,920 --> 00:47:25,510
+good behavior well you have the string
+
+1346
+00:47:25,520 --> 00:47:27,349
+itself so you can literally just edit
+
+1347
+00:47:27,359 --> 00:47:29,430
+pieces of that right there in your
+
+1348
+00:47:29,440 --> 00:47:31,430
+environment as you're developing it and
+
+1349
+00:47:31,440 --> 00:47:33,109
+you try this thing okay let's see what
+
+1350
+00:47:33,119 --> 00:47:34,589
+the output is I'm going to edit this one
+
+1351
+00:47:34,599 --> 00:47:36,870
+and so on and you get very systematic
+
+1352
+00:47:36,880 --> 00:47:38,270
+about that and you understand what those
+
+1353
+00:47:38,280 --> 00:47:40,349
+changes are that you're doing if you're
+
+1354
+00:47:40,359 --> 00:47:42,549
+good enough which is most people in my
+
+1355
+00:47:42,559 --> 00:47:44,630
+experience you will likely get it to
+
+1356
+00:47:44,640 --> 00:47:46,670
+improve in some way and so then you need
+
+1357
+00:47:46,680 --> 00:47:48,309
+to say okay which parts of this prompt
+
+1358
+00:47:48,319 --> 00:47:50,270
+did we change did we change the parts
+
+1359
+00:47:50,280 --> 00:47:52,790
+that are static okay we should version
+
+1360
+00:47:52,800 --> 00:47:54,390
+this thing and we should load that into
+
+1361
+00:47:54,400 --> 00:47:56,430
+our system now did we improve the parts
+
+1362
+00:47:56,440 --> 00:47:58,549
+that are d dnamic okay what did we
+
+1363
+00:47:58,559 --> 00:48:00,030
+change and why did we change it does
+
+1364
+00:48:00,040 --> 00:48:02,230
+that mean that we need to change how we
+
+1365
+00:48:02,240 --> 00:48:03,990
+select pieces of this prompt
+
+1366
+00:48:04,000 --> 00:48:05,710
+programmatically that's sort of what
+
+1367
+00:48:05,720 --> 00:48:07,230
+observability allows you to do because
+
+1368
+00:48:07,240 --> 00:48:09,390
+you capture all of that information you
+
+1369
+00:48:09,400 --> 00:48:12,549
+can now ground whatever your hypotheses
+
+1370
+00:48:12,559 --> 00:48:14,790
+are in just sort of like the reality of
+
+1371
+00:48:14,800 --> 00:48:16,750
+how things are actually getting built
+
+1372
+00:48:16,760 --> 00:48:19,069
+okay and now I'd like to talk a bit
+
+1373
+00:48:19,079 --> 00:48:21,670
+about how to get started with it you
+
+1374
+00:48:21,680 --> 00:48:23,750
+know for developers that are maybe
+
+1375
+00:48:23,760 --> 00:48:25,750
+starting to work with a large language
+
+1376
+00:48:25,760 --> 00:48:29,549
+models and they want to maybe implement
+
+1377
+00:48:29,559 --> 00:48:31,150
+observability or improve the
+
+1378
+00:48:31,160 --> 00:48:32,990
+observability they have in the systems
+
+1379
+00:48:33,000 --> 00:48:35,549
+they they are creating so my first
+
+1380
+00:48:35,559 --> 00:48:37,670
+question is what are the tools available
+
+1381
+00:48:37,680 --> 00:48:40,030
+to developers to implement observability
+
+1382
+00:48:40,040 --> 00:48:42,750
+for these large language models so it
+
+1383
+00:48:42,760 --> 00:48:43,990
+kind of depends on where you're coming
+
+1384
+00:48:44,000 --> 00:48:47,390
+from so frankly a lot of organizations
+
+1385
+00:48:47,400 --> 00:48:48,630
+already have pretty decent
+
+1386
+00:48:48,640 --> 00:48:50,349
+instrumentation usually in the form of
+
+1387
+00:48:50,359 --> 00:48:52,030
+like structured logs or something like
+
+1388
+00:48:52,040 --> 00:48:55,030
+that and so honestly a very good first
+
+1389
+00:48:55,040 --> 00:48:58,950
+step is to create a structured log of
+
+1390
+00:48:58,960 --> 00:49:00,950
+this is the input that I fed the model
+
+1391
+00:49:00,960 --> 00:49:02,750
+this was the user's input this was the
+
+1392
+00:49:02,760 --> 00:49:05,349
+prompt here's any additional information
+
+1393
+00:49:05,359 --> 00:49:06,829
+that I think is really important like is
+
+1394
+00:49:06,839 --> 00:49:09,750
+metadata that goes into that request
+
+1395
+00:49:09,760 --> 00:49:11,390
+then here's the output here's what the
+
+1396
+00:49:11,400 --> 00:49:13,470
+model did here's the full response to
+
+1397
+00:49:13,480 --> 00:49:15,190
+the model including any other metadata
+
+1398
+00:49:15,200 --> 00:49:16,710
+that's associated with that response
+
+1399
+00:49:16,720 --> 00:49:17,870
+because the way that you call it will
+
+1400
+00:49:17,880 --> 00:49:20,270
+sort of influence that so like there's
+
+1401
+00:49:20,280 --> 00:49:21,870
+parameters that you pass in and it'll
+
+1402
+00:49:21,880 --> 00:49:23,230
+tell you sort of like what those
+
+1403
+00:49:23,240 --> 00:49:25,470
+parameters meant and things like that
+
+1404
+00:49:25,480 --> 00:49:27,630
+just those two log points those two
+
+1405
+00:49:27,640 --> 00:49:29,950
+structured logs this is not the most
+
+1406
+00:49:29,960 --> 00:49:31,710
+perfect observability but this will get
+
+1407
+00:49:31,720 --> 00:49:34,270
+you a long way there because now you
+
+1408
+00:49:34,280 --> 00:49:36,589
+actually have real world inputs and
+
+1409
+00:49:36,599 --> 00:49:38,549
+outputs that you can base your decisions
+
+1410
+00:49:38,559 --> 00:49:41,670
+on now eventually you are likely to get
+
+1411
+00:49:41,680 --> 00:49:43,430
+to the point where there are Upstream
+
+1412
+00:49:43,440 --> 00:49:45,030
+decisions that influence how you build
+
+1413
+00:49:45,040 --> 00:49:47,150
+the prompt and thus how the model
+
+1414
+00:49:47,160 --> 00:49:49,069
+behaves and there may be some Downstream
+
+1415
+00:49:49,079 --> 00:49:51,190
+decisions that you do to act on the data
+
+1416
+00:49:51,200 --> 00:49:52,750
+right like kind of that thing that I
+
+1417
+00:49:52,760 --> 00:49:54,470
+mentioned before where it may be mostly
+
+1418
+00:49:54,480 --> 00:49:56,670
+correct it might be a correctable out
+
+1419
+00:49:56,680 --> 00:49:58,549
+outut and so you may want to manually
+
+1420
+00:49:58,559 --> 00:50:01,069
+correct that thing through code somehow
+
+1421
+00:50:01,079 --> 00:50:04,190
+and so now instead of just two log
+
+1422
+00:50:04,200 --> 00:50:06,390
+points that you can sort of look at you
+
+1423
+00:50:06,400 --> 00:50:08,710
+now have these set of decisions that are
+
+1424
+00:50:08,720 --> 00:50:10,390
+all correlated with effectively a
+
+1425
+00:50:10,400 --> 00:50:12,470
+request and that request to the model
+
+1426
+00:50:12,480 --> 00:50:13,829
+and then its output and some stuff you
+
+1427
+00:50:13,839 --> 00:50:16,230
+do on the back end and some people call
+
+1428
+00:50:16,240 --> 00:50:17,990
+multiple language models through a
+
+1429
+00:50:18,000 --> 00:50:19,990
+composition framework of some kind and
+
+1430
+00:50:20,000 --> 00:50:21,990
+so you may want that full composition
+
+1431
+00:50:22,000 --> 00:50:24,069
+represented as you know sort of like a
+
+1432
+00:50:24,079 --> 00:50:26,430
+tracing through that stuff and by golly
+
+1433
+00:50:26,440 --> 00:50:28,349
+there's this thing called open Telemetry
+
+1434
+00:50:28,359 --> 00:50:30,349
+that allows you to create tracing
+
+1435
+00:50:30,359 --> 00:50:32,750
+instrumentation and gather metrics and
+
+1436
+00:50:32,760 --> 00:50:34,750
+gather those logs as well and it's an
+
+1437
+00:50:34,760 --> 00:50:36,789
+open standard that's supported by almost
+
+1438
+00:50:36,799 --> 00:50:39,190
+every single observability tool so you
+
+1439
+00:50:39,200 --> 00:50:40,910
+may not necessarily need to start with
+
+1440
+00:50:40,920 --> 00:50:42,829
+open Telemetry I think especially if you
+
+1441
+00:50:42,839 --> 00:50:44,710
+have good logging you can use what you
+
+1442
+00:50:44,720 --> 00:50:47,030
+have to a point and incrementally get
+
+1443
+00:50:47,040 --> 00:50:49,309
+there but if you do have the time or if
+
+1444
+00:50:49,319 --> 00:50:50,750
+you simply don't have anything that
+
+1445
+00:50:50,760 --> 00:50:52,390
+you're starting with at all use open
+
+1446
+00:50:52,400 --> 00:50:54,510
+Telemetry and critically you do two
+
+1447
+00:50:54,520 --> 00:50:56,190
+things you install the automatic
+
+1448
+00:50:56,200 --> 00:50:57,309
+instrument
+
+1449
+00:50:57,319 --> 00:50:58,549
+and so what that will do is it will
+
+1450
+00:50:58,559 --> 00:51:00,470
+track incoming requests and outgoing
+
+1451
+00:51:00,480 --> 00:51:02,390
+responses throughout your entire system
+
+1452
+00:51:02,400 --> 00:51:04,309
+so you'll be able to see okay not just
+
+1453
+00:51:04,319 --> 00:51:06,150
+the language model requests that we made
+
+1454
+00:51:06,160 --> 00:51:08,349
+but the actual full life cycle of a
+
+1455
+00:51:08,359 --> 00:51:10,470
+request from like when a user interacted
+
+1456
+00:51:10,480 --> 00:51:12,710
+with thing everything that it talked to
+
+1457
+00:51:12,720 --> 00:51:14,990
+up until the point you know via HTTP or
+
+1458
+00:51:15,000 --> 00:51:17,470
+grpc or something like that until it got
+
+1459
+00:51:17,480 --> 00:51:19,870
+to a response for the end user to look
+
+1460
+00:51:19,880 --> 00:51:22,750
+at that is very very helpful but then
+
+1461
+00:51:22,760 --> 00:51:23,870
+what you need to do is you need to go
+
+1462
+00:51:23,880 --> 00:51:25,510
+into your code and you use the open
+
+1463
+00:51:25,520 --> 00:51:27,910
+Telemetry API which is for the most part
+
+1464
+00:51:27,920 --> 00:51:30,430
+pretty simple to work with and you
+
+1465
+00:51:30,440 --> 00:51:32,789
+create what are called spans a span is
+
+1466
+00:51:32,799 --> 00:51:34,549
+in tracing form it's actually just a
+
+1467
+00:51:34,559 --> 00:51:36,430
+structured log that contains a duration
+
+1468
+00:51:36,440 --> 00:51:39,309
+and causality by default so basically
+
+1469
+00:51:39,319 --> 00:51:41,870
+you can have like a hierarchy of okay
+
+1470
+00:51:41,880 --> 00:51:43,390
+this function call this function which
+
+1471
+00:51:43,400 --> 00:51:44,789
+calls this function and they're all
+
+1472
+00:51:44,799 --> 00:51:46,670
+meaningfully important as this chain of
+
+1473
+00:51:46,680 --> 00:51:48,589
+functionality so you can have a span in
+
+1474
+00:51:48,599 --> 00:51:50,789
+Function One Span in function two span
+
+1475
+00:51:50,799 --> 00:51:52,950
+and function three and functions two and
+
+1476
+00:51:52,960 --> 00:51:54,950
+three are like children of number one so
+
+1477
+00:51:54,960 --> 00:51:57,150
+it sort of like nests it approp
+
+1478
+00:51:57,160 --> 00:51:58,910
+so you can see that nested structure of
+
+1479
+00:51:58,920 --> 00:52:00,430
+how things are going and then you
+
+1480
+00:52:00,440 --> 00:52:02,910
+capture all the important metadata with
+
+1481
+00:52:02,920 --> 00:52:04,829
+like this is the decision that we made
+
+1482
+00:52:04,839 --> 00:52:06,750
+if we're selecting between this Bank of
+
+1483
+00:52:06,760 --> 00:52:08,470
+sentences that we're going to
+
+1484
+00:52:08,480 --> 00:52:10,069
+incorporate into a prompt this is the
+
+1485
+00:52:10,079 --> 00:52:12,190
+one that was selected and like maybe
+
+1486
+00:52:12,200 --> 00:52:13,670
+these are the input parameters that are
+
+1487
+00:52:13,680 --> 00:52:14,829
+going into that function that are
+
+1488
+00:52:14,839 --> 00:52:16,950
+related to that selection it's basically
+
+1489
+00:52:16,960 --> 00:52:18,549
+an active structured logging except
+
+1490
+00:52:18,559 --> 00:52:21,109
+you're doing it in the context of traces
+
+1491
+00:52:21,119 --> 00:52:23,150
+and so that gets you really really
+
+1492
+00:52:23,160 --> 00:52:25,430
+really rich detailed information and
+
+1493
+00:52:25,440 --> 00:52:27,190
+what I would say you can go to open
+
+1494
+00:52:27,200 --> 00:52:29,190
+Telemetry just the website right now and
+
+1495
+00:52:29,200 --> 00:52:31,390
+install it most organizations are able
+
+1496
+00:52:31,400 --> 00:52:32,589
+to get something up and running within
+
+1497
+00:52:32,599 --> 00:52:35,589
+about 15 minutes and you know then it
+
+1498
+00:52:35,599 --> 00:52:36,789
+becomes a little bit more work with the
+
+1499
+00:52:36,799 --> 00:52:38,710
+manual instrumentation because there's
+
+1500
+00:52:38,720 --> 00:52:40,549
+an API to learn so maybe it takes a
+
+1501
+00:52:40,559 --> 00:52:42,309
+whole day but then you need to sort of
+
+1502
+00:52:42,319 --> 00:52:44,470
+make some decisions about what the right
+
+1503
+00:52:44,480 --> 00:52:47,069
+information to capture is and so that
+
+1504
+00:52:47,079 --> 00:52:48,510
+may also take another day or so
+
+1505
+00:52:48,520 --> 00:52:50,309
+depending on how much decision fatigue
+
+1506
+00:52:50,319 --> 00:52:52,750
+you end up with and you know if you're
+
+1507
+00:52:52,760 --> 00:52:54,069
+if you're trying to overthink it or
+
+1508
+00:52:54,079 --> 00:52:56,589
+something like that one thing also that
+
+1509
+00:52:56,599 --> 00:52:58,710
+I wanted to ask about the information to
+
+1510
+00:52:58,720 --> 00:53:00,349
+track that I think we haven't mentioned
+
+1511
+00:53:00,359 --> 00:53:02,390
+so far because you mentioned inputs
+
+1512
+00:53:02,400 --> 00:53:04,150
+outputs but then also reading your book
+
+1513
+00:53:04,160 --> 00:53:07,750
+you put a high emphasis on errors as
+
+1514
+00:53:07,760 --> 00:53:11,430
+well so tracking them in this case with
+
+1515
+00:53:11,440 --> 00:53:12,950
+open Telemetry say so with your
+
+1516
+00:53:12,960 --> 00:53:16,789
+observability tool so why are errors so
+
+1517
+00:53:16,799 --> 00:53:19,630
+important why do we need to track them
+
+1518
+00:53:19,640 --> 00:53:23,430
+so errors are critically important
+
+1519
+00:53:23,440 --> 00:53:27,750
+because in most Enterprise use cases for
+
+1520
+00:53:27,760 --> 00:53:30,670
+large language models the goal that they
+
+1521
+00:53:30,680 --> 00:53:34,150
+have is they want to Output a Json
+
+1522
+00:53:34,160 --> 00:53:36,990
+object I mean it could be XML or yaml or
+
+1523
+00:53:37,000 --> 00:53:38,789
+whatever but like we'll call it Json for
+
+1524
+00:53:38,799 --> 00:53:41,190
+the sake of Simplicity it's usually some
+
+1525
+00:53:41,200 --> 00:53:46,470
+Act of a combination of smart search and
+
+1526
+00:53:46,480 --> 00:53:49,829
+useful data extraction and putting
+
+1527
+00:53:49,839 --> 00:53:51,630
+things together in a way such that it
+
+1528
+00:53:51,640 --> 00:53:54,270
+can fit into another part of your system
+
+1529
+00:53:54,280 --> 00:53:56,549
+and hopefully like the idea is that that
+
+1530
+00:53:56,559 --> 00:53:58,670
+thing that you've extracted and put into
+
+1531
+00:53:58,680 --> 00:54:00,990
+a particular structure accomplishes the
+
+1532
+00:54:01,000 --> 00:54:03,589
+goal that the user had in mind that's I
+
+1533
+00:54:03,599 --> 00:54:05,430
+would say is like 90 plus percent of
+
+1534
+00:54:05,440 --> 00:54:07,670
+Enterprise use cases right now and will
+
+1535
+00:54:07,680 --> 00:54:10,630
+likely always be that so there are ways
+
+1536
+00:54:10,640 --> 00:54:13,150
+that things can fail so first of all
+
+1537
+00:54:13,160 --> 00:54:14,589
+your program could crash before it ever
+
+1538
+00:54:14,599 --> 00:54:16,870
+calls the language model well yeah you
+
+1539
+00:54:16,880 --> 00:54:19,150
+should probably fix that the system
+
+1540
+00:54:19,160 --> 00:54:21,030
+could be down open AI has been down in
+
+1541
+00:54:21,040 --> 00:54:23,470
+the past people have incidents well if
+
+1542
+00:54:23,480 --> 00:54:25,390
+it cannot produce an output period okay
+
+1543
+00:54:25,400 --> 00:54:26,950
+you should probably know about that
+
+1544
+00:54:26,960 --> 00:54:28,870
+it could be slow and you could get a
+
+1545
+00:54:28,880 --> 00:54:30,510
+timeout and so even though the system
+
+1546
+00:54:30,520 --> 00:54:32,349
+wasn't down well it's effectively down
+
+1547
+00:54:32,359 --> 00:54:33,910
+as far as your users are concerned again
+
+1548
+00:54:33,920 --> 00:54:35,710
+you should know about that and the
+
+1549
+00:54:35,720 --> 00:54:36,950
+reason why you should know these kinds
+
+1550
+00:54:36,960 --> 00:54:38,630
+of failures right now is because some
+
+1551
+00:54:38,640 --> 00:54:40,190
+are actionable and some are not
+
+1552
+00:54:40,200 --> 00:54:43,150
+actionable so if say you get a timeout
+
+1553
+00:54:43,160 --> 00:54:45,349
+or the system is down you get a 500
+
+1554
+00:54:45,359 --> 00:54:47,710
+maybe there's a retry or maybe there's a
+
+1555
+00:54:47,720 --> 00:54:49,789
+second language model that you call as a
+
+1556
+00:54:49,799 --> 00:54:52,270
+backup maybe that model is not as good
+
+1557
+00:54:52,280 --> 00:54:53,710
+as the first one that you're calling but
+
+1558
+00:54:53,720 --> 00:54:55,150
+it might be more reliable or something
+
+1559
+00:54:55,160 --> 00:54:56,470
+like that there's all these little
+
+1560
+00:54:56,480 --> 00:54:58,349
+puzzles that you can play there and so
+
+1561
+00:54:58,359 --> 00:54:59,750
+you need to understand which one is
+
+1562
+00:54:59,760 --> 00:55:01,030
+which and you need to track that in
+
+1563
+00:55:01,040 --> 00:55:02,549
+observability so you can understand if
+
+1564
+00:55:02,559 --> 00:55:04,950
+there's any patterns that lead to some
+
+1565
+00:55:04,960 --> 00:55:07,230
+of those errors but then you get to the
+
+1566
+00:55:07,240 --> 00:55:08,750
+most interesting one which is what I
+
+1567
+00:55:08,760 --> 00:55:10,910
+call the correctable errors which is
+
+1568
+00:55:10,920 --> 00:55:12,510
+that the system is working it is
+
+1569
+00:55:12,520 --> 00:55:15,109
+outputting Json but maybe it didn't
+
+1570
+00:55:15,119 --> 00:55:18,670
+actually output a full Json object right
+
+1571
+00:55:18,680 --> 00:55:21,549
+maybe for the sake of latency you are
+
+1572
+00:55:21,559 --> 00:55:24,549
+limiting the output amount to be a
+
+1573
+00:55:24,559 --> 00:55:27,230
+certain amount but the model needed to
+
+1574
+00:55:27,240 --> 00:55:29,270
+Output more than like what your limit
+
+1575
+00:55:29,280 --> 00:55:32,470
+actually was and so it just stopped well
+
+1576
+00:55:32,480 --> 00:55:34,029
+that is an interesting problem to go and
+
+1577
+00:55:34,039 --> 00:55:36,029
+solve because maybe the answer is to
+
+1578
+00:55:36,039 --> 00:55:39,150
+increase the limit a little bit or maybe
+
+1579
+00:55:39,160 --> 00:55:41,150
+it's that you actually have a bug in
+
+1580
+00:55:41,160 --> 00:55:43,470
+your prompt where you are causing the
+
+1581
+00:55:43,480 --> 00:55:46,309
+model somehow through some means to
+
+1582
+00:55:46,319 --> 00:55:48,430
+produce way more output than it should
+
+1583
+00:55:48,440 --> 00:55:50,549
+actually be outputting and so you need
+
+1584
+00:55:50,559 --> 00:55:52,309
+to systematically understand when that
+
+1585
+00:55:52,319 --> 00:55:54,230
+happens you then need to also
+
+1586
+00:55:54,240 --> 00:55:56,069
+systematically understand when okay it
+
+1587
+00:55:56,079 --> 00:55:59,390
+did produce an object but it needed to
+
+1588
+00:55:59,400 --> 00:56:01,470
+have like this name of a column in a
+
+1589
+00:56:01,480 --> 00:56:04,109
+schema somewhere or something like that
+
+1590
+00:56:04,119 --> 00:56:06,470
+but it gave a name that was like not
+
+1591
+00:56:06,480 --> 00:56:10,710
+actually the same name or maybe this
+
+1592
+00:56:10,720 --> 00:56:12,870
+object structure had like this nested
+
+1593
+00:56:12,880 --> 00:56:14,630
+object inside of it that needs to have a
+
+1594
+00:56:14,640 --> 00:56:17,029
+particular substructure and maybe it's
+
+1595
+00:56:17,039 --> 00:56:18,870
+missing one piece of that substructure
+
+1596
+00:56:18,880 --> 00:56:20,670
+for some reason and like you could
+
+1597
+00:56:20,680 --> 00:56:22,150
+imagine if you look at the output oh
+
+1598
+00:56:22,160 --> 00:56:23,510
+well if a human were tasked with
+
+1599
+00:56:23,520 --> 00:56:25,069
+creating this Json like maybe they would
+
+1600
+00:56:25,079 --> 00:56:27,109
+have missed that thing and so you need
+
+1601
+00:56:27,119 --> 00:56:28,870
+to track when those errors actually
+
+1602
+00:56:28,880 --> 00:56:30,950
+happen because that could be it's valid
+
+1603
+00:56:30,960 --> 00:56:33,470
+Json so it parses but it's not actually
+
+1604
+00:56:33,480 --> 00:56:35,390
+valid as far as your system is concerned
+
+1605
+00:56:35,400 --> 00:56:37,270
+so what are those validity rules what
+
+1606
+00:56:37,280 --> 00:56:39,390
+are the things that it fails on how can
+
+1607
+00:56:39,400 --> 00:56:41,190
+you act on that is that something that
+
+1608
+00:56:41,200 --> 00:56:42,870
+you can improve your prompt engineering
+
+1609
+00:56:42,880 --> 00:56:45,349
+or if when you're actually validating it
+
+1610
+00:56:45,359 --> 00:56:46,710
+and like you actually know what the
+
+1611
+00:56:46,720 --> 00:56:48,109
+structure should be you have enough
+
+1612
+00:56:48,119 --> 00:56:50,589
+information to like fill in that Gap can
+
+1613
+00:56:50,599 --> 00:56:53,150
+you actually just fill in that Gap and
+
+1614
+00:56:53,160 --> 00:56:55,950
+what we observed with honeycomb in our
+
+1615
+00:56:55,960 --> 00:56:58,150
+quer pre assistant feature is that we
+
+1616
+00:56:58,160 --> 00:56:59,510
+had none of these like correctable
+
+1617
+00:56:59,520 --> 00:57:01,470
+outputs on the beginning or rather we
+
+1618
+00:57:01,480 --> 00:57:03,109
+did not try to correct those outputs in
+
+1619
+00:57:03,119 --> 00:57:06,710
+any way at first and so what we noticed
+
+1620
+00:57:06,720 --> 00:57:10,589
+is about 65 to 70% of the time it was
+
+1621
+00:57:10,599 --> 00:57:12,670
+correct but then the rest of the time it
+
+1622
+00:57:12,680 --> 00:57:14,470
+would error it would say can't produce a
+
+1623
+00:57:14,480 --> 00:57:16,670
+query and when we looked at those it had
+
+1624
+00:57:16,680 --> 00:57:18,430
+valid Json objects coming out but they
+
+1625
+00:57:18,440 --> 00:57:21,150
+were just like slightly wrong and we
+
+1626
+00:57:21,160 --> 00:57:23,309
+then realized in that parsing thing oh
+
+1627
+00:57:23,319 --> 00:57:24,990
+crap we actually can't like if we just
+
+1628
+00:57:25,000 --> 00:57:26,750
+remove this thing this may not be
+
+1629
+00:57:26,760 --> 00:57:28,069
+perfect but it's actually valid and
+
+1630
+00:57:28,079 --> 00:57:30,230
+maybe that's good enough for the user or
+
+1631
+00:57:30,240 --> 00:57:32,549
+we know that it's missing X but we know
+
+1632
+00:57:32,559 --> 00:57:34,349
+what x is so we're just going to insert
+
+1633
+00:57:34,359 --> 00:57:36,470
+X because we know that like that needs
+
+1634
+00:57:36,480 --> 00:57:38,190
+to be there for this to work and boom
+
+1635
+00:57:38,200 --> 00:57:40,230
+it's good to go and we were able to
+
+1636
+00:57:40,240 --> 00:57:41,910
+improve the overall like end user
+
+1637
+00:57:41,920 --> 00:57:44,029
+reliability of the thing from like a 65
+
+1638
+00:57:44,039 --> 00:57:47,150
+to 70% of the time to like a 90% of the
+
+1639
+00:57:47,160 --> 00:57:49,190
+time like this is a massive massive
+
+1640
+00:57:49,200 --> 00:57:50,750
+Improvement that we were able to do just
+
+1641
+00:57:50,760 --> 00:57:53,789
+by fixing these things now the remaining
+
+1642
+00:57:53,799 --> 00:57:56,870
+now it's like six s% of reliab
+
+1643
+00:57:56,880 --> 00:57:58,349
+that was through like really hardcore
+
+1644
+00:57:58,359 --> 00:57:59,750
+prompt engineering work that we had to
+
+1645
+00:57:59,760 --> 00:58:02,230
+do that took a lot more time but so I
+
+1646
+00:58:02,240 --> 00:58:03,950
+think why that's really important is
+
+1647
+00:58:03,960 --> 00:58:06,549
+like we were able to fix that like 20%
+
+1648
+00:58:06,559 --> 00:58:09,510
+plus Improvement within about two weeks
+
+1649
+00:58:09,520 --> 00:58:11,270
+and so you can have that degree of
+
+1650
+00:58:11,280 --> 00:58:12,950
+improvement within about two weeks if
+
+1651
+00:58:12,960 --> 00:58:14,710
+you systematically track your errors and
+
+1652
+00:58:14,720 --> 00:58:16,430
+you differentiate between which one is
+
+1653
+00:58:16,440 --> 00:58:18,430
+which and so this kind of a long-winded
+
+1654
+00:58:18,440 --> 00:58:19,510
+answer but I think it's really really
+
+1655
+00:58:19,520 --> 00:58:21,270
+important because the way that you act
+
+1656
+00:58:21,280 --> 00:58:23,870
+on errors matters so much in this world
+
+1657
+00:58:23,880 --> 00:58:27,390
+now I think at the end of of our time so
+
+1658
+00:58:27,400 --> 00:58:30,390
+I've got maybe some final questions so
+
+1659
+00:58:30,400 --> 00:58:31,870
+the first one is about the current
+
+1660
+00:58:31,880 --> 00:58:34,430
+limits of what we can do with
+
+1661
+00:58:34,440 --> 00:58:37,710
+observability for large language models
+
+1662
+00:58:37,720 --> 00:58:40,390
+are there any things that at the moment
+
+1663
+00:58:40,400 --> 00:58:43,190
+are not really possible but we wish they
+
+1664
+00:58:43,200 --> 00:58:45,589
+were I will say one thing that I really
+
+1665
+00:58:45,599 --> 00:58:48,990
+wish that I had that I did not have is a
+
+1666
+00:58:49,000 --> 00:58:50,950
+way to meaningfully apply other machine
+
+1667
+00:58:50,960 --> 00:58:53,390
+learning practices on this data so not
+
+1668
+00:58:53,400 --> 00:58:55,829
+like AI Ops or you know something like
+
+1669
+00:58:55,839 --> 00:58:56,589
+that
+
+1670
+00:58:56,599 --> 00:58:59,950
+but pattern recognition so these classes
+
+1671
+00:58:59,960 --> 00:59:02,150
+of inputs lead to these classes of
+
+1672
+00:59:02,160 --> 00:59:04,549
+outputs that's effectively like that's a
+
+1673
+00:59:04,559 --> 00:59:06,309
+collection of use cases if you will that
+
+1674
+00:59:06,319 --> 00:59:09,230
+are like thematically similar and we had
+
+1675
+00:59:09,240 --> 00:59:11,069
+to manually parse all of that stuff out
+
+1676
+00:59:11,079 --> 00:59:12,390
+and like humans are good at pattern
+
+1677
+00:59:12,400 --> 00:59:13,789
+recognition but it would have been so
+
+1678
+00:59:13,799 --> 00:59:15,950
+nice if if our tool could actually
+
+1679
+00:59:15,960 --> 00:59:18,349
+recognize that kind of stuff the second
+
+1680
+00:59:18,359 --> 00:59:21,069
+thing is that observability and getting
+
+1681
+00:59:21,079 --> 00:59:22,630
+good instrumentation to the point where
+
+1682
+00:59:22,640 --> 00:59:24,670
+you have good observability it's an
+
+1683
+00:59:24,680 --> 00:59:26,430
+iterative process it's not something you
+
+1684
+00:59:26,440 --> 00:59:27,990
+can just slap on one day and then you're
+
+1685
+00:59:28,000 --> 00:59:30,549
+good to go it takes time takes effort
+
+1686
+00:59:30,559 --> 00:59:32,230
+and you don't get it right often you
+
+1687
+00:59:32,240 --> 00:59:33,910
+need to constantly improve it and kind
+
+1688
+00:59:33,920 --> 00:59:36,390
+of that's frankly hard and I wish it was
+
+1689
+00:59:36,400 --> 00:59:38,430
+a lot easier and I'm not really sure I
+
+1690
+00:59:38,440 --> 00:59:39,789
+know how to make it a lot easier but
+
+1691
+00:59:39,799 --> 00:59:41,630
+like what that means is you may think
+
+1692
+00:59:41,640 --> 00:59:43,069
+that you're observing these user
+
+1693
+00:59:43,079 --> 00:59:44,230
+behaviors but you're not actually
+
+1694
+00:59:44,240 --> 00:59:45,510
+observing everything that you need to be
+
+1695
+00:59:45,520 --> 00:59:47,309
+observing to improve something and so
+
+1696
+00:59:47,319 --> 00:59:48,670
+you will be doing a little bit of guess
+
+1697
+00:59:48,680 --> 00:59:49,710
+work and then you have to go back and
+
+1698
+00:59:49,720 --> 00:59:56,069
+figure out what to reinstrumentation
+
+1699
+00:59:59,029 --> 00:59:59,039
+a tool and API and SDK standpoint I just
+
+1700
+00:59:59,039 --> 01:00:00,750
+wish it were a lot easier to sort of get
+
+1701
+01:00:00,760 --> 01:00:03,430
+like a oneandone approach or like maybe
+
+1702
+01:00:03,440 --> 01:00:05,349
+I do iterate but I iterate like on a
+
+1703
+01:00:05,359 --> 01:00:07,029
+monthly basis instead of on a daily
+
+1704
+01:00:07,039 --> 01:00:08,910
+basis until I feel like I have good good
+
+1705
+01:00:08,920 --> 01:00:12,109
+data well maybe any of these of what you
+
+1706
+01:00:12,119 --> 01:00:14,430
+said these current limitations being
+
+1707
+01:00:14,440 --> 01:00:17,349
+addressed in the next say few years or
+
+1708
+01:00:17,359 --> 01:00:19,630
+also there are other things that you see
+
+1709
+01:00:19,640 --> 01:00:22,190
+happening in terms of observability
+
+1710
+01:00:22,200 --> 01:00:24,990
+engineering for llms you know things
+
+1711
+01:00:25,000 --> 01:00:27,349
+that you think will improve new things
+
+1712
+01:00:27,359 --> 01:00:30,230
+that we cannot do now is that any work
+
+1713
+01:00:30,240 --> 01:00:32,430
+in progress yes I would say there
+
+1714
+01:00:32,440 --> 01:00:34,190
+definitely is on the instrumentation
+
+1715
+01:00:34,200 --> 01:00:37,069
+front right now it's not just language
+
+1716
+01:00:37,079 --> 01:00:39,510
+models but there's like vector databases
+
+1717
+01:00:39,520 --> 01:00:41,990
+and Frameworks that people use and
+
+1718
+01:00:42,000 --> 01:00:43,150
+there's sort of like a collection of
+
+1719
+01:00:43,160 --> 01:00:46,069
+tools and Frameworks that are relevant
+
+1720
+01:00:46,079 --> 01:00:48,549
+in this space none of those right now
+
+1721
+01:00:48,559 --> 01:00:50,589
+have automatic instrumentation in the
+
+1722
+01:00:50,599 --> 01:00:52,589
+same way that like HTTP servers or
+
+1723
+01:00:52,599 --> 01:00:53,950
+message cues have automatic
+
+1724
+01:00:53,960 --> 01:00:56,470
+instrumentation today so the act of
+
+1725
+01:00:56,480 --> 01:00:58,190
+getting that auto instrumentation via
+
+1726
+01:00:58,200 --> 01:01:00,230
+open Telemetry is like you kind of have
+
+1727
+01:01:00,240 --> 01:01:02,029
+to do it yourself that's going to
+
+1728
+01:01:02,039 --> 01:01:03,870
+improve over time I think but that's a
+
+1729
+01:01:03,880 --> 01:01:05,789
+real need because that sort of first
+
+1730
+01:01:05,799 --> 01:01:07,789
+pass at getting good data is harder to
+
+1731
+01:01:07,799 --> 01:01:10,510
+come to today than it should be the
+
+1732
+01:01:10,520 --> 01:01:12,549
+second is that your analysis workflows
+
+1733
+01:01:12,559 --> 01:01:15,150
+in tools are a little bit different some
+
+1734
+01:01:15,160 --> 01:01:16,829
+tools like for example honeycomb are
+
+1735
+01:01:16,839 --> 01:01:18,750
+actually very well suited to this and so
+
+1736
+01:01:18,760 --> 01:01:19,990
+what I mean by that is when you're
+
+1737
+01:01:20,000 --> 01:01:21,870
+dealing with textual inputs and textual
+
+1738
+01:01:21,880 --> 01:01:24,710
+outputs these values are not
+
+1739
+01:01:24,720 --> 01:01:27,750
+meaningfully pre aggregable meaning that
+
+1740
+01:01:27,760 --> 01:01:30,109
+you can't like sort of just turn it into
+
+1741
+01:01:30,119 --> 01:01:32,950
+a metric like you can other data points
+
+1742
+01:01:32,960 --> 01:01:34,670
+and they tend to be high cardinality
+
+1743
+01:01:34,680 --> 01:01:38,109
+values so like there's likely a lot of
+
+1744
+01:01:38,119 --> 01:01:39,870
+unique inputs and a lot of unique
+
+1745
+01:01:39,880 --> 01:01:42,670
+outputs and a lot of observability
+
+1746
+01:01:42,680 --> 01:01:44,430
+systems today really struggle with high
+
+1747
+01:01:44,440 --> 01:01:46,230
+cardinality data because it's not a fit
+
+1748
+01:01:46,240 --> 01:01:48,470
+for their backend and so if you're using
+
+1749
+01:01:48,480 --> 01:01:51,309
+one of those tools then this might be a
+
+1750
+01:01:51,319 --> 01:01:53,309
+lot harder to actually analyze and it
+
+1751
+01:01:53,319 --> 01:01:54,990
+might also be more expensive to analyze
+
+1752
+01:01:55,000 --> 01:01:56,390
+than you would hope it is
+
+1753
+01:01:56,400 --> 01:01:58,309
+and so I hope that like I mean high
+
+1754
+01:01:58,319 --> 01:02:00,190
+cardinality is a problem to solve like
+
+1755
+01:02:00,200 --> 01:02:02,109
+independent of llms it's something that
+
+1756
+01:02:02,119 --> 01:02:04,150
+you need period because otherwise you
+
+1757
+01:02:04,160 --> 01:02:05,950
+just don't have the best context what's
+
+1758
+01:02:05,960 --> 01:02:07,990
+going on in your system but I think llms
+
+1759
+01:02:08,000 --> 01:02:10,069
+really forces the issue on this one and
+
+1760
+01:02:10,079 --> 01:02:12,390
+so I hope that this causes most
+
+1761
+01:02:12,400 --> 01:02:14,150
+observability tools to handle this shape
+
+1762
+01:02:14,160 --> 01:02:16,190
+of data a lot better than they do
+
+1763
+01:02:16,200 --> 01:02:19,549
+today okay thank you now we came to the
+
+1764
+01:02:19,559 --> 01:02:21,789
+end I think we've done quite a good job
+
+1765
+01:02:21,799 --> 01:02:23,990
+of introducing observability for large
+
+1766
+01:02:24,000 --> 01:02:26,670
+language models but is there any
+
+1767
+01:02:26,680 --> 01:02:28,510
+that you would like to mention anything
+
+1768
+01:02:28,520 --> 01:02:31,230
+else that maybe we forgot I would say
+
+1769
+01:02:31,240 --> 01:02:32,630
+that getting started with language
+
+1770
+01:02:32,640 --> 01:02:35,630
+models is super fun and it's super weird
+
+1771
+01:02:35,640 --> 01:02:37,910
+and it's super interesting and you're
+
+1772
+01:02:37,920 --> 01:02:39,069
+going to have to throw a lot of things
+
+1773
+01:02:39,079 --> 01:02:41,150
+that you know out of the window and
+
+1774
+01:02:41,160 --> 01:02:43,349
+that's what makes them so exciting and I
+
+1775
+01:02:43,359 --> 01:02:46,190
+think that like you should look at how
+
+1776
+01:02:46,200 --> 01:02:47,829
+your users are doing stuff and some
+
+1777
+01:02:47,839 --> 01:02:49,510
+things that they struggle with and just
+
+1778
+01:02:49,520 --> 01:02:51,430
+pick one of those and see if you can
+
+1779
+01:02:51,440 --> 01:02:53,029
+figure out a way to Wrangle a language
+
+1780
+01:02:53,039 --> 01:02:55,029
+model to Output like something useful
+
+1781
+01:02:55,039 --> 01:02:56,789
+like it doesn't have to be perfect but
+
+1782
+01:02:56,799 --> 01:02:58,349
+just kind of something I think you'll be
+
+1783
+01:02:58,359 --> 01:03:00,910
+surprised at how effective you can be at
+
+1784
+01:03:00,920 --> 01:03:03,109
+doing that and turn something from like
+
+1785
+01:03:03,119 --> 01:03:05,589
+a creative wish to like actually a real
+
+1786
+01:03:05,599 --> 01:03:06,950
+proof of concept that you might be able
+
+1787
+01:03:06,960 --> 01:03:09,390
+to productionize and so I wish there
+
+1788
+01:03:09,400 --> 01:03:11,069
+were a lot more better practices around
+
+1789
+01:03:11,079 --> 01:03:12,789
+how to do this stuff but that will
+
+1790
+01:03:12,799 --> 01:03:14,630
+likely come I think a lot especially in
+
+1791
+01:03:14,640 --> 01:03:16,510
+2024 there will be a lot of demand for
+
+1792
+01:03:16,520 --> 01:03:18,750
+that and so I think you should get
+
+1793
+01:03:18,760 --> 01:03:20,349
+started right now and like spend an
+
+1794
+01:03:20,359 --> 01:03:22,069
+afternoon seeing what you can do and if
+
+1795
+01:03:22,079 --> 01:03:23,789
+you can't get it done like I don't know
+
+1796
+01:03:23,799 --> 01:03:25,470
+reach out to me and like maybe I'd be
+
+1797
+01:03:25,480 --> 01:03:27,069
+able to help you
+
+1798
+01:03:27,079 --> 01:03:30,349
+out okay thank you Philip for coming to
+
+1799
+01:03:30,359 --> 01:03:32,430
+the show has been a real pleasure this
+
+1800
+01:03:32,440 --> 01:03:34,510
+is joavan asoni for software engineering
+
+1801
+01:03:34,520 --> 01:03:36,269
+radio thank you for
+
+1802
+01:03:36,279 --> 01:03:38,309
+listening thanks for listening to SC
+
+1803
+01:03:38,319 --> 01:03:40,069
+radio an educational program brought to
+
+1804
+01:03:40,079 --> 01:03:42,589
+you by It software magazine for more
+
+1805
+01:03:42,599 --> 01:03:43,990
+about the podcast including other
+
+1806
+01:03:44,000 --> 01:03:48,190
+episodes visit our website at SE-R doet
+
+1807
+01:03:48,200 --> 01:03:49,870
+to provide feedback you can comment on
+
+1808
+01:03:49,880 --> 01:03:51,789
+each episode on the website or reach us
+
+1809
+01:03:51,799 --> 01:03:54,630
+on LinkedIn Facebook Twitter or through
+
+1810
+01:03:54,640 --> 01:03:56,230
+our slack Channel at
+
+1811
+01:03:56,240 --> 01:04:00,150
+seo. slack.com you can also email us at
+
+1812
+01:04:00,160 --> 01:04:02,549
+team
+
+1813
+01:04:02,559 --> 01:04:05,150
+e-r. this in all other episodes of SC
+
+1814
+01:04:05,160 --> 01:04:06,630
+radio is licensed under creative
+
+1815
+01:04:06,640 --> 01:04:07,990
+comments license
+
+1816
+01:04:08,000 --> 01:04:10,130
+2.5 thanks for
+
+1817
+01:04:10,140 --> 01:04:21,950
+[Music]
