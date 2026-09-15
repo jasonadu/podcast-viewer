@@ -56,7 +56,7 @@ python -m http.server 8000
 ```
 pip install aria2p
 
-python download_podcasts.py 458709_podcast_items.json
+python python -m subtitle_download.substack.download_podcasts
 
 python substack_to_lrc_v3.py 458709_podcast_items.json
 
