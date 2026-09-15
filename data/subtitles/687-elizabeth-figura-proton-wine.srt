@@ -7,2065 +7,3153 @@
 This is software engineering radio, the podcast for professional developers on the web at se-radio.net.
 
 3
-00:00:07,919 --> 00:00:15,790
-SE radio is brought to you by the ITE computer society and by it e software magazine online at computer.org/software.
+00:00:07,919 --> 00:00:12,070
+SE radio is brought to you by the ITE computer society.
 
 4
+00:00:12,070 --> 00:00:15,790
+and by it e software magazine online at computer.org/software.
+
+5
 00:00:15,800 --> 00:00:19,109
 [Music]
 
-5
+6
 00:00:19,119 --> 00:00:26,390
 Hey, this is Jeremy Jung for Software Engineering Radio and today I'm talking to Elizabeth Fagiraa.
 
-6
-00:00:26,390 --> 00:00:32,150
-She's a wine developer at Codew Weavers and today we're going to talk about what that is and all the work that goes into it.
-
 7
+00:00:26,390 --> 00:00:28,470
+She's a wine developer at Codew Weavers.
+
+8
+00:00:28,470 --> 00:00:32,150
+and today we're going to talk about what that is and all the work that goes into it.
+
+9
 00:00:32,160 --> 00:00:34,470
 Elizabeth, welcome to Software Engineering Radio.
 
-8
+10
 00:00:34,480 --> 00:00:36,631
 Thank you Jeremy. I'm glad to be here.
 
-9
-00:00:36,640 --> 00:00:44,549
-I think the first thing we should talk about is maybe saying what wine is because I think a lot of people aren't familiar with the project.
+11
+00:00:36,640 --> 00:00:41,590
+I think the first thing we should talk about is maybe saying what wine is.
 
-10
+12
+00:00:41,600 --> 00:00:44,549
+because I think a lot of people aren't familiar with the project.
+
+13
 00:00:44,559 --> 00:00:47,510
 So Wine is a translation layer.
 
-11
+14
 00:00:47,510 --> 00:00:49,590
 In fact, I would say Wine is a Windows emulator.
 
-12
+15
 00:00:49,600 --> 00:00:53,750
 That is what the name originally stood for.
 
-13
-00:00:53,750 --> 00:01:07,510
-It reimplements the entire Windows or you say wind32 API so that programs that make calls into the API will then transfer that code to wine and we allow that Windows programs to run on things that are not Windows.
+16
+00:00:53,750 --> 00:00:57,270
+It reimplements the entire Windows or you say wind32 API.
 
-14
+17
+00:00:57,270 --> 00:01:02,069
+so that programs that make calls into the API will then transfer that code to wine.
+
+18
+00:01:02,069 --> 00:01:07,510
+and we allow that Windows programs to run on things that are not Windows.
+
+19
 00:01:07,510 --> 00:01:13,350
 So Linux, Mac OS, other operating systems such as Solaris and BSD.
 
-15
-00:01:13,350 --> 00:01:23,990
-It works not by emulating the CPU, but by re-implementing every API basically from scratch and translating them to their equivalent or writing new code in case there is no equivalent.
+20
+00:01:13,350 --> 00:01:17,510
+It works not by emulating the CPU,
 
-16
+21
+00:01:17,510 --> 00:01:21,270
+but by re-implementing every API basically from scratch and translating them to their equivalent.
+
+22
+00:01:21,270 --> 00:01:23,990
+or writing new code in case there is no equivalent.
+
+23
 00:01:24,000 --> 00:01:29,109
 I believe what you're doing is you're emulating system calls.
 
-17
+24
 00:01:29,109 --> 00:01:34,230
 Could you explain what those are and how that relates to the project?
 
-18
-00:01:34,230 --> 00:01:42,789
-So system call in general can be used to refer to a call into the operating system to execute some functionality that's built into the operating system.
+25
+00:01:34,230 --> 00:01:38,950
+So system call in general can be used to refer to a call into the operating system to.
 
-19
+26
+00:01:38,960 --> 00:01:42,789
+execute some functionality that's built into the operating system.
+
+27
 00:01:42,789 --> 00:01:46,550
 Often it's used in the context of talking to the kernel.
 
-20
-00:01:46,550 --> 00:01:54,630
-Windows applications actually tend to talk at a much higher level because there's so much highle functionality built into Windows as opposed to other operating systems that
+28
+00:01:46,550 --> 00:01:48,230
+Windows applications actually tend to talk at a much higher level.
 
-21
+29
+00:01:48,240 --> 00:01:51,830
+because there's so much highle functionality built into Windows.
+
+30
+00:01:51,830 --> 00:01:54,630
+as opposed to other operating systems that.
+
+31
 00:01:54,640 --> 00:02:01,990
 basically we end up implementing much higher level behavior than you would on Linux.
 
-22
-00:02:01,990 --> 00:02:08,150
-And can you give some examples of what some of those system calls would be and I suppose how they may be higher level than some of the Linux ones?
+32
+00:02:01,990 --> 00:02:03,990
+And can you give some examples of what some of those system calls would be.
 
-23
+33
+00:02:04,000 --> 00:02:08,150
+and I suppose how they may be higher level than some of the Linux ones?
+
+34
 00:02:08,160 --> 00:02:10,150
 Sure.
 
-24
-00:02:10,150 --> 00:02:18,630
-So of course you have low-level calls like interacting with a file system, create a file and read and write and such.
+35
+00:02:10,150 --> 00:02:14,630
+So of course you have low-level calls like interacting with a file system,
 
-25
+36
+00:02:14,630 --> 00:02:18,630
+create a file and read and write and such.
+
+37
 00:02:18,630 --> 00:02:20,470
 You also have highle APIs to interact with a sound driver.
 
-26
-00:02:20,470 --> 00:02:29,830
-There's one I was working on earlier today called X Audio where you actually build this bank of sounds that's meant to be played in a game
+38
+00:02:20,470 --> 00:02:25,350
+There's one I was working on earlier today called X Audio.
 
-27
-00:02:29,830 --> 00:02:39,190
-and then you can position them in various 3D space and the operating system in a sense will take care of all of the math that goes into making that work.
+39
+00:02:25,350 --> 00:02:29,830
+where you actually build this bank of sounds that's meant to be played in a game.
 
-28
-00:02:39,190 --> 00:02:46,949
-That's all running on your computer and then it'll send that audio data to the sound card once it's transformed it so it sounds like it's coming from a certain space.
+40
+00:02:29,830 --> 00:02:32,470
+and then you can position them in various 3D space.
 
-29
-00:02:46,959 --> 00:02:55,509
-lot of other things like parsing XML is another big one but there's a lot of things the space is honestly huge
+41
+00:02:32,470 --> 00:02:37,030
+and the operating system in a sense will take care of all of the math.
 
-30
-00:02:55,519 --> 00:03:07,030
-yeah I can sort of see how those might be things you might not expect to be done by the operating system like you gave the example of 3D audio and XML parsing
+42
+00:02:37,030 --> 00:02:39,190
+that goes into making that work.
 
-31
-00:03:07,030 --> 00:03:18,149
-and I think XML parsing in particular you would have thought that that would be something that would be handled by the standard library of whatever language the person was writing their application is so that's interesting that is built into the OS.
+43
+00:02:39,190 --> 00:02:41,350
+That's all running on your computer and.
 
-32
+44
+00:02:41,350 --> 00:02:44,949
+then it'll send that audio data to the sound card once it's transformed it.
+
+45
+00:02:44,949 --> 00:02:46,949
+so it sounds like it's coming from a certain space.
+
+46
+00:02:46,959 --> 00:02:52,710
+lot of other things like parsing XML is another big one.
+
+47
+00:02:52,710 --> 00:02:55,509
+but there's a lot of things the space is honestly huge.
+
+48
+00:02:55,519 --> 00:03:01,911
+yeah I can sort of see how those might be things you might not expect to be done. by the operating system.
+
+49
+00:03:01,911 --> 00:03:07,030
+like you gave the example of 3D audio and XML parsing.
+
+50
+00:03:07,030 --> 00:03:10,949
+and I think XML parsing in particular you would have thought that that would be something.
+
+51
+00:03:10,949 --> 00:03:16,070
+that would be handled by the standard library of whatever language the person was writing their application is.
+
+52
+00:03:16,070 --> 00:03:18,149
+so that's interesting that is built into the OS.
+
+53
 00:03:18,159 --> 00:03:21,190
 Yeah. Well, in languages like C, it isn't even part of the standard library.
 
-33
+54
 00:03:21,200 --> 00:03:22,790
 It's higher level than that.
 
-34
+55
 00:03:22,790 --> 00:03:29,350
 It's you have specific libraries that are widespread but not codified in a standard.
 
-35
+56
 00:03:29,350 --> 00:03:30,869
 But in Windows, they are part of the operating system.
 
-36
+57
 00:03:30,869 --> 00:03:36,070
 And in fact, there's several different XML parsers in the operating system.
 
-37
+58
 00:03:36,070 --> 00:03:40,390
 Microsoft likes to deprecate old APIs and make new ones that do the same thing very often.
 
-38
+59
 00:03:40,390 --> 00:03:47,270
 And something I've heard about Windows is that they're typically very reluctant to break backwards compatibility.
 
-39
+60
 00:03:47,270 --> 00:03:51,030
 So you say they're deprecated, but do they typically keep all of them still in there?
 
-40
-00:03:51,040 --> 00:03:59,351
-It all still works. And that's all things that Wine has to implement as well to make sure that the software works as well. Yeah.
+61
+00:03:51,040 --> 00:03:57,509
+It all still works. And that's all things that Wine has to implement as well to make sure.
 
-41
+62
+00:03:57,509 --> 00:03:59,351
+that the software works as well. Yeah.
+
+63
 00:03:59,360 --> 00:04:01,110
 Yeah.
 
-42
-00:04:01,110 --> 00:04:12,470
-And we also need to implement those things to make old programs work because there is a lot of demand at least from people using wine for getting some really old programs working from the early '9s even
+64
+00:04:01,110 --> 00:04:03,830
+And we also need to implement those things to make old programs work.
 
-43
+65
+00:04:03,840 --> 00:04:10,070
+because there is a lot of demand at least from people using wine for getting some really old.
+
+66
+00:04:10,070 --> 00:04:12,470
+programs working from the early '9s even.
+
+67
 00:04:12,480 --> 00:04:18,629
-and that's probably a good thing to talk about in terms of what are the types of software that people are trying to run
+and that's probably a good thing to talk about in terms of what are the types of software.
 
-44
-00:04:18,639 --> 00:04:31,350
-with wine and what operating system are they typically using in terms of software literally all kinds any software you can imagine that runs on Windows people will try to run it on wine.
+68
+00:04:18,629 --> 00:04:22,230
+that people are trying to run with wine and what operating system are they typically using.
 
-45
+69
+00:04:22,240 --> 00:04:24,950
+in terms of software literally all kinds.
+
+70
+00:04:24,960 --> 00:04:31,350
+any software you can imagine that runs on Windows people will try to run it on wine.
+
+71
 00:04:31,350 --> 00:04:35,270
 So we're talking games, office software, productivity software, accounting.
 
-46
+72
 00:04:35,270 --> 00:04:42,790
 People will run build systems on wine just run builder programs using on visual studio running on wine.
 
-47
-00:04:42,790 --> 00:04:49,510
-People will run wine on servers for example like software as a service kind of things where you don't even know that it's running on wine.
+73
+00:04:42,790 --> 00:04:46,870
+People will run wine on servers for example like software as a service kind of things.
 
-48
-00:04:49,510 --> 00:05:00,629
-really super domain specific stuff like I've run astronomy software and wine design computer system design even hardware drivers can sometimes work on wine there's a bit of a gray area
+74
+00:04:46,870 --> 00:04:49,510
+where you don't even know that it's running on wine.
 
-49
-00:05:00,639 --> 00:05:08,790
-I think from maybe the general public or at least from what I've seen I think a lot of people's exposure
+75
+00:04:49,510 --> 00:04:54,310
+really super domain specific stuff like I've run astronomy software.
 
-50
-00:05:08,790 --> 00:05:20,790
-to it is for playing games is there something different about games versus all those other types of productivity software and office software that makes supporting those different.
+76
+00:04:54,310 --> 00:04:59,110
+and wine design computer system design even hardware drivers can sometimes work on wine.
 
-51
+77
+00:04:59,120 --> 00:05:04,070
+there's a bit of a gray area I think from maybe the general public.
+
+78
+00:05:04,070 --> 00:05:08,790
+or at least from what I've seen I think a lot of people's exposure to it is for.
+
+79
+00:05:08,800 --> 00:05:12,230
+playing games.
+
+80
+00:05:12,230 --> 00:05:17,110
+is there something different about games versus all those other types of productivity software.
+
+81
+00:05:17,110 --> 00:05:20,790
+and office software that makes supporting those different.
+
+82
 00:05:20,800 --> 00:05:23,909
 There's some things about it that are different.
 
-52
-00:05:23,909 --> 00:05:36,070
-Games, of course, have gotten a lot of publicity lately because there's been a huge push largely from Valve, but also some other companies to get a lot a huge wide range of games working well under wine.
+83
+00:05:23,909 --> 00:05:25,749
+Games, of course, have gotten a lot of publicity lately.
 
-53
-00:05:36,070 --> 00:05:37,590
+84
+00:05:25,749 --> 00:05:30,629
+because there's been a huge push largely from Valve,
+
+85
+00:05:30,629 --> 00:05:36,071
+but also some other companies to get a lot a huge wide range of games working. well under wine.
+
+86
+00:05:36,071 --> 00:05:37,590
 And that's really panned out in a way.
 
-54
+87
 00:05:37,590 --> 00:05:39,430
 I think we've largely succeeded.
 
-55
+88
 00:05:39,430 --> 00:05:44,070
 We've made huge strides in the past several years, 5 10 years, I think.
 
-56
+89
 00:05:44,070 --> 00:05:47,749
 So when you talk about what makes games different,
 
-57
-00:05:47,749 --> 00:05:57,990
-I think one thing games tend to do is they have a very limited set of things they're working with and they often want to make things run fast.
+90
+00:05:47,749 --> 00:05:51,670
+I think one thing games tend to do is they have a very limited set of things they're.
 
-58
+91
+00:05:51,680 --> 00:05:54,390
+working with.
+
+92
+00:05:54,390 --> 00:05:57,990
+and they often want to make things run fast.
+
+93
 00:05:57,990 --> 00:05:59,909
 So they're working very close to the metal.
 
-59
+94
 00:05:59,909 --> 00:06:02,390
 They're not going to use an XML parser, for example.
 
-60
+95
 00:06:02,390 --> 00:06:05,670
 They're just going to talk as directly to the graphics driver as they can, right?
 
-61
+96
 00:06:05,670 --> 00:06:09,510
 And probably going to do all their own sound design.
 
-62
-00:06:09,510 --> 00:06:15,590
-I did talk about that X audio library, but a lot of games will just talk as directly to the sound driver as Windows lets them.
+97
+00:06:09,510 --> 00:06:11,350
+I did talk about that X audio library,
 
-63
-00:06:15,590 --> 00:06:20,870
-So, this is often a blessing honestly because it means there's less we have to implement to make them work.
+98
+00:06:11,350 --> 00:06:15,590
+but a lot of games will just talk as directly to the sound driver as Windows lets them.
 
-64
-00:06:20,870 --> 00:06:29,830
-When you look at a lot of productivity applications and especially the other thing that makes some productivity applications harder is Microsoft makes them
+99
+00:06:15,590 --> 00:06:17,430
+So, this is often a blessing honestly.
 
-65
-00:06:29,830 --> 00:06:39,510
-and they like to make a library for use in this one program like Microsoft Office and then say, well, other programs might use this as well.
+100
+00:06:17,430 --> 00:06:20,870
+because it means there's less we have to implement to make them work.
 
-66
-00:06:39,510 --> 00:06:45,830
-let's put it in the operating system and expose it and write an API for it and everything and maybe some other programs use it.
+101
+00:06:20,870 --> 00:06:22,629
+When you look at a lot of productivity applications.
 
-67
-00:06:45,830 --> 00:06:52,710
-Mostly it's just Office, but it means that Office relies on a lot of things from the operating system that we all have to reimplement.
+102
+00:06:22,629 --> 00:06:29,830
+and especially the other thing that makes some productivity applications harder is Microsoft makes them.
 
-68
-00:06:52,720 --> 00:07:01,909
-Yeah, that's somewhat counterintuitive because when you think of games, you think of these really high performance things that seem really complicated,
+103
+00:06:29,830 --> 00:06:34,629
+and they like to make a library for use in this one program like Microsoft Office.
 
-69
-00:07:01,909 --> 00:07:08,790
-but it sounds like from what you're saying because they use the lower level primitives, they're actually easier in some ways to support.
+104
+00:06:34,629 --> 00:06:39,510
+and then say, well, other programs might use this as well.
 
-70
-00:07:08,800 --> 00:07:16,150
-Yeah, certainly in some ways they'll do things like reimplement the heap allocator because the built-in heap allocator isn't fast enough for them.
+105
+00:06:39,510 --> 00:06:41,350
+let's put it in the operating system.
 
-71
+106
+00:06:41,350 --> 00:06:45,830
+and expose it and write an API for it and everything and maybe some other programs use it.
+
+107
+00:06:45,830 --> 00:06:48,309
+Mostly it's just Office, but it means.
+
+108
+00:06:48,309 --> 00:06:52,710
+that Office relies on a lot of things from the operating system that we all have to reimplement.
+
+109
+00:06:52,720 --> 00:06:57,510
+Yeah, that's somewhat counterintuitive because when you think of games,
+
+110
+00:06:57,510 --> 00:07:01,909
+you think of these really high performance things that seem really complicated,
+
+111
+00:07:01,909 --> 00:07:07,270
+but it sounds like from what you're saying because they use the lower level primitives,
+
+112
+00:07:07,270 --> 00:07:08,790
+they're actually easier in some ways to support.
+
+113
+00:07:08,800 --> 00:07:14,230
+Yeah, certainly in some ways they'll do things like reimplement the heap allocator.
+
+114
+00:07:14,230 --> 00:07:16,150
+because the built-in heap allocator isn't fast enough for them.
+
+115
 00:07:16,160 --> 00:07:19,029
 It's another good example.
 
-72
+116
 00:07:19,029 --> 00:07:22,150
 You mentioned Microsoft's more modern office suites.
 
-73
-00:07:22,160 --> 00:07:30,629
-I've noticed there are certain applications that aren't supported, like for example, I think the modern Adobe Creative Suite.
+117
+00:07:22,160 --> 00:07:25,990
+I've noticed there are certain applications that aren't supported,
 
-74
+118
+00:07:25,990 --> 00:07:30,629
+like for example, I think the modern Adobe Creative Suite.
+
+119
 00:07:30,629 --> 00:07:32,629
 What's the difference with software like that?
 
-75
+120
 00:07:32,629 --> 00:07:37,189
 And does that also apply to the modern office suite or is that actually supported?
 
-76
+121
 00:07:37,189 --> 00:07:41,749
 Well, in one case you have things like Microsoft using their own APIs that I mentioned.
 
-77
-00:07:41,759 --> 00:07:55,270
-With Adobe that applies less, I suppose, but I think to some degree the answer is that some applications are just hard and there's no way around it and we can only spend so much time on a hard application.
+122
+00:07:41,759 --> 00:07:44,550
+With Adobe that applies less, I suppose,
 
-78
+123
+00:07:44,560 --> 00:07:46,550
+but I think to some degree the answer is.
+
+124
+00:07:46,560 --> 00:07:51,350
+that some applications are just hard and there's no way around it.
+
+125
+00:07:51,350 --> 00:07:55,270
+and we can only spend so much time on a hard application.
+
+126
 00:07:55,270 --> 00:07:57,510
 Debugging things can get very hard with wine.
 
-79
+127
 00:07:57,510 --> 00:07:59,670
 Let me explain that for a minute.
 
-80
-00:07:59,670 --> 00:08:07,029
-Because normally when you think about debugging an application, you say, "Oh, I'm going to open up my debugger, pop it in, break at this point,
+128
+00:07:59,670 --> 00:08:01,510
+Because normally when you think about debugging an application,
 
-81
-00:08:07,029 --> 00:08:19,589
-see what like all the variables are or if they're not what I expect or maybe wait for it to crash and then get a back trace and see where it crashed and why." You can't do that with wine because you don't have the application, you don't have the symbols, you don't have your debugging symbols,
+129
+00:08:01,520 --> 00:08:07,029
+you say, "Oh, I'm going to open up my debugger, pop it in, break at this point,
 
-82
-00:08:19,589 --> 00:08:28,231
-you don't know anything about the code you're running unless you take the time to disassemble and decompile and read through it. And that's difficult.
+130
+00:08:07,029 --> 00:08:10,390
+see what like all the variables are or if they're not what I expect. or maybe wait for it to crash.
 
-83
-00:08:28,231 --> 00:08:35,190
-It's only difficult every time I've looked at a program and been like, I'm going to just try and figure out what the program is doing.
+131
+00:08:10,390 --> 00:08:14,309
+and then get a back trace and see where it crashed and why."
 
-84
+132
+00:08:14,309 --> 00:08:16,230
+You can't do that with wine because you don't have the application,
+
+133
+00:08:16,240 --> 00:08:19,589
+you don't have the symbols, you don't have your debugging symbols,
+
+134
+00:08:19,589 --> 00:08:23,990
+you don't know anything about the code you're running.
+
+135
+00:08:23,990 --> 00:08:28,231
+unless you take the time to disassemble and decompile and read through it. And that's difficult.
+
+136
+00:08:28,231 --> 00:08:31,510
+It's only difficult every time I've looked at a program and been like,
+
+137
+00:08:31,510 --> 00:08:35,190
+I'm going to just try and figure out what the program is doing.
+
+138
 00:08:35,190 --> 00:08:38,230
 It takes so much time and it is never worth it. And sometimes you have to.
 
-85
+139
 00:08:38,230 --> 00:08:42,310
 Sometimes you have no other choice.
 
-86
-00:08:42,310 --> 00:08:49,269
-But usually you rely on seeing what calls it makes into the operating system and trying to guess which one of those is going wrong.
+140
+00:08:42,310 --> 00:08:47,350
+But usually you rely on seeing what calls it makes into the operating system.
 
-87
-00:08:49,269 --> 00:09:00,710
-Now, sometimes you'll get lucky and it'll crash in wine code or sometimes it'll make a call into a function that we don't implement yet and we know, oh, we need to implement that function.
+141
+00:08:47,350 --> 00:08:49,269
+and trying to guess which one of those is going wrong.
 
-88
-00:09:00,710 --> 00:09:08,230
-But sometimes it does something more obscure and we have to figure out, well, like all of these millions of calls it made, which one of them are we implementing incorrectly?
+142
+00:08:49,269 --> 00:08:55,350
+Now, sometimes you'll get lucky and it'll crash in wine code.
 
-89
+143
+00:08:55,350 --> 00:08:57,030
+or sometimes it'll make a call into a function that we don't implement yet.
+
+144
+00:08:57,040 --> 00:09:00,710
+and we know, oh, we need to implement that function.
+
+145
+00:09:00,710 --> 00:09:04,710
+But sometimes it does something more obscure and we have to figure out, well,
+
+146
+00:09:04,710 --> 00:09:08,230
+like all of these millions of calls it made, which one of them are we implementing incorrectly?
+
+147
 00:09:08,240 --> 00:09:12,949
 So, it's returning the wrong result or not doing something that it should.
 
-90
-00:09:12,949 --> 00:09:22,470
-And and then you add on to that all the sort of harder to debug things like memory errors that we could make and it can be very difficult.
+148
+00:09:12,949 --> 00:09:15,030
+And and then you add on to.
 
-91
+149
+00:09:15,030 --> 00:09:19,509
+that all the sort of harder to debug things like memory errors.
+
+150
+00:09:19,509 --> 00:09:22,470
+that we could make and it can be very difficult.
+
+151
 00:09:22,470 --> 00:09:27,670
 And so sometimes some applications just suffer from those hard bugs.
 
-92
+152
 00:09:27,670 --> 00:09:32,631
-And sometimes it's also just a matter of not enough demand for something for us to spend a lot of time on it. Right.
+And sometimes it's also just a matter of not enough demand for something for us to spend a. lot of time on it. Right.
 
-93
+153
 00:09:32,640 --> 00:09:34,949
 Yeah.
 
-94
-00:09:34,949 --> 00:09:39,990
-I can see how that would be really challenging because like you were saying, you don't have the symbols, so you don't have the source code.
+154
+00:09:34,949 --> 00:09:37,990
+I can see how that would be really challenging because like you were saying,
 
-95
+155
+00:09:37,990 --> 00:09:39,990
+you don't have the symbols, so you don't have the source code.
+
+156
 00:09:39,990 --> 00:09:48,870
 So, you don't know what any of this software you're supporting, how it was actually written.
 
-96
-00:09:48,870 --> 00:09:58,470
-And you were saying that a lot of times there may be some behavior that's wrong or a crash, but it's not because Wine crashed or there was an error in Wine.
+157
+00:09:48,870 --> 00:09:53,830
+And you were saying that a lot of times there may be some behavior that's wrong. or a crash,
 
-97
-00:09:58,470 --> 00:10:04,790
-So, you just know the system calls it made, but you don't know which of the system calls didn't behave the way that the application expected.
+158
+00:09:53,830 --> 00:09:58,470
+but it's not because Wine crashed or there was an error in Wine.
 
-98
+159
+00:09:58,470 --> 00:10:00,630
+So, you just know the system calls it made,
+
+160
+00:10:00,630 --> 00:10:04,790
+but you don't know which of the system calls didn't behave the way that the application expected.
+
+161
 00:10:04,800 --> 00:10:11,269
 Exactly. I can see how that would be really challenging.
 
-99
+162
 00:10:11,269 --> 00:10:13,030
 And wine runs so many different applications.
 
-100
+163
 00:10:13,030 --> 00:10:21,509
 I'm kind of curious, how do you even track what's working and what's not as you change wine?
 
-101
-00:10:21,509 --> 00:10:27,030
-Because if you support thousands or tens of thousands of applications, how do you know when you've got a regression or not?
+164
+00:10:21,509 --> 00:10:23,990
+Because if you support thousands or tens of thousands of applications,
 
-102
+165
+00:10:24,000 --> 00:10:27,030
+how do you know when you've got a regression or not?
+
+166
 00:10:27,040 --> 00:10:29,750
 Great question.
 
-103
+167
 00:10:29,750 --> 00:10:32,470
 Probably over half of wine by like source code volume.
 
-104
-00:10:32,470 --> 00:10:39,190
-I have to actually check what it is, but I think it's probably over half, is what we call is tests.
+168
+00:10:32,470 --> 00:10:34,550
+I have to actually check what it is,
 
-105
+169
+00:10:34,550 --> 00:10:39,190
+but I think it's probably over half, is what we call is tests.
+
+170
 00:10:39,190 --> 00:10:41,590
 And these tests serve two purposes.
 
-106
-00:10:41,590 --> 00:10:53,030
-The one purpose is they are regression tests and the other purpose is they are conformance tests that test that test how an API behaves on Windows and validates that we are behaving the same way.
+171
+00:10:41,590 --> 00:10:43,430
+The one purpose is they are regression tests.
 
-107
-00:10:53,030 --> 00:11:02,630
-So we write all these tests, we run them on Windows and write the tests to check what the Windows returns and then we run them on Wine and make sure that that matches.
+172
+00:10:43,430 --> 00:10:45,590
+and the other purpose is they are conformance tests.
 
-108
-00:11:02,640 --> 00:11:14,950
-And we have just such a huge body of tests to make sure that we're not breaking anything and that all the code that we get into wine that looks like, wow, it's doing that really? Well, nope.
+173
+00:10:45,600 --> 00:10:51,110
+that test that test how an API behaves on Windows.
 
-109
+174
+00:10:51,110 --> 00:10:53,030
+and validates that we are behaving the same way.
+
+175
+00:10:53,030 --> 00:10:55,910
+So we write all these tests, we run them on Windows.
+
+176
+00:10:55,910 --> 00:11:00,150
+and write the tests to check what the Windows returns.
+
+177
+00:11:00,150 --> 00:11:02,630
+and then we run them on Wine and make sure that that matches.
+
+178
+00:11:02,640 --> 00:11:09,670
+And we have just such a huge body of tests to make sure that we're not breaking anything.
+
+179
+00:11:09,670 --> 00:11:14,950
+and that all the code that we get into wine that looks like, wow, it's doing that really? Well, nope.
+
+180
 00:11:14,959 --> 00:11:16,550
 That's what Windows does.
 
-110
+181
 00:11:16,550 --> 00:11:19,350
 The test says so.
 
-111
-00:11:19,350 --> 00:11:23,269
-So pretty much any new code that we get, it has to have tests to demonstrate that it's doing the right thing.
+182
+00:11:19,350 --> 00:11:21,670
+So pretty much any new code that we get,
 
-112
-00:11:23,279 --> 00:11:34,230
-And so rather than testing against a specific application, seeing if it works,
+183
+00:11:21,670 --> 00:11:23,269
+it has to have tests to demonstrate that it's doing the right thing.
 
-113
-00:11:34,230 --> 00:11:40,470
-you're making a call to a Windows system call, seeing how it responds, and then making the same call within Wine and just making sure they match.
+184
+00:11:23,279 --> 00:11:29,990
+And so rather than testing against a specific application,
 
-114
+185
+00:11:29,990 --> 00:11:36,790
+seeing if it works, you're making a call to a Windows system call, seeing how it responds,
+
+186
+00:11:36,790 --> 00:11:40,470
+and then making the same call within Wine and just making sure they match.
+
+187
 00:11:40,480 --> 00:11:43,351
 Yes. Exactly.
 
-115
+188
 00:11:43,351 --> 00:11:45,910
 And that is a lot more automatable, right?
 
-116
+189
 00:11:45,910 --> 00:11:50,470
 Because otherwise you have to manually, you know, these are all graphical applications.
 
-117
+190
 00:11:50,470 --> 00:11:54,310
 You'd have to manually do the things and make sure they work.
 
-118
-00:11:54,310 --> 00:12:00,471
-But if you write automatable tests, you can just run them all and the machine will complain at you if it fails. It continuous integration.
+191
+00:11:54,310 --> 00:11:58,069
+But if you write automatable tests, you can just run them all.
 
-119
-00:12:00,480 --> 00:12:11,910
-And because there's all these potential compatibility issues where maybe a certain call doesn't behave the way an application expects,
+192
+00:11:58,069 --> 00:12:00,471
+and the machine will complain at you if it fails. It continuous integration.
 
-120
+193
+00:12:00,480 --> 00:12:07,430
+And because there's all these potential compatibility issues.
+
+194
+00:12:07,430 --> 00:12:11,910
+where maybe a certain call doesn't behave the way an application expects,
+
+195
 00:12:11,910 --> 00:12:17,110
 what are the types of ways that shows when someone's using software?
 
-121
-00:12:17,110 --> 00:12:21,430
-I mean, I think you mentioned crashes, but I imagine there could be all sorts of other types of behavior.
+196
+00:12:17,110 --> 00:12:18,949
+I mean, I think you mentioned crashes,
 
-122
+197
+00:12:18,949 --> 00:12:21,430
+but I imagine there could be all sorts of other types of behavior.
+
+198
 00:12:21,440 --> 00:12:23,750
 Yes, very much so.
 
-123
+199
 00:12:23,750 --> 00:12:27,990
 Basically, anything you can imagine again is what will happen.
 
-124
-00:12:27,990 --> 00:12:33,750
-You can have crashes are the easy ones because you know when and where it crash and you can work backwards from there.
+200
+00:12:27,990 --> 00:12:30,389
+You can have crashes are the easy ones.
 
-125
+201
+00:12:30,389 --> 00:12:33,750
+because you know when and where it crash and you can work backwards from there.
+
+202
 00:12:33,750 --> 00:12:36,389
 But you can also it could hang.
 
-126
+203
 00:12:36,389 --> 00:12:38,390
 It could not render right. Like maybe render a black screen.
 
-127
-00:12:38,399 --> 00:12:47,991
-For games you could very frequently have graphical glitches where maybe some objects won't render right or the entire screen will be red. Who knows?
+204
+00:12:38,399 --> 00:12:43,030
+For games you could very frequently have graphical glitches.
 
-128
+205
+00:12:43,030 --> 00:12:47,991
+where maybe some objects won't render right or the entire screen will be red. Who knows?
+
+206
 00:12:47,991 --> 00:12:51,910
 In a very bad case you could even bring down your system.
 
-129
+207
 00:12:51,910 --> 00:12:53,670
 And we usually say that's not Wine's fault.
 
-130
+208
 00:12:53,670 --> 00:12:57,431
 That's the graphics library's fault cuz they're not supposed to do that. no matter what we do.
 
-131
+209
 00:12:57,431 --> 00:13:02,150
 But sometimes we have to work around that anyway.
 
-132
+210
 00:13:02,150 --> 00:13:05,430
 But yeah, there's been some very strange and idiosyncratic bugs out there, too.
 
-133
+211
 00:13:05,440 --> 00:13:07,190
 Yeah.
 
-134
-00:13:07,190 --> 00:13:14,950
-And like you mentioned that there's so many different things that could have gone wrong that I imagine it's very difficult to find. Yeah.
+212
+00:13:07,190 --> 00:13:10,230
+And like you mentioned that there's so many different things.
 
-135
-00:13:14,950 --> 00:13:18,310
-And when software runs through wine,
+213
+00:13:10,230 --> 00:13:14,950
+that could have gone wrong that I imagine it's very difficult to find. Yeah.
 
-136
-00:13:18,310 --> 00:13:28,710
-I think a lot of our listeners will probably be familiar with running things in a virtual machine and they know that there's a big performance impact from doing that.
+214
+00:13:14,950 --> 00:13:21,829
+And when software runs through wine, I think a lot of our listeners will probably be familiar with.
 
-137
+215
+00:13:21,829 --> 00:13:23,430
+running things in a virtual machine.
+
+216
+00:13:23,430 --> 00:13:28,710
+and they know that there's a big performance impact from doing that.
+
+217
 00:13:28,710 --> 00:13:38,790
 How does the performance of applications compare to running natively on the original Windows OS versus virtual machines?
 
-138
-00:13:38,790 --> 00:13:45,670
-So in theory, and I haven't actually done this recently, so I can't speak too much to that, but in theory, the idea is it's a lot faster.
+218
+00:13:38,790 --> 00:13:40,629
+So in theory, and I haven't actually done this recently,
 
-139
+219
+00:13:40,629 --> 00:13:45,670
+so I can't speak too much to that, but in theory, the idea is it's a lot faster.
+
+220
 00:13:45,680 --> 00:13:51,829
 So there is a bit of a joke acronym to Wine.
 
-140
-00:13:51,829 --> 00:13:57,110
-Wine is not an emulator, even though I start out by saying Wine is an emulator and it was originally called a Windows emulator.
+221
+00:13:51,829 --> 00:13:55,350
+Wine is not an emulator, even though I start out by saying Wine is an emulator.
 
-141
-00:13:57,110 --> 00:14:02,230
-But what this basically means is Wine is not a CPU emulator.
+222
+00:13:55,350 --> 00:13:57,110
+and it was originally called a Windows emulator.
 
-142
-00:14:02,230 --> 00:14:10,629
-When you think about emulators in a general sense, they're often emulators for specific CPUs, often older ones like Commodore emulator or an Omega emulator.
+223
+00:13:57,110 --> 00:14:03,670
+But what this basically means is Wine is not a CPU emulator. When you think about emulators in a general sense,
 
-143
-00:14:10,629 --> 00:14:20,870
-But in this case, you have software that's written for an x86 CPU and it's running on an x86 CPU by giving it the same instructions that it's giving on Windows.
+224
+00:14:03,670 --> 00:14:10,629
+they're often emulators for specific CPUs, often older ones like Commodore emulator or an Omega emulator.
 
-144
+225
+00:14:10,629 --> 00:14:14,230
+But in this case, you have software that's written for an x86 CPU.
+
+226
+00:14:14,240 --> 00:14:20,870
+and it's running on an x86 CPU by giving it the same instructions that it's giving on Windows.
+
+227
 00:14:20,870 --> 00:14:26,710
 It's just that when it says now call this Windows function, it calls us instead.
 
-145
+228
 00:14:26,710 --> 00:14:28,790
 So that all should perform exactly the same.
 
-146
-00:14:28,790 --> 00:14:42,150
-The only performance difference at that point is that all should perform exactly the same as opposed to a virtual machine where you have to interpret the instructions and maybe translate them to a different instruction set.
+229
+00:14:28,790 --> 00:14:31,509
+The only performance difference at that point is.
 
-147
-00:14:42,150 --> 00:14:52,629
-The only performance difference is going to be in the functions that we are implementing themselves and we try to implements them to perform as well or almost as well as Windows.
+230
+00:14:31,519 --> 00:14:36,150
+that all should perform exactly the same as opposed to a virtual machine.
 
-148
-00:14:52,629 --> 00:15:02,870
-there's always going to be a bit of a theoretical gap because we have to translate from say one API to another, but we try to make that as little as possible.
+231
+00:14:36,150 --> 00:14:38,389
+where you have to interpret the instructions.
 
-149
-00:15:02,870 --> 00:15:14,870
-And in some cases, the operating system we're running on is just better than Windows and the libraries we're using are better than Windows, so our games will run faster, for example.
+232
+00:14:38,399 --> 00:14:42,150
+and maybe translate them to a different instruction set.
 
-150
+233
+00:14:42,150 --> 00:14:48,310
+The only performance difference is going to be in the functions that we are implementing themselves.
+
+234
+00:14:48,310 --> 00:14:52,629
+and we try to implements them to perform as well or almost as well as Windows.
+
+235
+00:14:52,629 --> 00:14:55,430
+there's always going to be a bit of a theoretical gap.
+
+236
+00:14:55,430 --> 00:14:59,670
+because we have to translate from say one API to another,
+
+237
+00:14:59,670 --> 00:15:02,870
+but we try to make that as little as possible.
+
+238
+00:15:02,870 --> 00:15:07,509
+And in some cases, the operating system we're running on is just better than Windows.
+
+239
+00:15:07,509 --> 00:15:12,550
+and the libraries we're using are better than Windows,
+
+240
+00:15:12,550 --> 00:15:14,870
+so our games will run faster, for example.
+
+241
 00:15:14,870 --> 00:15:19,269
 Sometimes we can do a better job than Windows at implementing something that's under our purview.
 
-151
-00:15:19,279 --> 00:15:24,470
-There are some games that do actually run a little bit faster on Wine than they do on Windows.
+242
+00:15:19,279 --> 00:15:24,471
+There are some games that do actually run a little bit faster on Wine than they do on. Windows.
 
-152
+243
 00:15:24,480 --> 00:15:31,350
 That reminds me of how there's these gaming handhelds out now.
 
-153
-00:15:31,350 --> 00:15:38,790
-And some of the same ones, they either let you install Linux or install Windows or they just come with a pre-installed.
+244
+00:15:31,350 --> 00:15:33,269
+And some of the same ones, they.
 
-154
+245
+00:15:33,269 --> 00:15:38,790
+either let you install Linux or install Windows or they just come with a pre-installed.
+
+246
 00:15:38,790 --> 00:15:46,150
 And I believe what I've read is that often times running the same game on both operating systems,
 
-155
-00:15:46,150 --> 00:15:51,990
-running the same game on Linux, the battery life is better and sometimes even the performance is better with these handhelds.
+247
+00:15:46,150 --> 00:15:48,629
+running the same game on Linux, the battery life is better.
 
-156
+248
+00:15:48,629 --> 00:15:51,990
+and sometimes even the performance is better with these handhelds.
+
+249
 00:15:51,990 --> 00:15:56,069
 So it's really interesting that that can even be the case.
 
-157
-00:15:56,069 --> 00:16:10,629
-Yeah, it's really a testament to the huge amount of work that's gone into that both on the wine side and on the side of the graphics team and the kernel team and of course the years of work that's gone into Linux even before these gaming handhelds were even under consideration.
+250
+00:15:56,069 --> 00:15:58,389
+Yeah, it's really a testament to the huge amount of work that's gone into.
 
-158
+251
+00:15:58,399 --> 00:16:00,870
+that both on the wine side.
+
+252
+00:16:00,870 --> 00:16:04,870
+and on the side of the graphics team and the kernel team.
+
+253
+00:16:04,870 --> 00:16:10,629
+and of course the years of work that's gone into Linux even before these gaming handhelds were even. under consideration.
+
+254
 00:16:10,639 --> 00:16:18,790
 So for people who are familiar with handhelds like the Steam Deck, they may have heard of Proton.
 
-159
+255
 00:16:18,790 --> 00:16:24,871
 I wonder if you can explain what Proton is and how it relates to wine. Yeah.
 
-160
+256
 00:16:24,871 --> 00:16:29,110
 So, Proton is sort of a fork, although we try to avoid the term fork.
 
-161
+257
 00:16:29,110 --> 00:16:34,389
 We say it's a downstream distribution because we contribute back up to wine.
 
-162
+258
 00:16:34,389 --> 00:16:37,829
 So, it is a alternate distribution fork of wine.
 
-163
-00:16:37,829 --> 00:16:46,710
-And it's also some code that basically glues wine into an embedding application originally intended for steam and developed for Valve,
+259
+00:16:37,829 --> 00:16:44,710
+And it's also some code that basically glues wine into an embedding application originally intended for steam.
 
-164
-00:16:46,710 --> 00:16:49,670
-but it has also been used in other software.
+260
+00:16:44,710 --> 00:16:49,670
+and developed for Valve, but it has also been used in other software.
 
-165
-00:16:49,670 --> 00:16:58,230
-So, where Proton differs from wine besides the glue part is it has some extra hacks in it for bugs that are hard to fix and easy to hack around.
+261
+00:16:49,670 --> 00:16:55,350
+So, where Proton differs from wine besides the glue part is it has some extra hacks in it.
 
-166
-00:16:58,240 --> 00:17:11,350
-It has some quick hacks for making games work now that are like in the process of going upstream to Wine and getting their code quality improved and going through review.
+262
+00:16:55,350 --> 00:16:58,230
+for bugs that are hard to fix and easy to hack around.
 
-167
+263
+00:16:58,240 --> 00:17:04,870
+It has some quick hacks for making games work now.
+
+264
+00:17:04,870 --> 00:17:07,510
+that are like in the process of going upstream to Wine.
+
+265
+00:17:07,510 --> 00:17:11,350
+and getting their code quality improved and going through review.
+
+266
 00:17:11,350 --> 00:17:13,189
 But we want the game to work now when we distribute it.
 
-168
-00:17:13,189 --> 00:17:19,990
-So that'll go into Proton immediately and then once a patch makes it upstream, we replace it with the version of the patch from upstream.
+267
+00:17:13,189 --> 00:17:16,949
+So that'll go into Proton immediately and then once a patch makes it upstream,
 
-169
+268
+00:17:16,949 --> 00:17:19,990
+we replace it with the version of the patch from upstream.
+
+269
 00:17:19,990 --> 00:17:22,870
 There's other things to make it interact nicely with Steam and so on.
 
-170
+270
 00:17:22,880 --> 00:17:25,110
 Yeah.
 
-171
-00:17:25,110 --> 00:17:30,870
-And I think for people who aren't familiar, Steam is like this, I don't even know what you call it, like a gaming store.
+271
+00:17:25,110 --> 00:17:28,230
+And I think for people who aren't familiar,
 
-172
+272
+00:17:28,230 --> 00:17:30,870
+Steam is like this, I don't even know what you call it, like a gaming store.
+
+273
 00:17:30,880 --> 00:17:35,270
 Call game store game distribution service.
 
-173
+274
 00:17:35,270 --> 00:17:37,190
 It's got a huge variety of games on it.
 
-174
-00:17:37,190 --> 00:17:42,789
-And it's a great way for publishers to interact with the wider gaming community just after paying a cut to Valve of their profits.
+275
+00:17:37,190 --> 00:17:40,789
+And it's a great way for publishers to interact with the wider gaming community just after paying a.
 
-175
+276
+00:17:40,789 --> 00:17:42,789
+cut to Valve of their profits.
+
+277
 00:17:42,789 --> 00:17:44,390
 They can reach a lot of people that way.
 
-176
-00:17:44,390 --> 00:17:54,150
-And because all these games are on Steam and Valve wants them to work well on their handheld, they contracted us to basically take their entire catalog,
+278
+00:17:44,390 --> 00:17:51,750
+And because all these games are on Steam and Valve wants them to work well on their handheld,
 
-177
-00:17:54,160 --> 00:18:01,830
-which is huge, enormous, and try and just step by step fix every game and make them all work.
+279
+00:17:51,750 --> 00:17:57,270
+they contracted us to basically take their entire catalog, which is huge, enormous,
 
-178
+280
+00:17:57,270 --> 00:18:01,830
+and try and just step by step fix every game and make them all work.
+
+281
 00:18:01,830 --> 00:18:06,710
 And I guess for people who aren't familiar, Valve Software is the company that runs Steam.
 
-179
+282
 00:18:06,720 --> 00:18:12,150
 And so it sounds like they've asked your company to help improve the compatibility of their catalog.
 
-180
+283
 00:18:12,160 --> 00:18:14,789
 Yes, Valve contracted us.
 
-181
-00:18:14,789 --> 00:18:23,350
-And again, when you're talking about Wine using lower level libraries, they've also contracted a lot of other people outside of Wine.
+284
+00:18:14,789 --> 00:18:18,870
+And again, when you're talking about Wine using lower level libraries,
 
-182
-00:18:23,350 --> 00:18:30,870
-Basically the entire stack has had a tremendous tremendous investment by valve software to make gaming on Linux work well.
+285
+00:18:18,870 --> 00:18:23,350
+they've also contracted a lot of other people outside of Wine.
 
-183
-00:18:30,880 --> 00:18:36,230
-And when you refer to the entire stack like what are some of those pieces at least at a high level?
+286
+00:18:23,350 --> 00:18:30,871
+Basically the entire stack has had a tremendous tremendous investment by valve software to make gaming on Linux. work well.
 
-184
+287
+00:18:30,880 --> 00:18:36,231
+And when you refer to the entire stack like what are some of those pieces at least at. a high level?
+
+288
 00:18:36,240 --> 00:18:38,549
 Let me think.
 
-185
-00:18:38,549 --> 00:18:50,950
-There is the wine project the Mesa graphics libraries that's another open source software project that has existed for a long time but Valve has put a lot of funding and effort into it.
+289
+00:18:38,549 --> 00:18:43,909
+There is the wine project the Mesa graphics libraries that's another open source software project.
 
-186
+290
+00:18:43,919 --> 00:18:46,150
+that has existed for a long time.
+
+291
+00:18:46,150 --> 00:18:50,950
+but Valve has put a lot of funding and effort into it.
+
+292
 00:18:50,950 --> 00:18:53,430
 the Linux kernel in various different ways.
 
-187
+293
 00:18:53,430 --> 00:18:57,830
 The desktop environment and window manager are also things they've invested in.
 
-188
+294
 00:18:57,830 --> 00:19:04,150
 Everything that the game needs on any level and that the operating system of the handheld device needs.
 
-189
+295
 00:19:04,160 --> 00:19:10,390
 And Wine's been going on for quite a while. I think it's over a decade, right?
 
-190
+296
 00:19:10,400 --> 00:19:12,310
 Oh, far more than a decade.
 
-191
+297
 00:19:12,310 --> 00:19:18,391
 I believe it started in I want to say about 1995, mid '90s. I probably have that date wrong.
 
-192
+298
 00:19:18,391 --> 00:19:20,310
 I believe Wayne started about the mid 90s.
 
-193
+299
 00:19:20,320 --> 00:19:23,990
 So it's been going on for about three decades at this rate.
 
-194
+300
 00:19:24,000 --> 00:19:28,070
 Wow.
 
-195
+301
 00:19:28,070 --> 00:19:30,230
 And so all this time, how has the project sort of sustained itself?
 
-196
+302
 00:19:30,230 --> 00:19:34,950
 Like who's been involved and how has it been able to keep going this long?
 
-197
+303
 00:19:34,960 --> 00:19:41,110
 I think as is the case with a lot of free software, it just keeps trudging along.
 
-198
+304
 00:19:41,110 --> 00:19:42,710
 There's been times where there's a lot of interest in wine.
 
-199
+305
 00:19:42,710 --> 00:19:44,470
 There's been times where there's less.
 
-200
+306
 00:19:44,470 --> 00:19:48,710
 And we're fortunate to be in a time where there's a lot of interest in it.
 
-201
+307
 00:19:48,710 --> 00:19:53,909
 We've had the same maintainer for almost his entire existence, Alexander Giuliard.
 
-202
-00:19:53,909 --> 00:20:01,431
-There was one person who started maintained it before him and left maintainership to him after a year or two. Bob Amstad.
+308
+00:19:53,909 --> 00:19:58,230
+There was one person who started maintained it before him.
 
-203
+309
+00:19:58,230 --> 00:20:01,431
+and left maintainership to him after a year or two. Bob Amstad.
+
+310
 00:20:01,431 --> 00:20:05,669
 And there's been a few developers who have been around for a very long time.
 
-204
-00:20:05,669 --> 00:20:13,510
-A lot of developers who have been around for a decent amount of time, but not for the entire duration.
+311
+00:20:05,669 --> 00:20:09,750
+A lot of developers who have been around for a decent amount of time,
 
-205
-00:20:13,510 --> 00:20:20,390
-and then a very very large number of people who come and submit a one-off fix for their individual application that they want to make work.
+312
+00:20:09,750 --> 00:20:13,510
+but not for the entire duration.
 
-206
+313
+00:20:13,510 --> 00:20:15,750
+and then a very very large number of people.
+
+314
+00:20:15,750 --> 00:20:20,390
+who come and submit a one-off fix for their individual application that they want to make work.
+
+315
 00:20:20,400 --> 00:20:25,669
 How does Crossover relate to the wine project?
 
-207
-00:20:25,669 --> 00:20:32,230
-It sounds like you had mentioned Valve Software hired you for subcontract work, but Crossover itself has been around for quite a while.
+316
+00:20:25,669 --> 00:20:30,390
+It sounds like you had mentioned Valve Software hired you for subcontract work,
 
-208
+317
+00:20:30,390 --> 00:20:32,230
+but Crossover itself has been around for quite a while.
+
+318
 00:20:32,230 --> 00:20:35,190
 So, how has that been connected to the wine project?
 
-209
+319
 00:20:35,200 --> 00:20:41,990
 So, the company I work for is Codew Weavers and Crossover is our flagship software.
 
-210
+320
 00:20:41,990 --> 00:20:44,630
 So, Code Reverse does a couple different things.
 
-211
-00:20:44,630 --> 00:20:59,430
-We have a sort of a porting service where companies will come to us and say, "Can we port my application usually to Mac?" And then we also have a retail service where we basically have our own similar to Proton but older,
+321
+00:20:44,630 --> 00:20:49,750
+We have a sort of a porting service where companies will come to us and say,
 
-212
-00:20:59,430 --> 00:21:07,270
-but the same idea where we will add some hacks into it for very difficult to solve bugs and we have a nice graphical interface.
+322
+00:20:49,750 --> 00:20:52,390
+"Can we port my application usually to Mac?"
 
-213
+323
+00:20:52,390 --> 00:20:54,630
+And then we also have a retail service.
+
+324
+00:20:54,630 --> 00:20:59,430
+where we basically have our own similar to Proton but older,
+
+325
+00:20:59,430 --> 00:21:04,470
+but the same idea where we will add some hacks into it for very difficult to solve bugs.
+
+326
+00:21:04,470 --> 00:21:07,270
+and we have a nice graphical interface.
+
+327
 00:21:07,270 --> 00:21:12,390
 And then the other thing that we're selling with crossover is support.
 
-214
-00:21:12,390 --> 00:21:20,710
-So if you try to run certain application and you buy crossover, you can submit a ticket saying this doesn't work and we now have a financial incentive to fix it.
+328
+00:21:12,390 --> 00:21:15,990
+So if you try to run certain application and you buy crossover,
 
-215
+329
+00:21:15,990 --> 00:21:18,710
+you can submit a ticket saying this doesn't work.
+
+330
+00:21:18,710 --> 00:21:20,710
+and we now have a financial incentive to fix it.
+
+331
 00:21:20,710 --> 00:21:22,789
 We will spend company resources to fix your bug.
 
-216
+332
 00:21:22,799 --> 00:21:25,190
 Right?
 
-217
-00:21:25,190 --> 00:21:33,830
-So Code Reverse has been around since 1996 and Crossover has been around for probably about two decades if I'm not mistaken.
+333
+00:21:25,190 --> 00:21:28,149
+So Code Reverse has been around since 1996.
 
-218
+334
+00:21:28,149 --> 00:21:33,830
+and Crossover has been around for probably about two decades if I'm not mistaken.
+
+335
 00:21:33,830 --> 00:21:40,870
 And when you mention helping companies port their software to for example Mac OS,
 
-219
-00:21:40,870 --> 00:21:51,190
-is the approach that you would port it natively to Mac OS's APIs or is it that you would help them get it running using Wine on Mac OS?
+336
+00:21:40,870 --> 00:21:47,590
+is the approach that you would port it natively to Mac OS's APIs.
 
-220
-00:21:51,190 --> 00:22:02,549
-So that's basically what makes us so unique among porting companies is that instead of rewriting their software, we just basically stick it inside of Crossover and make it run.
+337
+00:21:47,590 --> 00:21:51,190
+or is it that you would help them get it running using Wine on Mac OS?
 
-221
-00:22:02,549 --> 00:22:10,470
-And the idea has always been the more we implement, the more we get correct, the more applications will work.
+338
+00:21:51,190 --> 00:21:57,669
+So that's basically what makes us so unique among porting companies is that instead of rewriting their software,
 
-222
+339
+00:21:57,669 --> 00:22:02,549
+we just basically stick it inside of Crossover and make it run.
+
+340
+00:22:02,549 --> 00:22:05,110
+And the idea has always been the more we implement,
+
+341
+00:22:05,110 --> 00:22:10,470
+the more we get correct, the more applications will work.
+
+342
 00:22:10,470 --> 00:22:12,550
 And sometimes it works out that way. Sometimes not really so much.
 
-223
+343
 00:22:12,550 --> 00:22:16,470
 And there's always work we have to do to get any given application to work.
 
-224
+344
 00:22:16,470 --> 00:22:20,549
 But it's very unusual because we don't ask companies for any of their code.
 
-225
+345
 00:22:20,549 --> 00:22:23,990
 we don't need it. We just fix the Windows API.
 
-226
-00:22:24,000 --> 00:22:31,029
-And so in that case, the ports would be where let's say someone sells a Mac OS version of their software.
+346
+00:22:24,000 --> 00:22:26,230
+And so in that case, the ports would be.
 
-227
+347
+00:22:26,240 --> 00:22:31,029
+where let's say someone sells a Mac OS version of their software.
+
+348
 00:22:31,029 --> 00:22:37,190
 They would bundle crossover with their software, right?
 
-228
+349
 00:22:37,190 --> 00:22:40,549
 And usually when you do this, it doesn't look like there's crossover there.
 
-229
+350
 00:22:40,549 --> 00:22:44,390
 Like it just looks like this software is native, but there is crossover under the hood.
 
-230
-00:22:44,390 --> 00:22:58,390
-And so earlier we were talking about how you're basically intercepting the system calls that these binaries are making whether that's the executable or the DLS from Windows.
+351
+00:22:44,390 --> 00:22:50,789
+And so earlier we were talking about how you're basically intercepting the system calls.
 
-231
+352
+00:22:50,799 --> 00:22:58,390
+that these binaries are making whether that's the executable or the DLS from Windows.
+
+353
 00:22:58,390 --> 00:23:04,230
 But I think probably a lot of our listeners are not really sure how that's done.
 
-232
-00:23:04,230 --> 00:23:10,070
-Like they may have built software but they don't know how do I basically hijack these system calls that this application is making.
+354
+00:23:04,230 --> 00:23:08,310
+Like they may have built software but they don't know how do I basically hijack these system calls.
 
-233
+355
+00:23:08,310 --> 00:23:10,070
+that this application is making.
+
+356
 00:23:10,070 --> 00:23:14,549
 So maybe you could talk a little bit about how that works.
 
-234
+357
 00:23:14,549 --> 00:23:16,230
 So there's a couple steps that go into it.
 
-235
-00:23:16,230 --> 00:23:29,030
-When you think about a program that's a that's a big file that's got all the machine code in it and then it's got stuff at the beginning saying here's how the program works and here's where in the file the processor should start running. That's your exe file.
+358
+00:23:16,230 --> 00:23:20,471
+When you think about a program that's a that's a big file that's got all the machine code. in it,
 
-236
+359
+00:23:20,471 --> 00:23:24,310
+and then it's got stuff at the beginning saying here's how the program works.
+
+360
+00:23:24,310 --> 00:23:29,030
+and here's where in the file the processor should start running. That's your exe file.
+
+361
 00:23:29,030 --> 00:23:34,390
 And then then your DLL files are libraries that contain shared code.
 
-237
-00:23:34,390 --> 00:23:43,190
-and you have I guess similar sort of file that says here's the entry point that runs this function this parse XML function or whatever have
+362
+00:23:34,390 --> 00:23:36,310
+and you have I guess similar sort of file.
 
-238
-00:23:43,190 --> 00:23:54,950
-you and here's this entry point that has a generate XML function and so on and so forth and then the operating system will basically take the exe file and see all the bits in it say
+363
+00:23:36,310 --> 00:23:43,190
+that says here's the entry point that runs this function this parse XML function or whatever have you.
 
-239
-00:23:54,960 --> 00:24:07,669
-I want to call the parse XML function it'll load that DL and hook it up so the processor ends up just seeing jump directly to this parse xml function and then run that and then return and so on.
+364
+00:23:43,190 --> 00:23:48,870
+and here's this entry point that has a generate XML function and so on and so forth.
 
-240
-00:24:07,679 --> 00:24:19,510
-And so what wine does is part of wine is a libraries that the implementing that parse xml and readxml function but part of it is the loader which is the part of the operating system
+365
+00:23:48,870 --> 00:23:54,950
+and then the operating system will basically take the exe file and see all the bits in it.
 
-241
-00:24:19,510 --> 00:24:24,789
-that hooks everything together and when we load we redirect to our libraries.
+366
+00:23:54,950 --> 00:24:01,029
+say I want to call the parse XML function it'll load that DL and hook it up.
 
-242
-00:24:24,789 --> 00:24:32,149
-We don't have windows libraries we we redirect to ours then we run our code and then we jump back to the program.
+367
+00:24:01,029 --> 00:24:04,950
+so the processor ends up just seeing jump directly to this parse xml function.
 
-243
+368
+00:24:04,950 --> 00:24:07,669
+and then run that and then return and so on.
+
+369
+00:24:07,679 --> 00:24:12,870
+And so what wine does is part of wine is a libraries.
+
+370
+00:24:12,870 --> 00:24:15,669
+that the implementing that parse xml and readxml function.
+
+371
+00:24:15,669 --> 00:24:17,669
+but part of it is the loader.
+
+372
+00:24:17,669 --> 00:24:22,230
+which is the part of the operating system that hooks everything together.
+
+373
+00:24:22,230 --> 00:24:24,789
+and when we load we redirect to our libraries.
+
+374
+00:24:24,789 --> 00:24:27,110
+We don't have windows libraries we we redirect to ours.
+
+375
+00:24:27,120 --> 00:24:32,149
+then we run our code and then we jump back to the program.
+
+376
 00:24:32,149 --> 00:24:39,190
-So it's the loader that's a part of wine that's actually not sure if running the executable is the right term.
+So it's the loader that's a part of wine that's actually not sure. if running the executable is the right term.
 
-244
+377
 00:24:39,200 --> 00:24:40,789
 No, I think that's a good term.
 
-245
-00:24:40,789 --> 00:24:49,669
-It starts in a loader and then we say okay now run the machine code next executable and then it runs and it jumps between our libraries and back and so on.
+378
+00:24:40,789 --> 00:24:45,190
+It starts in a loader and then we say okay now run the machine code next executable.
 
-246
+379
+00:24:45,200 --> 00:24:49,669
+and then it runs and it jumps between our libraries and back and so on.
+
+380
 00:24:49,669 --> 00:24:56,390
 And like you were saying before, often times when it's trying to make a system call,
 
-247
-00:24:56,400 --> 00:25:07,990
-it ends up being handled by a function that you've written in wine and then that in turn will call the Linux system calls or the Mac OS system calls to try and accomplish the same result.
+381
+00:24:56,400 --> 00:25:01,029
+it ends up being handled by a function that you've written in wine.
 
-248
-00:25:08,000 --> 00:25:20,070
-Right. Exactly. And something that I think maybe not everyone is familiar with is there's this concept of user space versus kernel space. Could you explain what the difference is?
+382
+00:25:01,029 --> 00:25:06,310
+and then that in turn will call the Linux system calls.
 
-249
-00:25:20,080 --> 00:25:27,909
-So the way I would describe a kernel is it's the part of the operating system that can do anything, right?
+383
+00:25:06,310 --> 00:25:07,990
+or the Mac OS system calls to try and accomplish the same result.
 
-250
+384
+00:25:08,000 --> 00:25:17,029
+Right. Exactly. And something that I think maybe not everyone is familiar with is there's this concept of user space.
+
+385
+00:25:17,029 --> 00:25:20,070
+versus kernel space. Could you explain what the difference is?
+
+386
+00:25:20,080 --> 00:25:25,190
+So the way I would describe a kernel is it's the part of the operating system.
+
+387
+00:25:25,200 --> 00:25:27,909
+that can do anything, right?
+
+388
 00:25:27,909 --> 00:25:32,390
 So any code that runs on your computer is talking to the processor.
 
-251
+389
 00:25:32,390 --> 00:25:35,750
 And the processor has to be able to do anything the computer can do.
 
-252
+390
 00:25:35,750 --> 00:25:39,029
 It has to be able to talk to the hardware.
 
-253
+391
 00:25:39,029 --> 00:25:41,190
 It has to set up the memory space.
 
-254
+392
 00:25:41,190 --> 00:25:43,029
 So actually a very complicated task.
 
-255
+393
 00:25:43,029 --> 00:25:47,990
 Has to be able to switch to another task and basically talk to another program.
 
-256
+394
 00:25:47,990 --> 00:25:49,830
 And you have to have something there that can do everything.
 
-257
+395
 00:25:49,840 --> 00:25:53,029
 But you don't want any program to be able to do everything.
 
-258
+396
 00:25:53,029 --> 00:25:55,350
 Not since the '90s.
 
-259
+397
 00:25:55,350 --> 00:25:57,269
 It's about when we realized that we can't do that.
 
-260
+398
 00:25:57,269 --> 00:25:59,590
 So the kernel is the part that can do everything.
 
-261
-00:25:59,590 --> 00:26:09,669
-And when you need to do something that requires those permissions that you can't give everyone, you have to talk to the colonel and ask it, hey, can you do this for me, please?
+399
+00:25:59,590 --> 00:26:05,029
+And when you need to do something that requires those permissions that you can't give everyone,
 
-262
+400
+00:26:05,029 --> 00:26:09,669
+you have to talk to the colonel and ask it, hey, can you do this for me, please?
+
+401
 00:26:09,669 --> 00:26:13,669
 In a very restricted way where it's only the safe things you can do.
 
-263
+402
 00:26:13,669 --> 00:26:15,909
 And to a degree, it's also like a library, right?
 
-264
+403
 00:26:15,909 --> 00:26:23,669
-It's kernels have always existed and since they've always just been the core standard library of the computer that does the things like read
+It's kernels have always existed and since they've always just been the core standard library of the computer.
 
-265
-00:26:23,679 --> 00:26:36,070
-and write files which are very very complicated tasks under the hood but look very simple because all you say is write this file and talk to the hardware and abstract away all the difference between different drivers.
+404
+00:26:23,669 --> 00:26:28,310
+that does the things like read and write files which are very very complicated tasks under the hood.
 
-266
+405
+00:26:28,310 --> 00:26:31,990
+but look very simple because all you say is write this file and talk to the hardware.
+
+406
+00:26:32,000 --> 00:26:36,070
+and abstract away all the difference between different drivers.
+
+407
 00:26:36,070 --> 00:26:40,070
 So the kernel is doing all of these things.
 
-267
-00:26:40,070 --> 00:26:50,149
-So because the kernel is the part that can do everything, when you think about the kernel, it is basically one program that is always running on your computer, but it's only one program.
+408
+00:26:40,070 --> 00:26:43,669
+So because the kernel is the part that can do everything,
 
-268
-00:26:50,149 --> 00:26:58,310
-So when a user calls the kernel, you are switching from one program to another and you're doing a lot of complicated things as part of this.
+409
+00:26:43,669 --> 00:26:47,510
+when you think about the kernel, it is basically one program that is always running on your computer,
 
-269
-00:26:58,310 --> 00:27:05,990
-You're switching to the higher privilege level where you can do anything and you're switching the state from one program to another.
+410
+00:26:47,510 --> 00:26:50,149
+but it's only one program.
 
-270
-00:27:05,990 --> 00:27:13,430
-And so this is what we mean when we talk about user space where you're running like a normal program and kernel space where you've suddenly switched into the kernel and
+411
+00:26:50,149 --> 00:26:52,710
+So when a user calls the kernel,
 
-271
-00:27:13,440 --> 00:27:22,470
-now you're executing with increased privileges and a different idea of the process space and increased responsibility and so on.
+412
+00:26:52,710 --> 00:26:54,630
+you are switching from one program to another.
 
-272
+413
+00:26:54,630 --> 00:26:59,669
+and you're doing a lot of complicated things as part of this. You're switching to the higher privilege level.
+
+414
+00:26:59,669 --> 00:27:05,990
+where you can do anything and you're switching the state from one program to another.
+
+415
+00:27:05,990 --> 00:27:07,669
+And so this is what we mean.
+
+416
+00:27:07,669 --> 00:27:13,430
+when we talk about user space where you're running like a normal program. and kernel space where you've suddenly switched into the kernel.
+
+417
+00:27:13,430 --> 00:27:18,630
+and now you're executing with increased privileges and a different idea of the process space.
+
+418
+00:27:18,630 --> 00:27:22,470
+and increased responsibility and so on.
+
+419
 00:27:22,480 --> 00:27:27,830
 Can your software engineering team plan, track and ship faster?
 
-273
+420
 00:27:27,830 --> 00:27:30,310
 Monday Dev says yes.
 
-274
+421
 00:27:30,310 --> 00:27:37,590
 With Monday Dev, you get fully customizable workflows, AI powered context, and integrations that work within your IDE.
 
-275
+422
 00:27:37,590 --> 00:27:44,390
 No more admin bottlenecks, no add-ons, no BS, just a frictionless platform built for developers.
 
-276
+423
 00:27:44,390 --> 00:27:46,470
 Try for free at monday.com/dev.
 
-277
+424
 00:27:46,480 --> 00:27:55,669
 You'll love it.
 
-278
-00:27:58,870 --> 00:28:12,870
-And so do most applications when you were talking about the system calls for handling 3D audio or parsing XML are those system calls considered part of user space and then those things call the kernel space on your behalf or how would you describe that?
+425
+00:27:58,870 --> 00:28:04,870
+And so do most applications when you were talking about the system calls for handling 3D audio.
 
-279
-00:28:12,880 --> 00:28:20,310
-So so when you look at Windows most of the Windows library the vast vast majority of it is all user space.
+426
+00:28:04,870 --> 00:28:09,029
+or parsing XML are those system calls considered part of user space.
 
-280
-00:28:20,310 --> 00:28:23,510
+427
+00:28:09,029 --> 00:28:12,870
+and then those things call the kernel space on your behalf. or how would you describe that?
+
+428
+00:28:12,880 --> 00:28:20,311
+So so when you look at Windows most of the Windows library the vast vast majority of it. is all user space.
+
+429
+00:28:20,311 --> 00:28:23,510
 Most of these libraries that we implement never leave user space.
 
-281
+430
 00:28:23,510 --> 00:28:25,669
 They never need to call into the kernel.
 
-282
+431
 00:28:25,669 --> 00:28:29,590
 Only the core low-level stuff, things like we need to read a file, that's a kernel call.
 
-283
+432
 00:28:29,590 --> 00:28:33,590
 When you need to sleep and wait for some seconds, that's a kernel call.
 
-284
+433
 00:28:33,590 --> 00:28:38,710
 You need to talk to a different process, things that interact with different processes in general.
 
-285
-00:28:38,710 --> 00:28:44,950
-Not just allocate memory, but allocate a page of memory like a from the memory manager and then that gets suballocated by the heap allocator.
+434
+00:28:38,710 --> 00:28:42,710
+Not just allocate memory, but allocate a page of memory like a from the memory manager.
 
-286
+435
+00:28:42,710 --> 00:28:44,950
+and then that gets suballocated by the heap allocator.
+
+436
 00:28:44,960 --> 00:28:47,510
 So things like that.
 
-287
-00:28:47,510 --> 00:28:57,029
-So if I was writing an application and I needed to open a file for example, does that mean that I would have to communicate with the kernel to read that file?
+437
+00:28:47,510 --> 00:28:53,269
+So if I was writing an application and I needed to open a file for example,
 
-288
+438
+00:28:53,269 --> 00:28:57,029
+does that mean that I would have to communicate with the kernel to read that file?
+
+439
 00:28:57,039 --> 00:29:02,310
 Right. Exactly. And so most applications it sounds like it's going to be a mixture.
 
-289
-00:29:02,310 --> 00:29:12,789
-You're going to have a lot of things that call user space calls and then a few you mentioned more low-level ones that are going to require you to communicate with the kernel.
+440
+00:29:02,310 --> 00:29:10,230
+You're going to have a lot of things that call user space calls. and then a few you mentioned more low-level ones.
 
-290
+441
+00:29:10,230 --> 00:29:12,789
+that are going to require you to communicate with the kernel.
+
+442
 00:29:12,799 --> 00:29:15,110
 Yeah, basically.
 
-291
-00:29:15,110 --> 00:29:24,710
-And it's worth noting that in all operating systems, you're almost always going to be calling a user space library that might just be a thin wrapper over the kernel call.
+443
+00:29:15,110 --> 00:29:18,549
+And it's worth noting that in all operating systems,
 
-292
+444
+00:29:18,549 --> 00:29:22,789
+you're almost always going to be calling a user space library.
+
+445
+00:29:22,789 --> 00:29:24,710
+that might just be a thin wrapper over the kernel call.
+
+446
 00:29:24,710 --> 00:29:27,750
 It might it's going to do like just a little bit of work and then call the kernel.
 
-293
+447
 00:29:27,750 --> 00:29:31,830
 In fact, in Windows, that's the only way to do it.
 
-294
-00:29:31,830 --> 00:29:37,269
-In many other operating systems, you can actually say you can actually tell the processor to make the kernel call.
+448
+00:29:31,830 --> 00:29:34,310
+In many other operating systems, you can.
 
-295
-00:29:37,269 --> 00:29:44,870
-There is a special instruction that does this and it'll go directly to the kernel and there's a defined interface for this.
+449
+00:29:34,310 --> 00:29:37,269
+actually say you can actually tell the processor to make the kernel call.
 
-296
+450
+00:29:37,269 --> 00:29:39,830
+There is a special instruction that does this.
+
+451
+00:29:39,830 --> 00:29:44,870
+and it'll go directly to the kernel and there's a defined interface for this.
+
+452
 00:29:44,870 --> 00:29:46,789
 But in Windows, that interface is not defined.
 
-297
+453
 00:29:46,789 --> 00:29:50,710
 It's not stable or backwards compatible like the rest of Windows is.
 
-298
+454
 00:29:50,710 --> 00:29:53,029
 So even if you wanted to use it, you couldn't.
 
-299
-00:29:53,029 --> 00:30:01,430
-And you basically have to call into the highle libraries or low-level libraries as it were that create a file.
+455
+00:29:53,029 --> 00:29:58,630
+And you basically have to call into the highle libraries.
 
-300
+456
+00:29:58,630 --> 00:30:01,430
+or low-level libraries as it were that create a file.
+
+457
 00:30:01,430 --> 00:30:03,590
 And those don't do a lot.
 
-301
+458
 00:30:03,590 --> 00:30:09,029
 They just kind of tweak their parameters a little and then pass them right down to the kernel.
 
-302
-00:30:09,029 --> 00:30:18,950
-And so wine it sounds like it needs to implement both the user space calls of Windows but then also the kernel calls as well.
+459
+00:30:09,029 --> 00:30:15,110
+And so wine it sounds like it needs to implement both the user space calls of Windows.
 
-303
+460
+00:30:15,110 --> 00:30:18,950
+but then also the kernel calls as well.
+
+461
 00:30:18,950 --> 00:30:24,549
 But wine itself is that only in Linux user space or Mac OS user space.
 
-304
-00:30:24,559 --> 00:30:36,230
-Yes, this is a very tricky thing but basically all of what is wine runs in the user space and we use kernel calls that are already there to talk to the host kernel.
+462
+00:30:24,559 --> 00:30:27,430
+Yes, this is a very tricky thing.
 
-305
-00:30:36,230 --> 00:30:46,630
-You get a sort of second nature of thinking about the Windows user space and kernel and then there's a host user space in kernel and wine is running all in the host user space but it's emulating the Windows kernel.
+463
+00:30:27,430 --> 00:30:32,389
+but basically all of what is wine runs in the user space.
 
-306
-00:30:46,630 --> 00:30:48,870
-In fact,
+464
+00:30:32,389 --> 00:30:36,230
+and we use kernel calls that are already there to talk to the host kernel.
 
-307
-00:30:48,870 --> 00:31:00,549
-one of the weirdest trickiest parts is I mentioned that you can run some drivers in wine and those drivers they actually are they think they're running in the Windows kernel which in a sense works the same way.
+465
+00:30:36,230 --> 00:30:39,430
+You get a sort of second nature of thinking about the Windows user space.
 
-308
-00:31:00,549 --> 00:31:07,029
-It has libraries that it can load and those drivers are basically libraries and they are making kernel calls
+466
+00:30:39,430 --> 00:30:41,590
+and kernel and then there's a host user space in kernel.
 
-309
-00:31:07,029 --> 00:31:17,830
-and they're they're making calls into the kernel library that does some very very low-level tasks that you're normally only supposed to be able to do in the kernel.
+467
+00:30:41,590 --> 00:30:46,630
+and wine is running all in the host user space but it's emulating the Windows kernel.
 
-310
+468
+00:30:46,630 --> 00:30:51,029
+In fact, one of the weirdest trickiest parts is I mentioned.
+
+469
+00:30:51,029 --> 00:30:54,870
+that you can run some drivers in wine.
+
+470
+00:30:54,870 --> 00:31:01,990
+and those drivers they actually are they think they're running in the Windows kernel. which in a sense works the same way. It has libraries that it can load.
+
+471
+00:31:01,990 --> 00:31:07,029
+and those drivers are basically libraries and they are making kernel calls.
+
+472
+00:31:07,029 --> 00:31:11,750
+and they're they're making calls into the kernel library.
+
+473
+00:31:11,750 --> 00:31:13,990
+that does some very very low-level tasks.
+
+474
+00:31:13,990 --> 00:31:17,830
+that you're normally only supposed to be able to do in the kernel.
+
+475
 00:31:17,830 --> 00:31:23,029
 And because the kernel requires some privileges, we kind of pretend we have them.
 
-311
+476
 00:31:23,029 --> 00:31:26,149
 And in many cases, even the drivers are using abstractions.
 
-312
-00:31:26,149 --> 00:31:33,590
-We can just implement those abstractions kind of over the slightly higher level abstractions that exist in user space.
+477
+00:31:26,149 --> 00:31:33,591
+We can just implement those abstractions kind of over the slightly higher level abstractions. that exist in user space.
 
-313
+478
 00:31:33,600 --> 00:31:38,389
 Yeah, I hadn't even considered being able to use hardware devices.
 
-314
-00:31:38,389 --> 00:31:47,430
-But I I suppose if in the end if you're reproducing the kernel then whether you're running software or you're talking
+479
+00:31:38,389 --> 00:31:40,630
+But I I suppose if in the end.
 
-315
-00:31:47,430 --> 00:31:59,190
-to a hardware device as long as you implement the calls correctly then I I suppose it works cuz you're talking about device like maybe it's some kind of USB device that has drivers for Windows but it doesn't for Linux.
+480
+00:31:40,630 --> 00:31:47,430
+if you're reproducing the kernel then whether you're running software or you're talking to a hardware device.
 
-316
+481
+00:31:47,430 --> 00:31:51,509
+as long as you implement the calls correctly then I I suppose it works.
+
+482
+00:31:51,509 --> 00:31:57,029
+cuz you're talking about device like maybe it's some kind of USB device.
+
+483
+00:31:57,029 --> 00:31:59,190
+that has drivers for Windows but it doesn't for Linux.
+
+484
 00:31:59,200 --> 00:32:04,149
 Yeah, that's kind of the example I've used.
 
-317
+485
 00:32:04,149 --> 00:32:07,831
 I think one of my best success stories was drivers for a graphing calculator. Oh wow.
 
-318
-00:32:07,840 --> 00:32:16,870
-That connected via USB and I basically just plugged the Windows drivers into Wine and ran it and I had to implement a lot of things but it worked.
+486
+00:32:07,840 --> 00:32:15,110
+That connected via USB and I basically just plugged the Windows drivers into Wine.
 
-319
-00:32:16,870 --> 00:32:24,149
-But for example, something like a graphics driver is not something you could implement in Wine because you need the graphics driver on the host.
+487
+00:32:15,110 --> 00:32:16,870
+and ran it and I had to implement a lot of things but it worked.
 
-320
+488
+00:32:16,870 --> 00:32:22,230
+But for example, something like a graphics driver is not something you could implement in Wine.
+
+489
+00:32:22,230 --> 00:32:24,149
+because you need the graphics driver on the host.
+
+490
 00:32:24,149 --> 00:32:27,509
 We can't talk to the graphics driver while the host is already doing so.
 
-321
+491
 00:32:27,519 --> 00:32:30,231
 I see. Yeah.
 
-322
+492
 00:32:30,231 --> 00:32:34,311
 And in that case, it probably doesn't make sense to do so anyways. Right.
 
-323
+493
 00:32:34,320 --> 00:32:36,950
 Right.
 
-324
+494
 00:32:36,950 --> 00:32:38,789
 It doesn't because the transition from user into kernel is complicated.
 
-325
+495
 00:32:38,799 --> 00:32:42,549
 You need the graphics driver to be in the kernel and the real kernel.
 
-326
+496
 00:32:42,549 --> 00:32:45,110
 Having it in wine would be a bad idea.
 
-327
+497
 00:32:45,120 --> 00:32:47,669
 Yeah.
 
-328
+498
 00:32:47,669 --> 00:32:52,149
 I think there's enough APIs you have to try and reproduce that I think doing something Yes. And it would be very very difficult.
 
-329
+499
 00:32:52,159 --> 00:32:55,430
 Right.
 
-330
+500
 00:32:55,430 --> 00:32:58,149
 There's so many different calls both in user space and and kernel space.
 
-331
+501
 00:32:58,159 --> 00:33:05,430
 I imagine the the user space ones Microsoft must document to some extent.
 
-332
+502
 00:33:05,440 --> 00:33:07,350
 Well, sometimes.
 
-333
+503
 00:33:07,360 --> 00:33:12,230
 Sometimes. Okay. I think it's actually better now than it used to be.
 
-334
+504
 00:33:12,230 --> 00:33:17,269
 But here's where things get fun because sometimes there will be, you know, regular old documented calls.
 
-335
+505
 00:33:17,279 --> 00:33:22,549
 Sometimes those calls are documented, but the documentation isn't very good.
 
-336
-00:33:22,559 --> 00:33:31,590
-Sometimes programs will just sort of look inside Microsoft's DLS and use calls that they aren't supposed to be using.
+506
+00:33:22,559 --> 00:33:29,430
+Sometimes programs will just sort of look inside Microsoft's DLS.
 
-337
-00:33:31,590 --> 00:33:41,750
-Sometimes they use calls that they are supposed to be using, but the documentation has disappeared just because it's that old of an API and Microsoft hasn't kept it around.
+507
+00:33:29,430 --> 00:33:31,590
+and use calls that they aren't supposed to be using.
 
-338
-00:33:41,750 --> 00:33:52,149
-Sometimes Microsoft own software uses APIs that were never documented because they never wanted anyone else using them, but they still shipped them with the operating system.
+508
+00:33:31,590 --> 00:33:34,710
+Sometimes they use calls that they are supposed to be using,
 
-339
-00:33:52,149 --> 00:33:59,909
-There was actually a kind of a lawsuit about this because it is an antitrust lawsuit because by shipping things that only they could use,
+509
+00:33:34,710 --> 00:33:36,710
+but the documentation has disappeared just because it's.
 
-340
-00:33:59,909 --> 00:34:05,509
-they were kind of creating a trust and that got some things documented at least in theory.
+510
+00:33:36,710 --> 00:33:41,750
+that old of an API and Microsoft hasn't kept it around.
 
-341
+511
+00:33:41,750 --> 00:33:49,590
+Sometimes Microsoft own software uses APIs that were never documented because they never wanted anyone else using them,
+
+512
+00:33:49,590 --> 00:33:52,149
+but they still shipped them with the operating system.
+
+513
+00:33:52,149 --> 00:33:56,230
+There was actually a kind of a lawsuit about this because it is an antitrust lawsuit.
+
+514
+00:33:56,240 --> 00:34:02,470
+because by shipping things that only they could use, they were kind of creating a trust.
+
+515
+00:34:02,470 --> 00:34:05,509
+and that got some things documented at least in theory.
+
+516
 00:34:05,519 --> 00:34:07,990
 They kind of haven't stopped doing it though.
 
-342
+517
 00:34:08,000 --> 00:34:12,790
 Oh, so even today they're I guess they would call those private APIs I suppose.
 
-343
-00:34:12,800 --> 00:34:23,030
-Yeah, you could say private APIs, but if we want to get, you know, newer versions of Microsoft Office running, we still have to figure out what they're doing and implement them.
+518
+00:34:12,800 --> 00:34:16,950
+Yeah, you could say private APIs, but if we want to get,
 
-344
+519
+00:34:16,950 --> 00:34:18,950
+you know, newer versions of Microsoft Office running,
+
+520
+00:34:18,950 --> 00:34:23,030
+we still have to figure out what they're doing and implement them.
+
+521
 00:34:23,030 --> 00:34:28,230
 And given that they're either, like you were saying, the documentation is kind of all over the place.
 
-345
+522
 00:34:28,230 --> 00:34:33,669
 If you don't know how it's supposed to behave, how do you even approach implementing them?
 
-346
+523
 00:34:33,679 --> 00:34:37,030
 And that's what the conformance tests are for.
 
-347
+524
 00:34:37,030 --> 00:34:42,629
 I mentioned earlier, we have this huge body of conformance tests that double as regression tests.
 
-348
-00:34:42,629 --> 00:34:55,669
-If we see an API we don't know what to do with or an API we do know we we think we know what to do with because the documentation can just be wrong and often has been then we write tests to figure out what it's supposed to behave.
+525
+00:34:42,629 --> 00:34:44,389
+If we see an API we don't know what to do with.
 
-349
-00:34:55,669 --> 00:35:05,670
-We kind of guess until we and we write tests and we pass some things in and see what comes out and see what the operating system does until we figure out oh so this is what it's supposed
+526
+00:34:44,389 --> 00:34:48,710
+or an API we do know we we think we know what to do with.
 
-350
+527
+00:34:48,710 --> 00:34:52,470
+because the documentation can just be wrong and often has been.
+
+528
+00:34:52,470 --> 00:34:55,669
+then we write tests to figure out what it's supposed to behave.
+
+529
+00:34:55,669 --> 00:34:58,550
+We kind of guess until we and we write tests.
+
+530
+00:34:58,550 --> 00:35:01,829
+and we pass some things in and see what comes out and see what the operating system does.
+
+531
+00:35:01,839 --> 00:35:05,670
+until we figure out oh so this is what it's supposed to do.
+
+532
 00:35:05,670 --> 00:35:10,710
-to do and these are the exact parameters in and then we implement it according to those tests.
+and these are the exact parameters in and then we implement it according to those tests.
 
-351
-00:35:10,720 --> 00:35:18,870
-Is there any distinction in approach for when you're trying to implement something that's at the user level versus the kernel level?
+533
+00:35:10,720 --> 00:35:13,510
+Is there any distinction in approach for.
 
-352
+534
+00:35:13,520 --> 00:35:18,870
+when you're trying to implement something that's at the user level versus the kernel level?
+
+535
 00:35:18,880 --> 00:35:20,950
 No, not really.
 
-353
+536
 00:35:20,950 --> 00:35:26,230
 And like I mentioned earlier, I mean a kernel call is just like a library call.
 
-354
+537
 00:35:26,230 --> 00:35:30,390
 It's just done in a slightly different way, but it's still got, you know, parameters in.
 
-355
+538
 00:35:30,390 --> 00:35:32,310
 It's still got a set of parameters.
 
-356
+539
 00:35:32,310 --> 00:35:35,510
 They're just encoded differently.
 
-357
-00:35:35,510 --> 00:35:48,630
-And again like the way kernel calls are done is on a level just above the kernel where you have a library that just passes things through almost verbatim to the kernel and we implement that library instead.
+540
+00:35:35,510 --> 00:35:41,030
+And again like the way kernel calls are done is on a level just above the kernel.
 
-358
+541
+00:35:41,030 --> 00:35:46,550
+where you have a library that just passes things through almost verbatim to the kernel.
+
+542
+00:35:46,550 --> 00:35:48,630
+and we implement that library instead.
+
+543
 00:35:48,640 --> 00:35:54,470
 And you've been working on I think wine for over six years now.
 
-359
+544
 00:35:54,480 --> 00:35:56,550
 That sounds about right.
 
-360
+545
 00:35:56,560 --> 00:35:58,790
 What does your dayto-day look like?
 
-361
+546
 00:35:58,790 --> 00:36:01,349
 What parts of the project do you work on?
 
-362
-00:36:01,349 --> 00:36:09,829
-It really varies from day to day and some people will work on the same parts of wine for years.
+547
+00:36:01,349 --> 00:36:04,310
+It really varies from day to day.
 
-363
+548
+00:36:04,310 --> 00:36:09,829
+and some people will work on the same parts of wine for years.
+
+549
 00:36:09,829 --> 00:36:12,870
 Some people will switch around and work on all sorts of different things.
 
-364
+550
 00:36:12,870 --> 00:36:15,670
 And I'm I definitely belong to that second group.
 
-365
-00:36:15,670 --> 00:36:21,589
-Like if you name an area of wine, I have almost certainly contributed a patch or two to it.
+551
+00:36:15,670 --> 00:36:17,990
+Like if you name an area of wine,
 
-366
+552
+00:36:17,990 --> 00:36:21,589
+I have almost certainly contributed a patch or two to it.
+
+553
 00:36:21,589 --> 00:36:27,430
 There's some areas I work on more than others like 3D graphics, multimedia.
 
-367
+554
 00:36:27,430 --> 00:36:30,150
 I I worked on a compiler that exists.
 
-368
+555
 00:36:30,150 --> 00:36:34,230
 Uh socket so networking communication is another thing I work a lot on dayto-day.
 
-369
-00:36:34,230 --> 00:36:45,109
-I kind of just get a bug for some program or another and I take it and I debug it and figure out why the program's broken and then I fix it.
+556
+00:36:34,230 --> 00:36:37,829
+I kind of just get a bug for some program.
 
-370
-00:36:45,109 --> 00:36:56,790
-And there's so much variety in that because a bug can take so many different forms like I described and and then the fix can be simple or complicated or and it can be in really anywhere to a degree.
+557
+00:36:37,829 --> 00:36:41,829
+or another and I take it and I debug it and figure out why the program's broken.
 
-371
-00:36:56,790 --> 00:37:04,151
-Being able to work on any part of line is sometimes almost a necessity because if a program is just broken, you don't know why. It could be anything.
+558
+00:36:41,829 --> 00:36:45,110
+and then I fix it. And there's so much variety in that.
 
-372
-00:37:04,151 --> 00:37:10,630
-It could be any sort of API and sometimes you can hand the API to somebody who's got a lot of experience in that,
+559
+00:36:45,119 --> 00:36:49,430
+because a bug can take so many different forms like I described.
 
-373
+560
+00:36:49,430 --> 00:36:52,390
+and and then the fix can be simple.
+
+561
+00:36:52,390 --> 00:36:56,790
+or complicated or and it can be in really anywhere to a degree.
+
+562
+00:36:56,790 --> 00:36:59,270
+Being able to work on any part of line is sometimes almost a necessity.
+
+563
+00:36:59,280 --> 00:37:04,151
+because if a program is just broken, you don't know why. It could be anything.
+
+564
+00:37:04,151 --> 00:37:06,870
+It could be any sort of API.
+
+565
+00:37:06,870 --> 00:37:10,630
+and sometimes you can hand the API to somebody who's got a lot of experience in that,
+
+566
 00:37:10,630 --> 00:37:16,710
-but sometimes you just do whatever you just fix whatever's broken and you gain experience that way.
+but sometimes you just do whatever you just fix whatever's broken. and you gain experience that way.
 
-374
+567
 00:37:16,720 --> 00:37:18,950
 Yeah.
 
-375
-00:37:18,950 --> 00:37:25,430
-I mean, I was going to ask about the specialized skills to work on wine, but it sounds like maybe in your case it's all of them.
+568
+00:37:18,950 --> 00:37:21,270
+I mean, I was going to ask about the specialized skills to work on wine,
 
-376
+569
+00:37:21,280 --> 00:37:25,430
+but it sounds like maybe in your case it's all of them.
+
+570
 00:37:25,440 --> 00:37:27,190
 There's a bit of that.
 
-377
-00:37:27,190 --> 00:37:36,390
-The skills to work on whiner is a very unique set of skills because and it largely comes down to debugging because you can't use the tools you normally use to debug.
+571
+00:37:27,190 --> 00:37:32,069
+The skills to work on whiner is a very unique set of skills.
 
-378
+572
+00:37:32,069 --> 00:37:34,390
+because and it largely comes down to debugging.
+
+573
+00:37:34,390 --> 00:37:36,390
+because you can't use the tools you normally use to debug.
+
+574
 00:37:36,390 --> 00:37:39,910
 You have to be creative and think about it different ways.
 
-379
-00:37:39,910 --> 00:37:50,950
-Sometimes you have to be very creative and programs will try their hardest to avoid being debugged because they don't want anyone breaking their copy protection for example or you know hacking and cheats.
+575
+00:37:39,910 --> 00:37:44,630
+Sometimes you have to be very creative and programs will try their hardest to avoid being debugged.
 
-380
-00:37:50,950 --> 00:38:03,430
-They don't want anyone hacking them like that and we have to do it anyway for legitimate purposes we would argue to make them work better on more operating systems and so we have to fight that every step of the way.
+576
+00:37:44,640 --> 00:37:50,950
+because they don't want anyone breaking their copy protection for example or you know hacking and cheats.
 
-381
-00:38:03,430 --> 00:38:15,750
-Yeah, it seems like it's a combination of like you were saying, being able to debug and you're debugging not necessarily your own code, but you're debugging this behavior.
+577
+00:37:50,950 --> 00:37:52,870
+They don't want anyone hacking them like.
 
-382
-00:38:15,760 --> 00:38:26,310
-Mhm. And then based on that behavior, you have to figure out, okay, where in all these different systems within wine could this part be not working?
+578
+00:37:52,870 --> 00:37:58,951
+that and we have to do it anyway for legitimate purposes we would argue to make them work. better on more operating systems.
 
-383
-00:38:26,310 --> 00:38:36,870
-And I I suppose you probably build up some kind of mental map in your head of when you get a a type of bug or a type of crash, you think like, oh, maybe it's this, maybe it's here or something like that.
+579
+00:37:58,960 --> 00:38:03,430
+and so we have to fight that every step of the way.
 
-384
+580
+00:38:03,430 --> 00:38:06,710
+Yeah, it seems like it's a combination of like you were saying,
+
+581
+00:38:06,720 --> 00:38:15,750
+being able to debug and you're debugging not necessarily your own code, but you're debugging this behavior.
+
+582
+00:38:15,760 --> 00:38:20,870
+Mhm. And then based on that behavior, you have to figure out, okay,
+
+583
+00:38:20,870 --> 00:38:26,310
+where in all these different systems within wine could this part be not working?
+
+584
+00:38:26,310 --> 00:38:31,190
+And I I suppose you probably build up some kind of mental map in your head of.
+
+585
+00:38:31,190 --> 00:38:33,910
+when you get a a type of bug or a type of crash,
+
+586
+00:38:33,920 --> 00:38:36,870
+you think like, oh, maybe it's this, maybe it's here or something like that.
+
+587
 00:38:36,880 --> 00:38:38,950
 Yeah, there is a lot of that.
 
-385
-00:38:38,950 --> 00:38:45,910
-You notice some patterns, you know, experience helps,
+588
+00:38:38,950 --> 00:38:45,911
+You notice some patterns, you know, experience helps, but because any bug could be new,
 
-386
-00:38:45,910 --> 00:38:52,710
-but because any bug could be new, sometimes experience doesn't help and you just kind of have to start from scratch.
+589
+00:38:45,920 --> 00:38:52,710
+sometimes experience doesn't help and you just kind of have to start from scratch.
 
-387
-00:38:52,710 --> 00:39:02,790
-At sort of a high level, can you give an example of where you got a specific bug report and then where you had to look to eventually find which parts of the system were the issue?
+590
+00:38:52,710 --> 00:38:55,670
+At sort of a high level, can you give an example of.
 
-388
+591
+00:38:55,670 --> 00:38:58,470
+where you got a specific bug report.
+
+592
+00:38:58,470 --> 00:39:02,790
+and then where you had to look to eventually find which parts of the system were the issue?
+
+593
 00:39:02,800 --> 00:39:08,069
 One, I think good example that I've done recently.
 
-389
+594
 00:39:08,069 --> 00:39:11,349
 So, I mentioned this X audio library that does 3D audio.
 
-390
+595
 00:39:11,349 --> 00:39:14,470
 And say you come across a bug, I'm going to be a little bit generic here.
 
-391
+596
 00:39:14,470 --> 00:39:17,910
 And say you come across a bug where some audio isn't playing right.
 
-392
+597
 00:39:17,910 --> 00:39:19,750
 Maybe there's silence where there should be the audio.
 
-393
+598
 00:39:19,750 --> 00:39:23,990
 So you kind of you look in and see well where is that getting lost.
 
-394
-00:39:23,990 --> 00:39:29,349
-So you can basically look in the input calls and say here's the buffer it's submitting that's got all the audio data.
+599
+00:39:23,990 --> 00:39:25,589
+So you can basically look in the input calls.
 
-395
-00:39:29,349 --> 00:39:39,030
-You look at where you think the output should be like that library will internally call a different library which programs can interact with directly and this our highle library interacts
+600
+00:39:25,589 --> 00:39:29,349
+and say here's the buffer it's submitting that's got all the audio data.
 
-396
-00:39:39,030 --> 00:39:45,829
-with that is the give this sound to the audio driver right so you've got x audio on top of mmdev API which is the other library
+601
+00:39:29,349 --> 00:39:33,030
+You look at where you think the output should be like.
 
-397
-00:39:45,839 --> 00:40:01,510
-that gives audio to the driver and you see the buffers that X audio is passing into MMD dev API they're empty there's nothing in them so you have to kind of work through the X audio library to see where is that sound getting lost. Or maybe that's not getting lost.
+602
+00:39:33,030 --> 00:39:36,630
+that library will internally call a different library which programs can interact with directly.
 
-398
+603
+00:39:36,630 --> 00:39:43,349
+and this our highle library interacts with that is the give this sound to the audio driver right.
+
+604
+00:39:43,349 --> 00:39:45,829
+so you've got x audio on top of mmdev API.
+
+605
+00:39:45,829 --> 00:39:48,069
+which is the other library that gives audio to the driver.
+
+606
+00:39:48,069 --> 00:39:55,031
+and you see the buffers that X audio is passing into MMD dev API they're empty there's nothing. in them.
+
+607
+00:39:55,031 --> 00:39:57,750
+so you have to kind of work through the X audio library to see.
+
+608
+00:39:57,760 --> 00:40:01,510
+where is that sound getting lost. Or maybe that's not getting lost.
+
+609
 00:40:01,510 --> 00:40:03,750
 Maybe it's coming through all garbled.
 
-399
+610
 00:40:03,750 --> 00:40:07,990
 And I've had to look at the buffer and see why is it garbled.
 
-400
+611
 00:40:07,990 --> 00:40:12,710
 I'll open up it up in Audacity and look at the w shape of the wave and say,
 
-401
-00:40:12,710 --> 00:40:21,750
-"Huh, the shape of the wave looks like we're putting silence every 10 nanose or something or or reversing something or interpreting it wrong, things like that."
+612
+00:40:12,710 --> 00:40:17,670
+"Huh, the shape of the wave looks like we're putting silence every 10 nanose or something.
 
-402
-00:40:21,750 --> 00:40:30,950
-You will do a lot of putting in print fs basically all throughout wine to see where does the state change where is it right and then where do things start going wrong.
+613
+00:40:17,670 --> 00:40:21,750
+or or reversing something or interpreting it wrong, things like that."
 
-403
+614
+00:40:21,750 --> 00:40:26,630
+You will do a lot of putting in print fs basically all throughout wine.
+
+615
+00:40:26,630 --> 00:40:29,030
+to see where does the state change.
+
+616
+00:40:29,030 --> 00:40:30,950
+where is it right and then where do things start going wrong.
+
+617
 00:40:30,960 --> 00:40:34,069
 Yeah.
 
-404
-00:40:34,069 --> 00:40:45,430
-And then the audio example because they're making a call to your X audio implementation you can see that okay the buffer or the audio that's coming in that part is good right?
+618
+00:40:34,069 --> 00:40:39,430
+And then the audio example because they're making a call to your X audio implementation.
 
-405
-00:40:45,430 --> 00:40:51,990
-It's just that later on when it sends it to what's going to actually have it be played by the the hardware, that's when it's missing.
+619
+00:40:39,430 --> 00:40:45,430
+you can see that okay the buffer or the audio that's coming in that part is good right?
 
-406
+620
+00:40:45,430 --> 00:40:47,589
+It's just that later on when it sends it to what's going to.
+
+621
+00:40:47,589 --> 00:40:51,990
+actually have it be played by the the hardware, that's when it's missing.
+
+622
 00:40:51,990 --> 00:40:55,910
 So, we did something wrong in a library that destroyed the buffer.
 
-407
-00:40:55,910 --> 00:41:07,030
-And I think on a very very high level, a lot of debugging wine is about finding where things are good and finding where things are bad and then narrowing that down until we find the one spot where things go wrong.
+623
+00:40:55,910 --> 00:40:58,069
+And I think on a very very high level,
 
-408
+624
+00:40:58,069 --> 00:41:02,630
+a lot of debugging wine is about finding where things are good and finding where things are bad.
+
+625
+00:41:02,640 --> 00:41:07,030
+and then narrowing that down until we find the one spot where things go wrong.
+
+626
 00:41:07,040 --> 00:41:12,150
 There's a lot of processes that go like that.
 
-409
-00:41:12,150 --> 00:41:18,151
-Like you were saying, the more you see these problems, hopefully the the easier it gets to narrow down where often. Yeah.
+627
+00:41:12,150 --> 00:41:13,990
+Like you were saying, the more you see these problems,
 
-410
+628
+00:41:13,990 --> 00:41:18,151
+hopefully the the easier it gets to narrow down where often. Yeah.
+
+629
 00:41:18,151 --> 00:41:20,309
 Especially if you keep debugging things in the same area.
 
-411
+630
 00:41:20,319 --> 00:41:25,990
 And wine supports more than one operating system.
 
-412
+631
 00:41:25,990 --> 00:41:29,670
 I I saw there was Linux, Mac OS, I think FreeBSD.
 
-413
-00:41:29,670 --> 00:41:37,670
-How much of the code is operating system specific versus how much can just be shared across all of them?
+632
+00:41:29,670 --> 00:41:37,671
+How much of the code is operating system specific versus how much can just be shared across all. of them?
 
-414
-00:41:37,670 --> 00:41:40,150
+633
+00:41:37,671 --> 00:41:40,150
 Not that much is operating system specific actually.
 
-415
-00:41:40,150 --> 00:41:50,230
-So when you think about the volume of wine, the vast majority of it is highle code that doesn't need to interact with the operating system on a low level, right?
+634
+00:41:40,150 --> 00:41:45,510
+So when you think about the volume of wine, the vast majority of it is highle code.
 
-416
+635
+00:41:45,520 --> 00:41:50,230
+that doesn't need to interact with the operating system on a low level, right?
+
+636
 00:41:50,240 --> 00:41:56,470
 Because Microsoft keeps putting lots and lots of different libraries in their operating system.
 
-417
-00:41:56,470 --> 00:42:07,430
-And a lot of these are highle libraries and even when we do interact with the operating system, we're using crossplatform libraries or we're using pix.
+637
+00:41:56,470 --> 00:42:01,109
+And a lot of these are highle libraries and even when we do interact with the operating system,
 
-418
-00:42:07,430 --> 00:42:14,230
-So all these operating systems that we are implementing are basically conformed to the PZIX standard which is basically like Unix.
+638
+00:42:01,119 --> 00:42:07,430
+we're using crossplatform libraries or we're using pix.
 
-419
+639
+00:42:07,430 --> 00:42:12,309
+So all these operating systems that we are implementing are basically conformed to the PZIX standard.
+
+640
+00:42:12,319 --> 00:42:14,230
+which is basically like Unix.
+
+641
 00:42:14,230 --> 00:42:16,390
 They're all Unix based.
 
-420
+642
 00:42:16,390 --> 00:42:18,630
 PZIX is a Unix based standard.
 
-421
-00:42:18,630 --> 00:42:25,430
-Microsoft is you know the big exception that never did implement that and so we have to translate its APIs to Unix APIs.
+643
+00:42:18,630 --> 00:42:21,030
+Microsoft is you know the big exception.
 
-422
+644
+00:42:21,030 --> 00:42:25,430
+that never did implement that and so we have to translate its APIs to Unix APIs.
+
+645
 00:42:25,430 --> 00:42:28,550
 Now that said there is a lot of very operating system specific code.
 
-423
-00:42:28,560 --> 00:42:36,470
-Apple makes things difficult by diverging almost wherever they can and so we have a lot of Apple specific code in there.
+646
+00:42:28,560 --> 00:42:33,109
+Apple makes things difficult by diverging almost wherever they can.
 
-424
+647
+00:42:33,109 --> 00:42:36,470
+and so we have a lot of Apple specific code in there.
+
+648
 00:42:36,480 --> 00:42:42,390
 Another example I can think of is I believe Mac OS doesn't support Vulcan.
 
-425
-00:42:42,400 --> 00:42:50,309
-Yes, that's a great example of Mac not wanting to use generic libraries that work on every other operating system.
+649
+00:42:42,400 --> 00:42:48,550
+Yes, that's a great example of Mac not wanting to use generic libraries.
 
-426
-00:42:50,319 --> 00:42:58,630
-And in some cases we look at it and we're like all right we'll implement a wrapper for that too on top of your operating system.
+650
+00:42:48,550 --> 00:42:50,309
+that work on every other operating system.
 
-427
-00:42:58,630 --> 00:43:04,309
-We've done it for Windows we can do it for Vulcan and then you get the Molten VK project and to be clear we didn't invent Molten VK.
+651
+00:42:50,319 --> 00:42:52,470
+And in some cases we look at it.
 
-428
+652
+00:42:52,470 --> 00:42:58,630
+and we're like all right we'll implement a wrapper for that too on top of your operating system.
+
+653
+00:42:58,630 --> 00:43:00,309
+We've done it for Windows we can do it for Vulcan.
+
+654
+00:43:00,309 --> 00:43:04,309
+and then you get the Molten VK project and to be clear we didn't invent Molten VK.
+
+655
 00:43:04,309 --> 00:43:06,790
 It was around before us but we have contributed a lot to it.
 
-429
-00:43:06,800 --> 00:43:20,950
-Yeah I think maybe just at a high level it might be good to explain the relationship between Direct 3D or DirectX and Vulcan and yeah maybe if you could go into that.
+656
+00:43:06,800 --> 00:43:13,829
+Yeah I think maybe just at a high level it might be good to explain the relationship between.
 
-430
+657
+00:43:13,839 --> 00:43:18,230
+Direct 3D or DirectX and Vulcan.
+
+658
+00:43:18,230 --> 00:43:20,950
+and yeah maybe if you could go into that.
+
+659
 00:43:20,950 --> 00:43:25,990
 So, Direct 3D is Microsoft's 3D API.
 
-431
-00:43:25,990 --> 00:43:39,990
-The the 3D APIs are basically a way to firstly abstract out the differences between different graphics cards, which you know look very different on a hardware level, especially they they used to look very different.
+660
+00:43:25,990 --> 00:43:35,109
+The the 3D APIs are basically a way to firstly abstract out the differences between different graphics cards,
 
-432
+661
+00:43:35,109 --> 00:43:36,950
+which you know look very different on a hardware level,
+
+662
+00:43:36,960 --> 00:43:39,990
+especially they they used to look very different.
+
+663
 00:43:39,990 --> 00:43:43,270
 They still do look very different.
 
-433
-00:43:43,270 --> 00:43:51,430
-And secondly, a way to deal with them at a high level because actually talking to the graphics card on a low level is very very complicated.
+664
+00:43:43,270 --> 00:43:46,150
+And secondly, a way to deal with them at a high level.
 
-434
-00:43:51,440 --> 00:43:59,670
-Even talking to it on a high level is complicated, but it gets it can get a lot worse if you've ever done any graphics driver development.
+665
+00:43:46,150 --> 00:43:51,430
+because actually talking to the graphics card on a low level is very very complicated.
 
-435
-00:43:59,670 --> 00:44:10,150
-So you have a number of different APIs that achieve these two goals of building a common abstraction and of building a a highle abstraction.
+666
+00:43:51,440 --> 00:43:55,589
+Even talking to it on a high level is complicated,
 
-436
-00:44:10,150 --> 00:44:20,150
-So, OpenGL is the broadly the free operating system world, the non-Microsoft's world's choice back in the day and in direct 3D was Microsoft's API.
+667
+00:43:55,589 --> 00:43:59,670
+but it gets it can get a lot worse if you've ever done any graphics driver development.
 
-437
+668
+00:43:59,670 --> 00:44:01,589
+So you have a number of different APIs.
+
+669
+00:44:01,589 --> 00:44:10,150
+that achieve these two goals of building a common abstraction and of building a a highle abstraction.
+
+670
+00:44:10,150 --> 00:44:12,069
+So, OpenGL is the broadly the free operating system world,
+
+671
+00:44:12,069 --> 00:44:20,150
+the non-Microsoft's world's choice back in the day and in direct 3D was Microsoft's API.
+
+672
 00:44:20,150 --> 00:44:27,510
 And both of these have evolved over time and come up with new versions and such.
 
-438
-00:44:27,510 --> 00:44:34,230
-And when any API exists for too long, it gains a lot of croft and needs to be replaced.
+673
+00:44:27,510 --> 00:44:31,190
+And when any API exists for too long,
 
-439
-00:44:34,230 --> 00:44:41,190
-And eventually the people who developed open jail decided we need to start over, get rid of the craft,
+674
+00:44:31,190 --> 00:44:34,230
+it gains a lot of croft and needs to be replaced.
 
-440
-00:44:41,190 --> 00:44:47,431
-make it cleaner and make it lower level because to get into maximum performance games really want low-level access. And so they made Vulcan.
+675
+00:44:34,230 --> 00:44:38,550
+And eventually the people who developed open jail decided we need to start over,
 
-441
+676
+00:44:38,550 --> 00:44:43,109
+get rid of the craft, make it cleaner and make it lower level.
+
+677
+00:44:43,109 --> 00:44:47,431
+because to get into maximum performance games really want low-level access. And so they made Vulcan.
+
+678
 00:44:47,440 --> 00:44:52,630
 Microsoft kind of did the same thing, but they still call it Direct 3D.
 
-442
+679
 00:44:52,630 --> 00:44:56,871
 It's their the newest version of Direct 3D is lower level. It's called Direct 3D 12.
 
-443
-00:44:56,880 --> 00:45:01,430
-And Mac looked at this and they decided we're going to do the same thing, too, but we're not going to use Vulcan.
+680
+00:44:56,880 --> 00:44:59,910
+And Mac looked at this and they decided we're going to do the same thing,
 
-444
+681
+00:44:59,910 --> 00:45:01,430
+too, but we're not going to use Vulcan.
+
+682
 00:45:01,430 --> 00:45:05,910
 We're going to define our own and they call it metal.
 
-445
+683
 00:45:05,910 --> 00:45:14,230
 And so when we want to translate D3D12 into something that another operating system understands, that's probably Vulcan.
 
-446
+684
 00:45:14,230 --> 00:45:15,990
 And on Mac, we need to translate it to Metal somehow.
 
-447
-00:45:15,990 --> 00:45:23,829
-And we decided instead of having a separate layer from D312 to Metal, we're just going to translate it to Vulcan and then translate the Vulcan to metal.
+685
+00:45:15,990 --> 00:45:20,870
+And we decided instead of having a separate layer from D312 to Metal,
 
-448
-00:45:23,829 --> 00:45:31,190
-And it also lets things written for Vulcan on Windows, which is also a thing that exists, that lets some work on Metal.
+686
+00:45:20,870 --> 00:45:23,829
+we're just going to translate it to Vulcan and then translate the Vulcan to metal.
 
-449
+687
+00:45:23,829 --> 00:45:27,990
+And it also lets things written for Vulcan on Windows,
+
+688
+00:45:27,990 --> 00:45:31,190
+which is also a thing that exists, that lets some work on Metal.
+
+689
 00:45:31,200 --> 00:45:40,230
 And having to do that translation, does that have a performance impact or is that not really thought?
 
-450
+690
 00:45:40,230 --> 00:45:43,349
 Yes, it's kind of like anything when you talk about performance.
 
-451
+691
 00:45:43,349 --> 00:45:51,589
 Like I mentioned this earlier, there's always going to be overhead from translating from one API to another,
 
-452
-00:45:51,589 --> 00:45:59,750
-but we put in heroic efforts to try to make sure that doesn't matter to make sure that stuff that needs to be fast is really as fast as it can possibly be.
+692
+00:45:51,589 --> 00:45:54,150
+but we put in heroic efforts to try to make sure that doesn't matter.
 
-453
-00:45:59,750 --> 00:46:02,230
+693
+00:45:54,160 --> 00:45:59,751
+to make sure that stuff that needs to be fast is really as fast as it can possibly. be.
+
+694
+00:45:59,751 --> 00:46:02,230
 And some very clever things have been done along those lines.
 
-454
-00:46:02,230 --> 00:46:10,630
-And sometimes the you know the graphics drivers underneath are so good that it actually does run better even despite the translation overhead.
+695
+00:46:02,230 --> 00:46:06,870
+And sometimes the you know the graphics drivers underneath are.
 
-455
-00:46:10,630 --> 00:46:20,630
-And then sometimes to make it run fast we need to say well we're going to implement a new API that behaves more like Windows so we can do less work translating it.
+696
+00:46:06,870 --> 00:46:10,630
+so good that it actually does run better even despite the translation overhead.
 
-456
+697
+00:46:10,630 --> 00:46:15,349
+And then sometimes to make it run fast we need to say.
+
+698
+00:46:15,349 --> 00:46:17,670
+well we're going to implement a new API.
+
+699
+00:46:17,670 --> 00:46:20,630
+that behaves more like Windows so we can do less work translating it.
+
+700
 00:46:20,630 --> 00:46:26,150
 And sometimes that goes into the graphics library and sometimes that goes into other places.
 
-457
+701
 00:46:26,160 --> 00:46:28,790
 Yeah.
 
-458
+702
 00:46:28,790 --> 00:46:35,109
 Something I've found a little bit interesting about the last few years is developers in the past,
 
-459
-00:46:35,109 --> 00:46:43,829
-they would generally target Windows and you might be lucky to get a Mac port or a Linux port.
+703
+00:46:35,109 --> 00:46:37,589
+they would generally target Windows.
 
-460
-00:46:43,829 --> 00:46:53,510
-And I wonder like in your opinion now now that a lot of developers are just targeting Windows and relying on Wine or or Proton to run their software.
+704
+00:46:37,589 --> 00:46:43,829
+and you might be lucky to get a Mac port or a Linux port.
 
-461
-00:46:53,520 --> 00:47:02,230
-Is there any I suppose downside to doing that or is it all just upside like everyone should target Windows as this common platform?
+705
+00:46:43,829 --> 00:46:46,470
+And I wonder like in your opinion now now.
 
-462
+706
+00:46:46,470 --> 00:46:50,309
+that a lot of developers are just targeting Windows.
+
+707
+00:46:50,309 --> 00:46:53,510
+and relying on Wine or or Proton to run their software.
+
+708
+00:46:53,520 --> 00:46:56,950
+Is there any I suppose downside to doing.
+
+709
+00:46:56,960 --> 00:47:02,230
+that or is it all just upside like everyone should target Windows as this common platform?
+
+710
 00:47:02,240 --> 00:47:03,990
 Yeah, it's an interesting question.
 
-463
-00:47:04,000 --> 00:47:10,630
-There's some people who seem to think it's a bad thing that we're not getting native ports in the same sense.
+711
+00:47:04,000 --> 00:47:08,150
+There's some people who seem to think it's a bad thing.
 
-464
+712
+00:47:08,150 --> 00:47:10,630
+that we're not getting native ports in the same sense.
+
+713
 00:47:10,630 --> 00:47:15,109
 And then there's some people who see, no, that's a perfectly valid way to do ports.
 
-465
+714
 00:47:15,109 --> 00:47:17,750
 Just write for this de facto common API.
 
-466
-00:47:17,750 --> 00:47:23,829
-It was never intended as a crossplatform common API, but we've made it one, right?
+715
+00:47:17,750 --> 00:47:23,830
+It was never intended as a crossplatform common API, but we've made it one, right? And so why is that any worse than.
 
-467
-00:47:23,829 --> 00:47:29,270
-And so why is that any worse than if it runs on a different API on Linux or Mac?
+716
+00:47:23,839 --> 00:47:29,270
+if it runs on a different API on Linux or Mac?
 
-468
+717
 00:47:29,270 --> 00:47:31,109
 And that argument tends to make sense to me.
 
-469
+718
 00:47:31,109 --> 00:47:36,470
 I don't personally see a lot of reason to say that one library is more pure than another.
 
-470
+719
 00:47:36,470 --> 00:47:41,829
 Right now, I do think Windows APIs are generally pretty bad.
 
-471
-00:47:41,829 --> 00:47:51,510
-This might be, you know, just some sort of this might just be an effect of having to work with them for a very long time and see all their flaws and have to deal with the nonsense that they do.
+720
+00:47:41,829 --> 00:47:45,670
+This might be, you know, just some sort of this might just be an effect of having to.
 
-472
+721
+00:47:45,670 --> 00:47:48,550
+work with them for a very long time.
+
+722
+00:47:48,550 --> 00:47:51,510
+and see all their flaws and have to deal with the nonsense that they do.
+
+723
 00:47:51,510 --> 00:47:57,589
 But I think that a lot of the native Linux APIs are better.
 
-473
-00:47:57,589 --> 00:48:05,670
-But if you like your Windows API better and if you want to target Windows and that's the only way to do it, then sure, why not? What's wrong with that?
+724
+00:47:57,589 --> 00:47:59,510
+But if you like your Windows API better.
 
-474
+725
+00:47:59,510 --> 00:48:05,670
+and if you want to target Windows and that's the only way to do it, then sure, why not? What's wrong with that?
+
+726
 00:48:05,680 --> 00:48:08,309
 Yeah.
 
-475
+727
 00:48:08,309 --> 00:48:12,790
 And I think doing it this way targeting Windows, I mean, if you look in the past,
 
-476
+728
 00:48:12,790 --> 00:48:20,950
 even though you had some software that would be ported to other operating systems without this compatibility layer,
 
-477
-00:48:20,950 --> 00:48:29,270
-without people just targeting Windows, all this software that people can now run on these portable gaming handhelds or on Linux, most of that software was never going to be ported.
+729
+00:48:20,950 --> 00:48:22,470
+without people just targeting Windows,
 
-478
+730
+00:48:22,470 --> 00:48:26,870
+all this software that people can now run on these portable gaming handhelds or on Linux,
+
+731
+00:48:26,880 --> 00:48:29,270
+most of that software was never going to be ported.
+
+732
 00:48:29,280 --> 00:48:31,110
 Oh, yeah. Absolutely.
 
-479
-00:48:31,110 --> 00:48:38,790
-That's kind of why Wine existed because people wanted to run their software that was never going to be ported.
+733
+00:48:31,110 --> 00:48:36,309
+That's kind of why Wine existed because people wanted to run their software.
 
-480
-00:48:38,790 --> 00:48:42,710
-They just wanted and Ninja community just spent a lot of effort, you know, making all these individual programs run.
+734
+00:48:36,309 --> 00:48:40,230
+that was never going to be ported. They just wanted and Ninja community just spent a lot of effort,
 
-481
+735
+00:48:40,240 --> 00:48:42,710
+you know, making all these individual programs run.
+
+736
 00:48:42,720 --> 00:48:44,470
 Yeah.
 
-482
-00:48:44,470 --> 00:48:51,910
-And I think it's pretty amazing too that now that's become this official way I suppose of distributing your software where Yeah.
+737
+00:48:44,470 --> 00:48:47,990
+And I think it's pretty amazing too.
 
-483
+738
+00:48:47,990 --> 00:48:51,910
+that now that's become this official way I suppose of distributing your software where Yeah.
+
+739
 00:48:51,920 --> 00:48:58,470
 you say like, "Hey, I made a Windows version, but you're on your Linux machine.
 
-484
+740
 00:48:58,470 --> 00:49:03,910
 it's officially supported because we have this much belief in this compatibility layer.
 
-485
+741
 00:49:03,920 --> 00:49:08,150
 It's kind of incredible to see wine having got this far.
 
-486
-00:49:08,150 --> 00:49:15,270
-I mean, I started working on it, you know, six, seven years ago and even then I could never have imagined it would be like this.
+742
+00:49:08,150 --> 00:49:10,150
+I mean, I started working on it,
 
-487
-00:49:15,270 --> 00:49:23,829
-So, as we wrap up, for the developers that are listening or or people who are just users of Wine,
+743
+00:49:10,150 --> 00:49:12,470
+you know, six, seven years ago and even.
 
-488
+744
+00:49:12,470 --> 00:49:15,270
+then I could never have imagined it would be like this.
+
+745
+00:49:15,270 --> 00:49:18,150
+So, as we wrap up, for the developers.
+
+746
+00:49:18,150 --> 00:49:23,829
+that are listening or or people who are just users of Wine,
+
+747
 00:49:23,829 --> 00:49:27,589
 is there anything you think they should know about the project that we haven't talked about?
 
-489
+748
 00:49:27,599 --> 00:49:29,910
 I don't think there's anything I can think of.
 
-490
-00:49:29,920 --> 00:49:37,030
+749
+00:49:29,920 --> 00:49:37,031
 And if people want to learn more about the Wine Project or or see what you're up to, where should they head?
 
-491
+750
 00:49:37,040 --> 00:49:41,670
 We don't really have any things like news, unfortunately.
 
-492
+751
 00:49:41,670 --> 00:49:43,670
 Read the release notes.
 
-493
+752
 00:49:43,670 --> 00:49:46,790
 There are some people from codew weavers who do blogs.
 
-494
+753
 00:49:46,790 --> 00:49:52,069
 So if you go to codereavers.com/blog, there's some code wever stuff uh some marketing stuff,
 
-495
-00:49:52,069 --> 00:49:59,430
-but there's also some developers who will talk about bugs that they are solving and how it's easy and and the experience of working on wine.
+754
+00:49:52,069 --> 00:49:57,030
+but there's also some developers who will talk about bugs that they are solving.
 
-496
-00:49:59,440 --> 00:50:10,069
-And I suppose if someone's interested and like like let's say they have a piece of software, it's not working through wine,
+755
+00:49:57,030 --> 00:49:59,430
+and how it's easy and and the experience of working on wine.
 
-497
-00:50:10,069 --> 00:50:15,430
-what's the best place for them to either get help or maybe even get involved with trying to fix it?
+756
+00:49:59,440 --> 00:50:07,829
+And I suppose if someone's interested and like like let's say they have a piece of software,
 
-498
-00:50:15,430 --> 00:50:23,750
-So you can file a bug on winehq.org or find there's a lot of developer resources there
+757
+00:50:07,829 --> 00:50:10,069
+it's not working through wine,
 
-499
-00:50:23,750 --> 00:50:33,670
-and you can get involved with contributing to the software and there's links to our mailing list and IRC channels and the GitLab where all places you can find developers.
+758
+00:50:10,069 --> 00:50:11,990
+what's the best place for them to.
 
-500
+759
+00:50:11,990 --> 00:50:15,430
+either get help or maybe even get involved with trying to fix it?
+
+760
+00:50:15,430 --> 00:50:19,349
+So you can file a bug on winehq.org.
+
+761
+00:50:19,359 --> 00:50:23,750
+or find there's a lot of developer resources there.
+
+762
+00:50:23,750 --> 00:50:25,829
+and you can get involved with contributing to the software.
+
+763
+00:50:25,829 --> 00:50:28,069
+and there's links to our mailing list.
+
+764
+00:50:28,069 --> 00:50:33,670
+and IRC channels and the GitLab where all places you can find developers.
+
+765
 00:50:33,670 --> 00:50:35,750
 We love to help you debug things.
 
-501
+766
 00:50:35,750 --> 00:50:37,829
 We love to help you fix things.
 
-502
-00:50:37,829 --> 00:50:47,671
-We try our very best to be a welcoming community and we have a lot of experience working with people who want to get their application working. So we'd love to have another.
+767
+00:50:37,829 --> 00:50:40,390
+We try our very best to be a welcoming community.
 
-503
+768
+00:50:40,390 --> 00:50:47,671
+and we have a lot of experience working with people who want to get their application working. So we'd love to have another.
+
+769
 00:50:47,680 --> 00:50:50,790
 Very cool.
 
-504
-00:50:50,790 --> 00:51:03,430
-Yeah, I think wine is a really interesting project because I think for I guess it would have been for decades it seemed like very niche like not many people Oh yeah.
+770
+00:50:50,790 --> 00:50:53,430
+Yeah, I think wine is a really interesting project.
 
-505
-00:51:03,430 --> 00:51:14,790
-were aware of it and now I think maybe in particular because of the Linux gaming handhelds like the Steam Deck Wine is now something that a bunch of people who would have never heard about it before now they're aware of it.
+771
+00:50:53,430 --> 00:50:58,950
+because I think for I guess it would have been for decades.
 
-506
+772
+00:50:58,950 --> 00:51:03,430
+it seemed like very niche like not many people Oh yeah.
+
+773
+00:51:03,430 --> 00:51:05,910
+were aware of it and now I think maybe in particular.
+
+774
+00:51:05,910 --> 00:51:10,630
+because of the Linux gaming handhelds like the Steam Deck.
+
+775
+00:51:10,630 --> 00:51:12,710
+Wine is now something that a bunch of people.
+
+776
+00:51:12,710 --> 00:51:14,790
+who would have never heard about it before now they're aware of it.
+
+777
 00:51:14,800 --> 00:51:17,030
 Absolutely.
 
-507
+778
 00:51:17,030 --> 00:51:20,470
 I've watched that transformation happen in real time and it's been surreal.
 
-508
+779
 00:51:20,480 --> 00:51:24,630
 Very cool. Well, Elizabeth, thank you so much for joining me today.
 
-509
+780
 00:51:24,640 --> 00:51:26,870
 Thank you, Jeremy. I've been glad to be here.
 
-510
+781
 00:51:26,880 --> 00:51:28,630
 All right.
 
-511
+782
 00:51:28,630 --> 00:51:30,230
 This was Jeremy Jung for Software Engineering Radio.
 
-512
+783
 00:51:30,230 --> 00:51:32,069
 Thanks for listening.
 
-513
+784
 00:51:32,079 --> 00:51:37,829
 Thanks for listening to SE Radio, an educational program brought to you by it e software magazine.
 
-514
+785
 00:51:37,829 --> 00:51:43,030
 For more about the podcast, including other episodes, visit our website at se-radio.net.
 
-515
-00:51:43,040 --> 00:51:53,750
-To provide feedback, you can comment on each episode on the website or reach us on LinkedIn, Facebook, Twitter, or through our Slack channel at seradio.slack.com.
+786
+00:51:43,040 --> 00:51:49,270
+To provide feedback, you can comment on each episode on the website or reach us on LinkedIn,
 
-516
+787
+00:51:49,270 --> 00:51:53,750
+Facebook, Twitter, or through our Slack channel at seradio.slack.com.
+
+788
 00:51:55,030 --> 00:51:58,309
 You can also email us at teamseradio.net.
 
-517
+789
 00:52:00,309 --> 00:52:03,829
 This and all other episodes of SE Radio is licensed under Creative Common License 2.5.
 
-518
+790
 00:52:03,839 --> 00:52:09,740
 Thanks for listening.

@@ -1,1403 +1,2107 @@
 1
-00:00:02,950 --> 00:00:12,070
-This is software engineering radio the podcast for professional developers on the web at se-radio.net SE radio is brought to you by the ITE computer society
+00:00:02,950 --> 00:00:07,909
+This is software engineering radio, the podcast for professional developers on the web at se-radio.net.
 
 2
+00:00:07,919 --> 00:00:12,070
+SE radio is brought to you by the ITE computer society.
+
+3
 00:00:12,070 --> 00:00:19,189
 and by e software magazine online at computer.org/software.
 
-3
+4
 00:00:21,269 --> 00:00:23,670
 Welcome to software engineering radio. I'm your host Pij Shamanut.
 
-4
+5
 00:00:23,670 --> 00:00:30,790
 Today I will be discussing observability tool migration challenges with Yes Rabinovich also known as chess.
 
-5
+6
 00:00:30,790 --> 00:00:37,190
 Chess is the CTO and co-founder at ground cover which provides full stack observability for Kubernetes.
 
-6
-00:00:37,190 --> 00:00:46,310
-Chess was previously the chief architect at the healthcare security company Cyber MDX and spent 8 years in the cyber security division of the Israeli prime minister's office.
-
 7
+00:00:37,190 --> 00:00:41,990
+Chess was previously the chief architect at the healthcare security company Cyber MDX.
+
+8
+00:00:41,990 --> 00:00:46,310
+and spent 8 years in the cyber security division of the Israeli prime minister's office.
+
+9
 00:00:46,320 --> 00:00:54,630
 Chess is a repeat guest at software engineering radio having previously spoken about Kubernetes observability in episode 591.
 
-8
+10
 00:00:54,640 --> 00:00:56,310
 Chess, welcome to the show.
 
-9
+11
 00:00:56,320 --> 00:00:58,070
 Thank you. Thank you for having me.
 
-10
-00:00:58,079 --> 00:01:06,550
-Today we'll be talking about what are the challenges and what are the techniques one uses to migrate observability tools.
-
-11
-00:01:06,550 --> 00:01:14,710
-Before we jump into the topics, I just wanted to touch on a few episodes where we have covered observability previously in software engineering radio.
-
 12
-00:01:14,710 --> 00:01:17,830
-So episode 556 where Alex Bolton spoke on open telemetry,
+00:00:58,079 --> 00:01:01,910
+Today we'll be talking about what are the challenges.
 
 13
-00:01:17,840 --> 00:01:29,670
-episode 57 where Kevin who spoke about data observability and episode 675 where Brian Demers spoke on observability on the tool chain.
+00:01:01,910 --> 00:01:06,550
+and what are the techniques one uses to migrate observability tools.
 
 14
+00:01:06,550 --> 00:01:09,910
+Before we jump into the topics, I just wanted to touch on a few episodes.
+
+15
+00:01:09,910 --> 00:01:14,710
+where we have covered observability previously in software engineering radio.
+
+16
+00:01:14,710 --> 00:01:17,830
+So episode 556 where Alex Bolton spoke on open telemetry.
+
+17
+00:01:17,840 --> 00:01:24,390
+episode 57 where Kevin who spoke about data observability.
+
+18
+00:01:24,390 --> 00:01:29,670
+and episode 675 where Brian Demers spoke on observability on the tool chain.
+
+19
 00:01:29,670 --> 00:01:34,310
 Quite good episodes to refer back to understand more details about observability.
 
-15
+20
 00:01:34,320 --> 00:01:41,109
 Let's start with what drives the need for firms to migrate from the existing observability tool set.
 
-16
-00:01:41,109 --> 00:01:47,670
-Do you have a story or an example where a firm needed to migrate from their existing observability tool set?
+21
+00:01:41,109 --> 00:01:43,590
+Do you have a story or an example.
 
-17
+22
+00:01:43,590 --> 00:01:47,670
+where a firm needed to migrate from their existing observability tool set?
+
+23
 00:01:47,680 --> 00:01:51,670
 Yeah, actually a lot.
 
-18
-00:01:51,670 --> 00:02:01,990
-Basically every customer of ground cover not all of them but most of them are coming from some legacy vendors they most R&amp;Ds already use observability platform.
+24
+00:01:51,670 --> 00:01:53,749
+Basically every customer of ground cover not all of them.
 
-19
-00:02:01,990 --> 00:02:10,229
-So when they want to move to the new observability platform more modern that rely on bring your own cloud
+25
+00:01:53,759 --> 00:01:58,709
+but most of them are coming from some legacy vendors.
 
-20
-00:02:10,229 --> 00:02:24,550
-and EVPF the main challenge is how do we migrate all the hard work we did as an R&amp;D organization right you can think about it as dashboards
+26
+00:01:58,709 --> 00:02:01,990
+they most R&amp;Ds already use observability platform.
 
-21
-00:02:24,550 --> 00:02:34,391
-right most of R&amp;D has some kind of top 10 top 20 we often seen hundreds of dashboards across the entire R&amp;D. It could be monitors.
+27
+00:02:01,990 --> 00:02:07,830
+So when they want to move to the new observability platform more modern.
 
-22
-00:02:34,391 --> 00:02:48,949
-So imagine that you rely on specific alerts to wake you up at night to make sure your software is actually behaving as as you expect it to be and that your customers get their SLAs's.
+28
+00:02:07,830 --> 00:02:10,229
+that rely on bring your own cloud and EVPF.
 
-23
+29
+00:02:10,229 --> 00:02:18,150
+the main challenge is how do we migrate all the hard work we did as an R&amp;D organization.
+
+30
+00:02:18,160 --> 00:02:20,390
+right.
+
+31
+00:02:20,390 --> 00:02:24,550
+you can think about it as dashboards right.
+
+32
+00:02:24,550 --> 00:02:31,030
+most of R&amp;D has some kind of top 10 top 20 we often seen hundreds of dashboards across.
+
+33
+00:02:31,030 --> 00:02:34,391
+the entire R&amp;D. It could be monitors.
+
+34
+00:02:34,391 --> 00:02:39,830
+So imagine that you rely on specific alerts to wake you up at night to make.
+
+35
+00:02:39,830 --> 00:02:46,229
+sure your software is actually behaving as as you expect it to be.
+
+36
+00:02:46,229 --> 00:02:48,949
+and that your customers get their SLAs's.
+
+37
 00:02:48,949 --> 00:02:53,830
 And it also could be integrations that you did or even observability pipeline configurations.
 
-24
-00:02:53,840 --> 00:03:03,910
-All those configurations and integrations have been in the work for maybe 5 10 years from different people in the organization.
+38
+00:02:53,840 --> 00:03:02,390
+All those configurations and integrations have been in the work for maybe 5 10 years from different people.
 
-25
+39
+00:03:02,400 --> 00:03:03,910
+in the organization.
+
+40
 00:03:03,910 --> 00:03:07,589
 Some of them already left.
 
-26
+41
 00:03:07,589 --> 00:03:11,110
 So even the knowledge of what we have is sometimes missing.
 
-27
+42
 00:03:11,110 --> 00:03:17,670
 So all that makes the decision to move forward to new observability platform a lot more challenging.
 
-28
+43
 00:03:17,680 --> 00:03:20,950
 Right? So it is a challenging problem.
 
-29
+44
 00:03:20,959 --> 00:03:23,509
 But what is the primary driver?
 
-30
-00:03:23,509 --> 00:03:32,630
-Do you have an example where a customer actually came to you to ground cover and said because of these reasons we wanted to move from our legacy observability tool set?
+45
+00:03:23,509 --> 00:03:28,710
+Do you have an example where a customer actually came to you to ground cover and said.
 
-31
+46
+00:03:28,710 --> 00:03:32,630
+because of these reasons we wanted to move from our legacy observability tool set?
+
+47
 00:03:32,640 --> 00:03:43,750
 Yeah, we recently had a customer with a thousand monitors which they didn't know how they built it.
 
-32
+48
 00:03:43,750 --> 00:03:48,229
 So the people that actually created those monitors are no longer in the organization.
 
-33
-00:03:48,229 --> 00:03:58,631
-So imagine how frightening it is to now trying to migrate those monitors without knowing if what you're doing is actually the right thing. There is no way.
+49
+00:03:48,229 --> 00:03:53,990
+So imagine how frightening it is to now trying to migrate those monitors without knowing.
 
-34
+50
+00:03:54,000 --> 00:03:58,631
+if what you're doing is actually the right thing. There is no way.
+
+51
 00:03:58,631 --> 00:04:07,110
 So let's take a simple example of think about monitors that alert when specific log happens.
 
-35
+52
 00:04:07,110 --> 00:04:09,750
 It could be like a free text search.
 
-36
+53
 00:04:09,750 --> 00:04:12,309
 It could be specific attribute with specific value.
 
-37
+54
 00:04:12,309 --> 00:04:15,990
 Let's say status error.
 
-38
-00:04:15,990 --> 00:04:26,151
-So now when you migrate those monitors, imagine that you have a mistake and basically you don't know that you are not covered by your monitors. So that's pretty scary.
+55
+00:04:15,990 --> 00:04:18,629
+So now when you migrate those monitors,
 
-39
-00:04:26,151 --> 00:04:37,110
-This specific customer, their requirement was to have a fully automated process that will make sure their monitors are being migrated successfully.
+56
+00:04:18,629 --> 00:04:21,110
+imagine that you have a mistake and basically you don't know.
 
-40
+57
+00:04:21,120 --> 00:04:26,151
+that you are not covered by your monitors. So that's pretty scary.
+
+58
+00:04:26,151 --> 00:04:32,310
+This specific customer, their requirement was to have a fully automated process.
+
+59
+00:04:32,310 --> 00:04:37,110
+that will make sure their monitors are being migrated successfully.
+
+60
 00:04:37,110 --> 00:04:42,230
 And in order to do that, it actually it goes really deep.
 
-41
-00:04:42,230 --> 00:04:54,950
-You need to understand the log structure and the transformation that each log is going through in order to ensure that those monitors are still covering you and basically that you can sleep good at night.
+61
+00:04:42,230 --> 00:04:47,670
+You need to understand the log structure and the transformation that each log is going through.
 
-42
+62
+00:04:47,670 --> 00:04:53,430
+in order to ensure that those monitors are still covering you.
+
+63
+00:04:53,430 --> 00:04:54,950
+and basically that you can sleep good at night.
+
+64
 00:04:54,960 --> 00:04:57,030
 Thousand monitors, that's quite a lot.
 
-43
+65
 00:04:57,040 --> 00:04:58,950
 Is that the norm?
 
-44
+66
 00:04:58,950 --> 00:05:04,070
 Do you have quite a few customers with that many dashboards and monitors?
 
-45
+67
 00:05:04,070 --> 00:05:10,629
 I think the average customer has few hundreds of monitors and at least dozens of dashboards.
 
-46
-00:05:10,629 --> 00:05:20,230
-I think it really depends if the customers are using infrastructure as code to generate those monitors because it's usually very hard to create it manually.
+68
+00:05:10,629 --> 00:05:16,950
+I think it really depends if the customers are using infrastructure as code to generate those monitors.
 
-47
+69
+00:05:16,950 --> 00:05:20,230
+because it's usually very hard to create it manually.
+
+70
 00:05:20,240 --> 00:05:24,070
 But yeah, we're seeing numbers of hundreds of monitors.
 
-48
+71
 00:05:24,070 --> 00:05:26,870
 We have customer with 5,000 monitors.
 
-49
+72
 00:05:26,870 --> 00:05:29,830
 That's the high bar. Like I think the biggest we have is 10,000 monitors.
 
-50
+73
 00:05:29,840 --> 00:05:31,990
 Wow.
 
-51
-00:05:31,990 --> 00:05:39,270
-If you have taken all that effort to build thousand monitors and you know that migrating is going to be quite challenging, why go into that effort?
+74
+00:05:31,990 --> 00:05:34,629
+If you have taken all that effort to build thousand monitors.
 
-52
+75
+00:05:34,629 --> 00:05:39,270
+and you know that migrating is going to be quite challenging, why go into that effort?
+
+76
 00:05:39,280 --> 00:05:44,230
 What was the reason of saying that this does no longer works for me?
 
-53
+77
 00:05:44,240 --> 00:05:50,469
 Yeah, that's a good question and it comes back to the reason why we started ground cover.
 
-54
+78
 00:05:50,469 --> 00:05:56,710
 We were on the other side using some legacy vendor and basically you have two main challenges.
 
-55
-00:05:56,710 --> 00:06:03,189
-One is that you need to generate the data in order to have all the data and you need to instrument your application.
+79
+00:05:56,710 --> 00:06:00,870
+One is that you need to generate the data in order to have all the data.
 
-56
+80
+00:06:00,870 --> 00:06:03,189
+and you need to instrument your application.
+
+81
 00:06:03,189 --> 00:06:08,550
 I'm talking about APM, open telemetry or whatever SDK you're using.
 
-57
+82
 00:06:08,550 --> 00:06:12,950
 That's really cool, but you don't know what you don't know.
 
-58
+83
 00:06:12,950 --> 00:06:20,230
 So if you didn't instrument your application, you basically don't have the information that actually what's going on.
 
-59
+84
 00:06:20,230 --> 00:06:22,950
 That's one reason you want more data.
 
-60
-00:06:22,950 --> 00:06:33,270
-And the other reason that it's very very expensive old way of doing observability is basically send all the data to some SAS provider.
+85
+00:06:22,950 --> 00:06:29,430
+And the other reason that it's very very expensive old way of doing observability is.
 
-61
+86
+00:06:29,430 --> 00:06:33,270
+basically send all the data to some SAS provider.
+
+87
 00:06:33,270 --> 00:06:38,390
 But the reality is that it's very expensive not just even from licensing fee.
 
-62
-00:06:38,390 --> 00:06:48,390
-Think about the egress fee that you need to pay in order to send all that data and that lead to some kind of a vicious cycle.
+88
+00:06:38,390 --> 00:06:43,990
+Think about the egress fee that you need to pay in order to send all.
 
-63
-00:06:48,390 --> 00:06:57,670
-So before that we said we want more data right and then we instrument our application we get more data and then the bill come and it's very very expensive.
+89
+00:06:43,990 --> 00:06:48,390
+that data and that lead to some kind of a vicious cycle.
 
-64
-00:06:57,670 --> 00:07:10,150
-So now we are reducing the data that we just instrumented and that caused frustration and most organization have roles in the R&amp;D or devops that main concern is to make sure observability cost is under control.
+90
+00:06:48,390 --> 00:06:50,550
+So before that we said we want more data right.
 
-65
-00:07:10,160 --> 00:07:23,430
-What we built in ground cover is the first bring your own cloud platform observability platform which means that the data plane is inside the customer account.
+91
+00:06:50,550 --> 00:06:52,870
+and then we instrument our application we get more data.
 
-66
+92
+00:06:52,870 --> 00:06:57,670
+and then the bill come and it's very very expensive.
+
+93
+00:06:57,670 --> 00:07:02,309
+So now we are reducing the data that we just instrumented and that caused frustration.
+
+94
+00:07:02,309 --> 00:07:05,589
+and most organization have roles in the R&amp;D.
+
+95
+00:07:05,589 --> 00:07:10,150
+or devops that main concern is to make sure observability cost is under control.
+
+96
+00:07:10,160 --> 00:07:16,950
+What we built in ground cover is the first bring your own cloud platform observability platform.
+
+97
+00:07:16,950 --> 00:07:23,430
+which means that the data plane is inside the customer account.
+
+98
 00:07:23,430 --> 00:07:29,029
 So imagine that we provision a new AWS account or GCP or Azure whatever hyperscaler you're using.
 
-67
+99
 00:07:29,029 --> 00:07:31,350
 We deploy the back end.
 
-68
-00:07:31,350 --> 00:07:45,830
-We have a control plane that manage it but all the data plane is inside the customer environment which means it's a lot more efficient and it allow us basically not to charge our customers by volume of data.
+100
+00:07:31,350 --> 00:07:36,309
+We have a control plane that manage it but all the data plane is inside the customer environment.
 
-69
-00:07:45,830 --> 00:07:52,469
-So that also help in terms of the anxiety that most customer have around pricing.
+101
+00:07:36,309 --> 00:07:40,469
+which means it's a lot more efficient.
 
-70
-00:07:52,469 --> 00:08:05,350
-So that's one thing and the other thing that we did is we have our own ebpf sensor which generates a lot more data and because the customer doesn't pay by volume those two new techniques are
+102
+00:07:40,469 --> 00:07:45,830
+and it allow us basically not to charge our customers by volume of data.
 
-71
-00:08:05,360 --> 00:08:18,309
-actually amplifying each other in a very nice way right so if I understood it correctly the primary reason for firms aspiring to migrate from the existing observability tool set is
+103
+00:07:45,830 --> 00:07:53,830
+So that also help in terms of the anxiety that most customer have around pricing. So that's one thing.
 
-72
-00:08:18,309 --> 00:08:28,070
-that most of the legacy observability tool set relied on a lot of data and having that much data made it very expensive.
+104
+00:07:53,830 --> 00:08:00,310
+and the other thing that we did is we have our own ebpf sensor. which generates a lot more data.
 
-73
+105
+00:08:00,319 --> 00:08:05,350
+and because the customer doesn't pay by volume those two new techniques are.
+
+106
+00:08:05,360 --> 00:08:10,150
+actually amplifying each other in a very nice way right.
+
+107
+00:08:10,150 --> 00:08:16,070
+so if I understood it correctly the primary reason for firms aspiring to migrate from the existing observability.
+
+108
+00:08:16,080 --> 00:08:18,309
+tool set is that.
+
+109
+00:08:18,309 --> 00:08:21,909
+most of the legacy observability tool set relied on a lot of data.
+
+110
+00:08:21,919 --> 00:08:28,070
+and having that much data made it very expensive.
+
+111
 00:08:28,070 --> 00:08:34,070
 Whereas new tool sets like ground cover are able to not send the data to your particular cloud.
 
-74
-00:08:34,070 --> 00:08:46,230
-Whereas you can use your the firm's own cloud or use it on prem which reduces the cost and that's one of the primary drivers for firms aspiring to migrate out. Is that right?
+112
+00:08:34,070 --> 00:08:40,469
+Whereas you can use your the firm's own cloud or use it on prem which reduces the cost.
 
-75
+113
+00:08:40,479 --> 00:08:46,230
+and that's one of the primary drivers for firms aspiring to migrate out. Is that right?
+
+114
 00:08:46,240 --> 00:08:48,070
 That's correct.
 
-76
-00:08:48,070 --> 00:08:58,949
-And even more than that, so because we're not making money out of volume, that liberate the product team to basically be on the customer side, right?
+115
+00:08:48,070 --> 00:08:54,230
+And even more than that, so because we're not making money out of volume,
 
-77
-00:08:58,949 --> 00:09:05,750
-So imagine that you're trying to sell an observability platform and you make money out of data and you see the customer sending garbage data, right?
+116
+00:08:54,230 --> 00:08:58,949
+that liberate the product team to basically be on the customer side, right?
 
-78
+117
+00:08:58,949 --> 00:09:03,430
+So imagine that you're trying to sell an observability platform and you make money out of data.
+
+118
+00:09:03,430 --> 00:09:05,750
+and you see the customer sending garbage data, right?
+
+119
 00:09:05,750 --> 00:09:10,230
 We all know the phrase like garbage data in, garbage out.
 
-79
+120
 00:09:10,230 --> 00:09:17,350
 But from a seller perspective, if you're making money from that garbage data, you're in a conflict, right?
 
-80
-00:09:17,350 --> 00:09:27,190
-Like we all want to believe that the vendor will encourage the customer to stop sending it but the reality is that they have zero incentive and actually hurt their business.
+121
+00:09:17,350 --> 00:09:21,829
+Like we all want to believe that the vendor will encourage the customer to stop sending it.
 
-81
-00:09:27,190 --> 00:09:35,350
-So when we started ground cover we decided that we will always be on the customer side in terms of value.
+122
+00:09:21,829 --> 00:09:27,190
+but the reality is that they have zero incentive and actually hurt their business.
 
-82
-00:09:35,350 --> 00:09:47,430
-So our product team is constantly trying to reduce the infrastructure cost and making sure the customer have the right data that he needs.
+123
+00:09:27,190 --> 00:09:29,670
+So when we started ground cover we decided.
 
-83
+124
+00:09:29,670 --> 00:09:35,350
+that we will always be on the customer side in terms of value.
+
+125
+00:09:35,350 --> 00:09:41,190
+So our product team is constantly trying to reduce the infrastructure cost.
+
+126
+00:09:41,190 --> 00:09:47,430
+and making sure the customer have the right data that he needs.
+
+127
 00:09:47,430 --> 00:09:49,509
 So think about like a simple example.
 
-84
+128
 00:09:49,509 --> 00:09:54,870
 You have an observability pipeline that drop logs by pattern by specific pattern that it's spammy.
 
-85
+129
 00:09:54,870 --> 00:09:56,870
 You have two options to do that, right?
 
-86
-00:09:56,870 --> 00:10:06,070
-The old way, the legacy way is to make the customer send the data to the SAS platform and charge by ingest which could be very very expensive.
+130
+00:09:56,870 --> 00:10:03,829
+The old way, the legacy way is to make the customer send the data to the SAS platform.
 
-87
+131
+00:10:03,829 --> 00:10:06,070
+and charge by ingest which could be very very expensive.
+
+132
 00:10:06,070 --> 00:10:12,150
 In ground cover, we push down the filters to the sensor.
 
-88
-00:10:12,150 --> 00:10:20,630
-So basically the sensor at the node level will not send those logs because we don't make money of it anyway.
+133
+00:10:12,150 --> 00:10:14,710
+So basically the sensor at the node level will not send those logs.
 
-89
-00:10:20,630 --> 00:10:27,910
-So why would we waste time and energy and money by serializing those logs, shipping it over network and then dropping it at the other edge?
+134
+00:10:14,720 --> 00:10:20,630
+because we don't make money of it anyway.
 
-90
+135
+00:10:20,630 --> 00:10:25,910
+So why would we waste time and energy and money by serializing those logs,
+
+136
+00:10:25,910 --> 00:10:27,910
+shipping it over network and then dropping it at the other edge?
+
+137
 00:10:27,910 --> 00:10:31,350
 Because we're doing the same thing from both sides.
 
-91
+138
 00:10:31,350 --> 00:10:37,829
 We can just drop it at the node level and reduce a lot of cost and energy.
 
-92
-00:10:37,829 --> 00:10:46,389
-So that's just one example of why this alignment matters, why the new model actually matters to all our customers.
+139
+00:10:37,829 --> 00:10:40,310
+So that's just one example of why this alignment matters,
 
-93
-00:10:46,389 --> 00:10:55,269
-And what are some of the typical pain points you have seen during the migration process and if you can maybe bring it to life with some any examples that might come to mind?
+140
+00:10:40,310 --> 00:10:46,389
+why the new model actually matters to all our customers.
 
-94
+141
+00:10:46,389 --> 00:10:51,350
+And what are some of the typical pain points you have seen during the migration process?
+
+142
+00:10:51,350 --> 00:10:55,269
+and if you can maybe bring it to life with some any examples that might come to mind?
+
+143
 00:10:55,279 --> 00:10:57,430
 Yeah, sure.
 
-95
+144
 00:10:57,430 --> 00:11:02,949
 There's something that we called in the company observability for observability.
 
-96
+145
 00:11:02,949 --> 00:11:05,829
 So what it means is that the customer want to migrate, right?
 
-97
+146
 00:11:05,829 --> 00:11:15,430
 But they have 50 60 integrations active and they don't even know what integrations they have, right?
 
-98
-00:11:15,430 --> 00:11:28,230
-because most of the integrations are configured somewhere else and they just send data and it's been done by dozens of people across the organization.
+147
+00:11:15,430 --> 00:11:22,310
+because most of the integrations are configured somewhere else and they just send data.
 
-99
-00:11:28,230 --> 00:11:35,430
-So we had customer with I think it was 40 or 50 integrations with different cloud providers and different configurations
+148
+00:11:22,310 --> 00:11:28,230
+and it's been done by dozens of people across the organization.
 
-100
-00:11:35,430 --> 00:11:43,750
-and basically what we did in the migration process is we first start with discovery of what data you have.
+149
+00:11:28,230 --> 00:11:30,550
+So we had customer with I think it was 40.
 
-101
+150
+00:11:30,550 --> 00:11:35,430
+or 50 integrations with different cloud providers and different configurations.
+
+151
+00:11:35,430 --> 00:11:41,430
+and basically what we did in the migration process is we first start with discovery of what data.
+
+152
+00:11:41,430 --> 00:11:43,750
+you have.
+
+153
 00:11:43,750 --> 00:11:48,949
 So it's looking at observability data from an observability perspective in a way.
 
-102
-00:11:48,949 --> 00:11:57,110
-So we inspect the data, analyze it and say okay we found 50 active integrations according to the data
+154
+00:11:48,949 --> 00:11:52,069
+So we inspect the data, analyze it.
 
-103
-00:11:57,110 --> 00:12:08,150
-that we're seeing and now we automatically translate each and every integration from each and every vendor to basically adapt to how it looks at ground cover integration.
+155
+00:11:52,069 --> 00:11:57,110
+and say okay we found 50 active integrations according to the data that we're seeing.
 
-104
-00:12:08,150 --> 00:12:20,710
-So the customer get like a report displaying those are the integrations that we found, those were the integrations that will be added and just click next and that will be done.
+156
+00:11:57,110 --> 00:12:02,550
+and now we automatically translate each and every integration from each.
 
-105
-00:12:20,710 --> 00:12:28,949
-So think about how much hard work you have to do just to get all those configurations from an existing integrations you have.
+157
+00:12:02,550 --> 00:12:08,150
+and every vendor to basically adapt to how it looks at ground cover integration.
 
-106
+158
+00:12:08,150 --> 00:12:15,030
+So the customer get like a report displaying those are the integrations that we found.
+
+159
+00:12:15,030 --> 00:12:20,710
+those were the integrations that will be added and just click next and that will be done.
+
+160
+00:12:20,710 --> 00:12:26,150
+So think about how much hard work you have to do just to get all those configurations from.
+
+161
+00:12:26,150 --> 00:12:28,949
+an existing integrations you have.
+
+162
 00:12:28,949 --> 00:12:34,230
 This is almost impossible to do manually without mistakes.
 
-107
+163
 00:12:34,230 --> 00:12:41,030
 So that's like one simple aspect that actually starts the process of migration from most of our customers.
 
-108
+164
 00:12:41,040 --> 00:12:43,110
 Yep.
 
-109
+165
 00:12:43,110 --> 00:12:45,110
 Sounds very complicated and difficult task.
 
-110
+166
 00:12:45,110 --> 00:12:49,509
 Let's move to the next section where we discuss on approaches of migration.
 
-111
+167
 00:12:49,509 --> 00:12:52,310
 So what approaches have you seen firms take for migration?
 
-112
-00:12:52,310 --> 00:12:59,670
-Is it you know phased approach or is it a big bang approach and are there other approaches that you have seen as well?
+168
+00:12:52,310 --> 00:12:57,509
+Is it you know phased approach or is it a big bang approach.
 
-113
-00:12:59,680 --> 00:13:11,350
-That's a really good question and we actually we have our own opinion about what you should do first and how but we also very adaptive to what the customers want
+169
+00:12:57,509 --> 00:12:59,670
+and are there other approaches that you have seen as well?
 
-114
-00:13:11,350 --> 00:13:20,870
-because sometimes the organizational needs are much more important than what we think are the right way but usually what happened is we first start with discovery.
+170
+00:12:59,680 --> 00:13:06,550
+That's a really good question and we. actually we have our own opinion about what you should do first and how.
 
-115
-00:13:20,870 --> 00:13:32,310
-So we will fetch all your assets, dashboards, white, log pipelines, even policies in terms of user management and permissions and we first just visualize it.
+171
+00:13:06,550 --> 00:13:11,350
+but we also very adaptive to what the customers want.
 
-116
+172
+00:13:11,350 --> 00:13:18,310
+because sometimes the organizational needs are much more important than what we think are the right way.
+
+173
+00:13:18,310 --> 00:13:20,870
+but usually what happened is we first start with discovery.
+
+174
+00:13:20,870 --> 00:13:23,110
+So we will fetch all your assets,
+
+175
+00:13:23,110 --> 00:13:29,509
+dashboards, white, log pipelines, even policies in terms of user management.
+
+176
+00:13:29,509 --> 00:13:32,310
+and permissions and we first just visualize it.
+
+177
 00:13:32,310 --> 00:13:36,550
 It's like getting you on boarded on what are we going to do here?
 
-117
+178
 00:13:36,550 --> 00:13:40,069
 Those are our tasks.
 
-118
+179
 00:13:40,069 --> 00:13:44,710
 From this point, you have a few options.
 
-119
+180
 00:13:44,710 --> 00:13:47,829
 We usually encourage to start by the most important assets.
 
-120
+181
 00:13:47,829 --> 00:13:50,470
 So how do we know what's important?
 
-121
+182
 00:13:50,470 --> 00:13:53,670
 we can get some metadata.
 
-122
-00:13:53,670 --> 00:14:05,430
-So you can imagine that dashboards that are being edited in the recent week or month are probably more important than dashboard that haven't been touched for more than a year.
+183
+00:13:53,670 --> 00:14:00,389
+So you can imagine that dashboards that are being edited in the recent week.
 
-123
-00:14:05,430 --> 00:14:19,030
-So we get that information and also we can get information like how many views do you have for that dashboards and basically create some kind of a prioritization of the assets.
+184
+00:14:00,389 --> 00:14:02,550
+or month are probably more important.
 
-124
-00:14:19,030 --> 00:14:27,509
-So monitors that are firing right now or fired in the last week are probably critical for organization because they're actually happening, right?
+185
+00:14:02,550 --> 00:14:05,430
+than dashboard that haven't been touched for more than a year.
 
-125
+186
+00:14:05,430 --> 00:14:13,431
+So we get that information and also we can get information like how many views do you have. for that dashboards.
+
+187
+00:14:13,431 --> 00:14:19,030
+and basically create some kind of a prioritization of the assets.
+
+188
+00:14:19,030 --> 00:14:22,069
+So monitors that are firing right now.
+
+189
+00:14:22,069 --> 00:14:27,509
+or fired in the last week are probably critical for organization because they're actually happening, right?
+
+190
 00:14:27,509 --> 00:14:32,230
 If there is a monitor that never been fired in the last year, it's probably less important.
 
-126
+191
 00:14:32,230 --> 00:14:37,750
 So that's one view that most of our customers find really really effective.
 
-127
+192
 00:14:37,750 --> 00:14:44,470
 But we have another view which is focus around what's missing.
 
-128
+193
 00:14:44,470 --> 00:14:47,671
 So let's say we miss some metrics. We got like 5,000 metrics.
 
-129
+194
 00:14:47,680 --> 00:14:54,390
 We mapped them and we fetched 4,900, right? So, we're missing 100 metrics.
 
-130
+195
 00:14:54,399 --> 00:15:01,509
 Now, how do you know which one is important?
 
-131
-00:15:01,509 --> 00:15:14,550
-So, basically what we do is we fetch again all the assets that use those metrics or those signals and then we rank them by how popular they are, by the usage.
+196
+00:15:01,509 --> 00:15:04,470
+So, basically what we do is we fetch again all the assets.
 
-132
-00:15:14,550 --> 00:15:19,910
+197
+00:15:04,470 --> 00:15:07,430
+that use those metrics or those signals.
+
+198
+00:15:07,430 --> 00:15:14,550
+and then we rank them by how popular they are, by the usage.
+
+199
+00:15:14,550 --> 00:15:19,911
 So if there is one metric that is missing to accomplish 80% of the dashboard, let's focus on that.
 
-133
-00:15:19,910 --> 00:15:27,670
+200
+00:15:19,911 --> 00:15:27,670
 So basically those are the two angles that we're trying to attack that this hard process.
 
-134
+201
 00:15:27,670 --> 00:15:30,390
 And the main thing is to build trust, right? We we start this process.
 
-135
+202
 00:15:30,399 --> 00:15:33,030
 Some say it's like moving a bank.
 
-136
+203
 00:15:33,030 --> 00:15:34,710
 Some say it's like moving an apartment.
 
-137
+204
 00:15:34,710 --> 00:15:36,629
 I don't know which size I am.
 
-138
+205
 00:15:36,629 --> 00:15:41,030
 But the common thing is it's very stressful and there is a lot of fear around it.
 
-139
+206
 00:15:41,030 --> 00:15:47,430
 And our job is to give you the confidence we can do it.
 
-140
-00:15:47,430 --> 00:15:57,350
-So we bring the tools to help you analyze what is going on, what is the progress, what's needed to achieve more progress.
+207
+00:15:47,430 --> 00:15:50,949
+So we bring the tools to help you analyze what is going on,
 
-141
+208
+00:15:50,949 --> 00:15:57,350
+what is the progress, what's needed to achieve more progress.
+
+209
 00:15:57,350 --> 00:16:01,990
 And the last part is the feedback loop that is very very important.
 
-142
+210
 00:16:01,990 --> 00:16:07,829
 So if you added that missing integration, you automatically visualize the data.
 
-143
-00:16:07,829 --> 00:16:22,310
-you automatically see that those box checked and that's those kind of little games that help you make progress in this quest build the confidence that we can do it together and the last piece is bring all the all our R&amp;D like all the stakeholders
+211
+00:16:07,829 --> 00:16:10,629
+you automatically see that those box checked.
 
-144
-00:16:22,310 --> 00:16:30,949
-and present them the process the results of what we did and let them play with it and give the feedback that's how we usually close a P
+212
+00:16:10,629 --> 00:16:13,030
+and that's those kind of little games.
 
-145
-00:16:30,949 --> 00:16:38,630
-or on boarding of a new customer and do you have any story or example where a particular migration did not go as per plan. What were the challenges?
+213
+00:16:13,030 --> 00:16:16,949
+that help you make progress in this quest build the confidence that we can do it together.
 
-146
+214
+00:16:16,959 --> 00:16:22,310
+and the last piece is bring all the all our R&amp;D like all the stakeholders.
+
+215
+00:16:22,310 --> 00:16:26,310
+and present them the process the results of what we did.
+
+216
+00:16:26,310 --> 00:16:27,910
+and let them play with it and give the feedback.
+
+217
+00:16:27,910 --> 00:16:31,829
+that's how we usually close a P or on boarding of a new customer.
+
+218
+00:16:31,839 --> 00:16:38,630
+and do you have any story or example where a particular migration did not go as per plan. What were the challenges?
+
+219
 00:16:38,639 --> 00:16:42,390
 What went wrong? And how did you fix it?
 
-147
-00:16:42,399 --> 00:16:54,870
-I think the most challenging part is getting all the observability pipelines right because usually when you work with customers,
+220
+00:16:42,399 --> 00:16:52,710
+I think the most challenging part is getting all the observability pipelines right.
 
-148
+221
+00:16:52,710 --> 00:16:54,870
+because usually when you work with customers,
+
+222
 00:16:54,870 --> 00:16:59,509
 you see they have some kind of layers of software in their organization, right?
 
-149
-00:16:59,509 --> 00:17:08,949
-We all have this service that we know we should fix but or we should change those log lines but no one is getting to it and it's pretty scary
+223
+00:16:59,509 --> 00:17:02,790
+We all have this service that we know we should fix.
 
-150
+224
+00:17:02,790 --> 00:17:06,949
+but or we should change those log lines but no one is getting to it.
+
+225
+00:17:06,949 --> 00:17:08,949
+and it's pretty scary because it's an old monolith.
+
+226
 00:17:08,949 --> 00:17:15,270
-because it's an old monolith that 80% of the company rely on and nobody want to touch it.
+that 80% of the company rely on and nobody want to touch it.
 
-151
-00:17:15,270 --> 00:17:24,390
-So around those software component built a lot of I would say legacy pipelines that we need to discover.
+227
+00:17:15,270 --> 00:17:21,029
+So around those software component built a lot of I would say legacy pipelines.
 
-152
-00:17:24,390 --> 00:17:33,029
-So a good example was that we had one customer that had a few versions of the same service running together simultaneously.
+228
+00:17:21,029 --> 00:17:24,390
+that we need to discover.
 
-153
-00:17:33,029 --> 00:17:45,990
-So they already started doing the work of migrating this service to a new logging solution but they roll it out gradually very very gradually.
+229
+00:17:24,390 --> 00:17:27,270
+So a good example was that we had one customer.
 
-154
-00:17:45,990 --> 00:17:58,630
-So our platform discovered those logs and we identified that basically the new logs as what is going on and we mapped those monitors and dashboards according to the data that we saw.
+230
+00:17:27,270 --> 00:17:33,029
+that had a few versions of the same service running together simultaneously.
 
-155
-00:17:58,630 --> 00:18:07,110
-What we missed is that at the same time we had the same service running on a older version with a different structure of logs.
+231
+00:17:33,029 --> 00:17:39,350
+So they already started doing the work of migrating this service to a new logging solution.
 
-156
-00:18:07,110 --> 00:18:20,070
-So we basically got tricked by different versions of that service and we missed some observability transformations that caused to some dashboards not to load or we were missing data in a way.
+232
+00:17:39,350 --> 00:17:45,990
+but they roll it out gradually very very gradually.
 
-157
+233
+00:17:45,990 --> 00:17:48,549
+So our platform discovered those logs and we identified.
+
+234
+00:17:48,549 --> 00:17:53,669
+that basically the new logs as what is going on.
+
+235
+00:17:53,669 --> 00:17:58,630
+and we mapped those monitors and dashboards according to the data that we saw.
+
+236
+00:17:58,630 --> 00:18:04,070
+What we missed is that at the same time we had the same service running on a older.
+
+237
+00:18:04,070 --> 00:18:07,110
+version with a different structure of logs.
+
+238
+00:18:07,110 --> 00:18:13,110
+So we basically got tricked by different versions of that service.
+
+239
+00:18:13,110 --> 00:18:17,830
+and we missed some observability transformations that caused to some dashboards not to load.
+
+240
+00:18:17,830 --> 00:18:20,070
+or we were missing data in a way.
+
+241
 00:18:20,070 --> 00:18:24,390
 The data was there but not in the structure and form that we expected it to be.
 
-158
-00:18:24,390 --> 00:18:33,190
-The good thing is that this team was very very engaged and they knew exactly what they're looking for and they proved us show us this is the dashboard.
+242
+00:18:24,390 --> 00:18:29,190
+The good thing is that this team was very very engaged.
 
-159
-00:18:33,190 --> 00:18:43,430
-we only see half of the data and we're like okay let's dive and see the actual raw data and once we did that we realized they had
+243
+00:18:29,190 --> 00:18:31,430
+and they knew exactly what they're looking for.
 
-160
-00:18:43,430 --> 00:18:51,270
-so many transformation happening in so many places but we learned from this experience and now our inspection on the data is
+244
+00:18:31,430 --> 00:18:35,190
+and they proved us show us this is the dashboard we only see half of the data.
 
-161
-00:18:51,270 --> 00:18:58,870
-so much better thanks to that specific case I really like those cases where we learn from our customers new things that we can leverage and share
+245
+00:18:35,190 --> 00:18:38,150
+and we're like okay let's dive and see the actual raw data.
 
-162
-00:18:58,880 --> 00:19:09,510
-with our new customers basically that enjoy the hard work Yeah, it just brings out the complexity of the migration task and the challenges around it.
+246
+00:18:38,160 --> 00:18:40,710
+and once we did that we realized.
 
-163
+247
+00:18:40,710 --> 00:18:46,230
+they had so many transformation happening in so many places.
+
+248
+00:18:46,230 --> 00:18:51,270
+but we learned from this experience and now our inspection on the data is.
+
+249
+00:18:51,270 --> 00:18:53,750
+so much better thanks to that specific case.
+
+250
+00:18:53,750 --> 00:18:58,870
+I really like those cases where we learn from our customers new things.
+
+251
+00:18:58,870 --> 00:19:03,430
+that we can leverage and share with our new customers basically that enjoy the hard work.
+
+252
+00:19:03,430 --> 00:19:09,510
+Yeah, it just brings out the complexity of the migration task and the challenges around it.
+
+253
 00:19:09,510 --> 00:19:14,870
 How do you suggest migration workflows can be reframed to reduce fuel?
 
-164
+254
 00:19:14,880 --> 00:19:19,510
 That's a question we are dealing with a lot.
 
-165
+255
 00:19:19,510 --> 00:19:21,590
 We had a few analogies that we started.
 
-166
+256
 00:19:21,590 --> 00:19:25,830
 When we started, we tried to give the notion of moving an apartment, right?
 
-167
-00:19:25,830 --> 00:19:29,909
-So, you can think about it as a chore, but you can also think about it like a new start, right?
+257
+00:19:25,830 --> 00:19:27,510
+So, you can think about it as a chore,
 
-168
+258
+00:19:27,510 --> 00:19:29,909
+but you can also think about it like a new start, right?
+
+259
 00:19:29,909 --> 00:19:35,830
 So, I don't know about you, but when I move an apartment,
 
-169
-00:19:35,830 --> 00:19:43,750
-I try to sort things and maybe reorganize it in a new way that is actually better that I always wanted to do, but I never had a chance.
+260
+00:19:35,830 --> 00:19:38,950
+I try to sort things and maybe reorganize it in a new way.
 
-170
-00:19:43,750 --> 00:19:52,310
-I also take the time and and rethink if those items that I've been kept for 7 10 years and never touched, do I need it?
+261
+00:19:38,950 --> 00:19:43,751
+that is actually better that I always wanted to do. but I never had a chance.
 
-171
+262
+00:19:43,751 --> 00:19:46,870
+I also take the time and and rethink.
+
+263
+00:19:46,870 --> 00:19:52,310
+if those items that I've been kept for 7 10 years and never touched, do I need it?
+
+264
 00:19:52,310 --> 00:19:55,110
 Maybe I don't anymore.
 
-172
+265
 00:19:55,110 --> 00:19:57,590
 So, moving an apartment was one analogy that we we played with.
 
-173
+266
 00:19:57,600 --> 00:20:00,630
 Another one was like a quest, right?
 
-174
+267
 00:20:00,630 --> 00:20:03,750
 So like an an adventure that you explore.
 
-175
-00:20:03,760 --> 00:20:17,750
-So imagine people with a torch, you know, going into a cave or, you know, like in into the forest and basically discovering data that they didn't know about or dashboard that they don't know about that they don't even work.
+268
+00:20:03,760 --> 00:20:08,870
+So imagine people with a torch, you know,
 
-176
-00:20:17,750 --> 00:20:25,510
-Cuz we're seeing customers having dashboards that don't work in their legacy vendor and they don't know it's not working.
+269
+00:20:08,870 --> 00:20:11,270
+going into a cave or, you know, like in into the forest.
 
-177
+270
+00:20:11,270 --> 00:20:15,510
+and basically discovering data that they didn't know about.
+
+271
+00:20:15,510 --> 00:20:17,750
+or dashboard that they don't know about that they don't even work.
+
+272
+00:20:17,750 --> 00:20:23,270
+Cuz we're seeing customers having dashboards that don't work in their legacy vendor.
+
+273
+00:20:23,280 --> 00:20:25,510
+and they don't know it's not working.
+
+274
 00:20:25,510 --> 00:20:32,950
 So when they migrate, they expect it to work, but it actually didn't work anyway.
 
-178
+275
 00:20:32,950 --> 00:20:36,070
 And it's our responsibility to prove it or or just explain it, right?
 
-179
-00:20:36,080 --> 00:20:43,270
-So you can think about it like a a quest that you discover things and you always get surprised.
+276
+00:20:36,080 --> 00:20:38,549
+So you can think about it like a a quest.
 
-180
+277
+00:20:38,559 --> 00:20:43,270
+that you discover things and you always get surprised.
+
+278
 00:20:43,270 --> 00:20:45,511
 Some of us think about it. It's like a moving bank, right?
 
-181
-00:20:45,520 --> 00:20:53,750
-Something that sounds really scary, but then you think about it, wait, I can just transfer my credit card and, you know, all the commitments I have.
+279
+00:20:45,520 --> 00:20:49,669
+Something that sounds really scary, but then you think about it,
 
-182
+280
+00:20:49,669 --> 00:20:53,750
+wait, I can just transfer my credit card and, you know, all the commitments I have.
+
+281
 00:20:53,750 --> 00:20:55,350
 But it's still very very scary.
 
-183
+282
 00:20:55,350 --> 00:20:58,470
 You need someone to help you and guide you on this process.
 
-184
+283
 00:20:58,470 --> 00:21:00,390
 But you know it's feasible.
 
-185
+284
 00:21:00,390 --> 00:21:02,149
 You know it's been done before a lot.
 
-186
+285
 00:21:02,149 --> 00:21:03,669
 And I think that's one of the narratives that we're trying to change.
 
-187
+286
 00:21:03,679 --> 00:21:07,190
-Basically saying tell saying you we're not saying it's easy.
+basically saying tell saying you we're not saying it's easy.
 
-188
+287
 00:21:07,190 --> 00:21:09,750
 We're not saying it's not scary.
 
-189
+288
 00:21:09,750 --> 00:21:15,830
 We're saying that we spent a lot of time and work to make this process very very effective.
 
-190
+289
 00:21:15,830 --> 00:21:17,909
 And that's what we do.
 
-191
+290
 00:21:17,909 --> 00:21:20,549
 And the data is there and we will get you through it.
 
-192
-00:21:20,549 --> 00:21:28,549
-So you can count on us to tell you not just just what passed also what failed and that's our responsibility
+291
+00:21:20,549 --> 00:21:26,310
+So you can count on us to tell you not just just what passed also what failed.
 
-193
-00:21:28,549 --> 00:21:36,549
-to tell you you know those dashboards are broken let's fix it together those dashboards are broken it's not just tick we finished
+292
+00:21:26,310 --> 00:21:32,470
+and that's our responsibility to tell you you know those dashboards are broken let's fix it together.
 
-194
-00:21:36,549 --> 00:21:45,510
-now you deal with the dashboards that are not working it's like us together trying to understand how can we fix this dashboard now that we have covered why firms want
+293
+00:21:32,470 --> 00:21:38,391
+those dashboards are broken it's not just tick we finished now you deal with the dashboards. that are not working.
 
-195
-00:21:45,520 --> 00:21:53,669
-to migrate from their legacy observability stack what are the challenges they face and approaches that could be taken for the migration.
+294
+00:21:38,391 --> 00:21:42,710
+it's like us together trying to understand how can we fix this dashboard.
 
-196
-00:21:53,669 --> 00:22:01,830
-I want to touch on the next section which is around the frameworks available and one of the most well-known framework is open telemetry.
+295
+00:21:42,720 --> 00:21:49,350
+now that we have covered why firms want to migrate from their legacy observability stack what are the.
 
-197
+296
+00:21:49,360 --> 00:21:51,350
+challenges they face.
+
+297
+00:21:51,350 --> 00:21:53,669
+and approaches that could be taken for the migration.
+
+298
+00:21:53,669 --> 00:21:57,990
+I want to touch on the next section which is around the frameworks available.
+
+299
+00:21:57,990 --> 00:22:01,830
+and one of the most well-known framework is open telemetry.
+
+300
 00:22:01,830 --> 00:22:05,029
 Can you start off by explaining to our listeners what is open telemetry?
 
-198
+301
 00:22:05,039 --> 00:22:07,669
 Yeah, sure.
 
-199
+302
 00:22:07,669 --> 00:22:13,909
 Open telemetry is a set of definitions and schemas that represent observability signals.
 
-200
-00:22:13,909 --> 00:22:22,390
-Open telemetry also go further and actually have the implementation but the basic is the semantics is
+303
+00:22:13,909 --> 00:22:19,669
+Open telemetry also go further and actually have the implementation.
 
-201
-00:22:22,390 --> 00:22:36,230
-basically to agree between all people about what is a trace what is a log how do we describe a metric and then the project itself continue and also implement a lot of SDKs
+304
+00:22:19,669 --> 00:22:22,390
+but the basic is the semantics is.
 
-202
-00:22:36,230 --> 00:22:41,029
-and binaries that handling observability data.
+305
+00:22:22,390 --> 00:22:29,431
+basically to agree between all people about what is a trace what is a log how do we. describe a metric.
 
-203
+306
+00:22:29,431 --> 00:22:32,390
+and then the project itself continue and.
+
+307
+00:22:32,400 --> 00:22:41,029
+also implement a lot of SDKs and binaries that handling observability data.
+
+308
 00:22:41,029 --> 00:22:47,670
 So you can think about the OTL collector as an implementation of those semantics. You also have the OTIL SDK.
 
-204
-00:22:47,679 --> 00:22:57,510
-Basically those SDKs are the framework the the runtime that you use in order to generate those signals those those observability signals.
+309
+00:22:47,679 --> 00:22:53,190
+Basically those SDKs are the framework the the runtime.
 
-205
-00:22:57,510 --> 00:23:07,830
-That's an open source project that it's being heavily focused on from the CNCF and it's getting a lot of traction in the last maybe five seven years.
+310
+00:22:53,190 --> 00:22:57,510
+that you use in order to generate those signals those those observability signals.
 
-206
+311
+00:22:57,510 --> 00:23:02,549
+That's an open source project that it's being heavily focused on from the CNCF.
+
+312
+00:23:02,549 --> 00:23:07,830
+and it's getting a lot of traction in the last maybe five seven years.
+
+313
 00:23:07,830 --> 00:23:10,950
 This is the main open-source approach that we're seeing today.
 
-207
+314
 00:23:10,960 --> 00:23:13,510
 And what problem is it trying to solve?
 
-208
+315
 00:23:13,520 --> 00:23:15,830
 Yeah.
 
-209
+316
 00:23:15,830 --> 00:23:18,870
 So before open telemetry, every vendor has its own implementation.
 
-210
-00:23:18,870 --> 00:23:21,190
-So if you think about it,
+317
+00:23:18,870 --> 00:23:26,470
+So if you think about it, open telemetry is the first step in order to migrate.
 
-211
-00:23:21,190 --> 00:23:31,750
-open telemetry is the first step in order to migrate or allow customers to migrate easily between vendors.
+318
+00:23:26,470 --> 00:23:31,750
+or allow customers to migrate easily between vendors.
 
-212
+319
 00:23:31,750 --> 00:23:38,549
 Because if the data signals are the same and we only decide where to send it,
 
-213
-00:23:38,549 --> 00:23:43,590
-that will make the migration process a lot easier because all those things that we talked before,
+320
+00:23:38,549 --> 00:23:41,270
+that will make the migration process a lot easier.
 
-214
+321
+00:23:41,270 --> 00:23:43,590
+because all those things that we talked before,
+
+322
 00:23:43,600 --> 00:23:53,430
 integrations and data pipelines and all that are already baked in in a vendor neutral piece.
 
-215
+323
 00:23:53,430 --> 00:23:56,230
 So that will make the migration process a lot easier.
 
-216
+324
 00:23:56,230 --> 00:23:58,789
 We're still seeing gradual adoption.
 
-217
+325
 00:23:58,789 --> 00:24:04,870
 So we're seeing customers having a mix of old legacy vendors and auto in a hybrid motion.
 
-218
+326
 00:24:04,870 --> 00:24:07,430
 But the trend is clear.
 
-219
+327
 00:24:07,430 --> 00:24:13,029
 I think most companies now trying to move to open telemetry.
 
-220
+328
 00:24:13,029 --> 00:24:17,590
 And that's the one big step you can take in order to prepare yourself for for migration, right?
 
-221
-00:24:17,590 --> 00:24:27,510
-To basically be a a vendor neutral and allow your signals to be shipped to a different vendor, right?
+329
+00:24:17,590 --> 00:24:24,149
+To basically be a a vendor neutral and allow your signals to be shipped to a different vendor,
 
-222
-00:24:27,510 --> 00:24:40,870
-So what we are saying is that if you are vendor neutral and you're using the hotel standards migration becomes much easier and I can guess the answer in terms of what problem ground cover is solving over here.
+330
+00:24:24,159 --> 00:24:27,511
+right? So what we are saying is that.
 
-223
+331
+00:24:27,511 --> 00:24:35,830
+if you are vendor neutral and you're using the hotel standards migration becomes much easier.
+
+332
+00:24:35,830 --> 00:24:40,870
+and I can guess the answer in terms of what problem ground cover is solving over here.
+
+333
 00:24:40,870 --> 00:24:47,430
 It's basically solving for firms which are not on hotel standard.
 
-224
+334
 00:24:47,430 --> 00:24:51,511
 So it any legacy it's able to migrate over to a new observability tool set. Is that right?
 
-225
+335
 00:24:51,520 --> 00:24:54,789
 Not necessarily.
 
-226
-00:24:54,789 --> 00:25:04,950
-So alt is only about the data structure and generating it but still each vendor has its own dashboarding schemes.
+336
+00:24:54,789 --> 00:25:00,230
+So alt is only about the data structure.
 
-227
-00:25:04,950 --> 00:25:17,350
-So you know you can have two vendors with different dashboards standards and features and now someone needs to convert those dashboards from one vendor to another and that's still still not defined by auto.
+337
+00:25:00,230 --> 00:25:04,950
+and generating it but still each vendor has its own dashboarding schemes.
 
-228
-00:25:17,350 --> 00:25:27,750
-There are some initiatives trying to standardize also visualization layer but honestly we're we're still far from it becoming the standard.
+338
+00:25:04,950 --> 00:25:09,190
+So you know you can have two vendors with different dashboards standards and features.
 
-229
-00:25:27,750 --> 00:25:36,630
-So monitors definition, pipeline definitions and dashboard definition and also integrations are still for the majority proprietary per vendor.
+339
+00:25:09,190 --> 00:25:14,950
+and now someone needs to convert those dashboards from one vendor to another.
 
-230
+340
+00:25:14,950 --> 00:25:17,350
+and that's still still not defined by auto.
+
+341
+00:25:17,350 --> 00:25:19,430
+There are some initiatives trying to standardize.
+
+342
+00:25:19,440 --> 00:25:27,750
+also visualization layer but honestly we're we're still far from it becoming the standard.
+
+343
+00:25:27,750 --> 00:25:32,390
+So monitors definition, pipeline definitions and dashboard definition.
+
+344
+00:25:32,390 --> 00:25:36,630
+and also integrations are still for the majority proprietary per vendor.
+
+345
 00:25:36,640 --> 00:25:42,549
 We'll move to the next section which is around validation and success measurement.
 
-231
+346
 00:25:42,549 --> 00:25:44,390
 After the migration, how do you know it's working?
 
-232
+347
 00:25:44,390 --> 00:25:47,669
 What are the success metrics that you use for the migration itself?
 
-233
+348
 00:25:47,679 --> 00:25:50,549
 Yeah, that's a very hard question.
 
-234
+349
 00:25:50,549 --> 00:25:54,310
 I'll start with the difficult part.
 
-235
+350
 00:25:54,310 --> 00:26:00,070
 Imagine you have a monitor that never been fired.
 
-236
+351
 00:26:00,070 --> 00:26:02,630
 So the data is completely missing, right?
 
-237
+352
 00:26:02,630 --> 00:26:05,269
 Like you run the query and you don't get any examples.
 
-238
-00:26:05,269 --> 00:26:17,110
-How do you know that this monitor is being transferred correctly if you don't have any example of that data?
+353
+00:26:05,269 --> 00:26:14,390
+How do you know that this monitor is being transferred correctly.
 
-239
+354
+00:26:14,390 --> 00:26:17,110
+if you don't have any example of that data?
+
+355
 00:26:17,110 --> 00:26:19,269
 And the answer is it's very hard.
 
-240
+356
 00:26:19,269 --> 00:26:25,430
 What we're trying to do is we are focusing on engagement with the users.
 
-241
-00:26:25,430 --> 00:26:34,070
-So we take the assumption that if a monitor never been fired in the last month or two or three, maybe it's less important.
+357
+00:26:25,430 --> 00:26:30,789
+So we take the assumption that if a monitor never been fired in the last month.
 
-242
-00:26:34,070 --> 00:26:44,310
-So we might not get to 100% but we get to 99% of what matters but most cases around validation of the queries.
+358
+00:26:30,789 --> 00:26:34,070
+or two or three, maybe it's less important.
 
-243
+359
+00:26:34,070 --> 00:26:37,750
+So we might not get to 100% but we get to 99% of what matters.
+
+360
+00:26:37,750 --> 00:26:44,310
+but most cases around validation of the queries.
+
+361
 00:26:44,310 --> 00:26:47,029
 So if we're seeing a widget of a time series from a vendor,
 
-244
-00:26:47,029 --> 00:26:56,230
-we simultaneously can run those queries on our data and basically create a dashboard
+362
+00:26:47,029 --> 00:26:53,750
+we simultaneously can run those queries on our data.
 
-245
-00:26:56,230 --> 00:27:04,630
-that should look exactly the same or or very similar in terms of nuance of the UI and we present that as a preview to the customer.
+363
+00:26:53,750 --> 00:26:58,390
+and basically create a dashboard that should look exactly the same.
 
-246
-00:27:04,630 --> 00:27:15,350
-And you can imagine that we we display the users like those two dashboards and you can decide if it's if it's good enough or not.
+364
+00:26:58,390 --> 00:27:01,990
+or or very similar in terms of nuance of the UI.
 
-247
-00:27:15,350 --> 00:27:23,590
-And if the preview is good enough, you can just take it we mark it as done and we basically push it to your account.
+365
+00:27:01,990 --> 00:27:04,630
+and we present that as a preview to the customer.
 
-248
-00:27:23,590 --> 00:27:29,830
-So we basically manage it as as a tasks that that like to-dos have all the dashboards things that we think that are still pending for data things that
+366
+00:27:04,630 --> 00:27:10,870
+And you can imagine that we we display the users like those two dashboards.
 
-249
-00:27:29,840 --> 00:27:42,470
-we think that are ready to migrate and we give you preview of each and every asset that we are we think is is ready and once you approve this is correct you can just get it in in our platform.
+367
+00:27:10,870 --> 00:27:15,351
+and you can decide if it's if it's good enough or not. And if the preview is good enough,
 
-250
+368
+00:27:15,360 --> 00:27:23,590
+you can just take it we mark it as done and we basically push it to your account.
+
+369
+00:27:23,590 --> 00:27:27,750
+So we basically manage it as as a tasks that that like to-dos have all the dashboards things.
+
+370
+00:27:27,750 --> 00:27:32,230
+that we think that are still pending for data things that we think that are ready to migrate.
+
+371
+00:27:32,230 --> 00:27:38,230
+and we give you preview of each and every asset that we are we think is is ready.
+
+372
+00:27:38,240 --> 00:27:42,470
+and once you approve this is correct you can just get it in in our platform.
+
+373
 00:27:42,480 --> 00:27:46,070
 Obviously you can do it in bulk so you don't have to do it one by one.
 
-251
-00:27:46,080 --> 00:27:55,990
-Sometimes our customers they verify a few from each environment or a few from of each type and then they migrate all
+374
+00:27:46,080 --> 00:27:51,510
+Sometimes our customers they verify a few from each environment.
 
-252
-00:27:56,000 --> 00:28:10,149
-that group and some of our customers willing to spend 2 three hours just going over you know comparison between us and the vendor and making sure 100% is correct.
+375
+00:27:51,510 --> 00:27:58,070
+or a few from of each type and then they migrate all that group.
 
-253
-00:28:10,149 --> 00:28:16,950
-I personally think that the hybrid approach of take the top 20, top 30, how much is it for you?
+376
+00:27:58,070 --> 00:28:03,269
+and some of our customers willing to spend 2 three hours just going over you know comparison between.
 
-254
-00:28:16,950 --> 00:28:27,909
-Make sure those are 100% right because those will be probably the heart of your organization and the rest we can work it out as we go.
+377
+00:28:03,279 --> 00:28:07,029
+us and the vendor.
 
-255
-00:28:27,909 --> 00:28:41,590
-I think that's from my experience this is the most effective approach of how not to mainly invest a few days for migrating and still get most of the the value from the migration process of being doing it automatically.
+378
+00:28:07,029 --> 00:28:10,149
+and making sure 100% is correct.
 
-256
+379
+00:28:10,149 --> 00:28:14,070
+I personally think that the hybrid approach of take the top 20,
+
+380
+00:28:14,070 --> 00:28:16,950
+top 30, how much is it for you?
+
+381
+00:28:16,950 --> 00:28:25,750
+Make sure those are 100% right because those will be probably the heart of your organization.
+
+382
+00:28:25,750 --> 00:28:27,909
+and the rest we can work it out as we go.
+
+383
+00:28:27,909 --> 00:28:33,590
+I think that's from my experience this is the most effective approach of how not to mainly invest.
+
+384
+00:28:33,590 --> 00:28:36,230
+a few days for migrating.
+
+385
+00:28:36,230 --> 00:28:41,590
+and still get most of the the value from the migration process of being doing it automatically.
+
+386
 00:28:41,600 --> 00:28:43,669
 Yeah, makes sense.
 
-257
-00:28:43,669 --> 00:28:52,389
-So for the hybrid approach where you take the top 10 or top 20 dashboards or monitors and ensure that it's correct, how do you ensure that it is correct?
+387
+00:28:43,669 --> 00:28:45,430
+So for the hybrid approach where you take the top 10.
 
-258
+388
+00:28:45,430 --> 00:28:50,230
+or top 20 dashboards or monitors and ensure that it's correct,
+
+389
+00:28:50,230 --> 00:28:52,389
+how do you ensure that it is correct?
+
+390
 00:28:52,389 --> 00:28:54,470
 Is it by dual running with the legacy system?
 
-259
+391
 00:28:54,480 --> 00:28:56,789
 Yeah, exactly.
 
-260
-00:28:56,789 --> 00:29:09,350
-So we instruct you to dual ship all the data for the migration process and then we display live evaluation of each monitor and each dashboard.
+392
+00:28:56,789 --> 00:29:03,669
+So we instruct you to dual ship all the data for the migration process.
 
-261
+393
+00:29:03,669 --> 00:29:09,350
+and then we display live evaluation of each monitor and each dashboard.
+
+394
 00:29:09,350 --> 00:29:11,909
 So you can get you expect it to be 100% the same.
 
-262
+395
 00:29:11,909 --> 00:29:14,870
 That's what we usually do.
 
-263
+396
 00:29:14,870 --> 00:29:17,830
 We don't cut the old vendor before you make sure it's 100% the same.
 
-264
+397
 00:29:17,840 --> 00:29:22,149
 And what does a successful migration look like from the team's perspective?
 
-265
+398
 00:29:22,159 --> 00:29:24,389
 How does their life become easier?
 
-266
+399
 00:29:24,389 --> 00:29:28,549
 I think the previous approach was to professional services, right?
 
-267
-00:29:28,549 --> 00:29:35,510
-If you're lucky enough to have a big enough deal for that vendor that they will allocate professional services
+400
+00:29:28,549 --> 00:29:33,590
+If you're lucky enough to have a big enough deal for.
 
-268
-00:29:35,510 --> 00:29:48,389
-or even if you pay for it, you will get 10, 15 people walking for you migrating manually all the dashboards and monitors and then they will make mistakes because they're human.
+401
+00:29:33,590 --> 00:29:35,510
+that vendor that they will allocate professional services.
 
-269
+402
+00:29:35,510 --> 00:29:39,110
+or even if you pay for it,
+
+403
+00:29:39,110 --> 00:29:43,669
+you will get 10, 15 people walking for you migrating manually all the dashboards and monitors.
+
+404
+00:29:43,669 --> 00:29:48,389
+and then they will make mistakes because they're human.
+
+405
 00:29:48,389 --> 00:29:53,350
 And you can imagine how tedious it is to migrate 200 monitors manually.
 
-270
+406
 00:29:53,360 --> 00:29:58,789
 And then you'll have to manually go over it and approve it as the customer.
 
-271
+407
 00:29:58,789 --> 00:30:04,549
 And from what I've heard from customers, this process doesn't give you the confidence.
 
-272
-00:30:04,549 --> 00:30:15,430
-Once you know there are other people doing it for you and you know they don't know the data as you know, I feel like this this becomes a bit scary.
+408
+00:30:04,549 --> 00:30:07,269
+Once you know there are other people doing it for you.
 
-273
+409
+00:30:07,269 --> 00:30:12,070
+and you know they don't know the data as you know.
+
+410
+00:30:12,070 --> 00:30:15,430
+I feel like this this becomes a bit scary.
+
+411
 00:30:15,430 --> 00:30:20,710
-So from our perspective our focus is to find out what is the most critical dashboards
+So from our perspective our focus is to find out what is the most critical dashboards.
 
-274
-00:30:20,710 --> 00:30:32,630
-and monitors as we as we spoke before and we make sure 100% of that is migrated successfully and we know how to test it.
+412
+00:30:20,710 --> 00:30:25,029
+and monitors as we as we spoke before.
 
-275
+413
+00:30:25,029 --> 00:30:32,630
+and we make sure 100% of that is migrated successfully and we know how to test it.
+
+414
 00:30:32,630 --> 00:30:37,190
 So we go over all the metrics we pass all the query languages.
 
-276
-00:30:37,190 --> 00:30:47,990
-We're talking about custom query languages that that we pass and also transpile that to works semantically the same and we know how to present it to you.
+415
+00:30:37,190 --> 00:30:39,510
+We're talking about custom query languages that.
 
-277
+416
+00:30:39,510 --> 00:30:45,510
+that we pass and also transpile that to works semantically the same.
+
+417
+00:30:45,510 --> 00:30:47,990
+and we know how to present it to you.
+
+418
 00:30:47,990 --> 00:30:51,110
 So we can analyze this dashboard require those 20 metrics.
 
-278
+419
 00:30:51,120 --> 00:30:54,070
 Here are those metrics in our platform.
 
-279
+420
 00:30:54,080 --> 00:30:56,310
 This is the number of series we have.
 
-280
+421
 00:30:56,320 --> 00:30:58,310
 This is how the widget look.
 
-281
+422
 00:30:58,310 --> 00:31:00,630
 This is how the dashboard look.
 
-282
+423
 00:31:00,630 --> 00:31:03,830
 I think in general again this is a trust thing.
 
-283
-00:31:03,830 --> 00:31:11,269
-We managed to convey and give you the the trust that you need in order to make the switch.
+424
+00:31:03,830 --> 00:31:06,389
+We managed to convey and give you the the trust.
 
-284
-00:31:11,269 --> 00:31:21,430
-Me personally think that if we manage to migrate 85% of your total assets and prioritized by value and how urgent those monitors are.
+425
+00:31:06,399 --> 00:31:11,269
+that you need in order to make the switch.
 
-285
+426
+00:31:11,269 --> 00:31:21,431
+Me personally think that if we manage to migrate 85% of your total assets and prioritized by value. and how urgent those monitors are.
+
+427
 00:31:21,440 --> 00:31:25,830
 So priority of the monitors and you know popularity of those dashboards.
 
-286
-00:31:25,830 --> 00:31:35,110
-I think that's a very successful migration because as the moving apartment analogy kind of hint, you know, some of those dashboards,
+428
+00:31:25,830 --> 00:31:27,669
+I think that's a very successful migration.
 
-287
-00:31:35,110 --> 00:31:40,870
-some of those broken maybe dashboards, maybe it's better to keep them out of the new platform.
+429
+00:31:27,679 --> 00:31:32,870
+because as the moving apartment analogy kind of hint,
 
-288
+430
+00:31:32,870 --> 00:31:37,990
+you know, some of those dashboards, some of those broken maybe dashboards.
+
+431
+00:31:37,990 --> 00:31:40,870
+maybe it's better to keep them out of the new platform.
+
+432
 00:31:40,870 --> 00:31:46,070
 It's also an opportunity to refresh and and start with with a better dashboards.
 
-289
-00:31:46,080 --> 00:31:56,070
-I think the number of unsupported assets is definitely a good metric to look at to understand the health of migration itself.
+433
+00:31:46,080 --> 00:31:53,830
+I think the number of unsupported assets is definitely a good metric to look at to understand the.
 
-290
+434
+00:31:53,830 --> 00:31:56,070
+health of migration itself.
+
+435
 00:31:56,070 --> 00:32:00,310
 What are the other metrics and signals that engineering teams can use to track the migration health?
 
-291
+436
 00:32:00,320 --> 00:32:05,590
 I think the number of integrations are a key factor.
 
-292
+437
 00:32:05,590 --> 00:32:10,230
 I think you don't want to lose the raw data because you don't know what you're missing.
 
-293
-00:32:10,230 --> 00:32:20,870
-So even if you miss a dashboard, right, like the it's only going to cost you time to rebuild a dashboard which could be annoying but the data is still there.
+438
+00:32:10,230 --> 00:32:12,950
+So even if you miss a dashboard,
 
-294
+439
+00:32:12,950 --> 00:32:17,830
+right, like the it's only going to cost you time to rebuild a dashboard.
+
+440
+00:32:17,830 --> 00:32:20,870
+which could be annoying but the data is still there.
+
+441
 00:32:20,870 --> 00:32:27,750
 I think no one like to think that they lose critical data.
 
-295
+442
 00:32:27,750 --> 00:32:31,269
 So number of integrations is crucial.
 
-296
+443
 00:32:31,269 --> 00:32:34,789
 The monitors you know so how many firing monitors you have right now.
 
-297
-00:32:34,799 --> 00:32:41,909
-This will give you an assurance that ground cover will wake you up at night to things that you think are matter.
+444
+00:32:34,799 --> 00:32:41,910
+This will give you an assurance that ground cover will wake you up at night to things. that you think are matter.
 
-298
-00:32:41,909 --> 00:32:50,149
-So number of integrations, number of error or non-migrated assets, number of active monitors,
+445
+00:32:41,910 --> 00:32:50,149
+So number of integrations, number of error or non-migrated assets, number of active monitors, that's critical.
 
-299
-00:32:50,149 --> 00:32:57,990
-that's critical and obviously you can look at the volume of ingested data which somehow usually a lot higher in ground cover.
+446
+00:32:50,149 --> 00:32:55,350
+and obviously you can look at the volume of ingested data.
 
-300
-00:32:57,990 --> 00:33:06,549
-So that's actually making it a lot harder because because ground cover used the bring your own cloud model of observability platforms customers tend
+447
+00:32:55,350 --> 00:32:57,990
+which somehow usually a lot higher in ground cover.
 
-301
-00:33:06,549 --> 00:33:14,230
-to send more data and then we compare you know your legacy vendors and it shows one terabyte a day at ground cover
+448
+00:32:57,990 --> 00:33:00,230
+So that's actually making it a lot harder.
 
-302
-00:33:14,230 --> 00:33:22,630
-you get 5 terabytes a day 10 terabytes a day and it makes the comparison a bit hard but we know how to work
+449
+00:33:00,230 --> 00:33:06,550
+because because ground cover used the bring your own cloud model of observability platforms customers tend to send. more data.
 
-303
-00:33:22,630 --> 00:33:30,070
-with that like usually it's it's a data that will be from different environments so it will be easy to isolate.
+450
+00:33:06,550 --> 00:33:11,830
+and then we compare you know your legacy vendors.
 
-304
-00:33:30,070 --> 00:33:35,750
-So env dev environment or CI that usually people don't send to their observability to to their legacy vendors, they will send to ground cover.
+451
+00:33:11,830 --> 00:33:17,351
+and it shows one terabyte a day at ground cover you get 5 terabytes a day 10 terabytes. a day.
 
-305
+452
+00:33:17,351 --> 00:33:20,470
+and it makes the comparison a bit hard.
+
+453
+00:33:20,470 --> 00:33:22,630
+but we know how to work with.
+
+454
+00:33:22,630 --> 00:33:26,630
+that like usually it's it's a data that will be from different environments.
+
+455
+00:33:26,630 --> 00:33:30,070
+so it will be easy to isolate.
+
+456
+00:33:30,070 --> 00:33:33,830
+So env dev environment or CI that usually people don't send to their observability to to their legacy.
+
+457
+00:33:33,840 --> 00:33:35,750
+vendors, they will send to ground cover.
+
+458
 00:33:35,760 --> 00:33:41,750
 So that's that's another aspect that we want to to compare and make sure we didn't miss anything.
 
-306
+459
 00:33:41,760 --> 00:33:47,990
 I'm a bit confused by the last point about the volume of ingested data.
 
-307
-00:33:47,990 --> 00:33:59,830
-So basically you said if I got that right right you said that you look at ingested data and you give an example that ground cover uses could be 5 terabytes whereas the legacy system could be using 1 TB of data.
+460
+00:33:47,990 --> 00:33:54,549
+so basically you said if I got that right right you said that you look at ingested data.
 
-308
-00:33:59,840 --> 00:34:08,230
-Yeah I'm struggling to understand how is that used as a success metric for the migration or how do you measure the success of the migration using that metric.
+461
+00:33:54,549 --> 00:33:57,029
+and you give an example that ground cover uses could be 5 terabytes.
 
-309
+462
+00:33:57,029 --> 00:33:59,830
+whereas the legacy system could be using 1 TB of data.
+
+463
+00:33:59,840 --> 00:34:05,350
+Yeah I'm struggling to understand how is that used as a success metric for the migration.
+
+464
+00:34:05,350 --> 00:34:08,230
+or how do you measure the success of the migration using that metric.
+
+465
 00:34:08,240 --> 00:34:13,909
 So we want to make sure the customer has all the data it used to have.
 
-310
-00:34:13,909 --> 00:34:21,430
-So if you had 1 TB, we that the minimum of data that you you want to see in ground cover is is 1 TB.
+466
+00:34:13,909 --> 00:34:17,270
+So if you had 1 TB, we.
 
-311
-00:34:21,430 --> 00:34:30,310
-As I said before, most customers send more because they usually send more data to bring your own cloud than they would send to SAS vendor.
+467
+00:34:17,270 --> 00:34:21,430
+that the minimum of data that you you want to see in ground cover is is 1 TB.
 
-312
-00:34:30,310 --> 00:34:43,510
-So our job is to try to identify what environments or labels you're sending now to ground cover and you didn't before.
+468
+00:34:21,430 --> 00:34:24,629
+As I said before, most customers send more.
 
-313
+469
+00:34:24,629 --> 00:34:30,310
+because they usually send more data to bring your own cloud than they would send to SAS vendor.
+
+470
+00:34:30,310 --> 00:34:39,109
+So our job is to try to identify what environments.
+
+471
+00:34:39,109 --> 00:34:43,510
+or labels you're sending now to ground cover and you didn't before.
+
+472
 00:34:43,510 --> 00:34:47,589
 So the most common use case will be environment name.
 
-314
+473
 00:34:47,589 --> 00:34:54,230
 So dev you probably skip that for your legacy vendor or CI or staging.
 
-315
+474
 00:34:54,230 --> 00:34:58,710
 But if you look at fraud your environment the production environment you usually send those logs.
 
-316
+475
 00:34:58,720 --> 00:35:02,630
 The next one is log level.
 
-317
-00:35:02,630 --> 00:35:12,470
-So you might send only warning and app right warning, error, fatal, critical, all those logs that indicate for a problem.
+476
+00:35:02,630 --> 00:35:06,630
+So you might send only warning and app right warning,
 
-318
+477
+00:35:06,640 --> 00:35:12,470
+error, fatal, critical, all those logs that indicate for a problem.
+
+478
 00:35:12,470 --> 00:35:19,109
 With ground cover, there is a good chance you're sending info or debug or even trace.
 
-319
-00:35:19,109 --> 00:35:30,150
-So what we're trying to do is identify those labels and narrow down the filters that we compare.
+479
+00:35:19,109 --> 00:35:25,589
+So what we're trying to do is identify those labels.
 
-320
-00:35:30,150 --> 00:35:43,910
-So if we realized N is is there there is a new environment in ground cover that you didn't have before we will excluded from the comparison to make sure each and every environment and each
+480
+00:35:25,589 --> 00:35:30,150
+and narrow down the filters that we compare.
 
-321
+481
+00:35:30,150 --> 00:35:35,431
+So if we realized N is is there there is a new environment in ground cover. that you didn't have before.
+
+482
+00:35:35,440 --> 00:35:41,109
+we will excluded from the comparison to make sure each.
+
+483
+00:35:41,109 --> 00:35:43,910
+and every environment and each and every log level.
+
+484
 00:35:43,910 --> 00:35:49,910
-and every log level and each and every workload has either more or data volume.
+and each and every workload has either more or data volume.
 
-322
+485
 00:35:49,920 --> 00:35:51,750
 Got it.
 
-323
-00:35:51,750 --> 00:36:00,150
-We have covered a lot of ground here and as we come towards the end of the episode, can you tell me what's keeping you excited nowadays in the observability space?
+486
+00:35:51,750 --> 00:35:56,790
+We have covered a lot of ground here and as we come towards the end of the episode.
 
-324
+487
+00:35:56,790 --> 00:36:00,150
+can you tell me what's keeping you excited nowadays in the observability space?
+
+488
 00:36:00,160 --> 00:36:04,950
 Yeah, a lot of things happening in the observability space.
 
-325
-00:36:04,950 --> 00:36:15,589
-I think AI as you know everyone is talking about AI but in the observability space there's two factors that can go in.
+489
+00:36:04,950 --> 00:36:07,270
+I think AI as you know everyone is talking about AI.
 
-326
+490
+00:36:07,270 --> 00:36:15,589
+but in the observability space there's two factors that can go in.
+
+491
 00:36:15,589 --> 00:36:17,670
 So one is AI for observability, right?
 
-327
-00:36:17,670 --> 00:36:27,750
-That's what most people think when you talk about AI is how do I leverage AI to help me understand my data, understand my issues.
+492
+00:36:17,670 --> 00:36:23,190
+That's what most people think when you talk about AI is how do I leverage AI to help.
 
-328
-00:36:27,750 --> 00:36:41,910
-So root cause analysis can happen when an agent running alongside humans pointing out to important information and trying to figure out hypothesis and compare your hypothesis as human to what they see.
+493
+00:36:23,190 --> 00:36:27,750
+me understand my data, understand my issues.
 
-329
+494
+00:36:27,750 --> 00:36:36,950
+So root cause analysis can happen when an agent running alongside humans pointing out to important information.
+
+495
+00:36:36,950 --> 00:36:41,910
+and trying to figure out hypothesis and compare your hypothesis as human to what they see.
+
+496
 00:36:41,910 --> 00:36:46,069
 That's one angle and you know everyone is talking about it now.
 
-330
-00:36:46,069 --> 00:36:59,190
-But another interesting part is most companies are now trying to understand how they leverage AI to help their customers solve more problems and do it faster and better.
+497
+00:36:46,069 --> 00:36:49,430
+But another interesting part is most companies are.
 
-331
-00:36:59,190 --> 00:37:07,750
-So a lot of engineers around the world are now trying to understand how to build agents, how to use LLM inside their back ends and and their products.
+498
+00:36:49,430 --> 00:36:55,829
+now trying to understand how they leverage AI to help their customers solve more problems.
 
-332
+499
+00:36:55,829 --> 00:36:59,190
+and do it faster and better.
+
+500
+00:36:59,190 --> 00:37:05,829
+So a lot of engineers around the world are now trying to understand how to build agents,
+
+501
+00:37:05,829 --> 00:37:07,750
+how to use LLM inside their back ends and and their products.
+
+502
 00:37:07,750 --> 00:37:10,790
 And that brings a new challenge for engineers.
 
-333
+503
 00:37:10,800 --> 00:37:13,589
 How do we observe agents?
 
-334
+504
 00:37:13,589 --> 00:37:17,030
 How do we observe LLM calls?
 
-335
+505
 00:37:17,030 --> 00:37:22,630
 How do we make sure they're doing what they're expected to do?
 
-336
-00:37:22,630 --> 00:37:29,829
-And again, just, you know, we all know that, but the world of unit test has changed completely because those agents are not deterministic.
+506
+00:37:22,630 --> 00:37:25,990
+And again, just, you know, we all know that,
 
-337
-00:37:29,829 --> 00:37:43,670
-So you know in the past if we had a trace and we expected a specific status code or specific API response those days are kind of gone like we need to go to more complex evals
+507
+00:37:25,990 --> 00:37:29,829
+but the world of unit test has changed completely because those agents are not deterministic.
 
-338
-00:37:43,670 --> 00:37:47,030
-as as people now start to call it.
+508
+00:37:29,829 --> 00:37:31,990
+So you know in the past if we had a trace.
 
-339
-00:37:47,030 --> 00:38:00,150
-So, LLM observability or you know AI observability which is the complimentary of observability for AI is becoming a lot more interesting and and we are seeing a new product trying
+509
+00:37:31,990 --> 00:37:39,990
+and we expected a specific status code or specific API response those days are kind of gone.
 
-340
-00:38:00,150 --> 00:38:07,910
-to help engineers ship a better AI software and to me and to the ground cover team this is something
+510
+00:37:39,990 --> 00:37:47,030
+like we need to go to more complex evals as as people now start to call it.
 
-341
-00:38:07,910 --> 00:38:18,310
-that we are heavily focused on how do we make sure our product is built for the next few years where engineering team are focused around shipping AI more and more.
+511
+00:37:47,030 --> 00:37:49,270
+So, LLM observability or you know AI observability.
 
-342
+512
+00:37:49,280 --> 00:37:57,270
+which is the complimentary of observability for AI is becoming a lot more interesting.
+
+513
+00:37:57,270 --> 00:38:03,990
+and and we are seeing a new product trying to help engineers ship a better AI software.
+
+514
+00:38:03,990 --> 00:38:07,910
+and to me and to the ground cover team this is something that we are heavily focused on.
+
+515
+00:38:07,920 --> 00:38:13,910
+how do we make sure our product is built for the next few years.
+
+516
+00:38:13,910 --> 00:38:18,310
+where engineering team are focused around shipping AI more and more.
+
+517
 00:38:18,320 --> 00:38:21,350
 Sounds very exciting. Brave new world.
 
-343
+518
 00:38:21,359 --> 00:38:23,670
 Thanks a lot for your time, Chess.
 
-344
+519
 00:38:23,670 --> 00:38:25,349
 It's been a real pleasure.
 
-345
+520
 00:38:25,349 --> 00:38:27,589
 This is Bridesh Amanit for Software Engineering Radio.
 
-346
+521
 00:38:27,599 --> 00:38:31,430
 Thank you for listening. Thank you for having me.
 
-347
+522
 00:38:31,440 --> 00:38:37,109
 Thanks for listening to SE Radio, an educational program brought to you by LE E Software Magazine.
 
-348
+523
 00:38:37,109 --> 00:38:42,390
 For more about the podcast, including other episodes, visit our website at se-radio.net.
 
-349
-00:38:42,400 --> 00:38:53,109
-To provide feedback, you can comment on each episode on the website or reach us on LinkedIn, Facebook, Twitter, or through our Slack channel at seradio.slack.com.
+524
+00:38:42,400 --> 00:38:48,630
+To provide feedback, you can comment on each episode on the website or reach us on LinkedIn,
 
-350
+525
+00:38:48,630 --> 00:38:53,109
+Facebook, Twitter, or through our Slack channel at seradio.slack.com.
+
+526
 00:38:54,390 --> 00:38:57,670
 You can also email us at teamse-radio.net.
 
-351
+527
 00:38:59,670 --> 00:39:06,681
 This and all other episodes of SE Radio is licensed under Creative Common License 2.5. Thanks for listening.

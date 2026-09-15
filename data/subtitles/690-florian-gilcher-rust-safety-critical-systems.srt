@@ -3,2585 +3,4001 @@
 This is Software Engineering Radio, the podcast for professional developers on the web at se-radio.net.
 
 2
-00:00:07,840 --> 00:00:19,110
-SE Radio is brought to you by the IEEE Computer Society and by IEEE Software Magazine online at computer.org/software.
+00:00:07,840 --> 00:00:11,870
+SE Radio is brought to you by the IEEE Computer Society.
 
 3
-00:00:21,030 --> 00:00:28,070
-Welcome to Software Engineering Radio. I'm your host Johannes Proni and today I will be discussing Rust for mission and safety-critical systems with Florian Gilcher.
+00:00:11,870 --> 00:00:19,110
+and by IEEE Software Magazine online at computer.org/software.
 
 4
+00:00:21,030 --> 00:00:25,190
+Welcome to Software Engineering Radio. I'm your host Johannes Proni and today I will be discussing Rust for mission.
+
+5
+00:00:25,190 --> 00:00:28,070
+and safety-critical systems with Florian Gilcher.
+
+6
 00:00:28,080 --> 00:00:31,750
 Florian is the managing director and co-founder of Ferrous Systems.
 
-5
-00:00:31,750 --> 00:00:38,230
-He has worked with the Rust programming language since 2013 and he co-founded the Rust Foundation.
-
-6
-00:00:38,230 --> 00:00:45,310
-His company is the creator of Ferrous Systems, an open-source Rust compiler toolchain qualified for safety and mission-critical applications.
-
 7
+00:00:31,750 --> 00:00:39,670
+He has worked with the Rust programming language since 2013 and he co-founded the Rust Foundation. His company is the creator of Ferrous Systems,
+
+8
+00:00:39,670 --> 00:00:45,310
+an open-source Rust compiler toolchain qualified for safety and mission-critical applications.
+
+9
 00:00:45,320 --> 00:00:48,590
 Florian, welcome to Software Engineering Radio.
 
-8
+10
 00:00:48,590 --> 00:00:50,950
 Is there anything I missed that you'd like to add?
 
-9
+11
 00:00:50,950 --> 00:00:52,711
 Oh, I think that's been perfect. Thank you, Giovanni.
 
-10
-00:00:52,711 --> 00:01:01,350
-You are not even new to the radio because I see that you were a guest in episode 279 about Rust, in fact. It was quite some time ago.
-
-11
-00:01:01,360 --> 00:01:07,030
-That was actually before forming Ferrous Systems when was I was a lead of the community team in the Rust project.
-
 12
+00:00:52,711 --> 00:00:54,910
+You are not even new to the radio.
+
+13
+00:00:54,910 --> 00:01:01,350
+because I see that you were a guest in episode 279 about Rust, in fact. It was quite some time ago.
+
+14
+00:01:01,360 --> 00:01:05,270
+That was actually before forming Ferrous Systems.
+
+15
+00:01:05,270 --> 00:01:07,030
+when was I was a lead of the community team in the Rust project.
+
+16
 00:01:07,030 --> 00:01:10,270
 So, I was more representing the project there.
 
-13
+17
 00:01:10,280 --> 00:01:13,830
 And in fact, there are some episodes that are related to this one.
 
-14
+18
 00:01:13,830 --> 00:01:20,350
 There is the episode 644 with Tim McNamara on error handling in Rust.
 
-15
+19
 00:01:20,350 --> 00:01:23,630
 Episode 490 with Tim McNamara on Rust 2021 edition.
 
-16
+20
 00:01:23,640 --> 00:01:26,630
 Florian, episode 279 on Rust.
 
-17
+21
 00:01:26,630 --> 00:01:29,910
 So, it's a bit of an old episode, but I think it's being about the language.
 
-18
+22
 00:01:29,910 --> 00:01:33,350
 I mean, the basic idea should be the same pretty much.
 
-19
-00:01:33,350 --> 00:01:37,830
-Maybe the language evolved, but the core ideas Yeah, and I hope my understanding refined.
+23
+00:01:33,350 --> 00:01:35,510
+Maybe the language evolved, but the core ideas.
 
-20
+24
+00:01:35,510 --> 00:01:37,830
+Yeah, and I hope my understanding refined.
+
+25
 00:01:37,840 --> 00:01:40,871
 It's a very new language back then. Yes.
 
-21
+26
 00:01:40,880 --> 00:01:43,990
 And then, also, there is episode 152.
 
-22
+27
 00:01:44,000 --> 00:01:45,590
 This is quite an old one.
 
-23
+28
 00:01:45,590 --> 00:01:48,550
 It's about MISRA with Johan Bezem.
 
-24
+29
 00:01:48,550 --> 00:01:54,790
 And all of them will be linked in the related shows in the show notes. Now, ready to start, Florian?
 
-25
+30
 00:01:54,800 --> 00:01:58,710
 Of course. Let's go. Okay, so let's set some context.
 
-26
+31
 00:01:58,720 --> 00:02:00,510
 Let's start from the very basics.
 
-27
+32
 00:02:00,520 --> 00:02:02,750
 What is a mission-critical system?
 
-28
+33
 00:02:02,750 --> 00:02:07,310
 I mean, the punchy one-liner is anything that if it fails, it hurts you.
 
-29
+34
 00:02:07,320 --> 00:02:10,830
 Particularly, mission-critical is usually it hurts you fiscally.
 
-30
-00:02:10,830 --> 00:02:16,190
-If we're talking about safety-critical, we're talking about systems where people could be harmed or lives are at stake.
+35
+00:02:10,830 --> 00:02:14,150
+If we're talking about safety-critical, we're talking about systems.
 
-31
+36
+00:02:14,150 --> 00:02:16,190
+where people could be harmed or lives are at stake.
+
+37
 00:02:16,200 --> 00:02:22,030
 Okay, that uh distinction between mission and safety-critical, what is the difference there?
 
-32
+38
 00:02:22,040 --> 00:02:28,430
 It is something like you're running a major web service, you may be running a major data center.
 
-33
+39
 00:02:28,430 --> 00:02:30,710
 It is critical that your base systems never fail.
 
-34
+40
 00:02:30,710 --> 00:02:32,830
 If they fail, the whole data center is down.
 
-35
+41
 00:02:32,840 --> 00:02:34,949
 None of your clients can work.
 
-36
+42
 00:02:34,949 --> 00:02:40,270
 That can have repercussions in, for example, a whole hospital system may go down.
 
-37
-00:02:40,270 --> 00:02:43,790
-Like, this is often called mission-critical, but because something like,
+43
+00:02:40,270 --> 00:02:47,790
+Like, this is often called mission-critical, but because something like, for example, an AWS data center is nowadays.
 
-38
-00:02:43,790 --> 00:02:51,230
-for example, an AWS data center is nowadays so part of everything in our lives,
+44
+00:02:47,790 --> 00:02:51,230
+so part of everything in our lives,
 
-39
+45
 00:02:51,230 --> 00:02:59,310
 this can have repercussions down the line where safety-critical systems fail because they haven't anticipated that case, and people could actually be harmed.
 
-40
+46
 00:02:59,310 --> 00:03:03,750
 So, the distinction is actually, from my perspective, getting harder and harder.
 
-41
-00:03:03,760 --> 00:03:15,470
-The perspective that I'm taking is there's a newfound desire in software correctness for multiple reasons coming out of different directions.
+47
+00:03:03,760 --> 00:03:15,471
+The perspective that I'm taking is there's a newfound desire in software correctness for multiple reasons coming out. of different directions.
 
-42
-00:03:15,470 --> 00:03:23,030
-Rust as a programming language that says "Safe and correct code" directly in its claim comes out of a web browser company.
+48
+00:03:15,471 --> 00:03:17,630
+Rust as a programming language that says "Safe.
 
-43
+49
+00:03:17,630 --> 00:03:23,030
+and correct code" directly in its claim comes out of a web browser company.
+
+50
 00:03:23,030 --> 00:03:25,270
 It was originally designed at Mozilla.
 
-44
-00:03:25,270 --> 00:03:33,949
-And not just because someone wanted to build such a language just for fun in Mozilla research, but because they had a legitimate need for that.
+51
+00:03:25,270 --> 00:03:31,590
+And not just because someone wanted to build such a language just for fun in Mozilla research,
 
-45
-00:03:33,949 --> 00:03:47,111
-So, that's pretty interesting that a language that we're currently talking about or like, "Is this the new language in safety-critical?" comes out of a space that is pretty far from safety-critical, but mindset-wise is pretty close. Mhm.
+52
+00:03:31,590 --> 00:03:33,949
+but because they had a legitimate need for that.
 
-46
+53
+00:03:33,949 --> 00:03:36,990
+So, that's pretty interesting that a language that we're currently talking about or like,
+
+54
+00:03:37,000 --> 00:03:40,870
+"Is this the new language in safety-critical?" comes out of a space.
+
+55
+00:03:40,880 --> 00:03:47,111
+that is pretty far from safety-critical, but mindset-wise is pretty close. Mhm.
+
+56
 00:03:47,120 --> 00:03:53,870
 Yeah, and I think that sometimes we realize that the systems are safety-critical when something bad happens.
 
-47
+57
 00:03:53,870 --> 00:03:58,590
 You know, like cloud providers that have some kind of loss of service for whatever reason.
 
-48
+58
 00:03:58,590 --> 00:04:00,990
 Or I think some time ago happened even to Google.
 
-49
+59
 00:04:00,990 --> 00:04:03,710
 I think Gmail issues, things.
 
-50
+60
 00:04:03,710 --> 00:04:09,310
 So, and all of a sudden entire businesses cannot really work anymore. Yeah, that was a memory safety issue.
 
-51
+61
 00:04:09,310 --> 00:04:13,470
 It was a null pointer dereference that they actually actively ran into.
 
-52
+62
 00:04:13,470 --> 00:04:15,151
 The retro about that is quite clear about this. So.
 
-53
+63
 00:04:15,160 --> 00:04:19,990
 Yeah, you are smiling because this is like it wouldn't have happened with the rust, I guess.
 
-54
+64
 00:04:20,000 --> 00:04:23,030
 I'm joking.
 
-55
+65
 00:04:25,390 --> 00:04:29,390
 In a way, yes. There's other bugs of that scale that you can build in rust, but rust is there to help with that.
 
-56
+66
 00:04:29,390 --> 00:04:34,750
-So, I think one of the things that legitimizes I don't need to legitimize rust,
+So, I think one of the things that legitimizes I don't need to legitimize rust, but.
 
-57
-00:04:34,750 --> 00:04:42,190
-but that is interesting about this whole move is rust is not alone in being a new memory safe systems programming language.
+67
+00:04:34,750 --> 00:04:40,430
+that is interesting about this whole move is rust is not alone in being a new memory safe.
 
-58
+68
+00:04:40,430 --> 00:04:42,190
+systems programming language.
+
+69
 00:04:42,190 --> 00:04:47,750
 For example, Apple has developed Swift, which is pretty much in the same generation of programming languages.
 
-59
-00:04:47,750 --> 00:04:51,430
-So, it's not just rust coming up and saying, "You are bad here." We know it better.
+70
+00:04:47,750 --> 00:04:49,790
+So, it's not just rust coming up and saying, "You are bad here."
 
-60
-00:04:51,430 --> 00:04:59,470
-It is much more a generation of new software development that also then invests into new base tooling because it has new needs.
+71
+00:04:49,790 --> 00:04:51,430
+We know it better.
 
-61
+72
+00:04:51,430 --> 00:04:54,230
+It is much more a generation of new software development.
+
+73
+00:04:54,240 --> 00:04:59,470
+that also then invests into new base tooling because it has new needs.
+
+74
 00:04:59,470 --> 00:05:01,550
 Yeah, yeah.
 
-62
-00:05:01,550 --> 00:05:08,909
-Can I ask you, what are the criteria to decide that a mission or a safety critical system is actually good enough for its purpose?
+75
+00:05:01,550 --> 00:05:03,830
+Can I ask you, what are the criteria to decide.
 
-63
-00:05:08,919 --> 00:05:21,190
-This is one of the things where the safety critical community has an edge because it has standards and documents and aside from these documents, forums where this is constantly being discussed.
+76
+00:05:03,830 --> 00:05:08,909
+that a mission or a safety critical system is actually good enough for its purpose?
 
-64
-00:05:21,190 --> 00:05:26,950
-And that is something that we don't really see in, for example, like before I had fair systems, I was actually in data center operations.
+77
+00:05:08,919 --> 00:05:11,909
+This is one of the things where the safety critical community has an edge.
 
-65
+78
+00:05:11,919 --> 00:05:17,070
+because it has standards and documents and aside from these documents, forums.
+
+79
+00:05:17,080 --> 00:05:21,190
+where this is constantly being discussed.
+
+80
+00:05:21,190 --> 00:05:23,710
+And that is something that we don't really see in,
+
+81
+00:05:23,710 --> 00:05:26,950
+for example, like before I had fair systems, I was actually in data center operations.
+
+82
 00:05:26,950 --> 00:05:28,710
 So, I have quite a bit of insight there.
 
-66
-00:05:28,710 --> 00:05:41,030
-So, while there are background groups that talk about these issues, there's nothing as structured as here's an industry consortium that wants to fix these and these issues and talk about how our programming practice looks like.
+83
+00:05:28,710 --> 00:05:32,310
+So, while there are background groups that talk about these issues,
 
-67
-00:05:41,030 --> 00:05:52,590
-So, things like Misra, things like all the standards bodies in the ISO that decide about the IEC 61508 for industry or the ISO 26262 for automotive.
+84
+00:05:32,310 --> 00:05:39,310
+there's nothing as structured as here's an industry consortium that wants to fix these and these issues.
 
-68
-00:05:52,590 --> 00:06:06,870
-Like all these forums or the DO-178 for avionics where you have written down standard engineering practice of what is expected and what is recommended that just doesn't exist in that mission critical space.
+85
+00:05:39,310 --> 00:05:41,030
+and talk about how our programming practice looks like.
 
-69
-00:06:06,870 --> 00:06:12,150
-So, I think a little bit there the label helps if it's safety critical or something where one of those standards is in play.
+86
+00:05:41,030 --> 00:05:46,990
+So, things like Misra, things like all the standards bodies in the ISO.
 
-70
-00:06:12,150 --> 00:06:19,630
-So, can you give us an example, you know, a few things, you know, some of these criteria or some examples of what these documents specify?
+87
+00:05:46,990 --> 00:05:52,590
+that decide about the IEC 61508 for industry or the ISO 26262 for automotive.
 
-71
+88
+00:05:52,590 --> 00:05:56,430
+Like all these forums or the DO-178 for avionics.
+
+89
+00:05:56,430 --> 00:06:01,430
+where you have written down standard engineering practice of what is expected.
+
+90
+00:06:01,440 --> 00:06:04,510
+and what is recommended that just doesn't exist in.
+
+91
+00:06:04,510 --> 00:06:06,870
+that mission critical space.
+
+92
+00:06:06,870 --> 00:06:08,790
+So, I think a little bit there the label helps.
+
+93
+00:06:08,790 --> 00:06:12,150
+if it's safety critical or something where one of those standards is in play.
+
+94
+00:06:12,150 --> 00:06:15,870
+So, can you give us an example, you know, a few things, you know,
+
+95
+00:06:15,870 --> 00:06:19,630
+some of these criteria or some examples of what these documents specify?
+
+96
 00:06:19,630 --> 00:06:21,590
 Just a small one to give people an idea of what we look at.
 
-72
+97
 00:06:21,600 --> 00:06:29,070
 The one I love is that the ISO 26262, for example, says practice on all levels of safety.
 
-73
+98
 00:06:29,070 --> 00:06:34,430
 So, it has these ASIL A, B, C, D for different levels of toughness essentially.
 
-74
+99
 00:06:34,430 --> 00:06:38,351
 It says, "If available, use a statically typed programming language." That is one of the criteria.
 
-75
+100
 00:06:38,360 --> 00:06:42,390
 And it's actually highly recommended on all levels.
 
-76
-00:06:42,390 --> 00:06:54,430
-Which I sometimes use as a joke when people ask like, "Should we use Rust in automotive?" And I say, "Yes, your standard says so." But there's other things like, for example, practice restricted use of pointers.
+101
+00:06:42,390 --> 00:06:45,270
+Which I sometimes use as a joke when people ask like, "Should we use Rust in automotive?"
 
-77
+102
+00:06:45,270 --> 00:06:47,390
+And I say, "Yes, your standard says so."
+
+103
+00:06:47,400 --> 00:06:54,430
+But there's other things like, for example, practice restricted use of pointers.
+
+104
 00:06:54,430 --> 00:06:56,270
 It says like, "Don't just hand pointers around everywhere.
 
-78
+105
 00:06:56,270 --> 00:07:00,310
 If you can pass things by value, pass them by value because that's easier."
 
-79
-00:07:00,310 --> 00:07:12,150
-That's one of those things that could be in a standard or even on certain levels to assess the quality of your test suite, please use code coverage of different kinds of forms.
+106
+00:07:00,310 --> 00:07:02,270
+That's one of those things that could be in a standard.
 
-80
+107
+00:07:02,280 --> 00:07:08,510
+or even on certain levels to assess the quality of your test suite,
+
+108
+00:07:08,510 --> 00:07:12,150
+please use code coverage of different kinds of forms.
+
+109
 00:07:12,150 --> 00:07:14,870
 Like, for example, please use statement coverage.
 
-81
+110
 00:07:14,870 --> 00:07:20,790
 Is, for example, the one that the automotive standard says for ASIL B, so roughly mid-level.
 
-82
+111
 00:07:20,790 --> 00:07:26,470
 While it says for ASIL D, use multiple condition and decision coverage, MCDC.
 
-83
+112
 00:07:26,480 --> 00:07:28,230
 So, those are things that it mandates.
 
-84
+113
 00:07:28,240 --> 00:07:32,990
 So, it mandates and recommends activities.
 
-85
-00:07:32,990 --> 00:07:40,950
-One important thing is that all of those activities can be argued at a level where you say, "I do this activity.
+114
+00:07:32,990 --> 00:07:38,230
+One important thing is that all of those activities can be argued at a level where you say,
 
-86
-00:07:40,950 --> 00:07:51,110
-I don't do activity A, but I don't do activity B because I can give you an argument why in my software it actually doesn't improve quality that much and will actually focus on making the first one really thorough.
+115
+00:07:38,230 --> 00:07:40,950
+"I do this activity.
 
-87
+116
+00:07:40,950 --> 00:07:43,150
+I don't do activity A, but I don't do activity B.
+
+117
+00:07:43,150 --> 00:07:49,070
+because I can give you an argument why in my software it actually doesn't improve quality that much.
+
+118
+00:07:49,070 --> 00:07:51,110
+and will actually focus on making the first one really thorough."
+
+119
 00:07:51,110 --> 00:07:54,630
 That is a debate you then have to have with your assessor.
 
-88
-00:07:54,630 --> 00:08:04,230
-And this is the other practice where I would differentiate safety-critical from mission-critical, where this practice of your software is being assessed by an independent party is much more structured.
+120
+00:07:54,630 --> 00:07:57,230
+And this is the other practice where I would differentiate safety-critical from mission-critical,
 
-89
-00:08:04,230 --> 00:08:15,950
-While in mission-critical, particularly in cybersecurity, it is just I'm doing air quotes here good practice, but it's also So, for example, we do work on cryptographic code.
+121
+00:07:57,240 --> 00:08:04,230
+where this practice of your software is being assessed by an independent party is much more structured.
 
-90
+122
+00:08:04,230 --> 00:08:11,391
+While in mission-critical, particularly in cybersecurity, it is just I'm doing air quotes here good practice, but it's also.
+
+123
+00:08:11,400 --> 00:08:15,950
+So, for example, we do work on cryptographic code.
+
+124
 00:08:15,950 --> 00:08:20,550
 We have worked, for example, on Rust TLS, which means we will never assess this code.
 
-91
+125
 00:08:20,550 --> 00:08:22,350
 We will never claim that this code is good.
 
-92
+126
 00:08:22,350 --> 00:08:25,430
 That is for a third party to assess, and I think this is good practice.
 
-93
-00:08:25,430 --> 00:08:35,070
-This interplay between the implementer is not the validator, I think is And that's completely independent of programming languages.
+127
+00:08:25,430 --> 00:08:31,430
+This interplay between the implementer is not the validator, I think is.
 
-94
-00:08:35,070 --> 00:08:44,431
-So, do I understand correctly that this basically a set of recommendations at various levels, even to the nitty-gritty details of everyday coding, up to that? Yeah.
+128
+00:08:31,430 --> 00:08:35,070
+And that's completely independent of programming languages.
 
-95
-00:08:44,431 --> 00:08:53,310
-And then any decisions that are taken maybe outside the recommendations, what you do are actually explicitly and documented decisions, so it's not by random chance that things happen.
+129
+00:08:35,070 --> 00:08:39,029
+So, do I understand correctly that this basically a set of recommendations at various levels,
 
-96
+130
+00:08:39,029 --> 00:08:44,431
+even to the nitty-gritty details of everyday coding, up to that? Yeah.
+
+131
+00:08:44,431 --> 00:08:47,910
+And then any decisions that are taken maybe outside the recommendations,
+
+132
+00:08:47,910 --> 00:08:53,310
+what you do are actually explicitly and documented decisions, so it's not by random chance that things happen.
+
+133
 00:08:53,320 --> 00:08:55,630
 Exactly.
 
-97
+134
 00:08:55,630 --> 00:08:57,230
 And it's totally fine to do things that are outside of the standard.
 
-98
-00:08:57,240 --> 00:09:04,150
-You can still go and say, we have an activity that is not covered in the standard, but we still think it increases software quality.
+135
+00:08:57,240 --> 00:09:02,110
+You can still go and say, we have an activity that is not covered in the standard,
 
-99
-00:09:04,150 --> 00:09:10,670
+136
+00:09:02,110 --> 00:09:04,150
+but we still think it increases software quality.
+
+137
+00:09:04,150 --> 00:09:10,671
 In that case, that's a longer argument to make because you have to say it is of utility, but that's stuff.
 
-100
-00:09:10,670 --> 00:09:14,110
+138
+00:09:10,671 --> 00:09:14,110
 Like, the standards are not prescriptive.
 
-101
+139
 00:09:14,110 --> 00:09:16,030
 They are not saying like you should do this.
 
-102
-00:09:16,030 --> 00:09:22,750
-The good thing I find about the safety standards is that they say, this is a very good recommendation of what you should do.
+140
+00:09:16,030 --> 00:09:19,270
+The good thing I find about the safety standards is that they say,
 
-103
-00:09:22,750 --> 00:09:28,350
-If you're diverging from it, we need to have a conversation and someone needs to trust that your divergence is good and makes sense.
+141
+00:09:19,270 --> 00:09:22,750
+this is a very good recommendation of what you should do.
 
-104
+142
+00:09:22,750 --> 00:09:24,390
+If you're diverging from it, we need to have a conversation.
+
+143
+00:09:24,390 --> 00:09:28,350
+and someone needs to trust that your divergence is good and makes sense.
+
+144
 00:09:28,350 --> 00:09:32,910
 And then how do you decide what to apply and what to apply? So, I'll give you an example.
 
-105
+145
 00:09:32,910 --> 00:09:37,831
 So, in a safety-critical system, of course, means that lives might be at risk. Mhm.
 
-106
+146
 00:09:37,831 --> 00:09:43,710
 How do you decide it could be acceptable to risk some lives in some circumstances?
 
-107
+147
 00:09:43,710 --> 00:09:45,670
 So, how is this, you know, the criteria?
 
-108
-00:09:45,670 --> 00:09:56,070
-So, it's just try to understand, you know, when people go down and say, "Okay, according to what you have done, this is a good system." Because of course you cannot really eliminate the risk entirely.
+148
+00:09:45,670 --> 00:09:47,430
+So, it's just try to understand, you know,
 
-109
-00:09:56,080 --> 00:10:05,590
-Yeah. This is a little bit out of my depth because I am very much on the front of the chain in providing the tools for this.
+149
+00:09:47,430 --> 00:09:53,870
+when people go down and say, "Okay, according to what you have done, this is a good system."
 
-110
+150
+00:09:53,870 --> 00:09:56,070
+Because of course you cannot really eliminate the risk entirely.
+
+151
+00:09:56,080 --> 00:09:58,630
+Yeah. This is a little bit out of my depth.
+
+152
+00:09:58,640 --> 00:10:05,590
+because I am very much on the front of the chain in providing the tools for this.
+
+153
 00:10:05,590 --> 00:10:07,550
 I've never been in the position where I would have to argue that.
 
-111
-00:10:07,550 --> 00:10:17,230
-I know that these assessments are being made and I know that for example the avionics standards are so strict because disaster is usually pretty big.
+154
+00:10:07,550 --> 00:10:09,590
+I know that these assessments are being made.
 
-112
-00:10:17,230 --> 00:10:25,310
-While if you're talking about a car, that that level I can speak like that just the system and the system complexity is just a completely different category.
+155
+00:10:09,600 --> 00:10:17,230
+and I know that for example the avionics standards are so strict because disaster is usually pretty big.
 
-113
+156
+00:10:17,230 --> 00:10:19,390
+While if you're talking about a car,
+
+157
+00:10:19,390 --> 00:10:21,990
+that that level I can speak like.
+
+158
+00:10:21,990 --> 00:10:25,310
+that just the system and the system complexity is just a completely different category.
+
+159
 00:10:25,320 --> 00:10:27,550
 Okay.
 
-114
+160
 00:10:27,550 --> 00:10:29,870
 If a plane falls from the sky, it's a massive massive disaster.
 
-115
-00:10:29,880 --> 00:10:39,750
-Automotive has the problem that billions and billions of cars drive every day and they want to drive numbers down and accidents happen daily.
+161
+00:10:29,880 --> 00:10:35,750
+Automotive has the problem that billions and billions of cars drive every day.
 
-116
+162
+00:10:35,750 --> 00:10:39,750
+and they want to drive numbers down and accidents happen daily.
+
+163
 00:10:39,750 --> 00:10:42,230
 That's a fact of life.
 
-117
+164
 00:10:42,230 --> 00:10:45,870
 But nowadays we're talking in Germany about thousands of accidents a year.
 
-118
+165
 00:10:45,870 --> 00:10:50,390
 There were times where we were talking about 10,000s of accidents a year.
 
-119
-00:10:50,390 --> 00:10:58,150
-So, bringing that number down and further and further and further and making sure that to also mechanical and ways and it's not just about the software.
+166
+00:10:50,390 --> 00:10:51,950
+So, bringing that number down and further.
 
-120
+167
+00:10:51,950 --> 00:10:55,230
+and further and further and making sure.
+
+168
+00:10:55,230 --> 00:10:58,150
+that to also mechanical and ways and it's not just about the software.
+
+169
 00:10:58,150 --> 00:11:00,190
 It's also how the car is built.
 
-121
+170
 00:11:00,190 --> 00:11:02,351
 It's about the system, the entire system. You can't escape the system.
 
-122
-00:11:02,351 --> 00:11:11,990
-I have I had a very nice conversation at the Safety Critical Club the last time I was there where someone said, "Safety in the end is about dealing with what's real."
+171
+00:11:02,351 --> 00:11:07,751
+I have I had a very nice conversation at the Safety Critical Club the last time I was. there.
 
-123
-00:11:11,990 --> 00:11:24,310
-Like you can't escape reality and you usually have a physical system in place and the reality is car accidents exist, but there's a lot of people out there both on the software side and the hardware side to make sure that people don't get harmed in them.
+172
+00:11:07,751 --> 00:11:11,990
+where someone said, "Safety in the end is about dealing with what's real."
 
-124
+173
+00:11:11,990 --> 00:11:17,030
+Like you can't escape reality and you usually have a physical system in place.
+
+174
+00:11:17,030 --> 00:11:19,110
+and the reality is car accidents exist.
+
+175
+00:11:19,110 --> 00:11:22,310
+but there's a lot of people out there both on the software side.
+
+176
+00:11:22,310 --> 00:11:24,310
+and the hardware side to make sure that people don't get harmed in them.
+
+177
 00:11:24,320 --> 00:11:26,910
 Yeah.
 
-125
+178
 00:11:26,910 --> 00:11:31,471
 Now, why do the tool chains for the critical systems need to be certified? What is the reason for that?
 
-126
-00:11:31,480 --> 00:11:39,630
-So, the general term is being qualified because the tool chain doesn't doesn't end up like your compiler doesn't run on an engine.
+179
+00:11:31,480 --> 00:11:33,710
+So, the general term is being qualified.
 
-127
+180
+00:11:33,720 --> 00:11:39,630
+because the tool chain doesn't doesn't end up like your compiler doesn't run on an engine.
+
+181
 00:11:39,630 --> 00:11:41,430
 The compiler runs in your build system.
 
-128
+182
 00:11:41,440 --> 00:11:46,310
 Quite simply because compiler bugs can immediately lead to program misbehavior.
 
-129
+183
 00:11:46,320 --> 00:11:51,750
 So, they're in the direct chain of the coder.
 
-130
+184
 00:11:51,750 --> 00:11:57,870
 I write something into my text editor and this is the program that runs. And a lot of bugs are pretty much immediately obvious.
 
-131
+185
 00:11:57,870 --> 00:12:00,472
 That's the good ones. I run my tests. This is buggy.
 
-132
+186
 00:12:00,480 --> 00:12:06,190
 That's fine. And then the program never gets deployed.
 
-133
-00:12:06,190 --> 00:12:16,710
-The problem is compilers have the power to generate our code and that also means any bugs in the code generation can lead to hard to trace down bugs that come down the line that may be triggered later on.
+187
+00:12:06,190 --> 00:12:09,470
+The problem is compilers have the power to generate our code.
 
-134
+188
+00:12:09,470 --> 00:12:14,790
+and that also means any bugs in the code generation can lead to hard to trace down bugs.
+
+189
+00:12:14,790 --> 00:12:16,710
+that come down the line that may be triggered later on.
+
+190
 00:12:16,710 --> 00:12:21,030
 And this is why we assess tool chains.
 
-135
-00:12:21,030 --> 00:12:33,990
-So, the joking summary if I have to explain ferrocene and the whole subject of compiler qualification to people in the Rust project who are away from safety critical is they're saying like, "What are you doing? The Rust compiler is already high quality."
+191
+00:12:21,030 --> 00:12:25,510
+So, the joking summary if I have to explain ferrocene.
 
-136
+192
+00:12:25,510 --> 00:12:29,150
+and the whole subject of compiler qualification to people in the Rust project.
+
+193
+00:12:29,150 --> 00:12:33,990
+who are away from safety critical is they're saying like, "What are you doing? The Rust compiler is already high quality."
+
+194
 00:12:33,990 --> 00:12:37,430
 And I'm saying like, "Yeah, but what's your argument that it is high quality?
 
-137
-00:12:37,430 --> 00:12:50,030
-Is it we haven't found bugs for a couple of weeks or is it we are sure that for example, this feature has an appropriate amount of tests that we are reasonably sure that it is well tested." And that's basically the qualification work.
+195
+00:12:37,430 --> 00:12:39,350
+Is it we haven't found bugs for a couple of weeks.
 
-138
-00:12:50,030 --> 00:12:53,270
-You say Mhm.
+196
+00:12:39,360 --> 00:12:46,550
+or is it we are sure that for example, this feature has an appropriate amount of tests.
 
-139
-00:12:53,270 --> 00:12:55,470
+197
+00:12:46,550 --> 00:12:48,470
+that we are reasonably sure that it is well tested."
+
+198
+00:12:48,470 --> 00:12:50,030
+And that's basically the qualification work.
+
+199
+00:12:50,030 --> 00:12:53,271
+You say. Mhm.
+
+200
+00:12:53,271 --> 00:12:55,470
 the tool has the following feature.
 
-140
-00:12:55,470 --> 00:13:06,630
-For example, it compiles a main function and if you put in print that out hello, the output is a certain kind of binary program on a certain kind of architecture that outputs hello world.
+201
+00:12:55,470 --> 00:12:58,070
+For example, it compiles a main function and if you put in print.
 
-141
+202
+00:12:58,070 --> 00:13:06,631
+that out hello, the output is a certain kind of binary program on a certain kind of architecture. that outputs hello world.
+
+203
 00:13:06,640 --> 00:13:12,430
 Pretty trivial example, but we make sure that this compilation process works well all over over time.
 
-142
-00:13:12,440 --> 00:13:23,271
-Mhm. And so, when you have this qualification process, is it done for a specific version of the compiler on a specific operating system on a specific architecture? Yes.
+204
+00:13:12,440 --> 00:13:16,230
+Mhm. And so, when you have this qualification process,
 
-143
-00:13:23,271 --> 00:13:30,470
-Are all versions kind of locked down for the qualification process or there is a bit of flexibility there.
+205
+00:13:16,230 --> 00:13:20,630
+is it done for a specific version of the compiler on a specific operating system on a specific.
 
-144
+206
+00:13:20,640 --> 00:13:23,271
+architecture? Yes.
+
+207
+00:13:23,271 --> 00:13:28,030
+Are all versions kind of locked down for the qualification process.
+
+208
+00:13:28,030 --> 00:13:30,470
+or there is a bit of flexibility there.
+
+209
 00:13:30,470 --> 00:13:36,030
 So, we generally release every 3 months, so every quarter.
 
-145
+210
 00:13:36,030 --> 00:13:41,510
 And we release an appropriate Rust compiler version that is currently new.
 
-146
+211
 00:13:41,510 --> 00:13:46,830
 We take a few 1 to 2 months to further validate the compiler downstream.
 
-147
-00:13:46,830 --> 00:13:52,990
-That means validating it on, as you say, we need to validate it on all the targets that are supported that the main Rust project does not support.
+212
+00:13:46,830 --> 00:13:48,830
+That means validating it on, as you say,
 
-148
+213
+00:13:48,830 --> 00:13:51,150
+we need to validate it on all the targets.
+
+214
+00:13:51,150 --> 00:13:52,990
+that are supported that the main Rust project does not support.
+
+215
 00:13:53,000 --> 00:13:55,470
 So, we're running the tests there.
 
-149
-00:13:55,470 --> 00:14:05,990
-We're seeing if exactly that thing is like we have for the whole Ferrous Systems project, we have written a language specification for the Rust language, so that we can say, "This is a feature of the language.
+216
+00:13:55,470 --> 00:14:00,350
+We're seeing if exactly that thing is like we have for the whole Ferrous Systems project,
 
-150
-00:14:06,000 --> 00:14:18,191
-These are the tests for it." This specification, by the way, has recently been accepted off the Rust project as the Rust specification, which means the argument, "Rust doesn't have a specification." now goes away.
+217
+00:14:00,360 --> 00:14:03,990
+we have written a language specification for the Rust language, so.
 
-151
-00:14:18,191 --> 00:14:20,870
+218
+00:14:03,990 --> 00:14:05,990
+that we can say, "This is a feature of the language.
+
+219
+00:14:06,000 --> 00:14:07,710
+These are the tests for it."
+
+220
+00:14:07,710 --> 00:14:14,270
+This specification, by the way, has recently been accepted off the Rust project as the Rust specification,
+
+221
+00:14:14,270 --> 00:14:18,190
+which means the argument, "Rust doesn't have a specification." now goes away.
+
+222
+00:14:18,190 --> 00:14:20,870
 That was a decade-long argument that we had.
 
-152
+223
 00:14:20,880 --> 00:14:23,710
 Rust now has a specification.
 
-153
-00:14:23,710 --> 00:14:31,231
-So, a major trunk of that work is making sure that every piece in that specification is well tested. That's about 1/2.
+224
+00:14:23,710 --> 00:14:25,510
+So, a major trunk of that work is making sure.
 
-154
+225
+00:14:25,520 --> 00:14:31,231
+that every piece in that specification is well tested. That's about 1/2.
+
+226
 00:14:31,231 --> 00:14:37,430
 And the reason why we do this is to make sure that engineers that use the tool,
 
-155
-00:14:37,440 --> 00:14:47,750
-and they see a tool behavior, they can go to the specification and say, "Does this behave like it's written down?" And then they look at this tool behavior, and maybe they say, "Okay.
+227
+00:14:37,440 --> 00:14:41,990
+and they see a tool behavior, they can go to the specification.
 
-156
-00:14:47,760 --> 00:14:59,031
-Okay, this is how the tool should behave. That's fine." Or they see, "Okay, something's off." And there's sometimes the discussion that people make is like, "Okay, so who's right? Who's wrong?
+228
+00:14:41,990 --> 00:14:44,670
+and say, "Does this behave like it's written down?"
 
-157
-00:14:59,031 --> 00:15:02,790
-Is the spec right? Is the compiler wrong?" That's actually not the interesting bit.
+229
+00:14:44,680 --> 00:14:47,750
+And then they look at this tool behavior, and maybe they say, "Okay.
 
-158
+230
+00:14:47,760 --> 00:14:51,431
+Okay, this is how the tool should behave. That's fine."
+
+231
+00:14:51,431 --> 00:14:53,470
+Or they see, "Okay, something's off."
+
+232
+00:14:53,480 --> 00:14:59,031
+And there's sometimes the discussion that people make is like, "Okay, so who's right? Who's wrong?
+
+233
+00:14:59,031 --> 00:15:00,911
+Is the spec right? Is the compiler wrong?"
+
+234
+00:15:00,911 --> 00:15:02,790
+That's actually not the interesting bit.
+
+235
 00:15:02,790 --> 00:15:06,790
 If those two things disagree, you should look at what actually happens there.
 
-159
+236
 00:15:06,790 --> 00:15:12,751
 And then, this is more like the starting point for further research, because you probably found something. Mhm.
 
-160
-00:15:12,760 --> 00:15:22,550
-So, coming back to my communication piece, there's always what we do is we take the gut feeling that the the compiler is good quality,
+237
+00:15:12,760 --> 00:15:18,270
+So, coming back to my communication piece,
 
-161
+238
+00:15:18,270 --> 00:15:22,550
+there's always what we do is we take the gut feeling that the the compiler is good quality.
+
+239
 00:15:22,550 --> 00:15:27,790
 and give you an actual argument and evidence that the Rust compiler is good quality.
 
-162
+240
 00:15:27,790 --> 00:15:29,790
 Because things can feel as good as I want.
 
-163
+241
 00:15:29,790 --> 00:15:33,750
 I don't want to be in a car where someone said, "It feels good.
 
-164
-00:15:33,750 --> 00:15:38,830
-The brake feels good. It hopefully works." No, the brake has to work.
+242
+00:15:33,750 --> 00:15:36,511
+The brake feels good. It hopefully works."
 
-165
+243
+00:15:36,520 --> 00:15:38,830
+No, the brake has to work.
+
+244
 00:15:38,840 --> 00:15:41,310
 Okay.
 
-166
+245
 00:15:41,310 --> 00:15:45,070
 And what are the limitations of this certification or qualification process?
 
-167
+246
 00:15:45,070 --> 00:15:48,550
 Because I guess cannot guarantee 100% safety.
 
-168
-00:15:48,550 --> 00:15:51,430
-So, there must be some limitations or Quite a few.
+247
+00:15:48,550 --> 00:15:51,431
+So, there must be some limitations or. Quite a few.
 
-169
-00:15:51,430 --> 00:15:56,070
+248
+00:15:51,431 --> 00:15:56,070
 Can I just add one more thing to the activity stream and then answer that question?
 
-170
-00:15:56,080 --> 00:16:02,790
-The other thing is the Rust compiler has quite a lot of features that, for example, may lead to miscompilation.
+249
+00:15:56,080 --> 00:16:00,070
+The other thing is the Rust compiler has quite a lot of features that,
 
-171
+250
+00:16:00,070 --> 00:16:02,790
+for example, may lead to miscompilation.
+
+251
 00:16:02,790 --> 00:16:08,670
 So, for example, it has a developer convenience feature that is called incremental compilation.
 
-172
-00:16:08,670 --> 00:16:15,190
-So, it compiles parts of the code and then if you recompile, it does only recompile the things that's been changed.
+252
+00:16:08,670 --> 00:16:13,030
+So, it compiles parts of the code and then if you recompile,
 
-173
-00:16:15,190 --> 00:16:24,950
-This one is generally solid, but if you're using that, it may in very rare cases, because it's a very complex system, introduce bugs.
+253
+00:16:13,030 --> 00:16:15,190
+it does only recompile the things that's been changed.
 
-174
-00:16:24,950 --> 00:16:30,630
-So, what we also do is inform our customers on the final build, on the final software, please don't use this feature.
+254
+00:16:15,190 --> 00:16:20,870
+This one is generally solid, but if you're using that, it may in very rare cases,
 
-175
-00:16:30,630 --> 00:16:36,350
-It's generally okay, but please not in safety-critical software, because even the off chance that this triggers a bug, something.
+255
+00:16:20,870 --> 00:16:24,950
+because it's a very complex system, introduce bugs.
 
-176
+256
+00:16:24,950 --> 00:16:26,710
+So, what we also do is inform our customers on the final build,
+
+257
+00:16:26,710 --> 00:16:30,630
+on the final software, please don't use this feature.
+
+258
+00:16:30,630 --> 00:16:32,190
+It's generally okay, but please not in safety-critical software,
+
+259
+00:16:32,190 --> 00:16:36,350
+because even the off chance that this triggers a bug, something.
+
+260
 00:16:36,350 --> 00:16:44,310
 So, it's also a lot of customer information of writing down information that is running around the community.
 
-177
+261
 00:16:44,310 --> 00:16:46,390
 So, a lot of experienced Rust programmers know that.
 
-178
+262
 00:16:46,390 --> 00:16:50,630
 The problem is our customers don't always employ people who built the compiler.
 
-179
+263
 00:16:50,640 --> 00:16:55,550
 Uh more often than not, you know what I mean?
 
-180
-00:16:55,550 --> 00:17:04,950
-So, that is also like this interesting because it's not a feature of the language itself, but it is about the tool chains available and how we use them. Pretty much.
+264
+00:16:55,550 --> 00:16:59,910
+So, that is also like this interesting because it's not a feature of the language itself,
 
-181
+265
+00:16:59,910 --> 00:17:04,950
+but it is about the tool chains available and how we use them. Pretty much.
+
+266
 00:17:04,950 --> 00:17:10,510
-And so, this is one of the recommendations of using the tool chains in a particular way to be safer, I guess.
+And so, this is one of the recommendations of using the tool chains in a particular way to. be safer, I guess.
 
-182
+267
 00:17:10,520 --> 00:17:14,230
 Exactly. On your question about limits.
 
-183
+268
 00:17:14,240 --> 00:17:16,510
 The limitations.
 
-184
-00:17:16,510 --> 00:17:22,150
-So, we have qualified that was first in was a bit of a research project for customer on the customer request.
+269
+00:17:16,510 --> 00:17:20,550
+So, we have qualified that was first in was a bit of a research project for customer on.
 
-185
+270
+00:17:20,550 --> 00:17:22,150
+the customer request.
+
+271
 00:17:22,150 --> 00:17:24,270
 We have actually qualified the whole language.
 
-186
+272
 00:17:24,270 --> 00:17:29,350
 So, this from the tool perspective, you can use all of Rust with the tool.
 
-187
+273
 00:17:29,360 --> 00:17:35,030
 The problem is Rust has, for example, features.
 
-188
+274
 00:17:35,030 --> 00:17:39,030
 It has a specific thing called procedural macros, which are tiny annotations.
 
-189
-00:17:39,030 --> 00:17:46,870
-You can put them on top of structures, and then this is actually allowed to pick this up the structure up and generate a additional code.
+275
+00:17:39,030 --> 00:17:41,590
+You can put them on top of structures,
 
-190
-00:17:46,870 --> 00:17:54,790
-And the way this works is these procedural macros are actually code libraries you can, well, either download from the internet or write yourself.
+276
+00:17:41,590 --> 00:17:46,870
+and then this is actually allowed to pick this up the structure up and generate a additional code.
 
-191
-00:17:54,790 --> 00:18:07,190
-And this is where it gets a little bit ironic where people say it's like, "Can we use proc macros in our project?" And I'm like, "Yes, from me as a tool vendor, I can tell you our proc macro interface works.
+277
+00:17:46,870 --> 00:17:52,350
+And the way this works is these procedural macros are actually code libraries you can, well,
 
-192
-00:18:07,200 --> 00:18:21,310
-It's pretty simple. It's tested." But, you need to validate that code generator that you plug in and that you write yourself that it does actually correctly generate pretty much invisible code.
+278
+00:17:52,350 --> 00:17:54,790
+either download from the internet or write yourself.
 
-193
+279
+00:17:54,790 --> 00:17:59,310
+And this is where it gets a little bit ironic where people say it's like,
+
+280
+00:17:59,310 --> 00:18:01,630
+"Can we use proc macros in our project?"
+
+281
+00:18:01,630 --> 00:18:04,830
+And I'm like, "Yes, from me as a tool vendor,
+
+282
+00:18:04,830 --> 00:18:07,190
+I can tell you our proc macro interface works.
+
+283
+00:18:07,200 --> 00:18:10,271
+It's pretty simple. It's tested."
+
+284
+00:18:10,271 --> 00:18:13,030
+But, you need to validate that code generator.
+
+285
+00:18:13,040 --> 00:18:17,910
+that you plug in and that you write yourself.
+
+286
+00:18:17,910 --> 00:18:21,310
+that it does actually correctly generate pretty much invisible code.
+
+287
 00:18:21,310 --> 00:18:23,070
 So, it's often around these subtleties.
 
-194
+288
 00:18:23,070 --> 00:18:28,750
 It's less the the tool in itself is problematic or it won't catch a bug.
 
-195
+289
 00:18:28,750 --> 00:18:31,350
 Like, these problems exist.
 
-196
-00:18:31,350 --> 00:18:37,630
-We can talk a little bit more about quality measures of the Rust project and this one in terms of limitation of the process is interesting.
+290
+00:18:31,350 --> 00:18:33,750
+We can talk a little bit more about quality measures of the Rust project.
 
-197
-00:18:37,630 --> 00:18:44,311
-Like, yeah, use the language, use the tool chain, but then there are some kind of escape hatches that allow you to do something yourself. Yeah.
+291
+00:18:33,750 --> 00:18:38,870
+and this one in terms of limitation of the process is interesting. Like, yeah, use the language, use the tool chain,
 
-198
-00:18:44,320 --> 00:18:51,751
-And you have to be careful there, and you probably need to certify that bit independently if you want to use those in these particular systems. Yes.
+292
+00:18:38,870 --> 00:18:44,311
+but then there are some kind of escape hatches that allow you to do something yourself. Yeah.
 
-199
-00:18:51,751 --> 00:19:03,350
-And then we end up in a situation where we're more in a advisory position where we're saying, "This is a way how you build a solid proc macro that is actually easy to validate and should pass certification."
+293
+00:18:44,320 --> 00:18:46,070
+And you have to be careful there,
 
-200
+294
+00:18:46,070 --> 00:18:49,390
+and you probably need to certify that bit independently.
+
+295
+00:18:49,390 --> 00:18:51,751
+if you want to use those in these particular systems. Yes.
+
+296
+00:18:51,751 --> 00:18:57,590
+And then we end up in a situation where we're more in a advisory position where we're saying,
+
+297
+00:18:57,590 --> 00:18:59,670
+"This is a way how you build a solid proc macro.
+
+298
+00:18:59,670 --> 00:19:03,350
+that is actually easy to validate and should pass certification."
+
+299
 00:19:03,350 --> 00:19:07,710
 We never claim that it does pass certification because that's on someone else's site.
 
-201
+300
 00:19:07,710 --> 00:19:09,910
 But, yeah, all of these things.
 
-202
+301
 00:19:09,910 --> 00:19:13,750
 Programming languages are complex, and you can combine them infinitively complex.
 
-203
+302
 00:19:13,750 --> 00:19:20,110
 So, what we're teaching, what we're dealing with safety critical customers is a simple and understandable rust.
 
-204
+303
 00:19:20,110 --> 00:19:24,110
 Even though you could heavily lean into the future.
 
-205
+304
 00:19:24,110 --> 00:19:25,790
 So, there's a little bit of a cultural bit there.
 
-206
+305
 00:19:25,800 --> 00:19:29,230
 Okay.
 
-207
-00:19:29,230 --> 00:19:39,470
-And before you mentioned also I think security but I was looking at all this is that the differences between safety critical and security critical systems are kind of blurring nowadays.
+306
+00:19:29,230 --> 00:19:32,110
+And before you mentioned also I think security.
 
-208
+307
+00:19:32,110 --> 00:19:36,510
+but I was looking at all this is that the differences between safety critical.
+
+308
+00:19:36,510 --> 00:19:39,470
+and security critical systems are kind of blurring nowadays.
+
+309
 00:19:39,480 --> 00:19:41,271
 Mhm. What do you think?
 
-209
-00:19:41,271 --> 00:19:43,751
-Is that correct assessment? It's very glaring.
+310
+00:19:41,271 --> 00:19:45,230
+Is that correct assessment? It's very glaring. Coming out of space as I said,
 
-210
-00:19:43,751 --> 00:19:48,950
-Coming out of space as I said, data center operations where time to update is really the thing that counts.
+311
+00:19:45,230 --> 00:19:48,950
+data center operations where time to update is really the thing that counts.
 
-211
-00:19:48,950 --> 00:19:55,350
-It's like you see a zero day attack somewhere and it's how fast do you react and how fast do you have all your service patched.
+312
+00:19:48,950 --> 00:19:51,310
+It's like you see a zero day attack somewhere.
 
-212
-00:19:55,360 --> 00:20:10,190
-That collides with this very slow minded, let's keep the system stable, let's keep all tools stable, let's validate for months and years to make sure that this tool really really works or this piece of machinery.
+313
+00:19:51,310 --> 00:19:55,350
+and it's how fast do you react and how fast do you have all your service patched.
 
-213
+314
+00:19:55,360 --> 00:20:00,350
+That collides with this very slow minded,
+
+315
+00:20:00,350 --> 00:20:02,030
+let's keep the system stable, let's keep all tools stable,
+
+316
+00:20:02,030 --> 00:20:08,110
+let's validate for months and years to make sure.
+
+317
+00:20:08,110 --> 00:20:10,190
+that this tool really really works or this piece of machinery.
+
+318
 00:20:10,190 --> 00:20:15,270
 And the problem is now that we're starting to connect all these things to the internet.
 
-214
+319
 00:20:15,270 --> 00:20:18,190
 So, you could frame this as a collision.
 
-215
+320
 00:20:18,190 --> 00:20:20,350
 I see this much more as there's two groups coming back together.
 
-216
-00:20:20,360 --> 00:20:26,670
-There's certainly some conflict coming in but I think the interesting thing coming back to what I said before,
+321
+00:20:20,360 --> 00:20:24,750
+There's certainly some conflict coming in.
 
-217
-00:20:26,680 --> 00:20:38,910
-suddenly you have very correctness minded engineers working at the hyperscalers, at large companies that also they have the problem the other way around.
+322
+00:20:24,750 --> 00:20:26,670
+but I think the interesting thing coming back to what I said before,
 
-218
-00:20:38,910 --> 00:20:50,830
-They suddenly have the issue that they need to patch fast but their systems are so complex that they need to have high assurance that if they patch it, it behaves the same as before minus that bug and doesn't bring a whole data center down.
+323
+00:20:26,680 --> 00:20:34,190
+suddenly you have very correctness minded engineers working at the hyperscalers, at large companies.
 
-219
+324
+00:20:34,190 --> 00:20:38,910
+that also they have the problem the other way around.
+
+325
+00:20:38,910 --> 00:20:40,950
+They suddenly have the issue that they need to patch fast.
+
+326
+00:20:40,950 --> 00:20:44,830
+but their systems are so complex that they need to have high assurance that.
+
+327
+00:20:44,830 --> 00:20:47,710
+if they patch it, it behaves the same as before minus.
+
+328
+00:20:47,720 --> 00:20:50,830
+that bug and doesn't bring a whole data center down.
+
+329
 00:20:50,840 --> 00:20:55,990
 So, suddenly we have these two groups coming back together.
 
-220
+330
 00:20:55,990 --> 00:20:59,590
 So, you see you actually see people from hyperscalers now at safety critical software club.
 
-221
-00:20:59,590 --> 00:21:06,190
-I can imagine also situations like you know, in automotive now the cars are connected to the internet all the time.
+331
+00:20:59,590 --> 00:21:04,070
+I can imagine also situations like you know,
 
-222
+332
+00:21:04,070 --> 00:21:06,190
+in automotive now the cars are connected to the internet all the time.
+
+333
 00:21:06,200 --> 00:21:09,270
 Mhm.
 
-223
+334
 00:21:09,270 --> 00:21:11,510
 And that is obviously safety critical, the software in the car.
 
-224
+335
 00:21:11,510 --> 00:21:16,430
 But there is also the chance of hackers hacking to the car.
 
-225
-00:21:16,430 --> 00:21:26,150
-And so the security and safety that can be at some point come together because a hacker can hack in into the car of somebody and take control and kill the person, you know, provoke an accident.
+336
+00:21:16,430 --> 00:21:20,630
+And so the security and safety that can be at some point come together.
 
-226
+337
+00:21:20,630 --> 00:21:24,310
+because a hacker can hack in into the car of somebody and take control.
+
+338
+00:21:24,310 --> 00:21:26,150
+and kill the person, you know, provoke an accident.
+
+339
 00:21:26,150 --> 00:21:30,830
 So it seems to be that a strong relationship now that is becoming stronger.
 
-227
-00:21:30,830 --> 00:21:41,270
-You have that and you also have a very tangible example that you have is for example, you need to update the car and the update needs 10 minutes.
+340
+00:21:30,830 --> 00:21:35,630
+You have that and you also have a very tangible example that you have is for example,
 
-228
-00:21:41,270 --> 00:21:50,750
-But the other thing is this also people rely on their car being ready out in the front yard for example, if they need to rush someone out to the hospital.
+341
+00:21:35,630 --> 00:21:41,270
+you need to update the car and the update needs 10 minutes.
 
-229
+342
+00:21:41,270 --> 00:21:47,191
+But the other thing is this also people rely on their car being ready out in the front. yard for example.
+
+343
+00:21:47,200 --> 00:21:50,750
+if they need to rush someone out to the hospital.
+
+344
 00:21:50,750 --> 00:21:52,630
 Imagine running out and your car says, I spent 9 minute on patching.
 
-230
-00:21:52,640 --> 00:22:01,830
-So it's also a situation where the safety critical industries have it harder.
+345
+00:21:52,640 --> 00:22:03,270
+So it's also a situation where the safety critical industries have it harder. They can't just use the approaches and.
 
-231
-00:22:01,830 --> 00:22:08,990
-They can't just use the approaches and that is a regular conflict where people come from out of the the space that I'm from and say like, "Oh, this is so simple.
+346
+00:22:03,270 --> 00:22:07,310
+that is a regular conflict where people come from out of the the space.
 
-232
-00:22:08,990 --> 00:22:15,911
-Why don't you just have an update demon and you're done?" And then like, "Yeah, mhm." Or I mean straight away.
+347
+00:22:07,310 --> 00:22:08,991
+that I'm from and say like, "Oh, this is. so simple.
 
-233
+348
+00:22:08,991 --> 00:22:13,430
+Why don't you just have an update demon and you're done?"
+
+349
+00:22:13,430 --> 00:22:15,911
+And then like, "Yeah, mhm." Or I mean straight away.
+
+350
 00:22:15,920 --> 00:22:17,910
 A bug in the procedure bricks the car.
 
-234
+351
 00:22:17,920 --> 00:22:23,591
 Cannot start anymore because the software now is ruined. That I can even offset.
 
-235
-00:22:23,591 --> 00:22:30,910
-Though on the other hand, bricking a server nowadays is also a problem because all of the data centers nowadays run human less.
+352
+00:22:23,591 --> 00:22:26,790
+Though on the other hand, bricking a server nowadays is.
 
-236
-00:22:30,910 --> 00:22:40,110
-So if the server doesn't start, again coming back to that thinking, it's mission critical that costs you a lot because you need to send someone out and it's probably because you're deploying these things on mass.
+353
+00:22:26,790 --> 00:22:30,910
+also a problem because all of the data centers nowadays run human less.
 
-237
+354
+00:22:30,910 --> 00:22:32,990
+So if the server doesn't start, again coming back to that thinking,
+
+355
+00:22:32,990 --> 00:22:38,590
+it's mission critical that costs you a lot because you need to send someone out and it's probably.
+
+356
+00:22:38,590 --> 00:22:40,110
+because you're deploying these things on mass.
+
+357
 00:22:40,110 --> 00:22:44,030
 You're not bringing down one server, you're bringing down 100.
 
-238
-00:22:44,030 --> 00:22:52,590
-But yeah, so this is curious time currently where these two groups intermingle and that's why I find it very interesting at the moment where this is growing back together,
+358
+00:22:44,030 --> 00:22:46,790
+But yeah, so this is curious time currently.
 
-239
+359
+00:22:46,790 --> 00:22:50,510
+where these two groups intermingle and that's why I find it very interesting at the moment.
+
+360
+00:22:50,510 --> 00:22:52,590
+where this is growing back together.
+
+361
 00:22:52,590 --> 00:22:57,751
 but as you say it breeds conflict also because of I think base assumptions. Yeah.
 
-240
+362
 00:22:57,751 --> 00:23:03,071
 And now let's move into more detail about Rust itself. Mhm.
 
-241
-00:23:03,071 --> 00:23:12,390
-So first of all, maybe a very brief overview of Rust with a focus on what you think makes it suitable for mission and safety-critical systems.
+363
+00:23:03,071 --> 00:23:08,990
+So first of all, maybe a very brief overview of Rust with a focus on what you think.
 
-242
+364
+00:23:08,990 --> 00:23:12,390
+makes it suitable for mission and safety-critical systems.
+
+365
 00:23:12,400 --> 00:23:14,150
 Okay.
 
-243
-00:23:14,150 --> 00:23:21,390
-So, Rust is a new systems programming language that as its hallmark feature is memory safe and memory safe in the face of concurrency.
+366
+00:23:14,150 --> 00:23:15,710
+So, Rust is a new systems programming language.
 
-244
+367
+00:23:15,710 --> 00:23:21,390
+that as its hallmark feature is memory safe and memory safe in the face of concurrency.
+
+368
 00:23:21,400 --> 00:23:24,150
 That's its two big strong points.
 
-245
-00:23:24,150 --> 00:23:35,110
-It comes out of the language family of the ML families for those that are interested in those bits, but it looks a lot like a standard general standard systems programming language.
+369
+00:23:24,150 --> 00:23:28,150
+It comes out of the language family of the ML families for those.
 
-246
-00:23:35,120 --> 00:23:47,070
-Comes, as I said, out of Mozilla research and it was an approach to do better than C++ that which they were currently using and fix a lot of the issues they were seeing on the Firefox code base.
+370
+00:23:28,150 --> 00:23:30,590
+that are interested in those bits.
 
-247
-00:23:47,070 --> 00:23:53,430
-Though, the best comment I ever heard about that was if Rust is a criticism of C++, it comes from a place of love.
+371
+00:23:30,590 --> 00:23:35,110
+but it looks a lot like a standard general standard systems programming language.
 
-248
+372
+00:23:35,120 --> 00:23:39,030
+Comes, as I said, out of Mozilla research.
+
+373
+00:23:39,030 --> 00:23:43,070
+and it was an approach to do better than C++ that which they were currently using.
+
+374
+00:23:43,070 --> 00:23:47,070
+and fix a lot of the issues they were seeing on the Firefox code base.
+
+375
+00:23:47,070 --> 00:23:51,350
+Though, the best comment I ever heard about that was if Rust is a criticism of C++,
+
+376
+00:23:51,350 --> 00:23:53,430
+it comes from a place of love.
+
+377
 00:23:53,430 --> 00:23:55,710
 So, it's built by people who are very pragmatic programmers.
 
-249
+378
 00:23:55,710 --> 00:23:58,470
 So, it has a lot of just around that.
 
-250
+379
 00:23:58,470 --> 00:24:02,990
 It comes with two very big concepts to ensure that, the concept of memory ownership.
 
-251
-00:24:03,000 --> 00:24:14,390
-It is always clear in a Rust program which part of the program currently owns a resource, generally memory, but also sometimes, for example, a lock or something else.
+380
+00:24:03,000 --> 00:24:11,270
+It is always clear in a Rust program which part of the program currently owns a resource,
 
-252
-00:24:14,400 --> 00:24:24,030
-And then, on top of that, it has a feature that is called borrowing, which makes it safe to refer to other items in memory, usually through references.
+381
+00:24:11,270 --> 00:24:14,390
+generally memory, but also sometimes, for example, a lock or something else.
 
-253
+382
+00:24:14,400 --> 00:24:18,110
+And then, on top of that, it has a feature that is called borrowing,
+
+383
+00:24:18,110 --> 00:24:24,030
+which makes it safe to refer to other items in memory, usually through references.
+
+384
 00:24:24,040 --> 00:24:31,150
 And these references carry what people often sometimes heard about this idea of lifetime.
 
-254
+385
 00:24:31,150 --> 00:24:36,830
 So, the Rust compiler very much tracks when data enters your program,
 
-255
-00:24:36,830 --> 00:24:45,510
-when it exits the program, and then it tries to make sure that every reference that's given out to that data is always legal and always dereferenceable.
+386
+00:24:36,830 --> 00:24:39,350
+when it exits the program, and then it tries to make sure.
 
-256
+387
+00:24:39,350 --> 00:24:45,510
+that every reference that's given out to that data is always legal and always dereferenceable.
+
+388
 00:24:45,510 --> 00:24:51,352
 That's very short, in a nutshell, the core ethos of Rust without showing source code. Okay. Okay.
 
-257
-00:24:51,352 --> 00:25:00,550
-Yeah, and in Rust, also in general, is if your code compiles, you're a long way into having something that actually runs, I guess, because of all these checks.
+389
+00:24:51,352 --> 00:24:53,470
+Yeah, and in Rust, also in general,
 
-258
-00:25:00,550 --> 00:25:04,510
+390
+00:24:53,470 --> 00:25:00,551
+is if your code compiles, you're a long way into having something that actually runs, I guess, because of all these checks.
+
+391
+00:25:00,551 --> 00:25:04,510
 And what makes it us suitable for mission-critical systems?
 
-259
+392
 00:25:04,510 --> 00:25:06,190
 You mentioned memory, you mentioned concurrency.
 
-260
-00:25:06,190 --> 00:25:09,190
-There are other aspects as well.
+393
+00:25:06,190 --> 00:25:09,191
+There are other aspects as well. It's.
 
-261
-00:25:09,190 --> 00:25:17,830
-It's First of all, that correctness, and also it's a pretty strict language, and there's pretty often like its rules are actually, if you don't hit, pretty simple.
+394
+00:25:09,191 --> 00:25:12,910
+First of all, that correctness, and also it's a pretty strict language,
 
-262
-00:25:17,830 --> 00:25:25,430
-You have that ownership thing, you have that borrowing thing, and otherwise it boils down to what I usually call a data structures and functions language, similar to C.
+395
+00:25:12,910 --> 00:25:17,830
+and there's pretty often like its rules are actually, if you don't hit, pretty simple.
 
-263
+396
+00:25:17,830 --> 00:25:21,230
+You have that ownership thing, you have that borrowing thing,
+
+397
+00:25:21,230 --> 00:25:25,431
+and otherwise it boils down to what I usually call a data structures and functions language, similar to C.
+
+398
 00:25:25,440 --> 00:25:31,630
 So, Rust has two big primitives, data structures that you put in memory, functions you call on them.
 
-264
+399
 00:25:31,640 --> 00:25:37,590
 So, in the end it becomes very traceable what actually happens in runtime.
 
-265
+400
 00:25:37,600 --> 00:25:41,990
 The other thing is all of those checks happen at compile time.
 
-266
-00:25:41,990 --> 00:25:47,350
-That means the Rust programming language does not have a runtime.
+401
+00:25:41,990 --> 00:25:48,590
+That means the Rust programming language does not have a runtime. It just executes code on the processor,
 
-267
-00:25:47,350 --> 00:25:56,350
-It just executes code on the processor, which makes it really feasible to be a language that is put on other things with active behavior, saying operating system or something like that.
+402
+00:25:48,590 --> 00:25:52,790
+which makes it really feasible to be a language that is put on other things with active behavior,
 
-268
-00:25:56,350 --> 00:26:05,830
-So, you don't have the situation where you have a Okay, I have the kernel, which is essentially a runtime system, and then I have,
+403
+00:25:52,800 --> 00:25:56,350
+saying operating system. or something like that.
 
-269
-00:26:05,830 --> 00:26:16,350
-for example, if I take a language like Go, Go has this whole thing with an event reactor and an IO system on top of it, and I need to validate all that before I come to the programming language.
+404
+00:25:56,350 --> 00:25:58,390
+So, you don't have the situation where you have a.
 
-270
-00:26:16,350 --> 00:26:26,270
-While a simple Rust program that just has a main function and prints out something is equivalent to like in its runtime components to a C program that just calls the main function and prints out something.
+405
+00:25:58,400 --> 00:26:05,830
+Okay, I have the kernel, which is essentially a runtime system, and then I have, for example.
 
-271
+406
+00:26:05,830 --> 00:26:08,350
+if I take a language like Go,
+
+407
+00:26:08,350 --> 00:26:12,351
+Go has this whole thing with an event reactor and an IO system on top of it, and I need to validate all.
+
+408
+00:26:12,351 --> 00:26:16,350
+that before I come to the programming language.
+
+409
+00:26:16,350 --> 00:26:18,350
+While a simple Rust program that just has a main function.
+
+410
+00:26:18,350 --> 00:26:23,590
+and prints out something is equivalent to like in its runtime components to a C program.
+
+411
+00:26:23,600 --> 00:26:26,270
+that just calls the main function and prints out something.
+
+412
 00:26:26,270 --> 00:26:28,590
 So, there's nothing going on on the side of that.
 
-272
-00:26:28,600 --> 00:26:40,030
-So, in short, the compiler does a lot of the hard work to guarantee that the program runs correctly, and so the need for a runtime is much less than in other languages, on other platforms.
+413
+00:26:28,600 --> 00:26:33,550
+So, in short, the compiler does a lot of the hard work to guarantee.
 
-273
+414
+00:26:33,550 --> 00:26:35,390
+that the program runs correctly, and.
+
+415
+00:26:35,390 --> 00:26:40,030
+so the need for a runtime is much less than in other languages, on other platforms.
+
+416
 00:26:40,040 --> 00:26:42,831
 Yes. Okay.
 
-274
+417
 00:26:42,831 --> 00:26:46,510
 And how does it compare to other languages that are used for safety-critical systems?
 
-275
-00:26:46,510 --> 00:26:56,391
-Say, you know, C, C++, other To C, it's mainly the bits with memory safety and the whole managed concurrency things. So, it's thread safe.
+418
+00:26:46,510 --> 00:26:48,910
+Say, you know, C, C++, other.
 
-276
+419
+00:26:48,920 --> 00:26:56,391
+To C, it's mainly the bits with memory safety and the whole managed concurrency things. So, it's thread safe.
+
+420
 00:26:56,391 --> 00:26:58,950
 It can while Rust can also easily call into C.
 
-277
+421
 00:26:58,960 --> 00:27:05,830
 So, as I said, it's actually a language that's pretty close to C in its evaluation model.
 
-278
+422
 00:27:05,830 --> 00:27:09,910
 So, on top of the C, it does away with a lot of the problems that C introduces.
 
-279
+423
 00:27:09,920 --> 00:27:16,310
 To C++, Rust compares more like another take on a similar concept.
 
-280
+424
 00:27:16,310 --> 00:27:18,670
 So, Rust is a generic programming language.
 
-281
+425
 00:27:18,670 --> 00:27:20,790
 So, it has generics.
 
-282
+426
 00:27:20,790 --> 00:27:23,270
 It doesn't have templates like in C++, but it has generics.
 
-283
-00:27:23,270 --> 00:27:35,151
-And a lot of the compilation behavior, for example, if I'm giving a class to C++ people, a lot of the compilation behavior is pretty intuitive the thing that C++ does. And it codes this idea.
+427
+00:27:23,270 --> 00:27:27,190
+And a lot of the compilation behavior, for example,
 
-284
-00:27:35,160 --> 00:27:44,671
-So, if you're used to that C++ pattern of resource acquisition is initialization RAII, this is basically Rust's ownership. Mhm.
+428
+00:27:27,190 --> 00:27:28,870
+if I'm giving a class to C++ people,
 
-285
-00:27:44,680 --> 00:27:51,510
-So, Rust can be seen as a language that enforces that pattern everywhere and makes it compile time checked.
+429
+00:27:28,870 --> 00:27:31,470
+a lot of the compilation behavior is pretty intuitive the thing.
 
-286
+430
+00:27:31,480 --> 00:27:35,151
+that C++ does. And it codes this idea.
+
+431
+00:27:35,160 --> 00:27:42,310
+So, if you're used to that C++ pattern of resource acquisition is initialization RAII,
+
+432
+00:27:42,320 --> 00:27:44,671
+this is basically Rust's ownership. Mhm.
+
+433
+00:27:44,680 --> 00:27:47,030
+So, Rust can be seen as a language.
+
+434
+00:27:47,030 --> 00:27:51,510
+that enforces that pattern everywhere and makes it compile time checked.
+
+435
 00:27:51,510 --> 00:27:53,470
 So, this is how it compares to C++.
 
-287
+436
 00:27:53,480 --> 00:27:58,510
 To Ada, I only have superficial Ada knowledge.
 
-288
-00:27:58,510 --> 00:28:05,190
-I know that Rust is quite a bit Ada inspired in ethos around that whole correctness thing.
+437
+00:27:58,510 --> 00:28:06,670
+I know that Rust is quite a bit Ada inspired in ethos around that whole correctness thing. Ada has a little bit of an edge on Rust,
 
-289
-00:28:05,190 --> 00:28:16,870
-Ada has a little bit of an edge on Rust, particularly in places where, for example, you can say, "This is an integer from 50 to 120." So, these constrained integer types and things like that.
+438
+00:28:06,680 --> 00:28:12,670
+particularly in places where, for example, you can say, "This is an integer from 50 to 120."
 
-290
-00:28:16,870 --> 00:28:23,270
-Though, I know there's currently an initiative to actually fill a few of those gaps on the Rust compiler where we can actually do that.
+439
+00:28:12,670 --> 00:28:16,870
+So, these constrained integer types and things like that.
 
-291
+440
+00:28:16,870 --> 00:28:19,310
+Though, I know there's currently an initiative to.
+
+441
+00:28:19,310 --> 00:28:23,270
+actually fill a few of those gaps on the Rust compiler where we can actually do that.
+
+442
 00:28:23,270 --> 00:28:24,870
 Maybe let's see next year.
 
-292
-00:28:24,880 --> 00:28:35,031
-And in terms of the safety critical environment, so what are the advantages and disadvantages of Rust compared say to C? And picking one of them.
+443
+00:28:24,880 --> 00:28:28,550
+And in terms of the safety critical environment,
 
-293
+444
+00:28:28,550 --> 00:28:35,031
+so what are the advantages and disadvantages of Rust compared say to C? And picking one of them.
+
+445
 00:28:37,070 --> 00:28:42,350
 The advantage is obviously uh less checking needed. A lot of the things that you would check using an expensive external tool,
 
-294
-00:28:42,350 --> 00:28:48,790
-you don't need to buy a tool for proving memory safety on Rust because the compiler already does it and it's so broadly deployed
+446
+00:28:42,350 --> 00:28:46,350
+you don't need to buy a tool for proving memory safety on Rust.
 
-295
-00:28:48,800 --> 00:28:58,870
-that we have not only tangible evidence out of the test suite that this works, but also industry-wide tangible evidence that this is a solid system.
+447
+00:28:46,350 --> 00:28:48,790
+because the compiler already does it and it's.
 
-296
+448
+00:28:48,790 --> 00:28:53,710
+so broadly deployed that we have not only tangible evidence out of the test suite that this works.
+
+449
+00:28:53,720 --> 00:28:58,870
+but also industry-wide tangible evidence that this is a solid system.
+
+450
 00:28:58,870 --> 00:29:01,590
 That's one of the the advantage.
 
-297
-00:29:01,590 --> 00:29:10,950
-If I had to pick a disadvantage is Rust in safety-critical is still new, which means gaps may be found.
+451
+00:29:01,590 --> 00:29:07,990
+If I had to pick a disadvantage is Rust in safety-critical is still new,
 
-298
+452
+00:29:07,990 --> 00:29:10,950
+which means gaps may be found.
+
+453
 00:29:10,950 --> 00:29:14,990
 So, if you're deploying, so we're working with a number of tool vendors for further validation,
 
-299
-00:29:14,990 --> 00:29:23,111
-and in general Rust strategy that the compiler tries to be as boring as possible at the back end. It generates binary code.
+454
+00:29:14,990 --> 00:29:20,630
+and in general Rust strategy that the compiler tries to be as boring.
 
-300
+455
+00:29:20,630 --> 00:29:23,111
+as possible at the back end. It generates binary code.
+
+456
 00:29:23,111 --> 00:29:28,630
 It debugs using dwarf, like the dwarf annotations, like the metadata format.
 
-301
-00:29:28,630 --> 00:29:39,270
-And all of these things, so it's very boring in the back end, which means most tools can pick up a Rust binary and just read it like it were a C binary or a C++ binary and figure things out.
+457
+00:29:28,630 --> 00:29:32,110
+And all of these things, so it's very boring in the back end,
 
-302
+458
+00:29:32,110 --> 00:29:34,310
+which means most tools can pick up a Rust binary.
+
+459
+00:29:34,310 --> 00:29:39,270
+and just read it like it were a C binary or a C++ binary and figure things out.
+
+460
 00:29:39,270 --> 00:29:42,190
 Thing is, sometimes there's still gaps.
 
-303
-00:29:42,190 --> 00:29:49,951
-So, do expect that on your very first Rust project, you will be in a conversation with your tool vendor about, "Oh, we're seeing this. We're seeing that.
+461
+00:29:42,190 --> 00:29:45,830
+So, do expect that on your very first Rust project,
 
-304
-00:29:49,951 --> 00:29:59,390
-Maybe you can fix this." Most of the people we're working with just Well, all of the people we're doing this are actually fixing this with a couple of days turn around.
+462
+00:29:45,830 --> 00:29:49,951
+you will be in a conversation with your tool vendor about, "Oh, we're seeing this. We're seeing that.
 
-305
+463
+00:29:49,951 --> 00:29:51,470
+Maybe you can fix this."
+
+464
+00:29:51,470 --> 00:29:53,670
+Most of the people we're working with just.
+
+465
+00:29:53,670 --> 00:29:55,710
+Well, all of the people we're doing this are.
+
+466
+00:29:55,710 --> 00:29:59,390
+actually fixing this with a couple of days turn around.
+
+467
 00:29:59,390 --> 00:30:02,231
 So, can you give us one example of these things? Yeah, sure.
 
-306
+468
 00:30:02,231 --> 00:30:07,310
 The Rust compiler currently does not annotate V tables with their jump targets.
 
-307
+469
 00:30:07,310 --> 00:30:12,550
 So, virtual function tables, a way to dispatch, to do dynamic dispatch.
 
-308
-00:30:12,550 --> 00:30:23,110
-So, you get this function table handed, and there's basically a pointer to data in memory, and a pointer to a virtual function table that are functions that you can call on this object.
+470
+00:30:12,550 --> 00:30:15,310
+So, you get this function table handed,
 
-309
-00:30:23,110 --> 00:30:31,830
-And the Rust compiler does not currently properly encode all possible jump targets, which is clang, for example, does.
+471
+00:30:15,310 --> 00:30:18,910
+and there's basically a pointer to data in memory,
 
-310
-00:30:31,830 --> 00:30:45,710
-Because even though this is a dynamic call, you can actually during compilation say, "These are all the possible jump targets." This is something that people want for cybersecurity, but also for safety, because then they can analyze all the possible calls that can happen here and can make a performance assessment.
+472
+00:30:18,910 --> 00:30:20,710
+and a pointer to a virtual function table that are functions.
 
-311
-00:30:45,710 --> 00:30:58,550
-And because that item is currently not emitted by the compiler, tools will say like, "Okay." And they And the usual stance of the tool vendor is, "We'll fix it if it becomes an actual problem to a big customer."
+473
+00:30:20,710 --> 00:30:23,110
+that you can call on this object.
 
-312
+474
+00:30:23,110 --> 00:30:30,030
+And the Rust compiler does not currently properly encode all possible jump targets,
+
+475
+00:30:30,030 --> 00:30:31,830
+which is clang, for example, does.
+
+476
+00:30:31,830 --> 00:30:34,070
+Because even though this is a dynamic call,
+
+477
+00:30:34,070 --> 00:30:37,070
+you can actually during compilation say, "These are all the possible jump targets."
+
+478
+00:30:37,070 --> 00:30:39,790
+This is something that people want for cybersecurity,
+
+479
+00:30:39,790 --> 00:30:43,870
+but also for safety, because then they can analyze all the possible calls that can happen here.
+
+480
+00:30:43,870 --> 00:30:45,710
+and can make a performance assessment.
+
+481
+00:30:45,710 --> 00:30:51,791
+And because that item is currently not emitted by the compiler, tools will say like, "Okay." And they.
+
+482
+00:30:51,791 --> 00:30:53,830
+And the usual stance of the tool vendor is,
+
+483
+00:30:53,830 --> 00:30:58,550
+"We'll fix it if it becomes an actual problem to a big customer."
+
+484
 00:30:58,550 --> 00:31:04,070
 And most customers are currently like, "Okay, we can work around this because the program is so tiny.
 
-313
-00:31:04,070 --> 00:31:11,990
-We just say this this and this is the jump target by code reading." And say to yourself, "We've done it manually." is interesting that this not even a language level thing.
+485
+00:31:04,070 --> 00:31:06,470
+We just say this this and this is the jump target by code reading."
 
-314
-00:31:11,990 --> 00:31:14,070
-It's more the compiler.
+486
+00:31:06,470 --> 00:31:08,470
+And say to yourself, "We've done it manually."
 
-315
-00:31:14,070 --> 00:31:19,310
-So it's it's really some of the tool and the tool chains and what happens in the small details that really matters sometimes in this aspect.
+487
+00:31:08,480 --> 00:31:11,990
+is interesting that this not even a language level thing.
 
-316
+488
+00:31:11,990 --> 00:31:15,470
+It's more the compiler. So it's it's really some of the tool.
+
+489
+00:31:15,470 --> 00:31:19,310
+and the tool chains and what happens in the small details that really matters sometimes in this aspect.
+
+490
 00:31:19,310 --> 00:31:21,030
 Yes, you say it exactly.
 
-317
-00:31:21,030 --> 00:31:30,110
-It's like the biggest blocker for adoption, I think, is we need someone to sweep through all the tiny details at some point and that isn't quite there.
+491
+00:31:21,030 --> 00:31:22,910
+It's like the biggest blocker for adoption,
 
-318
-00:31:30,110 --> 00:31:41,230
-This is something where, for example, this is a safety-critical consortium at the Rust Foundation where these things are being collected and given as an advice to the Rust project to actually fix them.
+492
+00:31:22,910 --> 00:31:28,510
+I think, is we need someone to sweep through all the tiny details at some point.
 
-319
+493
+00:31:28,510 --> 00:31:30,110
+and that isn't quite there.
+
+494
+00:31:30,110 --> 00:31:34,230
+This is something where, for example, this is a safety-critical consortium at the Rust Foundation.
+
+495
+00:31:34,230 --> 00:31:37,110
+where these things are being collected.
+
+496
+00:31:37,110 --> 00:31:41,230
+and given as an advice to the Rust project to actually fix them.
+
+497
 00:31:41,230 --> 00:31:45,270
 And what about, you know, availability of tools, libraries, and frameworks?
 
-320
-00:31:45,270 --> 00:31:50,750
-Because C has been used in this space for a long time, so there must be plenty of tools and things. What about Rust?
+498
+00:31:45,270 --> 00:31:46,910
+Because C has been used in this space for a long time,
 
-321
+499
+00:31:46,910 --> 00:31:50,750
+so there must be plenty of tools and things. What about Rust?
+
+500
 00:31:50,760 --> 00:31:57,710
 So for safety-critical, many people use the tools that are available in the mission-critical space.
 
-322
-00:31:57,710 --> 00:32:07,350
-So for example, two of our certification projects rely on a tool that is called AR TIC real-time interrupt controlled concurrency.
+501
+00:31:57,710 --> 00:32:02,390
+So for example, two of our certification projects rely on a tool.
 
-323
+502
+00:32:02,390 --> 00:32:07,350
+that is called AR TIC real-time interrupt controlled concurrency.
+
+503
 00:32:07,350 --> 00:32:13,150
 It's a tiny tool that generates an interrupt-based scheduler on a microcontroller safely.
 
-324
-00:32:13,150 --> 00:32:24,750
-Comes out of a university, so it will actually make sure that as a compile-time proof that interrupts of a lower priority do not interrupt interrupts of a higher priority on a microcontroller.
+504
+00:32:13,150 --> 00:32:17,590
+Comes out of a university, so it will actually make sure that as a compile-time proof.
 
-325
+505
+00:32:17,600 --> 00:32:24,750
+that interrupts of a lower priority do not interrupt interrupts of a higher priority on a microcontroller.
+
+506
 00:32:24,760 --> 00:32:26,870
 But the thing is, this is solid.
 
-326
+507
 00:32:26,870 --> 00:32:28,870
 That has been deployed for years.
 
-327
+508
 00:32:28,880 --> 00:32:34,590
 But now customers do trust it enough that they think they can go through certification.
 
-328
+509
 00:32:34,590 --> 00:32:36,670
 We'll see by the end of the year.
 
-329
+510
 00:32:36,670 --> 00:32:39,870
 We're pretty convinced that it works.
 
-330
+511
 00:32:39,870 --> 00:32:42,710
 We have actually one operating system that is completely built in rust.
 
-331
+512
 00:32:42,720 --> 00:32:45,070
 Same story.
 
-332
-00:32:45,070 --> 00:32:51,350
-So there's an operating system called talk OS and that is actually used by Google in a number of tools.
+513
+00:32:45,070 --> 00:32:46,910
+So there's an operating system called talk OS.
 
-333
+514
+00:32:46,910 --> 00:32:51,350
+and that is actually used by Google in a number of tools.
+
+515
 00:32:51,350 --> 00:32:56,630
 You can see that and it is invented at the University Princeton, I think.
 
-334
-00:32:56,630 --> 00:33:07,390
-And that one is an is an open source project that has been around for I think 10 years now or something like that and that is currently being certified by a company in Romania.
+516
+00:32:56,630 --> 00:32:58,190
+And that one is an is an open source project.
 
-335
+517
+00:32:58,190 --> 00:33:03,510
+that has been around for I think 10 years now or something like that and.
+
+518
+00:33:03,510 --> 00:33:07,390
+that is currently being certified by a company in Romania.
+
+519
 00:33:07,390 --> 00:33:10,270
 So there's rust based operating systems.
 
-336
+520
 00:33:10,270 --> 00:33:14,670
 For tools, there's a number of vendors that have formal or informal rust support.
 
-337
+521
 00:33:14,670 --> 00:33:16,830
 Most of them aren't public about it.
 
-338
-00:33:16,830 --> 00:33:20,950
-There is a a lot of movement in this space then around us.
+522
+00:33:16,830 --> 00:33:20,951
+There is a a lot of movement in this space then around us. Movement.
 
-339
-00:33:20,950 --> 00:33:22,590
-Movement Movement is the right word for it.
+523
+00:33:20,951 --> 00:33:22,590
+Movement is the right word for it.
 
-340
+524
 00:33:22,590 --> 00:33:24,590
 It's a lot of people are moving into that space.
 
-341
-00:33:24,590 --> 00:33:30,470
-Expect that the space is new but people are currently in their certification projects.
+525
+00:33:24,590 --> 00:33:31,870
+Expect that the space is new but people are currently in their certification projects. So that's the state.
 
-342
-00:33:30,470 --> 00:33:39,710
-So that's the state Can you give us one example from a real project where moving to rust maybe from C or C++ actually made a positive difference?
+526
+00:33:31,870 --> 00:33:34,230
+Can you give us one example from a real project.
 
-343
-00:33:39,720 --> 00:33:47,190
-So the general I mean this there's always If you've got an example you can share,
+527
+00:33:34,230 --> 00:33:39,710
+where moving to rust maybe from C or C++ actually made a positive difference?
 
-344
-00:33:47,190 --> 00:33:56,350
-you know, if it's like We have ported sudo like the classic Unix program to rust together with another rust company in the Netherlands called sweater golf.
+528
+00:33:39,720 --> 00:33:44,990
+So the general I mean this there's always.
 
-345
+529
+00:33:44,990 --> 00:33:47,190
+If you've got an example you can share, you know, if it's like.
+
+530
+00:33:47,190 --> 00:33:54,550
+We have ported sudo like the classic Unix program to rust together with another rust company in the.
+
+531
+00:33:54,550 --> 00:33:56,350
+Netherlands called sweater golf.
+
+532
 00:33:56,350 --> 00:34:00,790
 So we had a number of very good experience in that not only on the coding side.
 
-346
+533
 00:34:00,790 --> 00:34:04,030
 Made the code much much smaller and a lot more reliable.
 
-347
+534
 00:34:04,030 --> 00:34:06,550
 It also allowed us to actually cut all features.
 
-348
-00:34:06,560 --> 00:34:15,510
-So the code is now faster, easier to read and the additional thing is because we ported the C code base, we also learned a lot about C.
+535
+00:34:06,560 --> 00:34:11,590
+So the code is now faster, easier to read.
 
-349
+536
+00:34:11,590 --> 00:34:13,310
+and the additional thing is because we ported the C code base,
+
+537
+00:34:13,310 --> 00:34:15,510
+we also learned a lot about C.
+
+538
 00:34:15,510 --> 00:34:19,230
 So the sudo classic project actually also got a lot of information out of that.
 
-350
+539
 00:34:19,230 --> 00:34:21,710
 We found sudo bugs while porting it to rust.
 
-351
-00:34:21,710 --> 00:34:25,629
-But that's that's obviously So from the productivity side, we're rust experts.
+540
+00:34:21,710 --> 00:34:23,310
+But that's that's obviously.
 
-352
-00:34:25,639 --> 00:34:34,669
-So of course our productivity in rust is But also you got anything also from maybe from the safety critical system and movement If you can share something.
+541
+00:34:23,310 --> 00:34:25,629
+So from the productivity side, we're rust experts.
 
-353
+542
+00:34:25,639 --> 00:34:27,389
+So of course our productivity in rust is.
+
+543
+00:34:27,399 --> 00:34:34,670
+But also you got anything also from maybe from the safety critical system and movement. If you can share something.
+
+544
 00:34:34,679 --> 00:34:39,629
 From the porting side, I sadly can't share any.
 
-354
-00:34:39,629 --> 00:34:42,070
-So, our customers are usually people who do not port over.
+545
+00:34:39,629 --> 00:34:43,389
+So, our customers are usually people who do not port over. They're actually new developments.
 
-355
-00:34:42,070 --> 00:34:45,870
-They're actually new developments Ah. completely in Rust.
+546
+00:34:43,399 --> 00:34:45,870
+Ah. completely in Rust.
 
-356
+547
 00:34:45,870 --> 00:34:50,869
 So, I couldn't say anything about the productivity gain there where I have tangible data.
 
-357
+548
 00:34:50,869 --> 00:34:52,629
 These projects go rather fast.
 
-358
-00:34:52,629 --> 00:35:02,631
-We currently have a medical device that has been implemented in the better part of a month through all requirements and is currently in assessment. Mhm.
+549
+00:34:52,629 --> 00:34:59,830
+We currently have a medical device that has been implemented in the better part of a month through.
 
-359
-00:35:02,640 --> 00:35:15,790
-And have you got any data in terms of bugs, defects that something like, well, we've done this in Rust and it seems to be better than what have happened C or done in an equivalent C system.
+550
+00:34:59,830 --> 00:35:02,631
+all requirements and is currently in assessment. Mhm.
 
-360
+551
+00:35:02,640 --> 00:35:08,190
+And have you got any data in terms of bugs,
+
+552
+00:35:08,190 --> 00:35:09,750
+defects that something like, well, we've done this in Rust.
+
+553
+00:35:09,750 --> 00:35:15,790
+and it seems to be better than what have happened C or done in an equivalent C system.
+
+554
 00:35:15,790 --> 00:35:17,710
 I don't know if you have any data around that.
 
-361
+555
 00:35:17,720 --> 00:35:19,750
 So, defect rates are lower.
 
-362
+556
 00:35:19,750 --> 00:35:24,350
 The problem is for having tangible data around that, you need a much larger org.
 
-363
-00:35:24,350 --> 00:35:30,830
-But, you may have this talk at Rust Nation, the keynote from Lars Bergstrom who's the responsible person at Google for Rust.
+557
+00:35:24,350 --> 00:35:26,750
+But, you may have this talk at Rust Nation,
 
-364
-00:35:30,840 --> 00:35:41,950
-And they claim across their whole Android code base a two times productivity increase across their group of developers and they've measured a couple of thousands.
+558
+00:35:26,750 --> 00:35:30,830
+the keynote from Lars Bergstrom who's the responsible person at Google for Rust.
 
-365
+559
+00:35:30,840 --> 00:35:39,630
+And they claim across their whole Android code base a two times productivity increase across their group of.
+
+560
+00:35:39,630 --> 00:35:41,950
+developers and they've measured a couple of thousands.
+
+561
 00:35:41,950 --> 00:35:48,950
 It is interesting to see that talk particularly because he also argues it's not the development speed.
 
-366
+562
 00:35:48,950 --> 00:35:52,190
 The development speed is about as fast as in C and C++.
 
-367
+563
 00:35:52,190 --> 00:35:54,150
 The problem comes later.
 
-368
+564
 00:35:54,150 --> 00:35:56,190
 It takes less time in code review.
 
-369
+565
 00:35:56,190 --> 00:36:00,910
 People generally feel more confident because the language finds more bugs during compilation time.
 
-370
-00:36:00,920 --> 00:36:11,110
-So, it's mainly later and then the missing cycles because of if you have fewer bugs, fewer things need to go back into the development. That's roughly the case he makes.
+566
+00:36:00,920 --> 00:36:07,870
+So, it's mainly later and then the missing cycles because of if you have fewer bugs,
 
-371
+567
+00:36:07,870 --> 00:36:11,110
+fewer things need to go back into the development. That's roughly the case he makes.
+
+568
 00:36:11,120 --> 00:36:16,550
 There's another talk that was given at the Big Rust conference in the Netherlands, Rust Week at Volvo.
 
-372
-00:36:16,560 --> 00:36:23,270
-They actually claim a two to four time productivity increase and there I have to say this is mainly my conjecture.
+569
+00:36:16,560 --> 00:36:21,230
+They actually claim a two to four time productivity increase.
 
-373
+570
+00:36:21,230 --> 00:36:23,270
+and there I have to say this is mainly my conjecture.
+
+571
 00:36:23,270 --> 00:36:26,750
 I would really like to have a look at the data on where that comes from.
 
-374
-00:36:26,750 --> 00:36:33,670
-I think it's precisely because that bug back to developer cycle is longer in automotive than it probably is in automotive,
+572
+00:36:26,750 --> 00:36:33,671
+I think it's precisely because that bug back to developer cycle is longer in automotive than it probably. is in automotive.
 
-375
-00:36:33,670 --> 00:36:40,150
+573
+00:36:33,671 --> 00:36:40,150
 but this is purely my off-the-cuff conjecture having seen this conference talk and not the underlying data.
 
-376
-00:36:40,160 --> 00:36:49,910
-Both of them claim that they have done structured research in their organizations, but I can't go to Google and ask them to please please give me all the extra sheets.
+574
+00:36:40,160 --> 00:36:45,551
+Both of them claim that they have done structured research in their organizations, but I can't go to Google.
 
-377
+575
+00:36:45,560 --> 00:36:49,910
+and ask them to please please give me all the extra sheets.
+
+576
 00:36:49,920 --> 00:36:54,910
 But now now let's talk about something it may be a bit closer to you. So about Ferrous Chain.
 
-378
+577
 00:36:54,920 --> 00:37:01,231
-Yeah. Yeah, so Yeah, sure. the open source Rust compiler toolchain that your company maintains. Mhm.
+Yeah. Yeah, so. Yeah, sure. the open source Rust compiler toolchain that your company maintains. Mhm.
 
-379
+578
 00:37:01,231 --> 00:37:06,392
 Now Ferrous Chain I said is a fork of the standard version of Rust. Mhm. Yeah.
 
-380
+579
 00:37:06,392 --> 00:37:12,630
 How do you keep it updated without invalidating the certification for safety critical systems?
 
-381
+580
 00:37:12,630 --> 00:37:16,550
 So what kind of process of course you know, whatever you can reveal.
 
-382
+581
 00:37:16,550 --> 00:37:19,630
 I'm not asking for any secret sauce here if there is any.
 
-383
-00:37:19,640 --> 00:37:30,590
-There's literally a repository that's called secret sauce somewhere in our infrastructure, but no, the whole process is actually you can actually see it out in the open on GitHub.
+582
+00:37:19,640 --> 00:37:24,190
+There's literally a repository that's called secret sauce somewhere in our infrastructure,
 
-384
-00:37:30,590 --> 00:37:38,310
-I think we're the only completely open source safety compiler and also the only one where you can actually follow the process out in the public.
+583
+00:37:24,190 --> 00:37:30,590
+but no, the whole process is actually you can actually see it out in the open on GitHub.
 
-385
+584
+00:37:30,590 --> 00:37:33,190
+I think we're the only completely open source safety compiler.
+
+585
+00:37:33,200 --> 00:37:38,310
+and also the only one where you can actually follow the process out in the public.
+
+586
 00:37:38,320 --> 00:37:42,911
 So first of all, we don't fork the Rust compiler. We call it a downstream.
 
-386
-00:37:42,911 --> 00:37:55,870
-So what we do is every night we practically take the changes down and make sure that our validation elements on top of that which is the test traceability precisely that spec to test.
+587
+00:37:42,911 --> 00:37:47,110
+So what we do is every night we practically take the changes down.
 
-387
+588
+00:37:47,110 --> 00:37:51,510
+and make sure that our validation elements on top of that which is the test traceability precisely.
+
+589
+00:37:51,520 --> 00:37:55,870
+that spec to test.
+
+590
 00:37:55,870 --> 00:37:57,750
 So we look at have there been tests added?
 
-388
+591
 00:37:57,750 --> 00:37:59,710
 What are these tests there for?
 
-389
+592
 00:37:59,710 --> 00:38:01,951
 Are they documented? Are they written down?
 
-390
-00:38:01,951 --> 00:38:12,750
-We're fixing the documentation if they aren't or for example if you see a test missing, there's a language feature being added on the right side in the specification, but this lacking tests, then we fix that.
+593
+00:38:01,951 --> 00:38:07,270
+We're fixing the documentation if they aren't or for example if you see a test missing,
 
-391
+594
+00:38:07,270 --> 00:38:11,230
+there's a language feature being added on the right side in the specification.
+
+595
+00:38:11,230 --> 00:38:12,750
+but this lacking tests, then we fix that.
+
+596
 00:38:12,760 --> 00:38:17,590
 We run test runners for all of our targets.
 
-392
-00:38:17,590 --> 00:38:29,790
-We're the only ones out in the open that actually run microcontroller tests like the the Rust project itself does not run tests for example on Cortex-M microcontrollers or on the ARM Cortex-R.
+597
+00:38:17,590 --> 00:38:19,150
+We're the only ones out in the open.
 
-393
+598
+00:38:19,150 --> 00:38:23,270
+that actually run microcontroller tests like the the Rust project itself does not run tests for example on.
+
+599
+00:38:23,280 --> 00:38:26,310
+Cortex-M microcontrollers.
+
+600
+00:38:26,310 --> 00:38:29,790
+or on the ARM Cortex-R.
+
+601
 00:38:29,790 --> 00:38:35,110
 These things we also done some work together with the RISC-V Foundation around RISC-V.
 
-394
-00:38:35,110 --> 00:38:42,630
-So, we can easily run these things and then we also implementing support for AUTOSARs like for example QNX 7.1.
+602
+00:38:35,110 --> 00:38:37,990
+So, we can easily run these things.
 
-395
-00:38:42,630 --> 00:38:50,110
-And do you feed back what you find any discrepancies with tests or bugs or anything back to the Rust Foundation?
+603
+00:38:37,990 --> 00:38:42,630
+and then we also implementing support for AUTOSARs like for example QNX 7.1.
 
-396
+604
+00:38:42,630 --> 00:38:48,230
+And do you feed back what you find any discrepancies with tests.
+
+605
+00:38:48,230 --> 00:38:50,110
+or bugs or anything back to the Rust Foundation?
+
+606
 00:38:50,120 --> 00:38:52,710
 Is those or how do you do that?
 
-397
+607
 00:38:52,710 --> 00:38:55,790
 As a co-founder of the Rust Foundation I need to be very clear here.
 
-398
+608
 00:38:55,790 --> 00:38:57,310
 We feed the back into the project.
 
-399
+609
 00:38:57,310 --> 00:38:59,350
 The project is independent from the foundation.
 
-400
+610
 00:38:59,350 --> 00:39:01,230
 So, we feed the back into the Rust compiler.
 
-401
-00:39:01,240 --> 00:39:06,870
-Given that thinking that I laid out very much in the beginning is like Rust comes out of a correctness mindset.
+611
+00:39:01,240 --> 00:39:06,871
+Given that thinking that I laid out very much in the beginning is like Rust comes out of. a correctness mindset.
 
-402
-00:39:06,880 --> 00:39:11,310
-I think the Rust compiler should be very correct.
+612
+00:39:06,880 --> 00:39:11,311
+I think the Rust compiler should be very correct. So, if we find any kind of bugs.
 
-403
-00:39:11,310 --> 00:39:14,910
-So, if we find any kind of bugs or if we think the test suite is lacking we'll upstream that.
+613
+00:39:11,320 --> 00:39:14,910
+or if we think the test suite is lacking we'll upstream that.
 
-404
-00:39:14,910 --> 00:39:23,590
-We're currently upstreaming a a major change to the test suite for the test suite being more resilient against the certain compiler features.
+614
+00:39:14,910 --> 00:39:21,550
+We're currently upstreaming a a major change to the test suite for the test suite being more resilient.
 
-405
-00:39:23,590 --> 00:39:27,550
-So, yes, we are very much committed to our upstream there and we have a very good experience in that.
+615
+00:39:21,550 --> 00:39:23,590
+against the certain compiler features.
 
-406
-00:39:27,560 --> 00:39:34,150
-It's like particularly and this is why I'm so I can't go and say I want a safety-critical patch in the Rust compiler.
+616
+00:39:23,590 --> 00:39:26,030
+So, yes, we are very much committed to our upstream there.
 
-407
-00:39:34,150 --> 00:39:40,150
-So, that's why I'm saying I want a correctness patch in the Rust compiler and people will very much accept that.
+617
+00:39:26,030 --> 00:39:27,550
+and we have a very good experience in that.
 
-408
+618
+00:39:27,560 --> 00:39:30,310
+It's like particularly and this is why I'm so.
+
+619
+00:39:30,320 --> 00:39:34,150
+I can't go and say I want a safety-critical patch in the Rust compiler.
+
+620
+00:39:34,150 --> 00:39:37,990
+So, that's why I'm saying I want a correctness patch in the Rust compiler.
+
+621
+00:39:37,990 --> 00:39:40,150
+and people will very much accept that.
+
+622
 00:39:40,150 --> 00:39:48,470
-It's also compiler validation nowadays is quite a different game from what the open source projects did about 20 years ago. So, yes, we're downstreaming that.
+It's also compiler validation nowadays is quite a different game from what the open source projects did about. 20 years ago. So, yes, we're downstreaming that.
 
-409
-00:39:48,470 --> 00:39:59,110
-So, we're always keeping our things fresh and we also make sure that as early as possible if there's a change in the upstream that for example fails on any one of those AUTOSARs,
+623
+00:39:48,470 --> 00:39:50,510
+So, we're always keeping our things fresh.
 
-410
-00:39:59,110 --> 00:40:05,350
-we can say oh by the way we found a bug and we have our communication path back where we actually just patching the thing.
+624
+00:39:50,510 --> 00:39:55,190
+and we also make sure that as early as possible if there's a change in the upstream.
 
-411
-00:40:05,350 --> 00:40:11,590
-So, if we can, we just patch the thing in the main Rust compiler and then one day later it falls into our system.
+625
+00:39:55,190 --> 00:39:59,110
+that for example fails on any one of those AUTOSARs,
 
-412
+626
+00:39:59,110 --> 00:40:02,750
+we can say oh by the way we found a bug and we have our communication path back.
+
+627
+00:40:02,750 --> 00:40:05,350
+where we actually just patching the thing.
+
+628
+00:40:05,350 --> 00:40:08,950
+So, if we can, we just patch the thing in the main Rust compiler.
+
+629
+00:40:08,950 --> 00:40:11,590
+and then one day later it falls into our system.
+
+630
 00:40:11,600 --> 00:40:17,430
 Okay. So, you contribute directly to the Rust compiler itself as well as patch.
 
-413
-00:40:17,440 --> 00:40:30,430
-And so, is it correct if I say that what you give is pretty much the same thing as the standard compiler plus, let's say, the confidence that actually is usable for safety-critical systems?
+631
+00:40:17,440 --> 00:40:20,150
+And so, is it correct if I say.
 
-414
-00:40:30,440 --> 00:40:34,870
-This is what you want to Exactly. So, there are there aren't any major differences.
+632
+00:40:20,150 --> 00:40:25,110
+that what you give is pretty much the same thing as the standard compiler plus,
 
-415
-00:40:34,870 --> 00:40:39,870
-I mean, the differences can be temporary due to things that you found that will be fixed at some point.
+633
+00:40:25,110 --> 00:40:27,350
+let's say, the confidence.
 
-416
-00:40:39,880 --> 00:40:48,390
-The most important thing is if you, for example, have to So, we also do long-term support for that compiler for over years.
+634
+00:40:27,350 --> 00:40:30,430
+that actually is usable for safety-critical systems?
 
-417
-00:40:48,390 --> 00:40:53,710
-And the Rust project itself currently only gives support for the last compiler they released, and they release every 6 weeks.
+635
+00:40:30,440 --> 00:40:31,790
+This is what you want to. Exactly.
 
-418
+636
+00:40:31,800 --> 00:40:34,870
+So, there are there aren't any major differences.
+
+637
+00:40:34,870 --> 00:40:36,470
+I mean, the differences can be temporary due to things.
+
+638
+00:40:36,470 --> 00:40:39,870
+that you found that will be fixed at some point.
+
+639
+00:40:39,880 --> 00:40:43,670
+The most important thing is if you, for example, have to.
+
+640
+00:40:43,670 --> 00:40:48,390
+So, we also do long-term support for that compiler for over years.
+
+641
+00:40:48,390 --> 00:40:51,870
+And the Rust project itself currently only gives support for the last compiler they released,
+
+642
+00:40:51,870 --> 00:40:53,710
+and they release every 6 weeks.
+
+643
 00:40:53,710 --> 00:40:55,910
 So, basically, you've got a 6-week support window.
 
-419
-00:40:55,920 --> 00:41:02,390
-So, if a bug comes up in a new compiler, we do the work of figuring out, "Okay, which of our compilers are currently in support?
+644
+00:40:55,920 --> 00:40:59,470
+So, if a bug comes up in a new compiler, we do the work of figuring out, "Okay,
 
-420
-00:41:02,400 --> 00:41:10,430
-Does this bug also affect that?" And then I give advice to our customers and say, "How do you deal with that bug?" Either we can ship you a patch.
+645
+00:40:59,480 --> 00:41:02,390
+which of our compilers are currently in support?
 
-421
-00:41:10,430 --> 00:41:25,430
-So, we do have two versions where we actually patched an only bug, but the decision-making there is, "What is our assessment for the patch doesn't break other things?" If it's a 3,000-line patch, no one's going to patch an 8-year-old compiler.
+646
+00:41:02,400 --> 00:41:03,950
+Does this bug also affect that?"
 
-422
-00:41:25,430 --> 00:41:29,710
-Then we'd rather go to the customer and say, "This is how you find if you even triggered that bug.
+647
+00:41:03,950 --> 00:41:07,910
+And then I give advice to our customers and say, "How do you deal with that bug?"
 
-423
-00:41:29,720 --> 00:41:37,230
-Otherwise, we don't test the tool." So, all of these complexities are not really something for an open-source project.
+648
+00:41:07,920 --> 00:41:10,430
+Either we can ship you a patch.
 
-424
-00:41:37,230 --> 00:41:42,190
-For your company, really, maybe where the most hard work Yeah.
+649
+00:41:10,430 --> 00:41:14,070
+So, we do have two versions where we actually patched an only bug,
 
-425
-00:41:42,190 --> 00:41:47,870
-is is actually in maintaining these what is in production pretty much and the the versions that you guarantee to your customers to support.
+650
+00:41:14,070 --> 00:41:21,470
+but the decision-making there is, "What is our assessment for the patch doesn't break other things?"
 
-426
+651
+00:41:21,470 --> 00:41:25,430
+If it's a 3,000-line patch, no one's going to patch an 8-year-old compiler.
+
+652
+00:41:25,430 --> 00:41:27,270
+Then we'd rather go to the customer and say,
+
+653
+00:41:27,270 --> 00:41:29,710
+"This is how you find if you even triggered that bug.
+
+654
+00:41:29,720 --> 00:41:31,910
+Otherwise, we don't test the tool."
+
+655
+00:41:31,910 --> 00:41:37,230
+So, all of these complexities are not really something for an open-source project.
+
+656
+00:41:37,230 --> 00:41:40,350
+For your company, really, maybe where the most hard work.
+
+657
+00:41:40,360 --> 00:41:42,190
+Yeah.
+
+658
+00:41:42,190 --> 00:41:44,150
+is is actually in maintaining these what is in production pretty much.
+
+659
+00:41:44,160 --> 00:41:47,870
+and the the versions that you guarantee to your customers to support.
+
+660
 00:41:47,880 --> 00:41:50,430
 Exactly. Yes.
 
-427
-00:41:50,430 --> 00:41:56,350
-And also, I would imagine you have to guarantee support for a number of years for a specific version that is out there.
+661
+00:41:50,430 --> 00:41:53,950
+And also, I would imagine you have to guarantee support for a number of years for a specific.
 
-428
+662
+00:41:53,950 --> 00:41:56,350
+version that is out there.
+
+663
 00:41:56,350 --> 00:41:59,470
 It's like it's not 3 months or 6 months. Can be several years. As long as the customer wants.
 
-429
+664
 00:41:59,480 --> 00:42:01,151
 As long as the customer wants. Yeah.
 
-430
+665
 00:42:01,160 --> 00:42:03,910
 Yeah.
 
-431
-00:42:03,910 --> 00:42:12,110
-And so, does this mean that the open-source version of Ferrous Systems is actually itself certified for safety-critical systems?
+666
+00:42:03,910 --> 00:42:10,030
+And so, does this mean that the open-source version of Ferrous Systems is.
 
-432
+667
+00:42:10,030 --> 00:42:12,110
+actually itself certified for safety-critical systems?
+
+668
 00:42:12,120 --> 00:42:16,950
 Or is kind of or to have the what certified one is the paid for one.
 
-433
+669
 00:42:16,950 --> 00:42:20,030
 So, how does it work in this respect?
 
-434
+670
 00:42:20,030 --> 00:42:24,430
 So, always vagueness of terms is a big problem in our industry.
 
-435
+671
 00:42:24,430 --> 00:42:29,150
 So, the source code is in a state that you can immediately qualify.
 
-436
-00:42:29,150 --> 00:42:34,350
-The problem is if you go to an SSF or tool qualification, they will not only look at the source code.
+672
+00:42:29,150 --> 00:42:31,230
+The problem is if you go to an SSF or tool qualification,
 
-437
-00:42:34,350 --> 00:42:44,310
-They will go and look at your organization and say, "Are they capable of actually responding to issues in a certain time and in timely manner?" Okay.
+673
+00:42:31,240 --> 00:42:34,350
+they will not only look at the source code.
 
-438
+674
+00:42:34,350 --> 00:42:36,310
+They will go and look at your organization and say,
+
+675
+00:42:36,310 --> 00:42:41,390
+"Are they capable of actually responding to issues in a certain time and in timely manner?"
+
+676
+00:42:41,400 --> 00:42:44,310
+Okay.
+
+677
 00:42:44,310 --> 00:42:49,870
 So, it's basically the same compiler that you sell,
 
-439
-00:42:49,870 --> 00:43:01,470
-but the commercial one has the company support that is actually a necessary thing for the qualification itself because there are requirements around fixing issues in a timely manner and all and some other aspects.
+678
+00:42:49,870 --> 00:42:55,950
+but the commercial one has the company support that is actually a necessary thing for the qualification itself.
 
-440
+679
+00:42:55,950 --> 00:43:01,470
+because there are requirements around fixing issues in a timely manner and all and some other aspects.
+
+680
 00:43:01,470 --> 00:43:05,950
 In safety critical, there's pretty often liability involved.
 
-441
-00:43:05,950 --> 00:43:10,110
-So, you take on a certain amount of liability which an open source project strictly can't.
+681
+00:43:05,950 --> 00:43:11,390
+So, you take on a certain amount of liability which an open source project strictly can't. When I was part of the core team,
 
-442
-00:43:10,110 --> 00:43:19,551
-When I was part of the core team, I was always saying like the most important thing if you're working with volunteers is that volunteers are never liable for anything. Yeah.
+682
+00:43:11,390 --> 00:43:14,710
+I was always saying like the most important thing.
 
-443
+683
+00:43:14,710 --> 00:43:19,551
+if you're working with volunteers is that volunteers are never liable for anything. Yeah.
+
+684
 00:43:19,551 --> 00:43:22,710
 And that's the only way you can do that.
 
-444
-00:43:22,710 --> 00:43:30,191
-And I sometimes just open source open source licenses have this this comes without warranty and version comes with warranty. Yeah, yeah.
+685
+00:43:22,710 --> 00:43:28,150
+And I sometimes just open source open source licenses have this this comes without warranty.
 
-445
+686
+00:43:28,150 --> 00:43:30,191
+and version comes with warranty. Yeah, yeah.
+
+687
 00:43:30,200 --> 00:43:31,830
 No, no, that makes sense.
 
-446
-00:43:31,830 --> 00:43:44,710
-He's trying to understand, but also I guess that having it open source will give companies actually the possibility to try it in their own systems with the confidence that if it works, they can say, "Okay, you know what?
+688
+00:43:31,830 --> 00:43:34,350
+He's trying to understand, but also I guess.
 
-447
-00:43:44,710 --> 00:43:51,510
-We'll buy the qualified version, so we know that it will work for our case." So, they don't necessarily need to buy something beforehand.
+689
+00:43:34,350 --> 00:43:36,190
+that having it open source will give companies.
 
-448
-00:43:51,520 --> 00:43:59,190
-And we support them in that activity because there are companies that nowadays, for example, want to rebuild their whole tool chains from source.
+690
+00:43:36,200 --> 00:43:42,550
+actually the possibility to try it in their own systems with the confidence that.
 
-449
-00:43:59,190 --> 00:44:10,430
-And we are a place where they can acquire the source pre-vetted and we then go and say, "Okay, we help you, for example, building your own compilers in your data center.
+691
+00:43:42,550 --> 00:43:44,710
+if it works, they can say, "Okay, you know what?
 
-450
+692
+00:43:44,710 --> 00:43:48,470
+We'll buy the qualified version, so we know that it will work for our case."
+
+693
+00:43:48,470 --> 00:43:51,510
+So, they don't necessarily need to buy something beforehand.
+
+694
+00:43:51,520 --> 00:43:56,950
+And we support them in that activity because there are companies that nowadays,
+
+695
+00:43:56,950 --> 00:43:59,190
+for example, want to rebuild their whole tool chains from source.
+
+696
+00:43:59,190 --> 00:44:06,511
+And we are a place where they can acquire the source pre-vetted and we then go and say, "Okay, we help you.
+
+697
+00:44:06,511 --> 00:44:10,430
+for example, building your own compilers in your data center."
+
+698
 00:44:10,430 --> 00:44:13,990
 Yeah, I think this is an important thing to know for people that want to try Ferro Sentry.
 
-451
-00:44:13,990 --> 00:44:21,910
-There's the open source version they can do whatever they like with it, but if they really need something that is officially qualified,
+699
+00:44:13,990 --> 00:44:17,470
+There's the open source version they can do whatever they like with it,
 
-452
-00:44:21,910 --> 00:44:29,631
-yeah, the open source version is is not qualified because it's simply not possible due to the requirements of the qualification process. Yeah.
+700
+00:44:17,470 --> 00:44:21,910
+but if they really need something that is officially qualified.
 
-453
+701
+00:44:21,910 --> 00:44:24,230
+yeah, the open source version is is not qualified.
+
+702
+00:44:24,230 --> 00:44:29,631
+because it's simply not possible due to the requirements of the qualification process. Yeah.
+
+703
 00:44:29,640 --> 00:44:32,351
 Exactly. Yeah.
 
-454
+704
 00:44:32,351 --> 00:44:34,310
 And our biggest customers are software factories in that sense.
 
-455
+705
 00:44:34,320 --> 00:44:38,550
 Precisely for that reason. Okay.
 
-456
+706
 00:44:38,550 --> 00:44:40,750
 Now, yeah, let's go to moving to Rust.
 
-457
+707
 00:44:40,750 --> 00:44:45,670
 You know, let's say that there is a company that producing safety or safety critical systems.
 
-458
+708
 00:44:45,680 --> 00:44:50,150
 And they decide, you know what, we are using C, we'd like to move to Rust.
 
-459
+709
 00:44:50,150 --> 00:44:53,910
 Now, what are the criteria to make such a decision?
 
-460
+710
 00:44:53,910 --> 00:44:55,950
 Are there any specific criteria they should look into?
 
-461
+711
 00:44:55,950 --> 00:45:00,030
 It's always, first of all, do you have any pain?
 
-462
-00:45:00,030 --> 00:45:04,750
-Like, if you don't do a technology switch because you're not experiencing any pain.
+712
+00:45:00,030 --> 00:45:06,230
+Like, if you don't do a technology switch because you're not experiencing any pain. So, it sounds so simple, but that is a mistake.
 
-463
-00:45:04,750 --> 00:45:13,630
-So, it sounds so simple, but that is a mistake that I've seen over the last decade where people would just go, we need to do new new hype thing because, for example, new employees, but no further thinking.
+713
+00:45:06,230 --> 00:45:09,671
+that I've seen over the last decade where people would just go, we need to do new new hype thing.
 
-464
+714
+00:45:09,680 --> 00:45:13,630
+because, for example, new employees, but no further thinking.
+
+715
 00:45:13,630 --> 00:45:15,510
 Like, I'm not joking here.
 
-465
+716
 00:45:15,510 --> 00:45:20,271
 I've spoken to people that had no further thinking in this, and the project has completely failed. Mhm.
 
-466
+717
 00:45:20,271 --> 00:45:24,830
 So, actually, it's a standard engineering process nowadays.
 
-467
+718
 00:45:24,830 --> 00:45:26,350
 Identify a need, particularly on these metrics.
 
-468
-00:45:26,350 --> 00:45:36,950
-Do we think that Rust will increase productivity or increase the us addressing the wish, for example, from nation states nowadays to actually put memory safety out there.
+719
+00:45:26,350 --> 00:45:33,350
+Do we think that Rust will increase productivity or increase the us addressing the wish,
 
-469
+720
+00:45:33,350 --> 00:45:36,950
+for example, from nation states nowadays to actually put memory safety out there?
+
+721
 00:45:36,950 --> 00:45:42,710
 So, like, memory safety has been a word in the US Senate appropriation bill at some point.
 
-470
+722
 00:45:42,720 --> 00:45:49,230
-It's like So, people need to address that, and people now expect a memory safety story from their vendors.
+It's like. So, people need to address that, and people now expect a memory safety story from their vendors.
 
-471
+723
 00:45:49,240 --> 00:45:51,110
 Do I have the engineers available?
 
-472
+724
 00:45:51,110 --> 00:45:55,110
 And the most important thing is, do I have a project available?
 
-473
-00:45:55,110 --> 00:46:02,950
-So, in generally, I recommend a good starter for starting to use Rust is you have a good team that you trust,
+725
+00:45:55,110 --> 00:46:01,030
+So, in generally, I recommend a good starter for starting to use Rust is you have a good.
 
-474
-00:46:02,950 --> 00:46:14,190
-you have something that you have the requirements written down for and it's not necessarily super timing critical so that you can for example, it's a new technology say like okay, this was two wasted weeks.
+726
+00:46:01,030 --> 00:46:02,950
+team that you trust, you have something.
 
-475
-00:46:14,190 --> 00:46:16,150
-Let's It's not wasted.
+727
+00:46:02,950 --> 00:46:05,190
+that you have the requirements written down for.
 
-476
+728
+00:46:05,200 --> 00:46:09,950
+and it's not necessarily super timing critical so that you can for example,
+
+729
+00:46:09,960 --> 00:46:11,790
+it's a new technology say like.
+
+730
+00:46:11,790 --> 00:46:14,191
+okay, this was two wasted weeks. Let's.
+
+731
+00:46:14,191 --> 00:46:16,150
+It's not wasted.
+
+732
 00:46:16,150 --> 00:46:18,430
 You figured out you should do it differently.
 
-477
+733
 00:46:18,430 --> 00:46:20,470
 So it needs some breathing room.
 
-478
+734
 00:46:20,470 --> 00:46:22,190
 This is how we see Rust growing into organizations.
 
-479
-00:46:22,190 --> 00:46:30,070
-It's much more this you start with a very small project and then that is successful then you try something more then you try something more.
+735
+00:46:22,190 --> 00:46:26,510
+It's much more this you start with a very small project.
 
-480
-00:46:30,070 --> 00:46:39,710
-So it seems to be a process of basically learning having the time to learn the new thing while creating the system in production pretty much.
+736
+00:46:26,510 --> 00:46:30,070
+and then that is successful then you try something more then you try something more.
 
-481
-00:46:39,710 --> 00:46:51,671
-So having sufficient time when you say not time critical basically you don't want kind of hard deadlines potentially for something that if doesn't go well you lose and the company loses a lot of money or anything like that. And you have no alternative.
+737
+00:46:30,070 --> 00:46:34,910
+So it seems to be a process of basically learning having the time to learn the new thing.
 
-482
+738
+00:46:34,910 --> 00:46:39,710
+while creating the system in production pretty much.
+
+739
+00:46:39,710 --> 00:46:41,230
+So having sufficient time when you say not time critical.
+
+740
+00:46:41,230 --> 00:46:47,230
+basically you don't want kind of hard deadlines potentially for something that if doesn't go well you lose.
+
+741
+00:46:47,230 --> 00:46:51,671
+and the company loses a lot of money or anything like that. And you have no alternative.
+
+742
 00:46:51,671 --> 00:46:53,670
 And they have no alternative, yeah.
 
-483
-00:46:53,670 --> 00:47:00,510
-They are actually counterintuitively rewrites are actually good although people say never rewrite
+743
+00:46:53,670 --> 00:46:57,990
+They are actually counterintuitively rewrites are actually good.
 
-484
-00:47:00,510 --> 00:47:12,030
-because the good thing with rewriting a small component in Rust is if that thing fails or doesn't hit a ship date you can still use the C version that you have on the shelf for example.
+744
+00:46:57,990 --> 00:47:05,870
+although people say never rewrite because the good thing with rewriting a small component in Rust is if.
 
-485
-00:47:12,030 --> 00:47:24,390
-So the other thing we experience is there's a new generation of managers like I've also been a little bit into bringing Rust here making it popular into in Germany Ruby so not Rust both languages with RU.
+745
+00:47:05,870 --> 00:47:10,230
+that thing fails or doesn't hit a ship date you can still use the C version.
 
-486
-00:47:24,400 --> 00:47:32,750
-And I think that experience with the introduction and the growth of JavaScript Ruby that we had about well now two decades ago all of those people
+746
+00:47:10,230 --> 00:47:12,030
+that you have on the shelf for example.
 
-487
-00:47:32,760 --> 00:47:42,550
-who have been part of that are slowly now in management so it's a much more repeatable thing is programming like in this generation of programming languages what
+747
+00:47:12,030 --> 00:47:17,430
+So the other thing we experience is there's a new generation of managers like I've.
 
-488
-00:47:42,550 --> 00:47:49,430
-I experience is that managers are much more equipped for introducing fundamental technology than they were before which I think is a really really good thing.
+748
+00:47:17,430 --> 00:47:22,270
+also been a little bit into bringing Rust here making it popular into in Germany Ruby.
 
-489
+749
+00:47:22,270 --> 00:47:24,390
+so not Rust both languages with RU.
+
+750
+00:47:24,400 --> 00:47:27,550
+And I think that experience with the introduction.
+
+751
+00:47:27,550 --> 00:47:30,270
+and the growth of JavaScript Ruby that we had about.
+
+752
+00:47:30,270 --> 00:47:32,750
+well now two decades ago all of those people.
+
+753
+00:47:32,760 --> 00:47:37,110
+who have been part of that are slowly now in management.
+
+754
+00:47:37,110 --> 00:47:42,550
+so it's a much more repeatable thing is programming like in this generation of programming languages what I.
+
+755
+00:47:42,550 --> 00:47:44,390
+experience is that managers are much more equipped.
+
+756
+00:47:44,400 --> 00:47:49,430
+for introducing fundamental technology than they were before which I think is a really really good thing.
+
+757
 00:47:49,430 --> 00:47:56,070
 Because they themselves experienced these kind of changes in their own previous life as developers.
 
-490
-00:47:56,070 --> 00:48:02,630
-Yes and there's much more conversation about how this is a job and there's certain standards on how you can apply this.
+758
+00:47:56,070 --> 00:47:58,870
+Yes and there's much more conversation about how this is a job.
 
-491
-00:48:02,630 --> 00:48:08,630
-So, my biggest recommendation is don't start too big, start small, start maybe on a system that you already know.
+759
+00:47:58,880 --> 00:48:02,630
+and there's certain standards on how you can apply this.
 
-492
+760
+00:48:02,630 --> 00:48:05,190
+So, my biggest recommendation is don't start too big,
+
+761
+00:48:05,200 --> 00:48:08,630
+start small, start maybe on a system that you already know.
+
+762
 00:48:08,630 --> 00:48:16,071
 Don't switch your operating system right next to switching to a new programming language and things like that. So, keep it isolated.
 
-493
+763
 00:48:16,071 --> 00:48:20,550
 And you said also before that Rust has very good support for C libraries as well.
 
-494
-00:48:20,550 --> 00:48:30,230
-So, if they have their own libraries, frameworks, maybe with some important IP that the the company they can still use those from the Rust program.
+764
+00:48:20,550 --> 00:48:22,550
+So, if they have their own libraries,
 
-495
-00:48:30,230 --> 00:48:33,350
+765
+00:48:22,560 --> 00:48:30,231
+frameworks, maybe with some important IP that the the company they can still use those from the Rust. program.
+
+766
+00:48:30,231 --> 00:48:33,350
 Yeah, and that comes a little bit out of the history of Rust.
 
-496
-00:48:33,350 --> 00:48:41,470
-It was deployed in tools like, for example, Firefox or in applications where, for example, the binding generator that Mozilla has written,
+767
+00:48:33,350 --> 00:48:35,990
+It was deployed in tools like, for example,
 
-497
-00:48:41,470 --> 00:48:53,710
-which is still maintained by the Rust project called Rust bindgen, is still an extremely solid piece that where every basically every binding to a C library nowadays is mainly tool generated.
+768
+00:48:35,990 --> 00:48:41,470
+Firefox or in applications where, for example, the binding generator that Mozilla has written.
 
-498
+769
+00:48:41,470 --> 00:48:46,310
+which is still maintained by the Rust project called Rust bindgen, is still an extremely solid piece that.
+
+770
+00:48:46,320 --> 00:48:53,710
+where every basically every binding to a C library nowadays is mainly tool generated.
+
+771
 00:48:53,710 --> 00:48:56,230
 For C++, there's also quite a lot of tooling that exists.
 
-499
+772
 00:48:56,230 --> 00:49:01,310
 And also there's a C++ integration initiative that the Rust Foundation is running.
 
-500
+773
 00:49:01,320 --> 00:49:03,430
 And yeah, it exists.
 
-501
+774
 00:49:03,430 --> 00:49:05,590
 There's a whole service market existing around that.
 
-502
-00:49:05,590 --> 00:49:13,030
-Not just Ferrous, there's a lot of companies now outside that so we already have a mature service market where there's, for example,
+775
+00:49:05,590 --> 00:49:09,230
+Not just Ferrous, there's a lot of companies now outside.
 
-503
+776
+00:49:09,230 --> 00:49:13,030
+that so we already have a mature service market where there's, for example, already companies.
+
+777
 00:49:13,030 --> 00:49:18,710
-already companies that specialize in advice on how to do particularly these kinds of integrations.
+that specialize in advice on how to do particularly these kinds of integrations.
 
-504
-00:49:18,710 --> 00:49:30,270
-And if you have a solid C++ code base, again, if you're not in pain, like a rewrite of 1 million liner C++ plus into a new programming language, the programming language isn't the issue.
+778
+00:49:18,710 --> 00:49:21,390
+And if you have a solid C++ code base, again.
 
-505
+779
+00:49:21,390 --> 00:49:26,350
+if you're not in pain, like a rewrite of 1 million liner C++ plus into a new programming.
+
+780
+00:49:26,360 --> 00:49:30,270
+language, the programming language isn't the issue.
+
+781
 00:49:30,270 --> 00:49:32,430
 At least not the biggest issue.
 
-506
-00:49:32,430 --> 00:49:39,751
-It's like how much knowledge is in those 1 million lines of code that we have maybe lost or someone just can't write down. So, that's an issue.
+782
+00:49:32,430 --> 00:49:34,550
+It's like how much knowledge is in those 1 million lines of code.
 
-507
-00:49:39,760 --> 00:49:47,990
-Actually, does Rust allow for, say, incremental introduction in a system, say,
+783
+00:49:34,550 --> 00:49:39,751
+that we have maybe lost or someone just can't write down. So, that's an issue.
 
-508
-00:49:47,990 --> 00:49:56,431
-in a C or C++ system, say, we start the writing parts in Rust bit by bit and remove the C or C++ one piece at a time. That is actually done.
+784
+00:49:39,760 --> 00:49:45,430
+Actually, does Rust allow for, say, incremental introduction in a system,
 
-509
-00:49:56,440 --> 00:50:08,070
-There's a very good blog post series out there that the Gnome team has written how they incrementally moved their SVG implementation, so scalable vector graphics, into Rust.
+785
+00:49:45,440 --> 00:49:53,670
+say, in a C or C++ system, say, we start the writing parts in Rust bit by bit.
 
-510
+786
+00:49:53,670 --> 00:49:56,431
+and remove the C or C++ one piece at a time. That is actually done.
+
+787
+00:49:56,440 --> 00:50:00,310
+There's a very good blog post series out there.
+
+788
+00:50:00,310 --> 00:50:05,030
+that the Gnome team has written how they incrementally moved their SVG implementation,
+
+789
+00:50:05,030 --> 00:50:08,070
+so scalable vector graphics, into Rust.
+
+790
 00:50:08,070 --> 00:50:09,790
 And they've done it function by function.
 
-511
-00:50:09,790 --> 00:50:18,151
-So basically they used that facility that Rust can call into C and C can call into Rust transparently by literally doing that function by function. Okay.
+791
+00:50:09,790 --> 00:50:13,710
+So basically they used that facility that Rust can call into C.
 
-512
+792
+00:50:13,710 --> 00:50:18,151
+and C can call into Rust transparently by literally doing that function by function. Okay.
+
+793
 00:50:18,151 --> 00:50:22,870
 And how does this affect the qualification process or kind of for the system?
 
-513
-00:50:22,870 --> 00:50:30,190
-When you say we are writing these bits and parts in Rust for the C system, how does that affect the all For the certifications,
+794
+00:50:22,870 --> 00:50:27,950
+When you say we are writing these bits and parts in Rust for the C system,
 
-514
+795
+00:50:27,950 --> 00:50:30,190
+how does that affect the all.
+
+796
 00:50:30,190 --> 00:50:35,910
-I I would at least make sure that my library is either Rust or C.
+For the certifications, I I would at least make sure that my library is either Rust or C.
 
-515
+797
 00:50:35,910 --> 00:50:39,430
 It doesn't affect it a lot.
 
-516
+798
 00:50:39,430 --> 00:50:42,990
 Like mixed language systems in qualification are kind of normal.
 
-517
-00:50:43,000 --> 00:50:49,870
-It's just like Rust on top of a C-based kernel is kind of new, but you have all of the other languages.
+799
+00:50:43,000 --> 00:50:47,670
+It's just like Rust on top of a C-based kernel is kind of new,
 
-518
+800
+00:50:47,670 --> 00:50:49,870
+but you have all of the other languages.
+
+801
 00:50:49,870 --> 00:50:53,191
 We certify systems that do Java. So okay.
 
-519
-00:50:53,191 --> 00:51:00,310
-So it's feasible because it's already something that has been done with other languages anyway, and that is no reason for not doing it in Rust.
+802
+00:50:53,191 --> 00:50:58,670
+So it's feasible because it's already something that has been done with other languages anyway,
 
-520
+803
+00:50:58,670 --> 00:51:00,310
+and that is no reason for not doing it in Rust.
+
+804
 00:51:00,310 --> 00:51:03,550
 But you have this break where you need to talk about to your assessors.
 
-521
+805
 00:51:03,550 --> 00:51:08,110
 Like this is the way we get data over from C into Rust and from Rust into C.
 
-522
+806
 00:51:08,110 --> 00:51:10,470
 That will definitely be something that needs to be addressed.
 
-523
+807
 00:51:10,480 --> 00:51:14,230
 But it's it is a standard procedure that people have done before.
 
-524
-00:51:14,240 --> 00:51:23,631
-So it's not doesn't require any new invention of procedures No. or processes. No. Okay.
+808
+00:51:14,240 --> 00:51:19,071
+So it's not doesn't require any new invention of procedures. No.
 
-525
-00:51:23,631 --> 00:51:27,030
+809
+00:51:19,071 --> 00:51:23,632
+or processes. No. Okay.
+
+810
+00:51:23,632 --> 00:51:27,030
 And also, so you said, you know, giving people the time to learn Rust.
 
-526
-00:51:27,030 --> 00:51:31,950
-But an interesting aspect of what people say about Rust is that the learning curve can be quite steep.
+811
+00:51:27,030 --> 00:51:29,750
+But an interesting aspect of what people say about Rust is.
 
-527
+812
+00:51:29,750 --> 00:51:31,950
+that the learning curve can be quite steep.
+
+813
 00:51:31,960 --> 00:51:34,590
 Mhm.
 
-528
-00:51:34,590 --> 00:51:39,751
-So are there any trade-offs in terms of cost benefits here for learning the language and moving to it? Ooh.
+814
+00:51:34,590 --> 00:51:39,752
+So are there any trade-offs in terms of cost benefits here for learning the language. and moving to it? Ooh.
 
-529
-00:51:39,751 --> 00:51:42,510
+815
+00:51:39,752 --> 00:51:42,510
 I need to give a little bit of a longer answer to that.
 
-530
+816
 00:51:42,520 --> 00:51:47,310
 The learning curve of Rust used to be super steep for two reasons.
 
-531
+817
 00:51:47,320 --> 00:51:51,870
-These two concepts, ownership and borrowing,
+These two concepts, ownership and borrowing, were first of all very new,
 
-532
-00:51:51,870 --> 00:51:59,430
-were first of all very new, and that's a problem that persists today is you can't escape the two base concepts of Rust,
+818
+00:51:51,880 --> 00:51:59,430
+and that's a problem that persists today is you can't escape the two base concepts of Rust.
 
-533
-00:51:59,430 --> 00:52:06,270
-and there's no other language that has them, which means you need your 2 to 3 weeks to actually get at ease with them.
+819
+00:51:59,430 --> 00:52:01,950
+and there's no other language that has them,
 
-534
-00:52:06,270 --> 00:52:17,430
-What flattened that curve is first of all the Rust compiler was always known for its good diagnostics, but I can tell you I recently used Rust 1.0 just for fun for the 10 year anniversary we recently had.
+820
+00:52:01,950 --> 00:52:06,270
+which means you need your 2 to 3 weeks to actually get at ease with them.
 
-535
+821
+00:52:06,270 --> 00:52:12,310
+What flattened that curve is first of all the Rust compiler was always known for its good diagnostics,
+
+822
+00:52:12,310 --> 00:52:14,670
+but I can tell you I recently used Rust 1.0 just.
+
+823
+00:52:14,670 --> 00:52:17,430
+for fun for the 10 year anniversary we recently had.
+
+824
 00:52:17,440 --> 00:52:21,870
 I would not want to use the diagnostics of Rust 1.0.
 
-536
-00:52:21,870 --> 00:52:26,830
+825
+00:52:21,870 --> 00:52:26,831
 So, the diagnostics got way better, so the compiler tells people you should do it like this, this is broken.
 
-537
-00:52:26,840 --> 00:52:35,790
-So, that is the one thing. The second thing is Rust has very much a teaching culture, and second, because of these ideas becoming much more widespread,
+826
+00:52:26,840 --> 00:52:33,350
+So, that is the one thing. The second thing is Rust has very much a teaching culture,
 
-538
-00:52:35,800 --> 00:52:46,190
-that already lowers the curve because you have far more people around you with a relatively deep understanding of what the language does, and that's often under appreciated.
+827
+00:52:33,350 --> 00:52:37,470
+and second, because of these ideas becoming much more widespread, that already lowers the curve.
 
-539
-00:52:46,190 --> 00:52:52,950
-As someone I'm giving Rust training since 2015 and 2018, and I have to say my mental model around these things,
+828
+00:52:37,470 --> 00:52:43,430
+because you have far more people around you with a relatively deep understanding of what the language does,
 
-540
-00:52:52,950 --> 00:52:59,310
-together with all of the other trainers out there, is something we had to solidify for 3 years on how do we explain this?
+829
+00:52:43,430 --> 00:52:46,190
+and that's often under appreciated.
 
-541
-00:52:59,310 --> 00:53:05,350
-And just like the community that teaches Rust also getting better of like, okay, this is exactly how we teach and this is how we do it.
+830
+00:52:46,190 --> 00:52:49,110
+As someone I'm giving Rust training since 2015 and 2018.
 
-542
+831
+00:52:49,110 --> 00:52:52,950
+and I have to say my mental model around these things,
+
+832
+00:52:52,950 --> 00:52:57,670
+together with all of the other trainers out there, is something we had to solidify.
+
+833
+00:52:57,670 --> 00:52:59,310
+for 3 years on how do we explain this?
+
+834
+00:52:59,310 --> 00:53:03,510
+And just like the community that teaches Rust also getting better of like,
+
+835
+00:53:03,510 --> 00:53:05,350
+okay, this is exactly how we teach and this is how we do it.
+
+836
 00:53:05,360 --> 00:53:08,710
 This lowered that barrier.
 
-543
-00:53:08,710 --> 00:53:21,390
-So, nowadays, a lot of companies already have someone around who is actually at the level where they can competently explain and assess whether that's correct use of those language features, and all of that flattens that bit.
+837
+00:53:08,710 --> 00:53:13,430
+So, nowadays, a lot of companies already have someone around.
 
-544
-00:53:21,390 --> 00:53:27,870
-It's still, because of what I said, these two properties of the language hit you immediately, still means that bump is there.
+838
+00:53:13,430 --> 00:53:15,750
+who is actually at the level where they can competently explain.
 
-545
+839
+00:53:15,750 --> 00:53:21,390
+and assess whether that's correct use of those language features, and all of that flattens that bit.
+
+840
+00:53:21,390 --> 00:53:23,830
+It's still, because of what I said,
+
+841
+00:53:23,830 --> 00:53:27,870
+these two properties of the language hit you immediately, still means that bump is there.
+
+842
 00:53:27,870 --> 00:53:31,871
 It's very much in the beginning, and you need to get over it. Okay.
 
-546
+843
 00:53:31,871 --> 00:53:35,950
 But, if I am understanding correctly, years ago the learning curve was much steeper.
 
-547
-00:53:35,950 --> 00:53:45,030
-Now, because of maybe familiarity, more people using the language, better teaching methods, or learning have simplified this to an extent.
+844
+00:53:35,950 --> 00:53:42,390
+Now, because of maybe familiarity, more people using the language, better teaching methods,
 
-548
+845
+00:53:42,390 --> 00:53:45,030
+or learning have simplified this to an extent.
+
+846
 00:53:45,030 --> 00:53:47,911
 And better tooling. And better tooling as well.
 
-549
-00:53:47,920 --> 00:53:51,192
-Yeah. Yeah. Okay.
+847
+00:53:47,920 --> 00:53:51,193
+Yeah. Yeah. Okay. And.
 
-550
-00:53:51,192 --> 00:53:59,830
-And when somebody say some of these safety critical developers move from C to Rust, you know, it could be C, it could be C++, let's say from another language to Rust,
+848
+00:53:51,193 --> 00:53:55,950
+when somebody say some of these safety critical developers move from C to Rust,
 
-551
-00:53:59,830 --> 00:54:08,310
-how much of their technical expertise with the tools and things they had they have to just give up? Thanks for the question. Not a lot.
+849
+00:53:55,950 --> 00:53:57,510
+you know, it could be C, it could be C++.
 
-552
-00:54:08,320 --> 00:54:19,670
-The thing I observe in programming language teaching is there's also an amount where especially people who have been doing one programming language for their whole life
+850
+00:53:57,510 --> 00:53:59,830
+let's say from another language to Rust,
 
-553
-00:54:19,670 --> 00:54:29,790
-and maybe go from C to C++ like as their main language often conflate about their programming skill as just their programming language mentally.
+851
+00:53:59,830 --> 00:54:02,510
+how much of their technical expertise with the tools.
 
-554
-00:54:29,790 --> 00:54:42,350
-While in a lot of safety critical systems we will use very specific microcontrollers, very specific architectures, very specific ways on how to assemble a system, how two of these talk together. That stays all the same in Rust.
+852
+00:54:02,520 --> 00:54:08,310
+and things they had they have to just give up? Thanks for the question. Not a lot.
 
-555
+853
+00:54:08,320 --> 00:54:12,870
+The thing I observe in programming language teaching is there's.
+
+854
+00:54:12,870 --> 00:54:19,670
+also an amount where especially people who have been doing one programming language for their whole life.
+
+855
+00:54:19,670 --> 00:54:25,790
+and maybe go from C to C++ like as their main language often conflate about their programming skill.
+
+856
+00:54:25,800 --> 00:54:29,790
+as just their programming language mentally.
+
+857
+00:54:29,790 --> 00:54:34,310
+While in a lot of safety critical systems we will use very specific microcontrollers,
+
+858
+00:54:34,310 --> 00:54:38,470
+very specific architectures, very specific ways on how to assemble a system.
+
+859
+00:54:38,470 --> 00:54:42,350
+how two of these talk together. That stays all the same in Rust.
+
+860
 00:54:42,360 --> 00:54:45,910
 So, the language doesn't have a lot of impact there.
 
-556
-00:54:45,910 --> 00:54:52,430
-It is a different way on how we do the software development, but it's not on the program or by firmware level.
+861
+00:54:45,910 --> 00:54:47,430
+It is a different way on how we do the software development,
 
-557
+862
+00:54:47,430 --> 00:54:52,430
+but it's not on the program or by firmware level.
+
+863
 00:54:52,430 --> 00:54:54,590
 It is not a new thing on the the microcontroller is still the same.
 
-558
+864
 00:54:54,590 --> 00:55:00,470
 And lo and behold in one of our projects, just this Monday we found a hardware bug.
 
-559
+865
 00:55:00,470 --> 00:55:03,830
-You can throw as much Rust as you want on a hardware bug or as much C as you want on a hardware bug.
+You can throw as much Rust as you want on a hardware bug. or as much C as you want on a hardware bug.
 
-560
+866
 00:55:03,830 --> 00:55:05,551
 It stays a hardware bug. Yeah.
 
-561
-00:55:05,560 --> 00:55:17,110
-And if you are someone who has worked with hardware for a long time and looks at these things and says, "This is off." This is a skill you can immediately transfer over to to Rust as well.
+867
+00:55:05,560 --> 00:55:10,110
+And if you are someone who has worked with hardware for a long time.
 
-562
-00:55:17,120 --> 00:55:25,870
-basically apart from learning a new language, pretty much everything else or most of the rest of the technical knowledge expertise stays the same.
+868
+00:55:10,110 --> 00:55:12,910
+and looks at these things and says, "This is off."
 
-563
+869
+00:55:12,920 --> 00:55:17,110
+This is a skill you can immediately transfer over to to Rust as well.
+
+870
+00:55:17,120 --> 00:55:21,230
+basically apart from learning a new language,
+
+871
+00:55:21,230 --> 00:55:25,870
+pretty much everything else or most of the rest of the technical knowledge expertise stays the same.
+
+872
 00:55:25,870 --> 00:55:30,310
 So, there is no real loss of expertise there.
 
-564
+873
 00:55:30,310 --> 00:55:32,870
 It's more acquiring a new language than losing something.
 
-565
+874
 00:55:32,870 --> 00:55:35,231
 Am I correct? Exactly, exactly.
 
-566
+875
 00:55:35,231 --> 00:55:40,790
 And I would even put that up to about 60 to 70% of what an engineer can do.
 
-567
+876
 00:55:40,790 --> 00:55:42,870
 And coming back to that question about the introduction,
 
-568
-00:55:42,880 --> 00:55:56,550
-the engineers who are solid about those assessments are the best ones to introduce that new tool in your organization because what you want is an experienced engineer that tells you, "Okay, these 70% we haven't solved, but we got way better on the software side."
+877
+00:55:42,880 --> 00:55:48,150
+the engineers who are solid about those assessments are the best ones to introduce.
 
-569
+878
+00:55:48,150 --> 00:55:50,550
+that new tool in your organization.
+
+879
+00:55:50,550 --> 00:55:54,550
+because what you want is an experienced engineer that tells you, "Okay, these 70% we haven't solved,
+
+880
+00:55:54,550 --> 00:55:56,550
+but we got way better on the software side."
+
+881
 00:55:56,560 --> 00:56:00,630
 And depending how much of their work is like that may differ.
 
-570
+882
 00:56:00,630 --> 00:56:05,910
 We also have a lot of people that work mostly on the software side, so that calculation is a little bit different.
 
-571
+883
 00:56:05,920 --> 00:56:08,430
 Okay.
 
-572
+884
 00:56:08,430 --> 00:56:14,070
 And another question that is both maybe interesting for companies but also the developers themselves,
 
-573
+885
 00:56:14,070 --> 00:56:21,150
 you know, how big is the job market for Rust developers in this safety-critical domain?
 
-574
-00:56:21,150 --> 00:56:27,790
-Because I guess for a company is important because of course they want to have skills available if they need to hire people.
+886
+00:56:21,150 --> 00:56:23,270
+Because I guess for a company is important.
 
-575
-00:56:27,790 --> 00:56:32,350
-And for developers is important because they hear, "Well, you know, with C I find a lot of jobs. I really like Rust.
+887
+00:56:23,270 --> 00:56:29,150
+because of course they want to have skills available if they need to hire people. And for developers is important because they hear,
 
-576
-00:56:32,350 --> 00:56:39,671
-I want to move to Rust, but you know, if the market is not big enough, could be a problem to find a new job." It is growing and contracting.
+888
+00:56:29,150 --> 00:56:32,350
+"Well, you know, with C I find a lot of jobs. I really like Rust.
 
-577
-00:56:39,680 --> 00:56:48,150
-Like sometimes there's just a lot of people that want to start doing Rust nowadays, then some companies grab them up and so on so forth.
+889
+00:56:32,350 --> 00:56:34,870
+I want to move to Rust, but you know,
 
-578
-00:56:48,150 --> 00:56:56,470
-But in general, so the Rust market, first of all, it's a little bit hard to assess because it's a new market and there's not a lot of tracking.
+890
+00:56:34,870 --> 00:56:39,671
+if the market is not big enough, could be a problem to find a new job." It is growing and contracting.
 
-579
+891
+00:56:39,680 --> 00:56:44,750
+Like sometimes there's just a lot of people that want to start doing Rust nowadays,
+
+892
+00:56:44,750 --> 00:56:48,150
+then some companies grab them up and so on so forth.
+
+893
+00:56:48,150 --> 00:56:51,950
+But in general, so the Rust market, first of all, it's a little bit hard to assess.
+
+894
+00:56:51,950 --> 00:56:56,470
+because it's a new market and there's not a lot of tracking.
+
+895
 00:56:56,470 --> 00:57:00,430
 There's Rust jobs available at all major safety-critical companies nowadays.
 
-580
-00:57:00,430 --> 00:57:08,630
-I've seen them very often in the Q&amp;M departments, like just the quality management side, because that's usually where they start, but they haven't interested in moving in.
+896
+00:57:00,430 --> 00:57:04,590
+I've seen them very often in the Q&amp;M departments, like just the quality management side,
 
-581
-00:57:08,630 --> 00:57:17,630
-I've seen quite a few people actually leave their job taking a pay cut and going somewhere else just so that they could do Rust.
+897
+00:57:04,590 --> 00:57:08,630
+because that's usually where they start, but they haven't interested in moving in.
 
-582
-00:57:17,630 --> 00:57:25,910
-So it's also a thing that experienced engineers see that as their next career step, and that's a way you can snatch them up if you have a project to offer.
+898
+00:57:08,630 --> 00:57:13,430
+I've seen quite a few people actually leave their job taking a pay cut.
 
-583
+899
+00:57:13,430 --> 00:57:17,630
+and going somewhere else just so that they could do Rust.
+
+900
+00:57:17,630 --> 00:57:22,230
+So it's also a thing that experienced engineers see that as their next career step,
+
+901
+00:57:22,230 --> 00:57:24,230
+and that's a way you can snatch them up.
+
+902
+00:57:24,230 --> 00:57:25,910
+if you have a project to offer.
+
+903
 00:57:25,910 --> 00:57:28,310
 That's something that we've seen.
 
-584
-00:57:28,310 --> 00:57:36,870
-The biggest mistake that we've seen is actually in hiring is a quite trivial one is expecting too much Rust experience of potential hires.
+904
+00:57:28,310 --> 00:57:33,630
+The biggest mistake that we've seen is actually in hiring is a quite trivial one is expecting.
 
-585
-00:57:36,870 --> 00:57:47,750
-Because I know people in the Rust community who are extremely knowledgeable in the language, extremely knowledgeable in putting in of projects, but who have never worked Rust on a job because they are C++ developers somewhere.
+905
+00:57:33,630 --> 00:57:36,870
+too much Rust experience of potential hires.
 
-586
-00:57:47,760 --> 00:57:58,270
-Yeah, okay. And they often fall through screening because it says not 5 years of professional Rust experience, but they have 30 years of professional C++ programming experience.
+906
+00:57:36,870 --> 00:57:41,670
+Because I know people in the Rust community who are extremely knowledgeable in the language,
 
-587
+907
+00:57:41,670 --> 00:57:43,390
+extremely knowledgeable in putting in of projects, but.
+
+908
+00:57:43,390 --> 00:57:47,750
+who have never worked Rust on a job because they are C++ developers somewhere.
+
+909
+00:57:47,760 --> 00:57:54,470
+Yeah, okay. And they often fall through screening because it says not 5 years of professional Rust experience,
+
+910
+00:57:54,470 --> 00:57:58,270
+but they have 30 years of professional C++ programming experience.
+
+911
 00:57:58,280 --> 00:58:02,030
 this is one of the unfortunate things with all development jobs.
 
-588
-00:58:02,030 --> 00:58:11,470
-Often companies look for specific language stuff, when in fact experienced programmers can pick up the specific skills very, very quickly.
+912
+00:58:02,030 --> 00:58:07,470
+Often companies look for specific language stuff,
 
-589
-00:58:11,480 --> 00:58:18,990
-But the job market, I think, is mature and my indicators for a mature market is people move jobs.
+913
+00:58:07,470 --> 00:58:11,470
+when in fact experienced programmers can pick up the specific skills very, very quickly.
 
-590
+914
+00:58:11,480 --> 00:58:14,310
+But the job market, I think, is mature.
+
+915
+00:58:14,320 --> 00:58:18,990
+and my indicators for a mature market is people move jobs.
+
+916
 00:58:18,990 --> 00:58:21,310
 Like people move away from Rust jobs into Rust jobs.
 
-591
+917
 00:58:21,310 --> 00:58:25,150
 I think that's my most important indicator that's that's employee mobility.
 
-592
+918
 00:58:25,160 --> 00:58:28,070
 Yeah.
 
-593
+919
 00:58:28,070 --> 00:58:34,070
 There's specialized recruiters actually just doing Rust recruiting, which also speaks a little bit to maturity.
 
-594
-00:58:34,070 --> 00:58:41,590
-And most companies that I know that post their jobs at the right places report, "Yeah, we're finding about 10 to 20 good applicants."
+920
+00:58:34,070 --> 00:58:38,710
+And most companies that I know that post their jobs at the right places report,
 
-595
-00:58:41,590 --> 00:58:53,510
-The other thing is usually Rust jobs, and that's something that I hear from a lot of people that are hiring and also seeing in our own hiring data, is the medium level of quality of the people who actually apply is pretty high.
+921
+00:58:38,710 --> 00:58:41,590
+"Yeah, we're finding about 10 to 20 good applicants."
 
-596
-00:58:53,510 --> 00:59:00,831
-And who's complaining about I have 10 to 20 pretty good pre-screened candidates rather than I have 200 with Yeah. who would spot you.
+922
+00:58:41,590 --> 00:58:43,470
+The other thing is usually Rust jobs,
 
-597
-00:59:00,840 --> 00:59:11,272
-So actually, so if they they have to screen fewer candidates, but they have a better chance to actually hire someone because the average level is higher anyway. Yes. Okay.
+923
+00:58:43,470 --> 00:58:46,230
+and that's something that I hear from a lot of people that are hiring.
 
-598
+924
+00:58:46,230 --> 00:58:49,070
+and also seeing in our own hiring data,
+
+925
+00:58:49,070 --> 00:58:53,510
+is the medium level of quality of the people who actually apply is pretty high.
+
+926
+00:58:53,510 --> 00:58:57,870
+And who's complaining about I have 10 to 20 pretty good pre-screened candidates.
+
+927
+00:58:57,870 --> 00:59:00,832
+rather than I have 200 with. Yeah. who would spot you.
+
+928
+00:59:00,840 --> 00:59:04,430
+So actually, so if they they have to screen fewer candidates,
+
+929
+00:59:04,430 --> 00:59:11,272
+but they have a better chance to actually hire someone because the average level is higher anyway. Yes. Okay.
+
+930
 00:59:11,272 --> 00:59:12,990
 And so my last question is about the future.
 
-599
+931
 00:59:12,990 --> 00:59:18,430
 How do you envision the future of Rust in the safety-critical domain?
 
-600
+932
 00:59:18,440 --> 00:59:22,470
 Okay, I envision it pretty big.
 
-601
+933
 00:59:24,790 --> 00:59:26,870
 I honestly think Rust will become the next standard language for those areas.
 
-602
-00:59:26,880 --> 00:59:34,470
+934
+00:59:26,880 --> 00:59:34,471
 And the reason for that is memory safety will become a mandate in a lot of projects, and we're already seeing that.
 
-603
-00:59:34,480 --> 00:59:44,070
-We're seeing requests for quotations being handed around that say, "Do only implement in a memory safe programming language." So, that's the one thing.
+935
+00:59:34,480 --> 00:59:38,550
+We're seeing requests for quotations being handed around that say,
 
-604
-00:59:44,070 --> 00:59:50,870
-So, and we're seeing like the buying side is far more interested in you need to have a memory safety story.
+936
+00:59:38,550 --> 00:59:41,270
+"Do only implement in a memory safe programming language."
 
-605
-00:59:50,870 --> 00:59:58,510
-And we'll enter a space where, okay, I use a programming language where I need additional tooling, additional skilled engineers, and so on and so forth.
+937
+00:59:41,280 --> 00:59:44,070
+So, that's the one thing.
 
-606
+938
+00:59:44,070 --> 00:59:48,190
+So, and we're seeing like the buying side is far more interested in you need to have a.
+
+939
+00:59:48,190 --> 00:59:50,870
+memory safety story.
+
+940
+00:59:50,870 --> 00:59:52,830
+And we'll enter a space where, okay,
+
+941
+00:59:52,830 --> 00:59:56,350
+I use a programming language where I need additional tooling, additional skilled engineers,
+
+942
+00:59:56,360 --> 00:59:58,510
+and so on and so forth.
+
+943
 00:59:58,510 --> 01:00:01,351
 Or I could just take one that actually fits that bill right away. Yeah.
 
-607
+944
 01:00:01,360 --> 01:00:03,430
 That is the one thing.
 
-608
-01:00:03,430 --> 01:00:11,790
-The other thing I see though is there's a very good interchange between all of those languages, and C++ is still in the game, to be completely fair there.
+945
+01:00:03,430 --> 01:00:09,950
+The other thing I see though is there's a very good interchange between all of those languages,
 
-609
+946
+01:00:09,950 --> 01:00:11,790
+and C++ is still in the game, to be completely fair there.
+
+947
 01:00:11,800 --> 01:00:16,390
 And they say it's like competition is business.
 
-610
+948
 01:00:16,390 --> 01:00:18,470
 So, that also applies to programming languages.
 
-611
-01:00:18,470 --> 01:00:25,750
-So, it is very important that a Swift and C++ are around because that also makes sure that the Rust team is not lazy.
+949
+01:00:18,470 --> 01:00:20,950
+So, it is very important that a Swift.
 
-612
+950
+01:00:20,950 --> 01:00:25,750
+and C++ are around because that also makes sure that the Rust team is not lazy.
+
+951
 01:00:25,750 --> 01:00:30,270
 And I know, for example, we have very good relationship with the C++ committee.
 
-613
-01:00:30,280 --> 01:00:44,870
-Or some I wouldn't say like I I can't claim an official relationship with the C++ committee, but we've been talking for years about things, and I know everything that is done in the C++ side, they will also look at what Rust does, and we obviously look at what C++ does.
+952
+01:00:30,280 --> 01:00:36,990
+Or some. I wouldn't say like I I can't claim an official relationship with the C++ committee,
 
-614
-01:00:44,880 --> 01:00:55,870
-LLVM has just announced last week that they want to have a committee in which they do safety information on the clang compiler, and put that open source, very similar to how we do.
+953
+01:00:36,990 --> 01:00:42,510
+but we've been talking for years about things, and I know everything. that is done in the C++ side, they will also look at what Rust does,
 
-615
+954
+01:00:42,520 --> 01:00:44,870
+and we obviously look at what C++ does.
+
+955
+01:00:44,880 --> 01:00:48,630
+LLVM has just announced last week that they want to have a committee in.
+
+956
+01:00:48,630 --> 01:00:53,830
+which they do safety information on the clang compiler, and put.
+
+957
+01:00:53,830 --> 01:00:55,870
+that open source, very similar to how we do.
+
+958
 01:00:55,870 --> 01:00:59,150
 There is a good cross-pollination between the two sides.
 
-616
+959
 01:00:59,160 --> 01:01:02,870
 As they say in Germany, there's music in it.
 
-617
-01:01:02,880 --> 01:01:11,230
-And this is much more the space where I want to be, where people go and meet and say like, "Okay, we have three technologies here, and let's figure out how we make it better and better."
+960
+01:01:02,880 --> 01:01:06,750
+And this is much more the space where I want to be,
 
-618
-01:01:11,240 --> 01:01:19,551
-Sounds like a situation where there is a healthy competition in terms of trying to improve all these various languages and technologies. Yeah, exactly.
+961
+01:01:06,750 --> 01:01:11,230
+where people go and meet and say like, "Okay, we have three technologies here. and let's figure out how we make it better and better."
 
-619
+962
+01:01:11,240 --> 01:01:17,310
+Sounds like a situation where there is a healthy competition in terms of trying to improve all these.
+
+963
+01:01:17,310 --> 01:01:19,551
+various languages and technologies. Yeah, exactly.
+
+964
 01:01:19,551 --> 01:01:22,230
 And it's important.
 
-620
+965
 01:01:22,230 --> 01:01:28,350
 Like, we have literally millions and millions of lines of C and C++ code out there.
 
-621
+966
 01:01:28,350 --> 01:01:30,830
 It would be bad if we ended up saying, "Okay, this is done.
 
-622
-01:01:30,840 --> 01:01:43,390
-No one cares about this." Like we This is just structurally impossible, but it also means for a language like Rust going in and saying, "Okay, C is now how much from the '60s?"
+967
+01:01:30,840 --> 01:01:32,631
+No one cares about this." Like we.
 
-623
+968
+01:01:32,631 --> 01:01:40,470
+This is just structurally impossible, but it also means for a language like Rust going in and saying,
+
+969
+01:01:40,470 --> 01:01:43,390
+"Okay, C is now how much from the '60s?"
+
+970
 01:01:43,400 --> 01:01:47,830
 One of the oldest languages we still use in broad use.
 
-624
+971
 01:01:47,830 --> 01:01:50,470
 C++ is a little bit younger.
 
-625
-01:01:50,470 --> 01:01:59,670
-It would also be like as engineers we also need to say there's probably a lot of learning that we can take from all of these years and not recommit those mistakes and put that into a new product.
+972
+01:01:50,470 --> 01:01:52,070
+It would also be like as engineers we.
 
-626
+973
+01:01:52,070 --> 01:01:53,870
+also need to say there's probably a lot of learning.
+
+974
+01:01:53,870 --> 01:01:55,910
+that we can take from all of these years.
+
+975
+01:01:55,910 --> 01:01:59,670
+and not recommit those mistakes and put that into a new product.
+
+976
 01:01:59,670 --> 01:02:03,230
 And Rust is just to be clear, this is a debate that we very often have.
 
-627
+977
 01:02:03,230 --> 01:02:06,390
 Rust is an open source project that sees itself as a product.
 
-628
-01:02:06,400 --> 01:02:12,270
-So this is something that needs to go into the hands of users and needs to be designed with that mindset.
+978
+01:02:06,400 --> 01:02:09,750
+So this is something that needs to go into the hands of users.
 
-629
+979
+01:02:09,750 --> 01:02:12,270
+and needs to be designed with that mindset.
+
+980
 01:02:12,280 --> 01:02:16,830
 And I actually think it's one of the big factors in its success.
 
-630
-01:02:16,830 --> 01:02:22,030
-Like aside from all of the details, that mindset is of The most important thing is the user.
+981
+01:02:16,830 --> 01:02:19,830
+Like aside from all of the details, that mindset is of.
 
-631
-01:02:22,040 --> 01:02:28,270
-And this is something where we have quite a lot of good exchange and I think we're in a good space in terms of programming languages.
+982
+01:02:19,840 --> 01:02:22,030
+The most important thing is the user.
 
-632
+983
+01:02:22,040 --> 01:02:25,910
+And this is something where we have quite a lot of good exchange.
+
+984
+01:02:25,910 --> 01:02:28,270
+and I think we're in a good space in terms of programming languages.
+
+985
 01:02:28,270 --> 01:02:32,110
 If you love programming languages, we're in a great space.
 
-633
+986
 01:02:32,120 --> 01:02:34,111
 Okay. Thanks, Florian.
 
-634
+987
 01:02:34,111 --> 01:02:36,230
 So now we have come close to the end of the episode.
 
-635
+988
 01:02:36,230 --> 01:02:41,390
 Is there anything that we missed that you'd like to add?
 
-636
+989
 01:02:41,390 --> 01:02:43,990
 No, I think we talked about how all programming languages are great in the end.
 
-637
+990
 01:02:43,990 --> 01:02:47,350
 I think that's a good ending.
 
-638
+991
 01:02:49,710 --> 01:02:51,590
 Okay. So thank you, Florian, for coming to the show.
 
-639
+992
 01:02:51,590 --> 01:02:55,350
 It's been a real pleasure and this is Giovanni Asproni for Software Engineering Radio.
 
-640
+993
 01:02:55,350 --> 01:02:56,870
 Thank you for listening.
 
-641
+994
 01:02:56,870 --> 01:02:59,030
 Yeah, thank you and goodbye.
 
-642
+995
 01:02:59,040 --> 01:03:04,430
 Thanks for listening to SE Radio, an educational program brought to you by IEEE Software Magazine.
 
-643
+996
 01:03:04,430 --> 01:03:09,990
 For more about the podcast, including other episodes, visit our website at SE-Radio.net.
 
-644
-01:03:10,000 --> 01:03:20,710
-To provide feedback, you can comment on each episode on the website or reach us on LinkedIn, Facebook, Twitter, or through our Slack channel at SE Radio slack.com.
+997
+01:03:10,000 --> 01:03:16,150
+To provide feedback, you can comment on each episode on the website or reach us on LinkedIn,
 
-645
+998
+01:03:16,150 --> 01:03:20,710
+Facebook, Twitter, or through our Slack channel at SE Radio slack.com.
+
+999
 01:03:20,720 --> 01:03:25,190
 You can also email us at team@se-radio.net.
 
-646
+1000
 01:03:27,150 --> 01:03:30,670
 This and all other episodes of SE Radio is licensed under Creative Commons License 2.5.
 
-647
+1001
 01:03:30,680 --> 01:03:33,520
 Thanks for listening.
