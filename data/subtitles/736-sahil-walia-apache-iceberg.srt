@@ -1,5231 +1,2275 @@
 1
-00:00:02,750 --> 00:00:02,760
-This is Software Engineering Radio, the
+00:00:02,750 --> 00:00:07,790
+This is Software Engineering Radio, the podcast for professional developers on the web at se-radio.net.
 
 2
-00:00:02,760 --> 00:00:04,790
-podcast for professional developers on
+00:00:07,800 --> 00:00:16,365
+SE Radio is brought to you by the IEEE Computer Society and by IEEE Software Magazine online at computer.org/software.
 
 3
-00:00:04,800 --> 00:00:07,790
-the web at se-radio.net.
-
-4
-00:00:07,800 --> 00:00:09,670
-SE Radio is brought to you by the IEEE
-
-5
-00:00:09,680 --> 00:00:11,830
-Computer Society and by IEEE Software
-
-6
-00:00:11,840 --> 00:00:13,590
-Magazine online at
-
-7
-00:00:13,600 --> 00:00:16,365
-computer.org/software.
-
-8
 00:00:16,375 --> 00:00:19,550
 [music]
 
+4
+00:00:21,110 --> 00:00:22,710
+Are you a tech-savvy developer with an inquisitive mind?
+
+5
+00:00:22,720 --> 00:00:28,390
+SE Radio has an opening for a new volunteer host to join the team and produce five episodes per year.
+
+6
+00:00:28,400 --> 00:00:35,790
+To apply, please follow the instructions on our website at se-radio.net/contact.
+
+7
+00:00:38,830 --> 00:00:40,470
+For Software Engineering Radio, this is Robert Blumen.
+
+8
+00:00:40,480 --> 00:00:44,030
+I have with me today Sahil Walia.
+
 9
-00:00:21,110 --> 00:00:21,120
-Are you a tech-savvy developer with an
+00:00:44,030 --> 00:00:53,630
+Sahil is a senior technical architect at Snowflake and he has published many papers on data engineering and artificial intelligence.
 
 10
-00:00:21,120 --> 00:00:22,710
-inquisitive mind?
+00:00:53,630 --> 00:00:58,230
+Today, Sahil and I will be talking about Apache Iceberg.
 
 11
-00:00:22,720 --> 00:00:24,310
-SE Radio has an opening for a new
+00:00:58,230 --> 00:00:59,830
+Sahil, welcome to Software Engineering Radio.
 
 12
-00:00:24,320 --> 00:00:25,990
-volunteer host to join the team and
+00:00:59,840 --> 00:01:02,390
+Thanks for having me, Robert. Excited to be here.
 
 13
-00:00:26,000 --> 00:00:28,390
-produce five episodes per year.
+00:01:02,400 --> 00:01:08,150
+So, anything else you'd like to say to listeners about your background before we get into the topic?
 
 14
-00:00:28,400 --> 00:00:30,150
-To apply, please follow the instructions
+00:01:08,160 --> 00:01:09,910
+Absolutely.
 
 15
-00:00:30,160 --> 00:00:35,790
-on our website at se-radio.net/contact.
+00:01:09,910 --> 00:01:11,790
+Thank you first of all for the opportunity, Robert.
 
 16
-00:00:38,830 --> 00:00:38,840
-For Software Engineering Radio, this is
+00:01:11,790 --> 00:01:13,950
+I am Sahil Walia.
 
 17
-00:00:38,840 --> 00:00:40,470
-Robert Blumen.
+00:01:13,950 --> 00:01:15,910
+I'm a senior technical architect working with Snowflake.
 
 18
-00:00:40,480 --> 00:00:44,030
-I have with me today Sahil Walia. Sahil
+00:01:15,910 --> 00:01:23,110
+I specialize in data engineering workloads and specifically open lakehouse architectures.
 
 19
-00:00:44,040 --> 00:00:46,430
-is a senior technical architect at
+00:01:23,110 --> 00:01:34,630
+I try to migrate customers outside of their old architectures into the contemporary new architectures like lakehouses, Iceberg, and make sure it's interoperable for other environments.
 
 20
-00:00:46,440 --> 00:00:49,310
-Snowflake and he has published many
+00:01:34,640 --> 00:01:41,430
+Sahil, you just threw out a bunch of buzzwords that sound very relevant to the topic today, Apache Iceberg.
 
 21
-00:00:49,320 --> 00:00:51,110
-papers on data engineering and
+00:01:41,430 --> 00:01:46,230
+I will be getting into defining what all of those mean.
 
 22
-00:00:51,120 --> 00:00:53,630
-artificial intelligence. Today, Sahil
+00:01:46,230 --> 00:01:49,510
+Let's start out with a background question.
 
 23
-00:00:53,640 --> 00:00:55,710
-and I will be talking about Apache
+00:01:49,510 --> 00:01:54,790
+You can run these OLAP workloads less efficiently on a general-purpose database.
 
 24
-00:00:55,720 --> 00:00:58,230
-Iceberg. Sahil, welcome to Software
+00:01:54,790 --> 00:02:01,470
+What is the cutover point where you want to switch to a specialized OLAP for your workload.
 
 25
-00:00:58,240 --> 00:00:59,830
-Engineering Radio.
+00:02:01,480 --> 00:02:03,710
+Absolutely.
 
 26
-00:00:59,840 --> 00:01:01,590
-Thanks for having me, Robert. Excited to
+00:02:03,710 --> 00:02:11,390
+For the audience who's not familiar, OLTP is essentially transactional, OLAP is essentially analytical.
 
 27
-00:01:01,600 --> 00:01:02,390
-be here.
+00:02:11,390 --> 00:02:15,390
+And there's no certain benchmark I would put, but there are certain criteria as I would look for.
 
 28
-00:01:02,400 --> 00:01:04,350
-So, anything else you'd like to say to
+00:02:15,400 --> 00:02:25,830
+So, one of the examples I would look for is when you're looking for latency budget of milliseconds, you want to stay in OLTP world.
 
 29
-00:01:04,360 --> 00:01:06,030
-listeners about your background before
+00:02:25,830 --> 00:02:31,430
+But when your latency budget is in about seconds and minutes and your audience is mostly analytical,
 
 30
-00:01:06,040 --> 00:01:08,150
-we get into the topic?
+00:02:31,440 --> 00:02:39,790
+training the ML workloads on data and it's not dependent on transactional data, I would move towards the OLAP.
 
 31
-00:01:08,160 --> 00:01:09,910
-Absolutely. Thank you first of all for
+00:02:39,800 --> 00:02:47,830
+Another thing that I look for is where you have read heavy aggregations and you have wide tables.
 
 32
-00:01:09,920 --> 00:01:11,790
-the opportunity, Robert. I am Sahil
+00:02:47,830 --> 00:02:52,390
+Those are essentially a few of the good candidates where an OLAP would make more sense.
 
 33
-00:01:11,800 --> 00:01:13,950
-Walia. I'm a senior technical architect
+00:02:52,390 --> 00:03:02,430
+But if you need primary key enforcements and for example, you want to do frequent single row rights, in that scenario I would maintain the OLTP.
 
 34
-00:01:13,960 --> 00:01:15,910
-working with Snowflake. I specialize in
+00:03:02,440 --> 00:03:09,470
+We're talking about workloads with latency budget of many seconds to minutes.
 
 35
-00:01:15,920 --> 00:01:17,510
-data engineering workloads and
+00:03:09,470 --> 00:03:12,390
+What are the size of data sets that require that amount of time?
 
 36
-00:01:17,520 --> 00:01:20,030
-specifically open lakehouse
+00:03:12,400 --> 00:03:13,910
+Sure.
 
 37
-00:01:20,040 --> 00:01:23,110
-architectures. I try to migrate
+00:03:13,910 --> 00:03:19,791
+If I understand your question right, Robert, you're asking at what latency we should be thinking about moving towards the OLAP. Is that right?
 
 38
-00:01:23,120 --> 00:01:25,470
-customers outside of their old
+00:03:19,800 --> 00:03:30,190
+No, I'm saying if you have a workload that you're willing to wait for several minutes, you must be dealing with a very large amount of data. How big is that data set?
 
 39
-00:01:25,480 --> 00:01:27,710
-architectures into the contemporary new
+00:03:30,200 --> 00:03:35,310
+Oh, that can start from anywhere about gigabytes to terabytes and petabytes.
 
 40
-00:01:27,720 --> 00:01:30,470
-architectures like lakehouses, Iceberg,
+00:03:35,320 --> 00:03:42,270
+Iceberg, which the topic we are going to talk about, essentially can handle petabytes of data.
 
 41
-00:01:30,480 --> 00:01:32,990
-and make sure it's interoperable for
+00:03:42,270 --> 00:03:49,670
+And Netflix, who are the where the creators created Iceberg, they actually benchmarked on petabytes of data.
 
 42
-00:01:33,000 --> 00:01:34,630
-other environments.
+00:03:49,670 --> 00:03:54,710
+Think of petabytes as about, I would say, 220 million songs. So, that's a big data set.
 
 43
-00:01:34,640 --> 00:01:36,350
-Sahil, you just threw out a bunch of
+00:03:54,720 --> 00:03:59,230
+What are some other domains where you have data sets of that size?
 
 44
-00:01:36,360 --> 00:01:38,710
-buzzwords that sound very relevant to
+00:03:59,240 --> 00:04:09,430
+Banking is one of them, healthcare is one of them, and then clickstream data, essentially meaning how you're clicking on the app or interface, and then healthcare is another one of them.
 
 45
-00:01:38,720 --> 00:01:41,430
-the topic today, Apache Iceberg. I will
+00:04:09,440 --> 00:04:18,670
+Let's now talk about some of the terms that will enable us to have a conversation about iceberg.
 
 46
-00:01:41,440 --> 00:01:43,470
-be getting into defining what all of
+00:04:18,670 --> 00:04:24,630
+Data lake and in recent years I'm hearing about data lake houses. Explain what those are.
 
 47
-00:01:43,480 --> 00:01:46,230
-those mean. Let's start out with a
+00:04:24,640 --> 00:04:26,950
+Sure.
 
 48
-00:01:46,240 --> 00:01:49,510
-background question. You can run these
+00:04:26,950 --> 00:04:31,110
+The way I would think from data lake and data lake houses to take a step back first to a data warehouse.
 
 49
-00:01:49,520 --> 00:01:52,270
-OLAP workloads less efficiently on a
+00:04:31,110 --> 00:04:36,070
+So, essentially data warehouse is anything which manages your analytical workloads.
 
 50
-00:01:52,280 --> 00:01:54,790
-general-purpose database. What is the
+00:04:36,080 --> 00:04:43,510
+They were essentially meant to be very structured schema on right kind of thing and optimized for BI.
 
 51
-00:01:54,800 --> 00:01:57,710
-cutover point where you want to switch
+00:04:43,510 --> 00:04:49,310
+And then later came a world of data lake with a cloud world wherein you had S3,
 
 52
-00:01:57,720 --> 00:02:00,190
-to a specialized OLAP
+00:04:49,310 --> 00:04:56,710
+ADLS, what you could do with this you could manage your raw files into a cloud bucket, dumped into a cheap storage.
 
 53
-00:02:00,200 --> 00:02:01,470
-for your workload.
+00:04:56,710 --> 00:05:03,630
+But, the challenge that the teams were dealing with was it was essentially creating a data dump, right?
 
 54
-00:02:01,480 --> 00:02:03,710
-Absolutely. For the audience who's not
+00:05:03,630 --> 00:05:13,870
+And data swamp, and they were not able to manage it, there was no structure that the teams were used to, and the schema on right behaviors the team were used to in the data warehouse world.
 
 55
-00:02:03,720 --> 00:02:06,070
-familiar, OLTP is essentially
+00:05:13,870 --> 00:05:18,350
+So, then essentially the challenge came and we're like, how can we get benefits of the both world?
 
 56
-00:02:06,080 --> 00:02:08,510
-transactional, OLAP is essentially
+00:05:18,350 --> 00:05:20,630
+And that's where data lakehouse come in.
 
 57
-00:02:08,520 --> 00:02:11,390
-analytical. And there's no certain
+00:05:20,630 --> 00:05:27,070
+So, the analogy I usually use is that a data warehouse is like a filing cabinet,
 
 58
-00:02:11,400 --> 00:02:13,110
-benchmark I would put, but there are
+00:05:27,080 --> 00:05:40,870
+while a data lake is kind of a U-Haul storage, and you can put that U-Haul storage, and within that U-Haul storage I can you can put a data warehouse, which is a filing cabinet, and you can manage it properly.
 
 59
-00:02:13,120 --> 00:02:15,390
-certain criteria as I would look for.
+00:05:40,870 --> 00:05:49,550
+So, you have the lakehouse storage, which is cheaper, but you have warehouse-like a structure and warehouse-like transactions.
 
 60
-00:02:15,400 --> 00:02:17,670
-So, one of the examples I would look for
+00:05:49,550 --> 00:05:52,150
+So, data should be easily accessible.
 
 61
-00:02:17,680 --> 00:02:20,910
-is when you're looking for latency
+00:05:52,150 --> 00:05:54,390
+You have guarantees associated to it.
 
 62
-00:02:20,920 --> 00:02:22,870
-budget of milliseconds, you want to stay
+00:05:54,390 --> 00:05:57,950
+Let's say business is running on it, and it provides you a lot more clarity.
 
 63
-00:02:22,880 --> 00:02:25,830
-in OLTP world. But when your latency
+00:05:57,950 --> 00:05:59,550
+Happy to double-click here, Robert.
 
 64
-00:02:25,840 --> 00:02:28,030
-budget is in about seconds and minutes
-
-65
-00:02:28,040 --> 00:02:31,430
-and your audience is mostly analytical,
-
-66
-00:02:31,440 --> 00:02:33,710
-training the ML workloads on data and
-
-67
-00:02:33,720 --> 00:02:36,870
-it's not dependent on transactional
-
-68
-00:02:36,880 --> 00:02:39,790
-data, I would move towards the OLAP.
-
-69
-00:02:39,800 --> 00:02:42,630
-Another thing that I look for is where
-
-70
-00:02:42,640 --> 00:02:44,949
-you have read heavy aggregations and you
-
-71
-00:02:44,959 --> 00:02:47,830
-have wide tables. Those are essentially
-
-72
-00:02:47,840 --> 00:02:49,949
-a few of the good candidates where an
-
-73
-00:02:49,959 --> 00:02:52,390
-OLAP would make more sense. But if you
-
-74
-00:02:52,400 --> 00:02:55,310
-need primary key enforcements and for
-
-75
-00:02:55,320 --> 00:02:58,190
-example, you want to do frequent single
-
-76
-00:02:58,200 --> 00:03:00,350
-row rights, in that scenario I would
-
-77
-00:03:00,360 --> 00:03:02,430
-maintain the OLTP.
-
-78
-00:03:02,440 --> 00:03:04,310
-We're talking about workloads with
-
-79
-00:03:04,320 --> 00:03:06,790
-latency budget of many seconds to
-
-80
-00:03:06,800 --> 00:03:09,470
-minutes. What are the size of data sets
-
-81
-00:03:09,480 --> 00:03:12,390
-that require that amount of time?
-
-82
-00:03:12,400 --> 00:03:13,910
-Sure. If I understand your question
-
-83
-00:03:13,920 --> 00:03:15,750
-right, Robert, you're asking at what
-
-84
-00:03:15,760 --> 00:03:17,830
-latency we should be thinking about
-
-85
-00:03:17,840 --> 00:03:19,790
-moving towards the OLAP. Is that right?
-
-86
-00:03:19,800 --> 00:03:22,310
-No, I'm saying if you have a workload
-
-87
-00:03:22,320 --> 00:03:24,550
-that you're willing to wait for several
-
-88
-00:03:24,560 --> 00:03:27,350
-minutes, you must be dealing with a very
-
-89
-00:03:27,360 --> 00:03:29,229
-large amount of data. How big is that
-
-90
-00:03:29,239 --> 00:03:30,190
-data set?
-
-91
-00:03:30,200 --> 00:03:33,030
-Oh, that can start from anywhere about
-
-92
-00:03:33,040 --> 00:03:35,310
-gigabytes to terabytes and petabytes.
-
-93
-00:03:35,320 --> 00:03:37,390
-Iceberg, which the topic we are going to
-
-94
-00:03:37,400 --> 00:03:39,509
-talk about, essentially can handle
-
-95
-00:03:39,519 --> 00:03:42,270
-petabytes of data. And Netflix, who are
-
-96
-00:03:42,280 --> 00:03:44,750
-the where the creators created Iceberg,
-
-97
-00:03:44,760 --> 00:03:46,710
-they actually benchmarked on petabytes
-
-98
-00:03:46,720 --> 00:03:49,670
-of data. Think of petabytes as about, I
-
-99
-00:03:49,680 --> 00:03:53,550
-would say, 220 million songs. So, that's
-
-100
-00:03:53,560 --> 00:03:54,710
-a big data set.
-
-101
-00:03:54,720 --> 00:03:56,550
-What are some other domains where you
-
-102
-00:03:56,560 --> 00:03:59,230
-have data sets of that size?
-
-103
-00:03:59,240 --> 00:04:01,110
-Banking is one of them, healthcare is
-
-104
-00:04:01,120 --> 00:04:03,470
-one of them, and then clickstream data,
-
-105
-00:04:03,480 --> 00:04:04,990
-essentially meaning how you're clicking
-
-106
-00:04:05,000 --> 00:04:07,430
-on the app or interface, and then
-
-107
-00:04:07,440 --> 00:04:09,430
-healthcare is another one of them.
-
-108
-00:04:09,440 --> 00:04:12,670
-Let's now talk about some of the terms
-
-109
-00:04:12,680 --> 00:04:14,790
-that will enable us to have a
-
-110
-00:04:14,800 --> 00:04:18,670
-conversation about iceberg. Data lake
-
-111
-00:04:18,680 --> 00:04:20,910
-and in recent years I'm hearing about
-
-112
-00:04:20,920 --> 00:04:23,830
-data lake houses. Explain what those
-
-113
-00:04:23,840 --> 00:04:24,630
-are.
-
-114
-00:04:24,640 --> 00:04:26,950
-Sure. The way I would think from data
-
-115
-00:04:26,960 --> 00:04:28,909
-lake and data lake houses to take a step
-
-116
-00:04:28,919 --> 00:04:31,110
-back first to a data warehouse. So,
-
-117
-00:04:31,120 --> 00:04:33,150
-essentially data warehouse is anything
-
-118
-00:04:33,160 --> 00:04:36,070
-which manages your analytical workloads.
-
-119
-00:04:36,080 --> 00:04:38,030
-They were essentially meant to be very
-
-120
-00:04:38,040 --> 00:04:40,350
-structured schema on right kind of thing
-
-121
-00:04:40,360 --> 00:04:43,510
-and optimized for BI. And then later
-
-122
-00:04:43,520 --> 00:04:45,790
-came a world of data lake with a cloud
-
-123
-00:04:45,800 --> 00:04:49,310
-world wherein you had S3, ADLS, what you
-
-124
-00:04:49,320 --> 00:04:51,150
-could do with this you could manage your
-
-125
-00:04:51,160 --> 00:04:53,950
-raw files into a cloud bucket, dumped
-
-126
-00:04:53,960 --> 00:04:56,710
-into a cheap storage. But, the challenge
-
-127
-00:04:56,720 --> 00:04:58,830
-that the teams were dealing with was it
-
-128
-00:04:58,840 --> 00:05:01,310
-was essentially creating a data dump,
-
-129
-00:05:01,320 --> 00:05:03,630
-right? And data swamp, and they were not
-
-130
-00:05:03,640 --> 00:05:05,030
-able to manage it, there was no
-
-131
-00:05:05,040 --> 00:05:07,950
-structure that the teams were used to,
-
-132
-00:05:07,960 --> 00:05:09,670
-and the schema on right behaviors the
-
-133
-00:05:09,680 --> 00:05:11,830
-team were used to in the data warehouse
-
-134
-00:05:11,840 --> 00:05:13,870
-world. So, then essentially the
-
-135
-00:05:13,880 --> 00:05:15,590
-challenge came and we're like, how can
-
-136
-00:05:15,600 --> 00:05:18,350
-we get benefits of the both world? And
-
-137
-00:05:18,360 --> 00:05:20,630
-that's where data lakehouse come in. So,
-
-138
-00:05:20,640 --> 00:05:24,150
-the analogy I usually use is that a data
-
-139
-00:05:24,160 --> 00:05:27,070
-warehouse is like a filing cabinet,
-
-140
-00:05:27,080 --> 00:05:30,430
-while a data lake is kind of a U-Haul
-
-141
-00:05:30,440 --> 00:05:32,750
-storage, and you can put that U-Haul
-
-142
-00:05:32,760 --> 00:05:34,870
-storage, and within that U-Haul storage
-
-143
-00:05:34,880 --> 00:05:36,590
-I can you can put a data warehouse,
-
-144
-00:05:36,600 --> 00:05:38,670
-which is a filing cabinet, and you can
-
-145
-00:05:38,680 --> 00:05:40,870
-manage it properly. So, you have the
-
-146
-00:05:40,880 --> 00:05:44,070
-lakehouse storage, which is cheaper, but
-
-147
-00:05:44,080 --> 00:05:47,030
-you have warehouse-like a structure and
-
-148
-00:05:47,040 --> 00:05:49,550
-warehouse-like transactions. So, data
-
-149
-00:05:49,560 --> 00:05:52,150
-should be easily accessible. You have
-
-150
-00:05:52,160 --> 00:05:54,390
-guarantees associated to it. Let's say
-
-151
-00:05:54,400 --> 00:05:55,950
-business is running on it, and it
-
-152
-00:05:55,960 --> 00:05:57,950
-provides you a lot more clarity. Happy
-
-153
-00:05:57,960 --> 00:05:59,550
-to double-click here, Robert.
-
-154
 00:05:59,560 --> 00:06:01,110
 Yeah, I want to go to that a little bit.
 
-155
-00:06:01,120 --> 00:06:03,390
-So, what I understood is the data
+65
+00:06:01,120 --> 00:06:12,630
+So, what I understood is the data warehouse you're talking about a schema that has invariants where it's much easier to extract data from it because
 
-156
-00:06:03,400 --> 00:06:06,830
-warehouse you're talking about a schema
+66
+00:06:12,640 --> 00:06:16,790
+you know how the data is aligned or the data types are.
 
-157
-00:06:06,840 --> 00:06:09,750
-that has invariants where it's much
+67
+00:06:16,790 --> 00:06:29,750
+You go to the other extreme what you're calling a swamp, which doesn't sound like a great living space where data might not have been regularized, cleaned, normalized, therefore much harder to query. Is that roughly what you said?
 
-158
-00:06:09,760 --> 00:06:12,630
-easier to extract data from it because
+68
+00:06:29,760 --> 00:06:31,511
+That's correct. Absolutely right.
 
-159
-00:06:12,640 --> 00:06:15,150
-you know how the data is aligned or the
+69
+00:06:31,511 --> 00:06:35,230
+And data warehouses were essentially curated, right?
 
-160
-00:06:15,160 --> 00:06:16,790
-data types are. You go to the other
+70
+00:06:35,230 --> 00:06:39,190
+So, there had to be a use case, and you'll create a data warehouse.
 
-161
-00:06:16,800 --> 00:06:18,390
-extreme what you're calling a swamp,
+71
+00:06:39,190 --> 00:06:41,390
+But data lakes weren't curated for a reason.
 
-162
-00:06:18,400 --> 00:06:20,590
-which doesn't sound like a great living
+72
+00:06:41,390 --> 00:06:45,231
+And what was essentially happening is it was a append-only. You were putting files.
 
-163
-00:06:20,600 --> 00:06:23,710
-space where data might not have been
+73
+00:06:45,231 --> 00:06:51,270
+The great thing was you could put any sort of files and those kind of things, and you will manage them at the read time.
 
-164
-00:06:23,720 --> 00:06:25,390
-regularized, cleaned, normalized,
+74
+00:06:51,280 --> 00:06:56,070
+But when you're managing at the read time, it created a lot more of burden.
 
-165
-00:06:25,400 --> 00:06:28,750
-therefore much harder to query. Is that
-
-166
-00:06:28,760 --> 00:06:29,750
-roughly what you said?
-
-167
-00:06:29,760 --> 00:06:31,510
-That's correct. Absolutely right. And
-
-168
-00:06:31,520 --> 00:06:33,150
-data warehouses were essentially
-
-169
-00:06:33,160 --> 00:06:35,230
-curated, right? So, there had to be a
-
-170
-00:06:35,240 --> 00:06:36,670
-use case, and you'll create a data
-
-171
-00:06:36,680 --> 00:06:39,190
-warehouse. But data lakes weren't
-
-172
-00:06:39,200 --> 00:06:41,390
-curated for a reason. And what was
-
-173
-00:06:41,400 --> 00:06:42,909
-essentially happening is it was a
-
-174
-00:06:42,919 --> 00:06:45,230
-append-only. You were putting files. The
-
-175
-00:06:45,240 --> 00:06:47,470
-great thing was you could put any sort
-
-176
-00:06:47,480 --> 00:06:48,950
-of files and those kind of things, and
-
-177
-00:06:48,960 --> 00:06:51,270
-you will manage them at the read time.
-
-178
-00:06:51,280 --> 00:06:52,870
-But when you're managing at the read
-
-179
-00:06:52,880 --> 00:06:56,070
-time, it created a lot more of burden.
-
-180
+75
 00:06:56,080 --> 00:06:58,790
 So, let's go back with the same analogy.
 
-181
-00:06:58,800 --> 00:07:02,030
-Say you have put your winter coat in
-
-182
-00:07:02,040 --> 00:07:04,790
-that giant storage locker, but now you
-
-183
-00:07:04,800 --> 00:07:07,550
-need to find it. And in order for it to
-
-184
-00:07:07,560 --> 00:07:11,110
-serve you, it just takes so much time.
-
-185
-00:07:11,120 --> 00:07:13,510
-So, the point I want to explore here
-
-186
-00:07:13,520 --> 00:07:15,870
-about these data formats versus the
-
-187
-00:07:15,880 --> 00:07:19,590
-processing. If I think about Postgres,
-
-188
-00:07:19,600 --> 00:07:21,710
-it can be in most people it is a black
-
-189
-00:07:21,720 --> 00:07:24,070
-box. There's an engine, and it sits on
-
-190
-00:07:24,080 --> 00:07:27,190
-top of some kind of file format. I don't
-
-191
-00:07:27,200 --> 00:07:28,670
-have to know what that file format is in
-
-192
-00:07:28,680 --> 00:07:30,510
-order to use Postgres. Now, there are
-
-193
-00:07:30,520 --> 00:07:32,990
-tools like change data capture and some
-
-194
-00:07:33,000 --> 00:07:36,430
-replication products that understand
-
-195
-00:07:36,440 --> 00:07:39,470
-Postgres log formats and can read them.
-
-196
-00:07:39,480 --> 00:07:40,590
-But for the most part, these are very
-
-197
-00:07:40,600 --> 00:07:44,110
-tightly coupled things. Now, I wouldn't
-
-198
-00:07:44,120 --> 00:07:45,350
-then say, "Well, I'm going to get my
-
-199
-00:07:45,360 --> 00:07:47,630
-Postgres file formats and run Oracle on
-
-200
-00:07:47,640 --> 00:07:50,150
-top of it." It just they're very One is
-
-201
-00:07:50,160 --> 00:07:52,510
-engineered for the other. I have a quote
-
-202
-00:07:52,520 --> 00:07:55,270
-here from Confluent's website, which I
-
-203
-00:07:55,280 --> 00:07:57,470
-will read. It says, "In recent years,
-
-204
-00:07:57,480 --> 00:07:59,150
-we've witnessed the rise of headless
-
-205
-00:07:59,160 --> 00:08:00,710
-data infrastructure. Companies are
-
-206
-00:08:00,720 --> 00:08:03,310
-building a more open lakehouse in cloud
-
-207
-00:08:03,320 --> 00:08:05,190
-object storage that's accessible by any
-
-208
-00:08:05,200 --> 00:08:08,310
-number of tools." Is this tight coupling
-
-209
-00:08:08,320 --> 00:08:10,550
-from the database world between the
-
-210
-00:08:10,560 --> 00:08:13,070
-format and the engine? Is that breaking
-
-211
-00:08:13,080 --> 00:08:15,550
-down to where you mix and match?
-
-212
-00:08:15,560 --> 00:08:17,550
-Yeah, so I think you are bringing the
-
-213
-00:08:17,560 --> 00:08:19,909
-right point with the right background.
-
-214
-00:08:19,919 --> 00:08:21,670
-In the world of data, a lot of the
-
-215
-00:08:21,680 --> 00:08:24,310
-things were good, but they were tightly
-
-216
-00:08:24,320 --> 00:08:26,350
-coupled. So, you have your storage
-
-217
-00:08:26,360 --> 00:08:27,790
-engine, and then you have your compute
-
-218
-00:08:27,800 --> 00:08:30,430
-engine, and any other engine vector as
-
-219
-00:08:30,440 --> 00:08:32,469
-enhancements are built on top of it.
-
-220
-00:08:32,479 --> 00:08:35,270
-But, as a data team, you wouldn't have
-
-221
-00:08:35,280 --> 00:08:37,350
-access to it. So, you couldn't make
-
-222
-00:08:37,360 --> 00:08:39,830
-decisions, or you couldn't change the
-
-223
-00:08:39,840 --> 00:08:42,310
-level of compute or change the level of
-
-224
-00:08:42,320 --> 00:08:45,070
-storage what you wanted, right? So, the
-
-225
-00:08:45,080 --> 00:08:47,070
-Confluent blog you're talking about is
-
-226
-00:08:47,080 --> 00:08:49,590
-yes, this is about the headless data
-
-227
-00:08:49,600 --> 00:08:51,630
-infrastructure, which essentially means
-
-228
-00:08:51,640 --> 00:08:55,350
-in my mind as your data lives separate
-
-229
-00:08:55,360 --> 00:08:58,910
-to your compute. And now, you can scale
-
-230
-00:08:58,920 --> 00:09:02,270
-your storage and compute separately. It
-
-231
-00:09:02,280 --> 00:09:04,710
-doesn't stop only there. The advantage
-
-232
-00:09:04,720 --> 00:09:07,710
-is now team get is say, you have data in
-
-233
-00:09:07,720 --> 00:09:11,110
-S3, right? It can be accessed by
-
-234
-00:09:11,120 --> 00:09:13,150
-multiple engines now. You don't have to
-
-235
-00:09:13,160 --> 00:09:15,430
-maintain multiple copies, right? And
-
-236
-00:09:15,440 --> 00:09:17,310
-that's the way it's kind of headless.
-
-237
-00:09:17,320 --> 00:09:18,710
-And then, you can bring your own
-
-238
-00:09:18,720 --> 00:09:21,710
-compute, say Spark, or let's say you
-
-239
-00:09:21,720 --> 00:09:23,430
-want to do Databricks, or you want to do
-
-240
-00:09:23,440 --> 00:09:25,670
-let's say Snowflake, you can connect any
-
-241
-00:09:25,680 --> 00:09:28,750
-of them to that data and start running
-
-242
-00:09:28,760 --> 00:09:31,390
-your say analytics workload on top of
-
-243
-00:09:31,400 --> 00:09:32,070
-it.
-
-244
-00:09:32,080 --> 00:09:34,750
-Okay, I think we're ready now to talk
-
-245
-00:09:34,760 --> 00:09:37,550
-about what is Apache Iceberg. Where does
-
-246
-00:09:37,560 --> 00:09:40,590
-it fit into this landscape we've been
-
-247
-00:09:40,600 --> 00:09:41,910
-sketching out?
-
-248
-00:09:41,920 --> 00:09:44,230
-Yeah, we did talk about data lake houses
-
-249
-00:09:44,240 --> 00:09:46,910
-and Apache Iceberg enable that. And we
-
-250
-00:09:46,920 --> 00:09:48,270
-did talk about the headless
-
-251
-00:09:48,280 --> 00:09:50,230
-infrastructure, right? Apache Iceberg
-
-252
-00:09:50,240 --> 00:09:52,310
-enable that. So, let's dissect it a
-
-253
-00:09:52,320 --> 00:09:53,950
-little bit, right? But to provide a
-
-254
-00:09:53,960 --> 00:09:55,830
-little bit of background, it started
-
-255
-00:09:55,840 --> 00:09:57,830
-with Netflix. In Netflix, they were
-
-256
-00:09:57,840 --> 00:09:59,910
-dealing with petabyte scales of data.
-
-257
-00:09:59,920 --> 00:10:01,830
-They were having a lot of issues with
-
-258
-00:10:01,840 --> 00:10:04,950
-their hive systems at the time, right?
-
-259
-00:10:04,960 --> 00:10:07,150
-So, they wanted something which can help
-
-260
-00:10:07,160 --> 00:10:10,870
-them manage their metadata better. And
-
-261
-00:10:10,880 --> 00:10:13,550
-in short term, I would put Iceberg as a
-
-262
-00:10:13,560 --> 00:10:16,230
-open table format. It doesn't stop
-
-263
-00:10:16,240 --> 00:10:19,710
-there. It defines how you organize your
-
-264
-00:10:19,720 --> 00:10:22,870
-data files, but also the metadata files.
-
-265
-00:10:22,880 --> 00:10:25,510
-So, multiple engines can safely read and
-
-266
-00:10:25,520 --> 00:10:27,510
-write the same table, as I was alluding
-
-267
-00:10:27,520 --> 00:10:29,790
-to, right? And it has few key
-
-268
-00:10:29,800 --> 00:10:32,030
-components. So, one is called Iceberg
-
-269
-00:10:32,040 --> 00:10:34,350
-spec or specification. And the way I
-
-270
-00:10:34,360 --> 00:10:37,630
-would think of it is like by the
-
-271
-00:10:37,640 --> 00:10:40,310
-committers or by the committee, they put
-
-272
-00:10:40,320 --> 00:10:42,470
-a rule document, right? And that rule
-
-273
-00:10:42,480 --> 00:10:45,590
-document is something engines follow. It
-
-274
-00:10:45,600 --> 00:10:48,110
-tells you the standard or it tells you
-
-275
-00:10:48,120 --> 00:10:51,070
-how you need to follow the specification
-
-276
-00:10:51,080 --> 00:10:53,829
-for it to be interoperable, right? And
-
-277
-00:10:53,839 --> 00:10:55,630
-then there are libraries. Essentially,
-
-278
-00:10:55,640 --> 00:10:57,990
-libraries are essentially Java, Python,
-
-279
-00:10:58,000 --> 00:11:00,070
-Go. To boil it down, it essentially
-
-280
-00:11:00,080 --> 00:11:02,430
-means that it's a Iceberg implementation
-
-281
-00:11:02,440 --> 00:11:04,510
-for Java, Iceberg implementation for
-
-282
-00:11:04,520 --> 00:11:06,270
-Python, or let's say Iceberg
-
-283
-00:11:06,280 --> 00:11:08,150
-implementation for us. And the last
-
-284
-00:11:08,160 --> 00:11:11,350
-thing is the REST catalog. It allows the
-
-285
-00:11:11,360 --> 00:11:14,110
-standardized HTTP API catalog
-
-286
-00:11:14,120 --> 00:11:16,350
-operations. So, it lets other engines
-
-287
-00:11:16,360 --> 00:11:18,910
-connect via HTTP commands, to put it
-
-288
-00:11:18,920 --> 00:11:19,630
-simply.
-
-289
-00:11:19,640 --> 00:11:21,550
-This is something like
-
-290
-00:11:21,560 --> 00:11:25,430
-XML where it was an open data format and
-
-291
-00:11:25,440 --> 00:11:28,790
-any provider could implement bindings in
-
-292
-00:11:28,800 --> 00:11:30,670
-any language they want.
-
-293
-00:11:30,680 --> 00:11:33,470
-Yes, they can implement, but right now
-
-294
-00:11:33,480 --> 00:11:35,030
-the bindings that you talked about are
-
-295
-00:11:35,040 --> 00:11:38,590
-limited to as I remember Java, Python,
-
-296
-00:11:38,600 --> 00:11:40,950
-Rust and Go. So, those are the four ones
-
-297
-00:11:40,960 --> 00:11:43,270
-right now. I think there's a C++ one as
-
-298
-00:11:43,280 --> 00:11:46,190
-well. But, these implementations what I
-
-299
-00:11:46,200 --> 00:11:49,350
-have seen in my experiences are not
-
-300
-00:11:49,360 --> 00:11:51,150
-something a lot of team invest time on
-
-301
-00:11:51,160 --> 00:11:54,310
-but what they invest time on is how
-
-302
-00:11:54,320 --> 00:11:56,350
-those are integrated with the catalogs
-
-303
-00:11:56,360 --> 00:11:58,750
-because catalogs is something which
-
-304
-00:11:58,760 --> 00:12:01,390
-enables that accessibility of the data
-
-305
-00:12:01,400 --> 00:12:02,790
-or writing to that data.
-
-306
-00:12:02,800 --> 00:12:04,710
-I think I should ask you then to explain
-
-307
-00:12:04,720 --> 00:12:07,310
-what is the catalog, what's in it?
-
-308
+76
+00:06:58,800 --> 00:07:07,550
+Say you have put your winter coat in that giant storage locker, but now you need to find it.
+
+77
+00:07:07,550 --> 00:07:11,110
+And in order for it to serve you, it just takes so much time.
+
+78
+00:07:11,120 --> 00:07:19,590
+So, the point I want to explore here about these data formats versus the processing.
+
+79
+00:07:19,590 --> 00:07:24,070
+If I think about Postgres, it can be in most people it is a black box.
+
+80
+00:07:24,070 --> 00:07:27,190
+There's an engine, and it sits on top of some kind of file format.
+
+81
+00:07:27,190 --> 00:07:30,510
+I don't have to know what that file format is in order to use Postgres.
+
+82
+00:07:30,510 --> 00:07:39,470
+Now, there are tools like change data capture and some replication products that understand Postgres log formats and can read them.
+
+83
+00:07:39,480 --> 00:07:44,110
+But for the most part, these are very tightly coupled things.
+
+84
+00:07:44,110 --> 00:07:50,150
+Now, I wouldn't then say, "Well, I'm going to get my Postgres file formats and run Oracle on top of it."
+
+85
+00:07:50,150 --> 00:07:52,510
+It just they're very One is engineered for the other.
+
+86
+00:07:52,510 --> 00:07:57,470
+I have a quote here from Confluent's website, which I will read.
+
+87
+00:07:57,470 --> 00:08:00,710
+It says, "In recent years, we've witnessed the rise of headless data infrastructure.
+
+88
+00:08:00,710 --> 00:08:08,310
+Companies are building a more open lakehouse in cloud object storage that's accessible by any number of tools."
+
+89
+00:08:08,310 --> 00:08:13,070
+Is this tight coupling from the database world between the format and the engine?
+
+90
+00:08:13,070 --> 00:08:15,550
+Is that breaking down to where you mix and match?
+
+91
+00:08:15,560 --> 00:08:19,909
+Yeah, so I think you are bringing the right point with the right background.
+
+92
+00:08:19,919 --> 00:08:26,350
+In the world of data, a lot of the things were good, but they were tightly coupled.
+
+93
+00:08:26,350 --> 00:08:32,469
+So, you have your storage engine, and then you have your compute engine, and any other engine vector as enhancements are built on top of it.
+
+94
+00:08:32,479 --> 00:08:37,350
+But, as a data team, you wouldn't have access to it.
+
+95
+00:08:37,350 --> 00:08:45,070
+So, you couldn't make decisions, or you couldn't change the level of compute or change the level of storage what you wanted, right?
+
+96
+00:08:45,070 --> 00:08:51,630
+So, the Confluent blog you're talking about is yes, this is about the headless data infrastructure,
+
+97
+00:08:51,630 --> 00:08:58,910
+which essentially means in my mind as your data lives separate to your compute.
+
+98
+00:08:58,910 --> 00:09:02,270
+And now, you can scale your storage and compute separately.
+
+99
+00:09:02,270 --> 00:09:04,710
+It doesn't stop only there.
+
+100
+00:09:04,710 --> 00:09:11,110
+The advantage is now team get is say, you have data in S3, right?
+
+101
+00:09:11,110 --> 00:09:13,150
+It can be accessed by multiple engines now.
+
+102
+00:09:13,150 --> 00:09:15,430
+You don't have to maintain multiple copies, right?
+
+103
+00:09:15,430 --> 00:09:17,310
+And that's the way it's kind of headless.
+
+104
+00:09:17,320 --> 00:09:32,070
+And then, you can bring your own compute, say Spark, or let's say you want to do Databricks, or you want to do let's say Snowflake, you can connect any of them to that data and start running your say analytics workload on top of it.
+
+105
+00:09:32,080 --> 00:09:37,550
+Okay, I think we're ready now to talk about what is Apache Iceberg.
+
+106
+00:09:37,550 --> 00:09:41,910
+Where does it fit into this landscape we've been sketching out?
+
+107
+00:09:41,920 --> 00:09:46,910
+Yeah, we did talk about data lake houses and Apache Iceberg enable that.
+
+108
+00:09:46,910 --> 00:09:50,230
+And we did talk about the headless infrastructure, right?
+
+109
+00:09:50,230 --> 00:09:52,310
+Apache Iceberg enable that.
+
+110
+00:09:52,310 --> 00:09:53,950
+So, let's dissect it a little bit, right?
+
+111
+00:09:53,950 --> 00:09:57,830
+But to provide a little bit of background, it started with Netflix.
+
+112
+00:09:57,830 --> 00:09:59,910
+In Netflix, they were dealing with petabyte scales of data.
+
+113
+00:09:59,920 --> 00:10:04,950
+They were having a lot of issues with their hive systems at the time, right?
+
+114
+00:10:04,960 --> 00:10:10,870
+So, they wanted something which can help them manage their metadata better.
+
+115
+00:10:10,870 --> 00:10:16,230
+And in short term, I would put Iceberg as a open table format.
+
+116
+00:10:16,230 --> 00:10:19,710
+It doesn't stop there.
+
+117
+00:10:19,710 --> 00:10:22,870
+It defines how you organize your data files, but also the metadata files.
+
+118
+00:10:22,880 --> 00:10:29,790
+So, multiple engines can safely read and write the same table, as I was alluding to, right?
+
+119
+00:10:29,790 --> 00:10:32,030
+And it has few key components.
+
+120
+00:10:32,030 --> 00:10:34,350
+So, one is called Iceberg spec or specification.
+
+121
+00:10:34,350 --> 00:10:42,470
+And the way I would think of it is like by the committers or by the committee, they put a rule document, right?
+
+122
+00:10:42,470 --> 00:10:45,590
+And that rule document is something engines follow.
+
+123
+00:10:45,590 --> 00:10:53,829
+It tells you the standard or it tells you how you need to follow the specification for it to be interoperable, right?
+
+124
+00:10:53,829 --> 00:10:55,630
+And then there are libraries.
+
+125
+00:10:55,630 --> 00:11:00,070
+Essentially, libraries are essentially Java, Python, Go.
+
+126
+00:11:00,070 --> 00:11:08,150
+To boil it down, it essentially means that it's a Iceberg implementation for Java, Iceberg implementation for Python, or let's say Iceberg implementation for us.
+
+127
+00:11:08,150 --> 00:11:11,350
+And the last thing is the REST catalog.
+
+128
+00:11:11,350 --> 00:11:16,350
+It allows the standardized HTTP API catalog operations.
+
+129
+00:11:16,350 --> 00:11:19,630
+So, it lets other engines connect via HTTP commands, to put it simply.
+
+130
+00:11:19,640 --> 00:11:30,670
+This is something like XML where it was an open data format and any provider could implement bindings in any language they want.
+
+131
+00:11:30,680 --> 00:11:40,950
+Yes, they can implement, but right now the bindings that you talked about are limited to as I remember Java, Python, Rust and Go.
+
+132
+00:11:40,950 --> 00:11:43,270
+So, those are the four ones right now.
+
+133
+00:11:43,270 --> 00:11:46,190
+I think there's a C++ one as well.
+
+134
+00:11:46,190 --> 00:11:54,310
+But, these implementations what I have seen in my experiences are not something a lot of team invest time on but
+
+135
+00:11:54,310 --> 00:12:02,790
+what they invest time on is how those are integrated with the catalogs because catalogs is something which enables that accessibility of the data or writing to that data.
+
+136
+00:12:02,800 --> 00:12:07,310
+I think I should ask you then to explain what is the catalog, what's in it?
+
+137
 00:12:07,320 --> 00:12:09,790
 Sure, a catalog does a lot of things.
 
-309
-00:12:09,800 --> 00:12:12,430
-But, in the world of Iceberg it
+138
+00:12:09,800 --> 00:12:20,230
+But, in the world of Iceberg it essentially says when a engine goes to a catalog it tells you okay catalog, I need this table.
 
-310
-00:12:12,440 --> 00:12:14,750
-essentially says when a engine goes to a
+139
+00:12:20,230 --> 00:12:22,950
+It contains the rich metadata of that particular table.
 
-311
-00:12:14,760 --> 00:12:16,790
-catalog it tells you okay catalog, I
+140
+00:12:22,950 --> 00:12:29,270
+So, then engines can go through that JSON files in technical world and
 
-312
-00:12:16,800 --> 00:12:20,230
-need this table. It contains the rich
+141
+00:12:29,270 --> 00:12:37,991
+inspect and understand how it should prune the queries if it is reading it and how it should write the files if it is writing it. And then they do other work as well.
 
-313
-00:12:20,240 --> 00:12:22,950
-metadata of that particular table. So,
+142
+00:12:38,000 --> 00:12:40,911
+For example, governance and those kind of things. I don't want to go into that.
 
-314
-00:12:22,960 --> 00:12:26,110
-then engines can go through that JSON
+143
+00:12:40,920 --> 00:12:45,870
+But, catalog is basically a point access to that particular table.
 
-315
-00:12:26,120 --> 00:12:29,270
-files in technical world and inspect and
+144
+00:12:45,880 --> 00:12:52,110
+Is this similar to what might be called schema introspection in some data products?
 
-316
-00:12:29,280 --> 00:12:31,510
-understand how it should prune the
+145
+00:12:52,120 --> 00:12:56,470
+I may not be able to answer that honestly.
 
-317
-00:12:31,520 --> 00:12:33,350
-queries if it is reading it and how it
+146
+00:12:56,470 --> 00:12:58,111
+Do you want to double click on that? Do you want to give an example?
 
-318
-00:12:33,360 --> 00:12:35,310
-should write the files if it is writing
+147
+00:12:58,120 --> 00:13:06,230
+Yeah, in most SQL systems you can say describe table or show schema for table and it will show you Yes.
 
-319
-00:12:35,320 --> 00:12:37,990
-it. And then they do other work as well.
+148
+00:13:06,240 --> 00:13:09,510
+columns, constraints Yeah, so that's how it does it.
 
-320
-00:12:38,000 --> 00:12:39,470
-For example, governance and those kind
+149
+00:13:09,510 --> 00:13:11,390
+Thanks for the clarification.
 
-321
-00:12:39,480 --> 00:12:40,910
-of things. I don't want to go into that.
+150
+00:13:11,390 --> 00:13:22,950
+So, when you're basically going to that particular describe statement what essentially engine is doing is inspecting that JSON file and that JSON file has a lot more details.
 
-322
-00:12:40,920 --> 00:12:43,750
-But, catalog is basically a point access
+151
+00:13:22,950 --> 00:13:26,230
+Happy to jump into details like what those can have and how it's the whole architecture.
 
-323
-00:12:43,760 --> 00:12:45,870
-to that particular table.
-
-324
-00:12:45,880 --> 00:12:48,230
-Is this similar to what might be called
-
-325
-00:12:48,240 --> 00:12:50,910
-schema introspection in some data
-
-326
-00:12:50,920 --> 00:12:52,110
-products?
-
-327
-00:12:52,120 --> 00:12:54,710
-I may not be able to answer that
-
-328
-00:12:54,720 --> 00:12:56,470
-honestly. Do you want to double click on
-
-329
-00:12:56,480 --> 00:12:58,110
-that? Do you want to give an example?
-
-330
-00:12:58,120 --> 00:13:01,110
-Yeah, in most SQL systems you can say
-
-331
-00:13:01,120 --> 00:13:04,310
-describe table or show schema for table
-
-332
-00:13:04,320 --> 00:13:05,550
-and it will show you
-
-333
-00:13:05,560 --> 00:13:06,230
-Yes.
-
-334
-00:13:06,240 --> 00:13:07,990
-columns, constraints
-
-335
-00:13:08,000 --> 00:13:09,510
-Yeah, so that's how it does it. Thanks
-
-336
-00:13:09,520 --> 00:13:11,390
-for the clarification. So, when you're
-
-337
-00:13:11,400 --> 00:13:13,510
-basically going to that particular
-
-338
-00:13:13,520 --> 00:13:16,110
-describe statement what essentially
-
-339
-00:13:16,120 --> 00:13:18,510
-engine is doing is inspecting that JSON
-
-340
-00:13:18,520 --> 00:13:20,910
-file and that JSON file has a lot more
-
-341
-00:13:20,920 --> 00:13:22,950
-details. Happy to jump into details like
-
-342
-00:13:22,960 --> 00:13:24,910
-what those can have and how it's the
-
-343
-00:13:24,920 --> 00:13:26,230
-whole architecture.
-
-344
+152
 00:13:26,240 --> 00:13:28,510
-We might come back to that. I want to do
+We might come back to that.
 
-345
-00:13:28,520 --> 00:13:31,150
-some more high-level. You've talked
+153
+00:13:28,510 --> 00:13:31,150
+I want to do some more high-level.
 
-346
-00:13:31,160 --> 00:13:33,590
-about the format that the files can live
+154
+00:13:31,150 --> 00:13:43,230
+You've talked about the format that the files can live pretty much anywhere on S3 or any type of blob storage or on a regular file system.
 
-347
-00:13:33,600 --> 00:13:36,790
-pretty much anywhere on S3 or any type
+155
+00:13:43,230 --> 00:13:49,790
+For situating Apache Iceberg in the landscape, is there anything you would compare it to or is it the first of its kind?
 
-348
-00:13:36,800 --> 00:13:39,710
-of blob storage or on a regular file
+156
+00:13:49,800 --> 00:13:57,750
+Nothing comes to my mind in relation to the data as such data field, but I would put it in the world of USBC.
 
-349
-00:13:39,720 --> 00:13:43,230
-system. For situating Apache Iceberg in
+157
+00:13:57,750 --> 00:14:03,830
+So, USBC is something you can plug into your MacBook, you can plug into your laptop, you can charge your phone with it.
 
-350
-00:13:43,240 --> 00:13:45,510
-the landscape, is there anything you
+158
+00:14:03,830 --> 00:14:08,590
+So, it's kind of a common connector and that's the way I would think about it.
 
-351
-00:13:45,520 --> 00:13:48,150
-would compare it to or is it the first
-
-352
-00:13:48,160 --> 00:13:49,790
-of its kind?
-
-353
-00:13:49,800 --> 00:13:51,670
-Nothing comes to my mind in relation to
-
-354
-00:13:51,680 --> 00:13:54,350
-the data as such data field, but I would
-
-355
-00:13:54,360 --> 00:13:57,750
-put it in the world of USBC. So, USBC is
-
-356
-00:13:57,760 --> 00:13:59,470
-something you can plug into your
-
-357
-00:13:59,480 --> 00:14:01,790
-MacBook, you can plug into your laptop,
-
-358
-00:14:01,800 --> 00:14:03,830
-you can charge your phone with it. So,
-
-359
-00:14:03,840 --> 00:14:06,710
-it's kind of a common connector and
-
-360
-00:14:06,720 --> 00:14:08,590
-that's the way I would think about it.
-
-361
+159
 00:14:08,600 --> 00:14:10,630
-What is the history? Was this a
+What is the history?
 
-362
-00:14:10,640 --> 00:14:13,230
-consortium of companies that all had the
+160
+00:14:10,630 --> 00:14:17,630
+Was this a consortium of companies that all had the same problem or was it invented by an open-source engineer?
 
-363
-00:14:13,240 --> 00:14:15,670
-same problem or was it invented by an
-
-364
-00:14:15,680 --> 00:14:17,630
-open-source engineer?
-
-365
+161
 00:14:17,640 --> 00:14:20,590
-Sure. So, it started with Netflix, but
+Sure.
 
-366
-00:14:20,600 --> 00:14:22,590
-there has been active contribution in
+162
+00:14:20,590 --> 00:14:29,310
+So, it started with Netflix, but there has been active contribution in its early years by Apple and by other data companies.
 
-367
-00:14:22,600 --> 00:14:25,990
-its early years by Apple and by other
+163
+00:14:29,310 --> 00:14:35,910
+And these contributions, essentially when it was becoming successful, led it to be donating to Apache Software Foundation.
 
-368
-00:14:26,000 --> 00:14:29,310
-data companies. And these contributions,
+164
+00:14:35,910 --> 00:14:42,510
+It got incubated and then it got accepted and it has been part of the Apache Software Foundation.
 
-369
-00:14:29,320 --> 00:14:31,190
-essentially when it was becoming
+165
+00:14:42,520 --> 00:14:47,310
+We're talking about these agnostic layers.
 
-370
-00:14:31,200 --> 00:14:33,190
-successful, led it to be donating to
+166
+00:14:47,310 --> 00:14:52,110
+You can store it wherever you want on any cloud, any file system, anything can read it.
 
-371
-00:14:33,200 --> 00:14:35,910
-Apache Software Foundation. It got
+167
+00:14:52,110 --> 00:14:56,630
+One of the reasons that the storage format and the engine were so
 
-372
-00:14:35,920 --> 00:14:38,430
-incubated and then it got accepted and
+168
+00:14:56,630 --> 00:15:02,470
+tightly coupled is that the storage was designed in a particular way to
 
-373
-00:14:38,440 --> 00:14:41,310
-it has been part of the Apache Software
+169
+00:15:02,470 --> 00:15:11,750
+reflect the physical nature of how data was getting moved off of some kind of persistent format and into memory taking into account the IO rates,
 
-374
-00:14:41,320 --> 00:14:42,510
-Foundation.
+170
+00:15:11,750 --> 00:15:22,950
+the number of spindles, the adjacency of things on disks such that the performance of the engine would be reasonable, especially for large data sets.
 
-375
-00:14:42,520 --> 00:14:44,829
-We're talking about these agnostic
+171
+00:15:22,950 --> 00:15:29,830
+Do we give up something in performance if we stick it on S3, which no one outside of Amazon even knows how it works?
 
-376
-00:14:44,839 --> 00:14:47,310
-layers. You can store it wherever you
-
-377
-00:14:47,320 --> 00:14:49,910
-want on any cloud, any file system,
-
-378
-00:14:49,920 --> 00:14:52,110
-anything can read it. One of the reasons
-
-379
-00:14:52,120 --> 00:14:54,670
-that the storage format and the engine
-
-380
-00:14:54,680 --> 00:14:56,630
-were so tightly coupled is that the
-
-381
-00:14:56,640 --> 00:15:00,270
-storage was designed in a particular way
-
-382
-00:15:00,280 --> 00:15:02,470
-to reflect the physical nature of how
-
-383
-00:15:02,480 --> 00:15:05,390
-data was getting moved off of some kind
-
-384
-00:15:05,400 --> 00:15:09,110
-of persistent format and into memory
-
-385
-00:15:09,120 --> 00:15:11,750
-taking into account the IO rates, the
-
-386
-00:15:11,760 --> 00:15:14,470
-number of spindles, the adjacency of
-
-387
-00:15:14,480 --> 00:15:16,430
-things on disks such that the
-
-388
-00:15:16,440 --> 00:15:18,750
-performance of the engine would be
-
-389
-00:15:18,760 --> 00:15:20,870
-reasonable, especially for large data
-
-390
-00:15:20,880 --> 00:15:22,950
-sets. Do we give up something in
-
-391
-00:15:22,960 --> 00:15:26,190
-performance if we stick it on S3, which
-
-392
-00:15:26,200 --> 00:15:28,710
-no one outside of Amazon even knows how
-
-393
-00:15:28,720 --> 00:15:29,830
-it works?
-
-394
+172
 00:15:29,840 --> 00:15:32,150
-That's a very valid question. And in
+That's a very valid question.
 
-395
-00:15:32,160 --> 00:15:35,390
-early years, when the Iceberg So,
+173
+00:15:32,150 --> 00:15:42,590
+And in early years, when the Iceberg So, currently Iceberg is on V3 spec, just like any versions of iPhone, similarly on the V3 spec.
 
-396
-00:15:35,400 --> 00:15:37,750
-currently Iceberg is on V3 spec, just
+174
+00:15:42,590 --> 00:15:50,070
+In the early years of Iceberg, there was a lot of discrepancies in terms of benchmarks, right?
 
-397
-00:15:37,760 --> 00:15:39,470
-like any versions of iPhone, similarly
+175
+00:15:50,070 --> 00:15:54,590
+And a lot of engines that were closed, they knew their files, and they could optimize for it better.
 
-398
-00:15:39,480 --> 00:15:42,590
-on the V3 spec. In the early years of
+176
+00:15:54,590 --> 00:16:02,710
+But in the last, I would say 3 to 4 years, there has been convergence towards the Iceberg,
 
-399
-00:15:42,600 --> 00:15:44,830
-Iceberg, there was a lot of
+177
+00:16:02,710 --> 00:16:13,590
+and even the vendors now are pushing really hard, going towards the Iceberg, and making their engines more compatible, or I would say faster towards that.
 
-400
-00:15:44,840 --> 00:15:47,390
-discrepancies in terms of benchmarks,
+178
+00:16:13,590 --> 00:16:23,150
+And the recent benchmarks, to answer your question, have been showing these days that it's effectively same, or sometimes better, in the performance.
 
-401
-00:15:47,400 --> 00:15:50,070
-right? And a lot of engines that were
+179
+00:16:23,150 --> 00:16:26,150
+In terms of S3, you're absolutely right.
 
-402
-00:15:50,080 --> 00:15:52,510
-closed, they knew their files, and they
+180
+00:16:26,150 --> 00:16:35,750
+You are leaving the world of vendors in term of lock-in, but you're still locked in turn kind of with AWS.
 
-403
-00:15:52,520 --> 00:15:54,590
-could optimize for it better. But in the
+181
+00:16:35,750 --> 00:16:37,790
+And AWS has your S3, and that's where you manage your storage.
 
-404
-00:15:54,600 --> 00:15:57,430
-last, I would say 3 to 4 years, there
+182
+00:16:37,790 --> 00:16:44,590
+But the good part with S3 is you can do First of all, it's very cheap, about $23 per terabyte.
 
-405
-00:15:57,440 --> 00:15:59,550
-has been convergence towards the
+183
+00:16:44,590 --> 00:16:46,670
+So, it gives them cheaper rates compared to vendors, right?
 
-406
-00:15:59,560 --> 00:16:02,710
-Iceberg, and even the vendors now are
+184
+00:16:46,670 --> 00:16:49,630
+And then companies manage their own data.
 
-407
-00:16:02,720 --> 00:16:04,870
-pushing really hard, going towards the
+185
+00:16:49,640 --> 00:16:57,270
+So, tomorrow, let's say you are working with vendor X, but with the innovation, vendor X has been very behind, right?
 
-408
-00:16:04,880 --> 00:16:08,230
-Iceberg, and making their engines more
+186
+00:16:57,280 --> 00:17:04,551
+Tomorrow, a brand new company comes with a shiny object, you want to move to that vendor Y. You still hold your data.
 
-409
-00:16:08,240 --> 00:16:10,830
-compatible, or I would say faster
+187
+00:17:04,551 --> 00:17:07,069
+You still manage your data.
 
-410
-00:16:10,840 --> 00:16:13,590
-towards that. And the recent benchmarks,
+188
+00:17:07,069 --> 00:17:09,470
+You just need to change the engine.
 
-411
-00:16:13,600 --> 00:16:15,430
-to answer your question, have been
+189
+00:17:09,470 --> 00:17:18,550
+So, now you don't have to do those messy migrations, wherein you basically have a lot of table stakes highly product, which goes down,
 
-412
-00:16:15,440 --> 00:16:17,950
-showing these days that it's effectively
+190
+00:17:18,550 --> 00:17:24,949
+and you do a proper planning rather it should be ideally a plug and play depending on how data moves world moves.
 
-413
-00:16:17,960 --> 00:16:20,150
-same, or sometimes better, in the
+191
+00:17:24,959 --> 00:17:31,750
+The point I'm trying to get at is the extent that you have all this interoperability and
 
-414
-00:16:20,160 --> 00:16:23,150
-performance. In terms of S3, you're
+192
+00:17:31,750 --> 00:17:38,950
+abstraction layers you make fewer guarantees about how things work versus Postgres or Oracle that
 
-415
-00:16:23,160 --> 00:16:26,150
-absolutely right. You are leaving the
+193
+00:17:38,950 --> 00:17:44,510
+owns the entire stack all the way down to the file system they can make very strong assumptions.
 
-416
-00:16:26,160 --> 00:16:29,790
-world of vendors in term of lock-in, but
+194
+00:17:44,510 --> 00:17:56,190
+So when you talk about vendors and benchmarks do you mean the vendors of the engines have all tuned their engines or do you mean the storage vendors like Amazon has said hey Iceberg runs really well on S3.
 
-417
-00:16:29,800 --> 00:16:32,030
-you're still locked in turn kind of with
+195
+00:17:56,190 --> 00:18:04,270
+We've done some magic stuff inside S3 that's going to make it very friendly to your Iceberg formats.
 
-418
-00:16:32,040 --> 00:16:35,750
-AWS. And AWS has your S3, and that's
-
-419
-00:16:35,760 --> 00:16:37,790
-where you manage your storage. But the
-
-420
-00:16:37,800 --> 00:16:40,230
-good part with S3 is you can do First of
-
-421
-00:16:40,240 --> 00:16:42,390
-all, it's very cheap, about $23 per
-
-422
-00:16:42,400 --> 00:16:44,590
-terabyte. So, it gives them cheaper
-
-423
-00:16:44,600 --> 00:16:46,670
-rates compared to vendors, right? And
-
-424
-00:16:46,680 --> 00:16:49,630
-then companies manage their own data.
-
-425
-00:16:49,640 --> 00:16:51,829
-So, tomorrow, let's say you are working
-
-426
-00:16:51,839 --> 00:16:53,910
-with vendor X, but with the innovation,
-
-427
-00:16:53,920 --> 00:16:57,270
-vendor X has been very behind, right?
-
-428
-00:16:57,280 --> 00:16:58,829
-Tomorrow, a brand new company comes with
-
-429
-00:16:58,839 --> 00:17:01,350
-a shiny object, you want to move to that
-
-430
-00:17:01,360 --> 00:17:04,550
-vendor Y. You still hold your data. You
-
-431
-00:17:04,560 --> 00:17:07,069
-still manage your data. You just need to
-
-432
-00:17:07,079 --> 00:17:09,470
-change the engine. So, now you don't
-
-433
-00:17:09,480 --> 00:17:11,870
-have to do those messy migrations,
-
-434
-00:17:11,880 --> 00:17:14,230
-wherein you basically have a lot of
-
-435
-00:17:14,240 --> 00:17:16,630
-table stakes highly product, which goes
-
-436
-00:17:16,640 --> 00:17:18,550
-down, and you do a proper planning
-
-437
-00:17:18,560 --> 00:17:21,230
-rather it should be ideally a plug and
-
-438
-00:17:21,240 --> 00:17:24,069
-play depending on how data moves world
-
-439
-00:17:24,079 --> 00:17:24,949
-moves.
-
-440
-00:17:24,959 --> 00:17:28,069
-The point I'm trying to get at is the
-
-441
-00:17:28,079 --> 00:17:29,110
-extent that you have all this
-
-442
-00:17:29,120 --> 00:17:31,750
-interoperability and abstraction layers
-
-443
-00:17:31,760 --> 00:17:34,750
-you make fewer guarantees about how
-
-444
-00:17:34,760 --> 00:17:37,310
-things work versus Postgres or Oracle
-
-445
-00:17:37,320 --> 00:17:38,950
-that owns the entire stack all the way
-
-446
-00:17:38,960 --> 00:17:41,670
-down to the file system they can make
-
-447
-00:17:41,680 --> 00:17:44,510
-very strong assumptions. So when you
-
-448
-00:17:44,520 --> 00:17:46,430
-talk about vendors and benchmarks do you
-
-449
-00:17:46,440 --> 00:17:48,350
-mean the vendors of the engines have all
-
-450
-00:17:48,360 --> 00:17:50,190
-tuned their engines or do you mean the
-
-451
-00:17:50,200 --> 00:17:53,510
-storage vendors like Amazon has said hey
-
-452
-00:17:53,520 --> 00:17:56,190
-Iceberg runs really well on S3. We've
-
-453
-00:17:56,200 --> 00:17:59,430
-done some magic stuff inside S3 that's
-
-454
-00:17:59,440 --> 00:18:02,390
-going to make it very friendly to your
-
-455
-00:18:02,400 --> 00:18:04,270
-Iceberg formats.
-
-456
+196
 00:18:04,280 --> 00:18:05,830
 Okay, thanks for clarifying question.
 
-457
-00:18:05,840 --> 00:18:08,150
-Yeah, I meant that data vendors like for
+197
+00:18:05,840 --> 00:18:15,270
+Yeah, I meant that data vendors like for example Oracle, Snowflake, Databricks as an example not particularly S3 and these I'm just not limiting the storage to S3.
 
-458
-00:18:08,160 --> 00:18:10,310
-example Oracle, Snowflake, Databricks as
+198
+00:18:15,280 --> 00:18:20,230
+You can do ADLS if you want Azure you can do Google Cloud as well, right?
 
-459
-00:18:10,320 --> 00:18:13,510
-an example not particularly S3 and these
+199
+00:18:20,230 --> 00:18:22,750
+And can you repeat your question did I answer your question or
 
-460
-00:18:13,520 --> 00:18:15,270
-I'm just not limiting the storage to S3.
+200
+00:18:22,760 --> 00:18:35,230
+My question is large workloads move petabytes of data often you're constrained by the IO rate of the physical
 
-461
-00:18:15,280 --> 00:18:17,350
-You can do ADLS if you want Azure you
+201
+00:18:35,230 --> 00:18:38,270
+device or devices where your data is.
 
-462
-00:18:17,360 --> 00:18:20,230
-can do Google Cloud as well, right? And
+202
+00:18:38,270 --> 00:18:44,310
+You can only move data off of the device at whatever rate it supports and
 
-463
-00:18:20,240 --> 00:18:21,310
-can you repeat your question did I
+203
+00:18:44,310 --> 00:18:50,510
+is there a uniformity of IO capacity across all different substrates or people just say well,
 
-464
-00:18:21,320 --> 00:18:22,750
-answer your question or
+204
+00:18:50,520 --> 00:18:59,190
+yeah, I mean S3 is slow or blob storage is slow but I can live with that because it's cheap and it's a trade-off we make.
 
-465
-00:18:22,760 --> 00:18:26,870
-My question is large workloads move
+205
+00:18:59,200 --> 00:19:01,391
+Sure. Yeah, let's talk about it.
 
-466
-00:18:26,880 --> 00:18:28,270
-petabytes of data often you're
+206
+00:19:01,391 --> 00:19:03,750
+So over here S3 has its own limitations.
 
-467
-00:18:28,280 --> 00:18:32,470
-constrained by the IO rate of the
+207
+00:19:03,750 --> 00:19:09,590
+So let's say if you're calling the S3 API, you can only do so much of list operations.
 
-468
-00:18:32,480 --> 00:18:35,230
-physical device or devices where your
+208
+00:19:09,590 --> 00:19:11,990
+So say you have records which are billions in numbers, right?
 
-469
-00:18:35,240 --> 00:18:38,270
-data is. You can only move data off of
+209
+00:19:11,990 --> 00:19:15,830
+On the original table but you only need thousand of them.
 
-470
-00:18:38,280 --> 00:18:41,510
-the device at whatever rate it supports
+210
+00:19:15,830 --> 00:19:18,550
+So, the beauty of Iceberg is it has very rich metadata.
 
-471
-00:18:41,520 --> 00:18:44,310
-and is there a uniformity
+211
+00:19:18,560 --> 00:19:26,870
+So, in the world of, let's say, Hive or anything, what you would do is you'll go to that particular directory and list all the files in that directory.
 
-472
-00:18:44,320 --> 00:18:47,470
-of IO capacity across all different
+212
+00:19:26,870 --> 00:19:33,510
+But, the metadata is so rich in Iceberg that it is at the file level.
 
-473
-00:18:47,480 --> 00:18:50,510
-substrates or people just say well,
+213
+00:19:33,510 --> 00:19:41,670
+So, what really happens is instead of making those thousands API calls or hundred API calls,
 
-474
-00:18:50,520 --> 00:18:54,390
-yeah, I mean S3 is slow or blob storage
+214
+00:19:41,670 --> 00:19:47,870
+Iceberg is really making only 10 or 15 API calls, and that essentially helps you fetch data faster.
 
-475
-00:18:54,400 --> 00:18:56,430
-is slow but I can live with that because
+215
+00:19:47,870 --> 00:19:51,070
+And then, that helps you with your S3 throttling and everything.
 
-476
-00:18:56,440 --> 00:18:59,190
-it's cheap and it's a trade-off we make.
-
-477
-00:18:59,200 --> 00:19:01,390
-Sure. Yeah, let's talk about it. So over
-
-478
-00:19:01,400 --> 00:19:03,750
-here S3 has its own limitations. So
-
-479
-00:19:03,760 --> 00:19:05,350
-let's say if you're calling the S3 API,
-
-480
-00:19:05,360 --> 00:19:07,190
-you can only do so much of list
-
-481
-00:19:07,200 --> 00:19:09,590
-operations. So say you have records
-
-482
-00:19:09,600 --> 00:19:11,990
-which are billions in numbers, right? On
-
-483
-00:19:12,000 --> 00:19:13,910
-the original table but you only need
-
-484
-00:19:13,920 --> 00:19:15,830
-thousand of them. So, the beauty of
-
-485
-00:19:15,840 --> 00:19:18,550
-Iceberg is it has very rich metadata.
-
-486
-00:19:18,560 --> 00:19:20,510
-So, in the world of, let's say, Hive or
-
-487
-00:19:20,520 --> 00:19:22,630
-anything, what you would do is you'll go
-
-488
-00:19:22,640 --> 00:19:24,390
-to that particular directory and list
-
-489
-00:19:24,400 --> 00:19:26,870
-all the files in that directory. But,
-
-490
-00:19:26,880 --> 00:19:30,270
-the metadata is so rich in Iceberg that
-
-491
-00:19:30,280 --> 00:19:33,510
-it is at the file level. So, what really
-
-492
-00:19:33,520 --> 00:19:36,030
-happens is instead of making those
-
-493
-00:19:36,040 --> 00:19:38,230
-thousands API calls or hundred API
-
-494
-00:19:38,240 --> 00:19:41,670
-calls, Iceberg is really making only 10
-
-495
-00:19:41,680 --> 00:19:44,510
-or 15 API calls, and that essentially
-
-496
-00:19:44,520 --> 00:19:47,870
-helps you fetch data faster. And then,
-
-497
-00:19:47,880 --> 00:19:50,190
-that helps you with your S3 throttling
-
-498
-00:19:50,200 --> 00:19:51,070
-and everything.
-
-499
+216
 00:19:51,080 --> 00:19:52,950
-Okay. What I think you might be saying
-
-500
-00:19:52,960 --> 00:19:55,990
-is maybe on Postgres or coffee out of
-
-501
-00:19:56,000 --> 00:19:57,550
-poorly designed query and it's doing a
-
-502
-00:19:57,560 --> 00:20:00,590
-table scan. It's a 50 GB table and it
-
-503
-00:20:00,600 --> 00:20:04,270
-ends up needing to read 50 GB that the
-
-504
-00:20:04,280 --> 00:20:07,670
-design of Iceberg, it's so smart that it
-
-505
-00:20:07,680 --> 00:20:11,590
-can have you reading 1 GB that has the
-
-506
-00:20:11,600 --> 00:20:14,990
-GB you need, and so that's inherently
-
-507
-00:20:15,000 --> 00:20:18,470
-faster than reading 50 GB regardless of
-
-508
-00:20:18,480 --> 00:20:20,870
-how you fast your IO is on that
-
-509
-00:20:20,880 --> 00:20:22,790
-substrate. Something like that.
-
-510
-00:20:22,800 --> 00:20:23,870
-Exactly. Yeah, so there are two
-
-511
-00:20:23,880 --> 00:20:25,990
-components to, right? One is the
-
-512
-00:20:26,000 --> 00:20:28,270
-metadata being rich, and another is your
-
-513
-00:20:28,280 --> 00:20:30,470
-engine as well as the warehouse and the
-
-514
-00:20:30,480 --> 00:20:33,110
-computer using on that, right? So, let's
-
-515
-00:20:33,120 --> 00:20:34,630
-say if you have a larger compute, you
-
-516
-00:20:34,640 --> 00:20:36,110
-will have more RAM and those kind of
-
-517
-00:20:36,120 --> 00:20:38,110
-things, but you're also limited with the
-
-518
-00:20:38,120 --> 00:20:41,150
-metadata as well. So, it's a combination
-
-519
-00:20:41,160 --> 00:20:42,950
-of both. I will marry them together. I
-
-520
-00:20:42,960 --> 00:20:44,710
-wouldn't separate them together in terms
-
-521
-00:20:44,720 --> 00:20:46,910
-of optimizing it, right? And finding the
-
-522
-00:20:46,920 --> 00:20:49,030
-data faster. But, your point on the
-
-523
-00:20:49,040 --> 00:20:51,710
-Iceberg, I plan to cover that if we have
-
-524
-00:20:51,720 --> 00:20:53,750
-time, the Iceberg architecture, how the
-
-525
-00:20:53,760 --> 00:20:55,790
-metadata is laid out. But, the metadata
-
-526
-00:20:55,800 --> 00:20:58,190
-is so rich and it at the file level that
-
-527
-00:20:58,200 --> 00:21:01,390
-it lets you prune or basically skip the
-
-528
-00:21:01,400 --> 00:21:03,310
-files which are not relevant at the back
-
-529
-00:21:03,320 --> 00:21:04,710
-end.
-
-530
-00:21:04,720 --> 00:21:05,590
-A new A new
-
-531
-00:21:05,600 --> 00:21:08,590
-for software excellence is here.
-
-532
-00:21:08,600 --> 00:21:10,670
-The IEEE Computer Society created the
-
-533
-00:21:10,680 --> 00:21:12,950
-software certifications to help you
-
-534
-00:21:12,960 --> 00:21:15,110
-evaluate candidates and encourage growth
-
-535
-00:21:15,120 --> 00:21:17,150
-across your teams.
-
-536
-00:21:17,160 --> 00:21:18,670
-Find out how to turn your individual
-
-537
-00:21:18,680 --> 00:21:20,750
-contributors into a unified team that
-
-538
-00:21:20,760 --> 00:21:21,990
-delivers excellence at
-
-539
-00:21:22,000 --> 00:21:27,590
-computer.org/certification.
-
-540
-00:21:29,350 --> 00:21:29,360
-Well, let's just let's talk about some
-
-541
-00:21:29,360 --> 00:21:32,590
-of the queries and the metadata. When
-
-542
-00:21:32,600 --> 00:21:35,350
-you're using Iceberg, what does the
-
-543
-00:21:35,360 --> 00:21:37,790
-interface look like to programmer? Are
-
-544
-00:21:37,800 --> 00:21:41,430
-you doing select or something that looks
-
-545
-00:21:41,440 --> 00:21:42,550
-familiar?
-
-546
-00:21:42,560 --> 00:21:44,190
-Yeah, the data engineers or the
-
-547
-00:21:44,200 --> 00:21:46,190
-engineers who are working with Iceberg,
-
-548
-00:21:46,200 --> 00:21:49,390
-they don't have to understand what
-
-549
-00:21:49,400 --> 00:21:51,790
-Iceberg implementation look like. They
-
-550
-00:21:51,800 --> 00:21:53,670
-just need to worry about the SQL or the
+Okay.
+
+217
+00:19:52,950 --> 00:20:00,590
+What I think you might be saying is maybe on Postgres or coffee out of poorly designed query and it's doing a table scan.
+
+218
+00:20:00,590 --> 00:20:07,670
+It's a 50 GB table and it ends up needing to read 50 GB that the design of Iceberg,
+
+219
+00:20:07,670 --> 00:20:14,990
+it's so smart that it can have you reading 1 GB that has the GB you need,
+
+220
+00:20:14,990 --> 00:20:22,791
+and so that's inherently faster than reading 50 GB regardless of how you fast your IO is on that substrate. Something like that.
+
+221
+00:20:22,800 --> 00:20:25,990
+Exactly. Yeah, so there are two components to, right?
 
-551
-00:21:53,680 --> 00:21:56,110
-Python they know. So, as an example, if
+222
+00:20:25,990 --> 00:20:33,110
+One is the metadata being rich, and another is your engine as well as the warehouse and the computer using on that, right?
 
-552
-00:21:56,120 --> 00:21:58,470
-you know select queries, insert queries,
+223
+00:20:33,110 --> 00:20:41,150
+So, let's say if you have a larger compute, you will have more RAM and those kind of things, but you're also limited with the metadata as well.
 
-553
-00:21:58,480 --> 00:22:01,430
-update queries, other things are managed
+224
+00:20:41,150 --> 00:20:42,951
+So, it's a combination of both. I will marry them together.
 
-554
-00:22:01,440 --> 00:22:03,830
-by the engines, right? Because they're
+225
+00:20:42,951 --> 00:20:46,910
+I wouldn't separate them together in terms of optimizing it, right?
 
-555
-00:22:03,840 --> 00:22:06,630
-integrating with the rest catalog. Now,
+226
+00:20:46,910 --> 00:20:49,030
+And finding the data faster.
 
-556
-00:22:06,640 --> 00:22:07,870
-let's talk about it. So, let's say if
+227
+00:20:49,030 --> 00:20:55,790
+But, your point on the Iceberg, I plan to cover that if we have time, the Iceberg architecture, how the metadata is laid out.
 
-557
-00:22:07,880 --> 00:22:09,510
-you're running a select query in SQL,
+228
+00:20:55,790 --> 00:21:04,710
+But, the metadata is so rich and it at the file level that it lets you prune or basically skip the files which are not relevant at the back end.
 
-558
-00:22:09,520 --> 00:22:11,150
-it's pretty much the same select query
+229
+00:21:04,720 --> 00:21:08,590
+A new A new for software excellence is here.
 
-559
-00:22:11,160 --> 00:22:12,550
-you will run in Iceberg. If you're
+230
+00:21:08,600 --> 00:21:17,150
+The IEEE Computer Society created the software certifications to help you evaluate candidates and encourage growth across your teams.
 
-560
-00:22:12,560 --> 00:22:14,230
-running the insert query, you'll run the
+231
+00:21:17,160 --> 00:21:27,590
+Find out how to turn your individual contributors into a unified team that delivers excellence at computer.org/certification.
 
-561
-00:22:14,240 --> 00:22:16,750
-same insert query in it's kind of a ANSI
+232
+00:21:29,350 --> 00:21:32,590
+Well, let's just let's talk about some of the queries and the metadata.
 
-562
-00:22:16,760 --> 00:22:18,830
-standard SQL that you run. So, you don't
+233
+00:21:32,590 --> 00:21:37,790
+When you're using Iceberg, what does the interface look like to programmer?
 
-563
-00:22:18,840 --> 00:22:20,670
-have to learn that. What you need to
+234
+00:21:37,790 --> 00:21:42,550
+Are you doing select or something that looks familiar?
 
-564
-00:22:20,680 --> 00:22:21,990
-learn is about the architecture
+235
+00:21:42,560 --> 00:21:51,790
+Yeah, the data engineers or the engineers who are working with Iceberg, they don't have to understand what Iceberg implementation look like.
 
-565
-00:22:22,000 --> 00:22:24,990
-patterns, right? How the Iceberg handles
+236
+00:21:51,790 --> 00:21:56,110
+They just need to worry about the SQL or the Python they know.
 
-566
-00:22:25,000 --> 00:22:27,550
-data, how Iceberg handles metadata, how
+237
+00:21:56,110 --> 00:22:03,830
+So, as an example, if you know select queries, insert queries, update queries, other things are managed by the engines, right?
 
-567
-00:22:27,560 --> 00:22:29,310
-read operations happens, how write
+238
+00:22:03,830 --> 00:22:07,870
+Because they're integrating with the rest catalog. Now, let's talk about it.
 
-568
-00:22:29,320 --> 00:22:31,710
-operation happens, what metadata files
+239
+00:22:07,870 --> 00:22:12,550
+So, let's say if you're running a select query in SQL, it's pretty much the same select query you will run in Iceberg.
 
-569
-00:22:31,720 --> 00:22:33,830
-are. Because if you don't know those
+240
+00:22:12,550 --> 00:22:18,830
+If you're running the insert query, you'll run the same insert query in it's kind of a ANSI standard SQL that you run.
 
-570
-00:22:33,840 --> 00:22:35,750
-things, you may not be able to optimize
+241
+00:22:18,830 --> 00:22:20,670
+So, you don't have to learn that.
 
-571
-00:22:35,760 --> 00:22:37,470
-for your workloads.
+242
+00:22:20,670 --> 00:22:24,990
+What you need to learn is about the architecture patterns, right?
 
-572
-00:22:37,480 --> 00:22:39,870
-I'm reading about Iceberg, there's
+243
+00:22:24,990 --> 00:22:33,830
+How the Iceberg handles data, how Iceberg handles metadata, how read operations happens, how write operation happens, what metadata files are.
 
-573
-00:22:39,880 --> 00:22:42,590
-discussion of time travel queries. Can
+244
+00:22:33,830 --> 00:22:37,470
+Because if you don't know those things, you may not be able to optimize for your workloads.
 
-574
-00:22:42,600 --> 00:22:44,070
-you explain what that is?
+245
+00:22:37,480 --> 00:22:44,070
+I'm reading about Iceberg, there's discussion of time travel queries. Can you explain what that is?
 
-575
+246
 00:22:44,080 --> 00:22:47,630
-Absolutely. So, time travel is basically
+Absolutely.
 
-576
-00:22:47,640 --> 00:22:49,590
-I want to go in the past at a certain
+247
+00:22:47,630 --> 00:22:52,030
+So, time travel is basically I want to go in the past at a certain time.
 
-577
-00:22:49,600 --> 00:22:52,030
-time. And you can do it so many ways,
+248
+00:22:52,030 --> 00:22:55,790
+And you can do it so many ways, right?
 
-578
-00:22:52,040 --> 00:22:55,790
-right? You can say, I want to go back
+249
+00:22:55,790 --> 00:23:00,790
+You can say, I want to go back and see how the data look like 5 days ago.
 
-579
-00:22:55,800 --> 00:22:58,190
-and see how the data look like 5 days
+250
+00:23:00,790 --> 00:23:09,830
+And assume you have a lot more events and you're doing something, let's say you're doing a machine learning model or you're doing some DML and your code has changed now and your data looks a little different.
 
-580
-00:22:58,200 --> 00:23:00,790
-ago. And assume you have a lot more
+251
+00:23:09,830 --> 00:23:11,510
+Oh, you will like, "Oh my god, I messed it up.
 
-581
-00:23:00,800 --> 00:23:02,270
-events and you're doing something, let's
+252
+00:23:11,510 --> 00:23:13,470
+I want to back up.
 
-582
-00:23:02,280 --> 00:23:03,430
-say you're doing a machine learning
+253
+00:23:13,470 --> 00:23:15,150
+I want to go back to the old state and see how it looks."
 
-583
-00:23:03,440 --> 00:23:05,430
-model or you're doing some DML and your
+254
+00:23:15,150 --> 00:23:25,070
+So, you what you can basically do is select from that events table as an example, timestamp as of and you provide that particular timestamp.
 
-584
-00:23:05,440 --> 00:23:08,230
-code has changed now and your data looks
+255
+00:23:25,070 --> 00:23:26,870
+Not only that, you can provide other things, right?
 
-585
-00:23:08,240 --> 00:23:09,830
-a little different. Oh, you will like,
+256
+00:23:26,870 --> 00:23:30,990
+For example, what you can do is there's something called snapshot.
 
-586
-00:23:09,840 --> 00:23:11,510
-"Oh my god, I messed it up. I want to
+257
+00:23:30,990 --> 00:23:38,590
+So, every commit you do is a snapshot and it goes with an ID and you will say, "Select star from that again the events table."
 
-587
-00:23:11,520 --> 00:23:13,470
-back up. I want to go back to the old
+258
+00:23:38,600 --> 00:23:42,271
+And you'll say, "I need this particular version." Right?
 
-588
-00:23:13,480 --> 00:23:15,150
-state and see how it looks." So, you
+259
+00:23:42,271 --> 00:23:44,350
+And you will say, "Version as of."
 
-589
-00:23:15,160 --> 00:23:17,270
-what you can basically do is select from
+260
+00:23:44,350 --> 00:23:47,550
+And you provide that version.
 
-590
-00:23:17,280 --> 00:23:19,470
-that events table as an example,
+261
+00:23:47,550 --> 00:23:50,070
+Okay, so it lets you go in the past to get that particular state.
 
-591
-00:23:19,480 --> 00:23:22,430
-timestamp as of and you provide that
+262
+00:23:50,070 --> 00:23:54,070
+And this really is very powerful when you want to inspect data.
 
-592
-00:23:22,440 --> 00:23:25,070
-particular timestamp. Not only that, you
+263
+00:23:54,070 --> 00:23:56,550
+Let's say you have GDPR compliance, right?
 
-593
-00:23:25,080 --> 00:23:26,870
-can provide other things, right? For
+264
+00:23:56,550 --> 00:23:59,270
+And it really lets you see how your data changed.
 
-594
-00:23:26,880 --> 00:23:28,390
-example, what you can do is there's
+265
+00:23:59,270 --> 00:24:04,630
+And sometime miss- takenly mess up the data, right? You can go back and recover it from the past.
 
-595
-00:23:28,400 --> 00:23:30,990
-something called snapshot. So, every
+266
+00:24:04,630 --> 00:24:09,030
+You don't have to do rollbacks. It automatically is a feature of Iceberg.
 
-596
-00:23:31,000 --> 00:23:33,910
-commit you do is a snapshot and it goes
+267
+00:24:09,040 --> 00:24:17,030
+The idea of GDPR compliance as an example from this, it sounds very interesting.
 
-597
-00:23:33,920 --> 00:23:36,390
-with an ID and you will say, "Select
+268
+00:24:17,030 --> 00:24:20,510
+I didn't quite get how that example illustrates GDPR.
 
-598
-00:23:36,400 --> 00:23:38,590
-star from that again the events table."
+269
+00:24:20,510 --> 00:24:22,030
+Could you explain that a bit more detail?
 
-599
-00:23:38,600 --> 00:23:40,430
-And you'll say, "I need this particular
-
-600
-00:23:40,440 --> 00:23:42,270
-version." Right? And you will say,
-
-601
-00:23:42,280 --> 00:23:44,350
-"Version as of." And you provide that
-
-602
-00:23:44,360 --> 00:23:47,550
-version. Okay, so it lets you go in the
-
-603
-00:23:47,560 --> 00:23:50,070
-past to get that particular state. And
-
-604
-00:23:50,080 --> 00:23:52,390
-this really is very powerful when you
-
-605
-00:23:52,400 --> 00:23:54,070
-want to inspect data. Let's say you have
-
-606
-00:23:54,080 --> 00:23:56,550
-GDPR compliance, right? And it really
-
-607
-00:23:56,560 --> 00:23:59,270
-lets you see how your data changed. And
-
-608
-00:23:59,280 --> 00:24:01,750
-sometime miss- takenly mess up the data,
-
-609
-00:24:01,760 --> 00:24:03,550
-right? You can go back and recover it
-
-610
-00:24:03,560 --> 00:24:04,630
-from the past. You don't have to do
-
-611
-00:24:04,640 --> 00:24:07,630
-rollbacks. It automatically is a feature
-
-612
-00:24:07,640 --> 00:24:09,030
-of Iceberg.
-
-613
-00:24:09,040 --> 00:24:12,270
-The idea of GDPR compliance as an
-
-614
-00:24:12,280 --> 00:24:14,430
-example from this, it sounds very
-
-615
-00:24:14,440 --> 00:24:17,030
-interesting. I didn't quite get how that
-
-616
-00:24:17,040 --> 00:24:20,510
-example illustrates GDPR. Could you
-
-617
-00:24:20,520 --> 00:24:22,030
-explain that a bit more detail?
-
-618
+270
 00:24:22,040 --> 00:24:24,830
-Sure. In GDPR essentially, there's a
+Sure.
 
-619
-00:24:24,840 --> 00:24:27,950
-concept of right to be forgotten. You
+271
+00:24:24,830 --> 00:24:27,950
+In GDPR essentially, there's a concept of right to be forgotten.
 
-620
-00:24:27,960 --> 00:24:30,510
-want your records to be deleted. You
+272
+00:24:27,950 --> 00:24:30,510
+You want your records to be deleted.
 
-621
-00:24:30,520 --> 00:24:33,070
-don't want to be remembered, right? And
+273
+00:24:30,510 --> 00:24:33,070
+You don't want to be remembered, right?
 
-622
-00:24:33,080 --> 00:24:35,350
-what you can do is if you can go back
+274
+00:24:33,070 --> 00:24:39,430
+And what you can do is if you can go back and show that this particular time the particular query was deleted.
 
-623
-00:24:35,360 --> 00:24:37,710
-and show that this particular time the
+275
+00:24:39,430 --> 00:24:44,710
+It may not be the right example here, but another thing you could do is you need to also remove the metadata related to that.
 
-624
-00:24:37,720 --> 00:24:39,430
-particular query was deleted. It may not
+276
+00:24:44,710 --> 00:24:53,550
+If you can remove that, it deletes all the link between that parquet file that you have stored and the metadata and you can show what you have done in the past.
 
-625
-00:24:39,440 --> 00:24:41,270
-be the right example here, but another
-
-626
-00:24:41,280 --> 00:24:42,790
-thing you could do is you need to also
-
-627
-00:24:42,800 --> 00:24:44,710
-remove the metadata related to that. If
-
-628
-00:24:44,720 --> 00:24:46,710
-you can remove that, it deletes all the
-
-629
-00:24:46,720 --> 00:24:48,910
-link between that parquet file that you
-
-630
-00:24:48,920 --> 00:24:51,270
-have stored and the metadata and you can
-
-631
-00:24:51,280 --> 00:24:53,550
-show what you have done in the past.
-
-632
+277
 00:24:53,560 --> 00:24:56,230
-That is an interesting example. What I
+That is an interesting example.
 
-633
-00:24:56,240 --> 00:24:59,030
-think you meant is somebody's auditing
+278
+00:24:56,230 --> 00:25:03,390
+What I think you meant is somebody's auditing you or customer says, can you prove that I've been forgotten?
 
-634
-00:24:59,040 --> 00:25:01,310
-you or customer says, can you prove that
+279
+00:25:03,390 --> 00:25:11,070
+You could show that 5 days ago the record was there or as of 5 days ago the record was there and as of today it's not.
 
-635
-00:25:01,320 --> 00:25:03,390
-I've been forgotten? You could show that
+280
+00:25:11,070 --> 00:25:13,750
+But, the data might still be somewhere on disk.
 
-636
-00:25:03,400 --> 00:25:06,550
-5 days ago the record was there or as of
+281
+00:25:13,750 --> 00:25:16,870
+It's simply inaccessible because nothing links to it.
 
-637
-00:25:06,560 --> 00:25:07,870
-5 days ago the record was there and as
+282
+00:25:16,880 --> 00:25:23,830
+That's why I was saying like it may not be the right example here because you really have to delete the data, the parquet files and the metadata link.
 
-638
-00:25:07,880 --> 00:25:11,070
-of today it's not. But, the data might
+283
+00:25:23,830 --> 00:25:25,670
+So, there shouldn't be any memory there.
 
-639
-00:25:11,080 --> 00:25:13,750
-still be somewhere on disk. It's simply
+284
+00:25:25,680 --> 00:25:32,110
+But, the good idea will here is like if you do timestamp as of, it gets into the weeds of it, right?
 
-640
-00:25:13,760 --> 00:25:16,310
-inaccessible because nothing links to
+285
+00:25:32,110 --> 00:25:38,230
+If you do timestamp as of, it should not be able to show you anything because you want all of the data to be deleted for the compliance reasons.
 
-641
-00:25:16,320 --> 00:25:16,870
-it.
+286
+00:25:38,240 --> 00:25:41,630
+That's an interesting example, maybe not a correct example.
 
-642
-00:25:16,880 --> 00:25:18,310
-That's why I was saying like it may not
+287
+00:25:41,630 --> 00:25:45,630
+Do you have any other examples of a use case for the time travel queries?
 
-643
-00:25:18,320 --> 00:25:20,270
-be the right example here because you
-
-644
-00:25:20,280 --> 00:25:21,710
-really have to delete the data, the
-
-645
-00:25:21,720 --> 00:25:23,830
-parquet files and the metadata link. So,
-
-646
-00:25:23,840 --> 00:25:25,670
-there shouldn't be any memory there.
-
-647
-00:25:25,680 --> 00:25:28,070
-But, the good idea will here is like if
-
-648
-00:25:28,080 --> 00:25:30,150
-you do timestamp as of, it gets into the
-
-649
-00:25:30,160 --> 00:25:32,110
-weeds of it, right? If you do timestamp
-
-650
-00:25:32,120 --> 00:25:33,630
-as of, it should not be able to show you
-
-651
-00:25:33,640 --> 00:25:35,590
-anything because you want all of the
-
-652
-00:25:35,600 --> 00:25:37,190
-data to be deleted for the compliance
-
-653
-00:25:37,200 --> 00:25:38,230
-reasons.
-
-654
-00:25:38,240 --> 00:25:39,950
-That's an interesting example, maybe not
-
-655
-00:25:39,960 --> 00:25:41,630
-a correct example. Do you have any other
-
-656
-00:25:41,640 --> 00:25:44,190
-examples of a use case for the time
-
-657
-00:25:44,200 --> 00:25:45,630
-travel queries?
-
-658
+288
 00:25:45,640 --> 00:25:47,950
-Sure. Think of an example, team ran a
+Sure.
 
-659
-00:25:47,960 --> 00:25:50,630
-delete job that was too broad, right? It
+289
+00:25:47,950 --> 00:25:50,630
+Think of an example, team ran a delete job that was too broad, right?
 
-660
-00:25:50,640 --> 00:25:53,390
-was supposed to run delete 500 records,
+290
+00:25:50,630 --> 00:25:55,830
+It was supposed to run delete 500 records, but it deleted 2 million records, right?
 
-661
-00:25:53,400 --> 00:25:55,830
-but it deleted 2 million records, right?
+291
+00:25:55,840 --> 00:26:01,790
+So, with Iceberg you can run a command like rollback as we do in the old worlds, right?
 
-662
-00:25:55,840 --> 00:25:58,270
-So, with Iceberg you can run a command
+292
+00:26:01,790 --> 00:26:03,910
+And you can rollback the previous snapshot.
 
-663
-00:25:58,280 --> 00:25:59,950
-like rollback as we do in the old
+293
+00:26:03,910 --> 00:26:08,070
+You tell it, okay, this is the previous snapshot I want to go to and your data is back in seconds.
 
-664
-00:25:59,960 --> 00:26:01,790
-worlds, right? And you can rollback the
+294
+00:26:08,080 --> 00:26:18,510
+That is a very timely example, Zahir, because we now have stories reaching the tech news about people enabling AI agents to talk to their database and
 
-665
-00:26:01,800 --> 00:26:03,910
-previous snapshot. You tell it, okay,
+295
+00:26:18,510 --> 00:26:25,590
+the AI agent has inadvertently deleted too broadly, that would be a very useful feature.
 
-666
-00:26:03,920 --> 00:26:05,230
-this is the previous snapshot I want to
+296
+00:26:25,600 --> 00:26:32,030
+Yes, it is very, very much beneficial and I have seen a lot of AI workloads really value it.
 
-667
-00:26:05,240 --> 00:26:08,070
-go to and your data is back in seconds.
+297
+00:26:32,030 --> 00:26:44,910
+No one wants to be in a situation where wherein you have you delete and make that mess and then have to explain, I executed it without even reading it like it was too broad, but it's tool in your toolbox that really helps you feel secure.
 
-668
-00:26:08,080 --> 00:26:09,990
-That is a very timely example, Zahir,
+298
+00:26:44,920 --> 00:26:50,150
+You mentioned that it supports inserts and updates.
 
-669
-00:26:10,000 --> 00:26:12,910
-because we now have stories reaching the
+299
+00:26:50,150 --> 00:26:54,430
+Clearly, your database product is of no use if there's no way of getting data into it,
 
-670
-00:26:12,920 --> 00:26:15,950
-tech news about people enabling AI
+300
+00:26:54,430 --> 00:27:02,990
+but is the overall architecture highly read optimized at the expense of rights performance being sacrificed?
 
-671
-00:26:15,960 --> 00:26:18,510
-agents to talk to their database and the
-
-672
-00:26:18,520 --> 00:26:21,790
-AI agent has inadvertently deleted too
-
-673
-00:26:21,800 --> 00:26:24,430
-broadly, that would be a very useful
-
-674
-00:26:24,440 --> 00:26:25,590
-feature.
-
-675
-00:26:25,600 --> 00:26:28,030
-Yes, it is very, very much beneficial
-
-676
-00:26:28,040 --> 00:26:30,030
-and I have seen a lot of AI workloads
-
-677
-00:26:30,040 --> 00:26:32,030
-really value it. No one wants to be in a
-
-678
-00:26:32,040 --> 00:26:34,150
-situation where wherein you have you
-
-679
-00:26:34,160 --> 00:26:35,830
-delete and make that mess and then have
-
-680
-00:26:35,840 --> 00:26:38,550
-to explain, I executed it without even
-
-681
-00:26:38,560 --> 00:26:40,550
-reading it like it was too broad, but
-
-682
-00:26:40,560 --> 00:26:42,510
-it's tool in your toolbox that really
-
-683
-00:26:42,520 --> 00:26:44,910
-helps you feel secure.
-
-684
-00:26:44,920 --> 00:26:47,510
-You mentioned that it supports inserts
-
-685
-00:26:47,520 --> 00:26:50,150
-and updates. Clearly, your database
-
-686
-00:26:50,160 --> 00:26:51,950
-product is of no use if there's no way
-
-687
-00:26:51,960 --> 00:26:54,430
-of getting data into it, but is the
-
-688
-00:26:54,440 --> 00:26:57,150
-overall architecture highly read
-
-689
-00:26:57,160 --> 00:27:00,070
-optimized at the expense of rights
-
-690
-00:27:00,080 --> 00:27:02,990
-performance being sacrificed?
-
-691
+301
 00:27:03,000 --> 00:27:05,110
-It's a essential Iceberg. I would put it
-
-692
-00:27:05,120 --> 00:27:07,630
-at for analytical workloads. First of
-
-693
-00:27:07,640 --> 00:27:10,230
-all, so and secondly, I would assume
-
-694
-00:27:10,240 --> 00:27:12,190
-most of the workloads would be for the
-
-695
-00:27:12,200 --> 00:27:13,830
-read purposes, but it doesn't mean you
-
-696
-00:27:13,840 --> 00:27:16,750
-can't do rights. So the rights I would
-
-697
-00:27:16,760 --> 00:27:19,310
-imagine in my world would be more of a
-
-698
-00:27:19,320 --> 00:27:21,630
-bulk rights instead of transactional
-
-699
-00:27:21,640 --> 00:27:24,230
-rights. Say it won't be a teller like
-
-700
-00:27:24,240 --> 00:27:26,190
-rights, but it'll be oh, you're doing
-
-701
-00:27:26,200 --> 00:27:29,550
-bulk million rows rights. Now, those
-
-702
-00:27:29,560 --> 00:27:31,830
-rights can be happen in two with it two
-
-703
-00:27:31,840 --> 00:27:33,830
-things that happen. There's a concept of
-
-704
-00:27:33,840 --> 00:27:37,150
-copy on right and merge on read. So if
-
-705
-00:27:37,160 --> 00:27:38,670
-you want I can go deep into it and
-
-706
-00:27:38,680 --> 00:27:42,270
-basically it defines how the re reads
-
-707
-00:27:42,280 --> 00:27:43,950
-what should be done or how the rights
-
-708
-00:27:43,960 --> 00:27:45,990
-should be done. And just a little bit of
-
-709
-00:27:46,000 --> 00:27:48,190
-primer, copy on rights essentially means
-
-710
-00:27:48,200 --> 00:27:49,870
-let's say if you're doing any some DML
-
-711
-00:27:49,880 --> 00:27:52,910
-operation, right? It will rewrite the
-
-712
-00:27:52,920 --> 00:27:55,790
-new file. So assume you have thousands
-
-713
-00:27:55,800 --> 00:27:58,070
-of parquet files in one parquet file
-
-714
-00:27:58,080 --> 00:28:01,270
-which is 100 MB or 100 GB, you have 1
-
-715
-00:28:01,280 --> 00:28:03,790
-million records, but you only want to
-
-716
-00:28:03,800 --> 00:28:05,950
-change one record. What it will do is
-
-717
-00:28:05,960 --> 00:28:08,230
-it'll rewrite the whole new file, right?
-
-718
-00:28:08,240 --> 00:28:10,830
-It's great in terms of read because
-
-719
-00:28:10,840 --> 00:28:13,350
-it'll be faster and referencing to the
-
-720
-00:28:13,360 --> 00:28:15,470
-new file. And there's another concept of
-
-721
-00:28:15,480 --> 00:28:18,310
-merge on read in which what it does is
-
-722
-00:28:18,320 --> 00:28:21,510
-it maintains the same files, but adds a
-
-723
-00:28:21,520 --> 00:28:23,830
-kind of a sticky note to that file or
-
-724
-00:28:23,840 --> 00:28:26,790
-this particular record was deleted. But
-
-725
-00:28:26,800 --> 00:28:28,710
-when you're reading, your computing is
-
-726
-00:28:28,720 --> 00:28:31,550
-computing that oh, I need to do this 10
-
-727
-00:28:31,560 --> 00:28:33,710
-records minus one and present you the
-
-728
-00:28:33,720 --> 00:28:36,470
-nine records. And that's how you define
-
-729
-00:28:36,480 --> 00:28:38,830
-optimize for your workloads.
-
-730
-00:28:38,840 --> 00:28:41,070
-I would like now to get more of a deep
-
-731
-00:28:41,080 --> 00:28:44,390
-dive into the read and write paths
-
-732
-00:28:44,400 --> 00:28:47,390
-including the structure of the catalog
-
-733
-00:28:47,400 --> 00:28:50,110
-and the metadata. I think this would be
-
-734
-00:28:50,120 --> 00:28:53,390
-a good time to ask you to define parquet
-
-735
-00:28:53,400 --> 00:28:54,950
-because you've mentioned that a few
-
-736
-00:28:54,960 --> 00:28:56,990
-times and I think it will be important.
-
-737
-00:28:57,000 --> 00:28:59,590
-So, let's do parquet first and then do
-
-738
-00:28:59,600 --> 00:29:02,590
-the architecture and metadata.
-
-739
-00:29:02,600 --> 00:29:04,230
-I would think of parquet as a file
-
-740
-00:29:04,240 --> 00:29:07,510
-format. So, just like you have dot xlsx
-
-741
-00:29:07,520 --> 00:29:09,630
-for Excel, you'll have dot parquet. The
-
-742
-00:29:09,640 --> 00:29:11,950
-advantage or before going to advantage,
-
-743
-00:29:11,960 --> 00:29:13,750
-I'll describe it. It's a columnar
-
-744
-00:29:13,760 --> 00:29:16,150
-storage meaning say you have a table or
-
-745
-00:29:16,160 --> 00:29:18,550
-Excel sheet that we are aware of and it
-
-746
-00:29:18,560 --> 00:29:20,750
-has one column with names. It's stored
-
-747
-00:29:20,760 --> 00:29:22,510
-by the names. It doesn't store by the
-
-748
-00:29:22,520 --> 00:29:25,150
-row. So, it's columnar but it's also not
-
-749
-00:29:25,160 --> 00:29:27,430
-only that it can be compressed. So, it's
-
-750
-00:29:27,440 --> 00:29:30,750
-at least three to four times smaller in
-
-751
-00:29:30,760 --> 00:29:33,950
-size than your Excel file per se, right?
-
-752
-00:29:33,960 --> 00:29:36,510
-So, it's you can store a lot more data
-
-753
-00:29:36,520 --> 00:29:40,430
-in a lot smaller of a file, right? And
-
-754
-00:29:40,440 --> 00:29:43,110
-each column is stored contiguously on
-
-755
-00:29:43,120 --> 00:29:45,830
-disk. So, when it is being read, it's
-
-756
-00:29:45,840 --> 00:29:47,950
-faster because it's stored together,
-
-757
-00:29:47,960 --> 00:29:50,350
-right? The column. And then another
-
-758
-00:29:50,360 --> 00:29:52,630
-thing that it has advantage of is that
-
-759
-00:29:52,640 --> 00:29:55,630
-it is self-describing meaning the schema
-
-760
-00:29:55,640 --> 00:29:57,750
-is in there in the file footer of the
-
-761
-00:29:57,760 --> 00:30:00,230
-parquet. And the compression is highly
-
-762
-00:30:00,240 --> 00:30:01,990
-effective. Another thing, I don't want
-
-763
-00:30:02,000 --> 00:30:03,190
-to go super technical but something
-
-764
-00:30:03,200 --> 00:30:06,110
-called predicate pushdown when you're
-
-765
-00:30:06,120 --> 00:30:08,910
-telling like what filter inside the file
-
-766
-00:30:08,920 --> 00:30:10,430
-you want to do without doing the full
-
-767
-00:30:10,440 --> 00:30:13,430
-scan which lets you be more performant
-
-768
-00:30:13,440 --> 00:30:15,750
-when you're reading it, right? And then
-
-769
-00:30:15,760 --> 00:30:17,150
-another thing that I really like about
-
-770
-00:30:17,160 --> 00:30:19,670
-the parquet is or other engineers do as
-
-771
-00:30:19,680 --> 00:30:21,830
-well, you can have complex types like
-
-772
-00:30:21,840 --> 00:30:24,990
-structs, arrays, and maps if you want to
-
-773
-00:30:25,000 --> 00:30:27,350
-do that, right? So, when you're doing
-
-774
-00:30:27,360 --> 00:30:29,750
-any reads, it read only the age column
-
-775
-00:30:29,760 --> 00:30:32,430
-as an example but also note that be
-
-776
-00:30:32,440 --> 00:30:34,470
-performant when reading it.
-
-777
-00:30:34,480 --> 00:30:37,870
-I could guess that columnar formats are
-
-778
-00:30:37,880 --> 00:30:40,110
-highly compressible because
-
-779
-00:30:40,120 --> 00:30:42,270
-particularly domain-specific
-
-780
-00:30:42,280 --> 00:30:45,550
-data tends to have a very few values or
-
-781
-00:30:45,560 --> 00:30:48,150
-a small range. Now, the predicate push
-
-782
-00:30:48,160 --> 00:30:50,510
-down, is that something where the file
-
-783
-00:30:50,520 --> 00:30:52,790
-may be organized in such a way that if
-
-784
-00:30:52,800 --> 00:30:54,950
-you're looking for, give one example,
-
-785
-00:30:54,960 --> 00:30:57,670
-values greater than 10, it can figure
-
-786
-00:30:57,680 --> 00:30:59,430
-out it doesn't need to read the entire
-
-787
-00:30:59,440 --> 00:31:02,870
-file to get values in that range, so it
+It's a essential Iceberg.
+
+302
+00:27:05,110 --> 00:27:07,630
+I would put it at for analytical workloads.
+
+303
+00:27:07,630 --> 00:27:16,750
+First of all, so and secondly, I would assume most of the workloads would be for the read purposes, but it doesn't mean you can't do rights.
+
+304
+00:27:16,750 --> 00:27:24,230
+So the rights I would imagine in my world would be more of a bulk rights instead of transactional rights.
+
+305
+00:27:24,230 --> 00:27:29,550
+Say it won't be a teller like rights, but it'll be oh, you're doing bulk million rows rights.
+
+306
+00:27:29,550 --> 00:27:33,830
+Now, those rights can be happen in two with it two things that happen.
+
+307
+00:27:33,830 --> 00:27:37,150
+There's a concept of copy on right and merge on read.
+
+308
+00:27:37,150 --> 00:27:45,990
+So if you want I can go deep into it and basically it defines how the re reads what should be done or how the rights should be done.
+
+309
+00:27:45,990 --> 00:27:52,910
+And just a little bit of primer, copy on rights essentially means let's say if you're doing any some DML operation, right?
+
+310
+00:27:52,910 --> 00:27:55,790
+It will rewrite the new file.
+
+311
+00:27:55,790 --> 00:28:05,950
+So assume you have thousands of parquet files in one parquet file which is 100 MB or 100 GB, you have 1 million records, but you only want to change one record.
+
+312
+00:28:05,950 --> 00:28:08,230
+What it will do is it'll rewrite the whole new file, right?
+
+313
+00:28:08,240 --> 00:28:15,470
+It's great in terms of read because it'll be faster and referencing to the new file.
+
+314
+00:28:15,470 --> 00:28:26,790
+And there's another concept of merge on read in which what it does is it maintains the same files, but adds a kind of a sticky note to that file or this particular record was deleted.
+
+315
+00:28:26,790 --> 00:28:36,470
+But when you're reading, your computing is computing that oh, I need to do this 10 records minus one and present you the nine records.
+
+316
+00:28:36,470 --> 00:28:38,830
+And that's how you define optimize for your workloads.
+
+317
+00:28:38,840 --> 00:28:50,110
+I would like now to get more of a deep dive into the read and write paths including the structure of the catalog and the metadata.
+
+318
+00:28:50,110 --> 00:28:56,990
+I think this would be a good time to ask you to define parquet because you've mentioned that a few times and I think it will be important.
+
+319
+00:28:57,000 --> 00:29:02,590
+So, let's do parquet first and then do the architecture and metadata.
+
+320
+00:29:02,600 --> 00:29:07,510
+I would think of parquet as a file format.
+
+321
+00:29:07,510 --> 00:29:09,630
+So, just like you have dot xlsx for Excel, you'll have dot parquet.
+
+322
+00:29:09,630 --> 00:29:13,750
+The advantage or before going to advantage, I'll describe it.
+
+323
+00:29:13,750 --> 00:29:20,750
+It's a columnar storage meaning say you have a table or Excel sheet that we are aware of and it has one column with names.
 
-788
-00:31:02,880 --> 00:31:04,710
-reduces the amount of IO.
+324
+00:29:20,750 --> 00:29:22,510
+It's stored by the names.
 
-789
-00:31:04,720 --> 00:31:06,670
-Exactly. That's precisely right. You're
+325
+00:29:22,510 --> 00:29:25,150
+It doesn't store by the row.
 
-790
-00:31:06,680 --> 00:31:08,750
-reducing the IO, and uh with that
+326
+00:29:25,150 --> 00:29:27,430
+So, it's columnar but it's also not only that it can be compressed.
 
-791
-00:31:08,760 --> 00:31:10,710
-predicate push down, it all is only to
+327
+00:29:27,430 --> 00:29:33,950
+So, it's at least three to four times smaller in size than your Excel file per se, right?
 
-792
-00:31:10,720 --> 00:31:13,430
-that block where the data is. And within
+328
+00:29:33,960 --> 00:29:40,430
+So, it's you can store a lot more data in a lot smaller of a file, right?
 
-793
-00:31:13,440 --> 00:31:15,230
-Parquet called row groups and those kind
+329
+00:29:40,430 --> 00:29:45,830
+And each column is stored contiguously on disk.
 
-794
-00:31:15,240 --> 00:31:16,870
-of things in the whole architecture, it
+330
+00:29:45,830 --> 00:29:50,351
+So, when it is being read, it's faster because it's stored together, right? The column.
 
-795
-00:31:16,880 --> 00:31:18,990
-goes there and find that information.
+331
+00:29:50,351 --> 00:30:00,230
+And then another thing that it has advantage of is that it is self-describing meaning the schema is in there in the file footer of the parquet.
 
-796
-00:31:19,000 --> 00:31:21,270
-What I'd like to do, I'll give you some
+332
+00:30:00,230 --> 00:30:01,990
+And the compression is highly effective.
 
-797
-00:31:21,280 --> 00:31:23,230
-discretion in how you want to organize
+333
+00:30:01,990 --> 00:30:06,110
+Another thing, I don't want to go super technical but something called predicate pushdown when
 
-798
-00:31:23,240 --> 00:31:25,990
-this, but walk through either read or
+334
+00:30:06,110 --> 00:30:15,750
+you're telling like what filter inside the file you want to do without doing the full scan which lets you be more performant when you're reading it, right?
 
-799
-00:31:26,000 --> 00:31:29,350
-write paths or both, and to incorporate
+335
+00:30:15,750 --> 00:30:27,350
+And then another thing that I really like about the parquet is or other engineers do as well, you can have complex types like structs, arrays, and maps if you want to do that, right?
 
-800
-00:31:29,360 --> 00:31:32,190
-the Parquet files, the catalog, the
+336
+00:30:27,350 --> 00:30:34,470
+So, when you're doing any reads, it read only the age column as an example but also note that be performant when reading it.
 
-801
-00:31:32,200 --> 00:31:34,910
-metadata, how they are all working
+337
+00:30:34,480 --> 00:30:48,150
+I could guess that columnar formats are highly compressible because particularly domain-specific data tends to have a very few values or a small range.
 
-802
-00:31:34,920 --> 00:31:38,470
-together to give the user the query. How
+338
+00:30:48,150 --> 00:30:54,950
+Now, the predicate push down, is that something where the file may be organized in such a way that if you're looking for,
 
-803
-00:31:38,480 --> 00:31:40,670
-did you want to approach that?
+339
+00:30:54,950 --> 00:31:04,710
+give one example, values greater than 10, it can figure out it doesn't need to read the entire file to get values in that range, so it reduces the amount of IO.
 
-804
-00:31:40,680 --> 00:31:42,590
-I can give an example of a read, but
+340
+00:31:04,720 --> 00:31:06,671
+Exactly. That's precisely right.
 
-805
-00:31:42,600 --> 00:31:44,670
-before that, I think it's it'll be great
+341
+00:31:06,671 --> 00:31:13,430
+You're reducing the IO, and uh with that predicate push down, it all is only to that block where the data is.
 
-806
-00:31:44,680 --> 00:31:47,350
-service for the audience that we explain
+342
+00:31:13,430 --> 00:31:18,990
+And within Parquet called row groups and those kind of things in the whole architecture, it goes there and find that information.
 
-807
-00:31:47,360 --> 00:31:49,390
-what the Iceberg architecture looks
+343
+00:31:19,000 --> 00:31:29,350
+What I'd like to do, I'll give you some discretion in how you want to organize this, but walk through either read or write paths or both,
 
-808
-00:31:49,400 --> 00:31:51,110
-like, so that when I talk about it, they
+344
+00:31:29,350 --> 00:31:38,470
+and to incorporate the Parquet files, the catalog, the metadata, how they are all working together to give the user the query.
 
-809
-00:31:51,120 --> 00:31:52,270
-will follow, right?
+345
+00:31:38,470 --> 00:31:40,670
+How did you want to approach that?
 
-810
-00:31:52,280 --> 00:31:54,470
-Okay, let's do architecture and then
+346
+00:31:40,680 --> 00:31:52,270
+I can give an example of a read, but before that, I think it's it'll be great service for the audience that we explain what the Iceberg architecture looks like, so that when I talk about it, they will follow, right?
 
-811
-00:31:54,480 --> 00:31:55,230
-read.
+347
+00:31:52,280 --> 00:31:55,230
+Okay, let's do architecture and then read.
 
-812
+348
 00:31:55,240 --> 00:31:57,310
-Sure. So, I'll think of it in three
+Sure.
 
-813
-00:31:57,320 --> 00:32:00,310
-layers, right? And it's a tree structure
+349
+00:31:57,310 --> 00:32:00,310
+So, I'll think of it in three layers, right?
 
-814
-00:32:00,320 --> 00:32:02,630
-I would think of. On the very top would
+350
+00:32:00,310 --> 00:32:02,630
+And it's a tree structure I would think of.
 
-815
-00:32:02,640 --> 00:32:05,150
-sit your catalogs, right? And it can be
+351
+00:32:02,630 --> 00:32:05,150
+On the very top would sit your catalogs, right?
 
-816
-00:32:05,160 --> 00:32:07,430
-any catalog that you can plug in. A lot
+352
+00:32:05,150 --> 00:32:07,430
+And it can be any catalog that you can plug in.
 
-817
-00:32:07,440 --> 00:32:10,350
-of Iceberg compatible rest catalogs, to
+353
+00:32:07,430 --> 00:32:17,830
+A lot of Iceberg compatible rest catalogs, to put it simply again, you can use any catalog to talk to Iceberg tables, right?
 
-818
-00:32:10,360 --> 00:32:12,070
-put it simply again, you can use any
+354
+00:32:17,830 --> 00:32:24,030
+And in simple words, as I explained before, catalog answers the question, where is your table X, right?
 
-819
-00:32:12,080 --> 00:32:15,510
-catalog to talk to Iceberg tables,
-
-820
-00:32:15,520 --> 00:32:17,830
-right? And in simple words, as I
-
-821
-00:32:17,840 --> 00:32:20,790
-explained before, catalog answers the
-
-822
-00:32:20,800 --> 00:32:24,030
-question, where is your table X, right?
-
-823
+355
 00:32:24,040 --> 00:32:26,350
 It points to the current metadata file.
 
-824
-00:32:26,360 --> 00:32:28,950
-And the catalog will have the
-
-825
-00:32:28,960 --> 00:32:31,470
-information about the metadata JSON
-
-826
-00:32:31,480 --> 00:32:34,510
-file. It has the latest version of that
-
-827
-00:32:34,520 --> 00:32:36,910
-table JSON file. So, say if the table
-
-828
-00:32:36,920 --> 00:32:38,750
-has changed, it would know which the
-
-829
-00:32:38,760 --> 00:32:42,470
-latest metadata file is. And then,
-
-830
-00:32:42,480 --> 00:32:45,870
-that metadata JSON file, in fact, in
-
-831
-00:32:45,880 --> 00:32:48,910
-turn, has information about the manifest
-
-832
-00:32:48,920 --> 00:32:51,510
-list. And manifest list is a Avro file.
-
-833
-00:32:51,520 --> 00:32:53,470
-It has information about your, let's
-
-834
-00:32:53,480 --> 00:32:56,550
-say, partitions in a table, right? And
-
-835
-00:32:56,560 --> 00:33:00,150
-what it does is, it helps you prune the
-
-836
-00:33:00,160 --> 00:33:02,150
-partitions or help you prune the files
-
-837
-00:33:02,160 --> 00:33:04,750
-you don't need. And it has first level
-
-838
-00:33:04,760 --> 00:33:07,390
-of pruning here. And then, that manifest
-
-839
-00:33:07,400 --> 00:33:09,710
-list, in turn, has information about the
-
-840
-00:33:09,720 --> 00:33:12,750
-manifest files. It's again a Avro file.
-
-841
-00:33:12,760 --> 00:33:15,030
-And that manifest file, what it does is,
-
-842
-00:33:15,040 --> 00:33:17,430
-it maintains the statistics about the
-
-843
-00:33:17,440 --> 00:33:19,190
-data files, the Parquet files we were
-
-844
-00:33:19,200 --> 00:33:22,350
-talking about. And those manifest files
-
-845
-00:33:22,360 --> 00:33:24,990
-have per file stats. So, so, let's say a
-
-846
-00:33:25,000 --> 00:33:27,750
-Parquet I have 100 Parquet files. For
-
-847
-00:33:27,760 --> 00:33:29,470
-each Parquet file, it will have details
-
-848
-00:33:29,480 --> 00:33:32,230
-about what the min and the max values by
-
-849
-00:33:32,240 --> 00:33:34,710
-column, how many rows were there in in
-
-850
-00:33:34,720 --> 00:33:35,590
-particular
-
-851
-00:33:35,600 --> 00:33:37,110
-Parquet file, right? What kind of
-
-852
-00:33:37,120 --> 00:33:39,470
-operation was it? So, it maintains all
-
-853
-00:33:39,480 --> 00:33:42,070
-of that rich metadata. So, that's the
-
-854
-00:33:42,080 --> 00:33:44,110
-kind of a whole architecture. And it's
-
-855
-00:33:44,120 --> 00:33:46,470
-very rich in that. So, now, let's talk
-
-856
-00:33:46,480 --> 00:33:48,310
-about the read pattern as an example,
-
-857
-00:33:48,320 --> 00:33:50,750
-right? So, now, I want to read where my
-
-858
-00:33:50,760 --> 00:33:53,150
-table events is. I'm going to go and I'm
-
-859
-00:33:53,160 --> 00:33:55,590
-going to write a command, select star
-
-860
-00:33:55,600 --> 00:33:58,070
-from events. As soon as I do that, the
-
-861
-00:33:58,080 --> 00:34:01,110
-catalog will answer the question, where
-
-862
-00:34:01,120 --> 00:34:03,670
-is the latest file for events? It finds
-
-863
-00:34:03,680 --> 00:34:06,630
-that the latest version is V5
-
-864
-00:34:06,640 --> 00:34:09,350
-metadata.json. That's the latest file.
-
-865
-00:34:09,360 --> 00:34:11,629
-And in that JSON file, it will have
-
-866
-00:34:11,639 --> 00:34:13,990
-bunch of information. But, within that
-
-867
-00:34:14,000 --> 00:34:15,629
-bunch of information will be one key
-
-868
-00:34:15,639 --> 00:34:18,590
-thing, which is called snapshot. And it
-
-869
-00:34:18,600 --> 00:34:22,990
-will tell you what latest snapshot did.
-
-870
-00:34:23,000 --> 00:34:24,710
-We were talking about it as as part of
-
-871
-00:34:24,720 --> 00:34:27,070
-the time travel a minute ago. And that
-
-872
-00:34:27,080 --> 00:34:30,149
-snapshot will have a pointer to the
-
-873
-00:34:30,159 --> 00:34:32,950
-manifest list. And that manifest list
-
-874
-00:34:32,960 --> 00:34:34,190
-will have all the information about the
-
-875
-00:34:34,200 --> 00:34:36,710
-partitions and anything you need. And
-
-876
-00:34:36,720 --> 00:34:39,590
-then it will take me, "Okay, this is the
-
-877
-00:34:39,600 --> 00:34:42,110
-AAA.avro file. Now, let's go to that
-
-878
-00:34:42,120 --> 00:34:43,909
-file." And it will have the manifest
-
-879
-00:34:43,919 --> 00:34:45,669
-files there. When it goes to the
-
-880
-00:34:45,679 --> 00:34:47,909
-manifest file, it will have all the
-
-881
-00:34:47,919 --> 00:34:50,070
-details about the files it needs to
-
-882
-00:34:50,080 --> 00:34:51,070
-read.
-
-883
-00:34:51,080 --> 00:34:53,070
-So, say I've did select star from
-
-884
-00:34:53,080 --> 00:34:54,830
-events, but now I want to do select star
-
-885
-00:34:54,840 --> 00:34:58,230
-from events where date is July of 2025,
-
-886
-00:34:58,240 --> 00:35:01,470
-right? So, it knows which file has the
-
-887
-00:35:01,480 --> 00:35:03,590
-min and the max value of July. And it
-
-888
-00:35:03,600 --> 00:35:06,230
-will only go and read that file. So, it
-
-889
-00:35:06,240 --> 00:35:07,470
-don't have to pass through the
-
-890
-00:35:07,480 --> 00:35:09,910
-directories or anything. It just so rich
-
-891
-00:35:09,920 --> 00:35:11,870
-in metadata that it can't pass through
-
-892
-00:35:11,880 --> 00:35:14,470
-and only read those data files at the
-
-893
-00:35:14,480 --> 00:35:15,390
-bottom.
-
-894
-00:35:15,400 --> 00:35:18,150
-The example you gave there covers a
-
-895
-00:35:18,160 --> 00:35:20,750
-column in which the column is a time
-
-896
-00:35:20,760 --> 00:35:24,430
-value. So, to avoid having time appear
-
-897
-00:35:24,440 --> 00:35:27,510
-twice, say we were measuring some value
-
-898
-00:35:27,520 --> 00:35:30,110
-that's not time like the state in the
-
-899
-00:35:30,120 --> 00:35:31,830
-United States,
-
-900
-00:35:31,840 --> 00:35:34,550
-the time dimension that's expressed
-
-901
-00:35:34,560 --> 00:35:36,630
-through the time travel, if I understand
-
-902
-00:35:36,640 --> 00:35:40,550
-that, is in this tree at the snapshot
-
-903
-00:35:40,560 --> 00:35:43,150
-layer. So, if you have a time travel,
-
-904
-00:35:43,160 --> 00:35:45,790
-you would go down to that point in the
-
-905
-00:35:45,800 --> 00:35:49,070
-tree where the snapshot corresponds to
-
-906
-00:35:49,080 --> 00:35:53,110
-your time travel cutoff. That's a guess.
-
-907
-00:35:53,120 --> 00:35:54,550
-Is that correct?
-
-908
-00:35:54,560 --> 00:35:57,110
-Yeah, so the metadata.json will have
-
-909
-00:35:57,120 --> 00:36:00,150
-that snapshot log. And in that snapshot
-
-910
-00:36:00,160 --> 00:36:01,990
-log, it's essentially a log, but also
-
-911
-00:36:02,000 --> 00:36:04,630
-the timeline, right? So, when we do as
-
-912
-00:36:04,640 --> 00:36:06,510
-of that particular timeline, that's what
-
-913
-00:36:06,520 --> 00:36:09,510
-it uses as its a cutoff time.
-
-914
+356
+00:32:26,360 --> 00:32:34,510
+And the catalog will have the information about the metadata JSON file.
+
+357
+00:32:34,510 --> 00:32:36,910
+It has the latest version of that table JSON file.
+
+358
+00:32:36,910 --> 00:32:42,470
+So, say if the table has changed, it would know which the latest metadata file is.
+
+359
+00:32:42,470 --> 00:32:51,511
+And then, that metadata JSON file, in fact, in turn, has information about the manifest list. And manifest list is a Avro file.
+
+360
+00:32:51,520 --> 00:32:56,550
+It has information about your, let's say, partitions in a table, right?
+
+361
+00:32:56,550 --> 00:33:04,750
+And what it does is, it helps you prune the partitions or help you prune the files you don't need.
+
+362
+00:33:04,750 --> 00:33:07,390
+And it has first level of pruning here.
+
+363
+00:33:07,390 --> 00:33:12,751
+And then, that manifest list, in turn, has information about the manifest files. It's again a Avro file.
+
+364
+00:33:12,760 --> 00:33:22,350
+And that manifest file, what it does is, it maintains the statistics about the data files, the Parquet files we were talking about.
+
+365
+00:33:22,350 --> 00:33:24,990
+And those manifest files have per file stats.
+
+366
+00:33:24,990 --> 00:33:27,750
+So, so, let's say a Parquet I have 100 Parquet files.
+
+367
+00:33:27,750 --> 00:33:37,110
+For each Parquet file, it will have details about what the min and the max values by column, how many rows were there in in particular Parquet file, right?
+
+368
+00:33:37,110 --> 00:33:39,470
+What kind of operation was it?
+
+369
+00:33:39,470 --> 00:33:42,070
+So, it maintains all of that rich metadata.
+
+370
+00:33:42,070 --> 00:33:44,110
+So, that's the kind of a whole architecture.
+
+371
+00:33:44,110 --> 00:33:46,470
+And it's very rich in that.
+
+372
+00:33:46,470 --> 00:33:50,750
+So, now, let's talk about the read pattern as an example, right?
+
+373
+00:33:50,750 --> 00:33:53,150
+So, now, I want to read where my table events is.
+
+374
+00:33:53,150 --> 00:33:58,070
+I'm going to go and I'm going to write a command, select star from events.
+
+375
+00:33:58,070 --> 00:34:03,670
+As soon as I do that, the catalog will answer the question, where is the latest file for events?
+
+376
+00:34:03,670 --> 00:34:09,351
+It finds that the latest version is V5 metadata.json. That's the latest file.
+
+377
+00:34:09,360 --> 00:34:13,990
+And in that JSON file, it will have bunch of information.
+
+378
+00:34:13,990 --> 00:34:18,590
+But, within that bunch of information will be one key thing, which is called snapshot.
+
+379
+00:34:18,590 --> 00:34:22,990
+And it will tell you what latest snapshot did.
+
+380
+00:34:23,000 --> 00:34:27,070
+We were talking about it as as part of the time travel a minute ago.
+
+381
+00:34:27,070 --> 00:34:32,950
+And that snapshot will have a pointer to the manifest list.
+
+382
+00:34:32,950 --> 00:34:36,710
+And that manifest list will have all the information about the partitions and anything you need.
+
+383
+00:34:36,710 --> 00:34:42,110
+And then it will take me, "Okay, this is the AAA.avro file.
+
+384
+00:34:42,110 --> 00:34:43,909
+Now, let's go to that file."
+
+385
+00:34:43,909 --> 00:34:45,669
+And it will have the manifest files there.
+
+386
+00:34:45,669 --> 00:34:51,070
+When it goes to the manifest file, it will have all the details about the files it needs to read.
+
+387
+00:34:51,080 --> 00:35:01,470
+So, say I've did select star from events, but now I want to do select star from events where date is July of 2025, right?
+
+388
+00:35:01,470 --> 00:35:03,590
+So, it knows which file has the min and the max value of July.
+
+389
+00:35:03,590 --> 00:35:06,230
+And it will only go and read that file.
+
+390
+00:35:06,230 --> 00:35:09,910
+So, it don't have to pass through the directories or anything.
+
+391
+00:35:09,910 --> 00:35:15,390
+It just so rich in metadata that it can't pass through and only read those data files at the bottom.
+
+392
+00:35:15,400 --> 00:35:24,430
+The example you gave there covers a column in which the column is a time value.
+
+393
+00:35:24,430 --> 00:35:31,830
+So, to avoid having time appear twice, say we were measuring some value that's not time like the state in the United States,
+
+394
+00:35:31,840 --> 00:35:43,150
+the time dimension that's expressed through the time travel, if I understand that, is in this tree at the snapshot layer.
+
+395
+00:35:43,150 --> 00:35:53,111
+So, if you have a time travel, you would go down to that point in the tree where the snapshot corresponds to your time travel cutoff. That's a guess.
+
+396
+00:35:53,120 --> 00:36:00,150
+Is that correct? Yeah, so the metadata.json will have that snapshot log.
+
+397
+00:36:00,150 --> 00:36:04,630
+And in that snapshot log, it's essentially a log, but also the timeline, right?
+
+398
+00:36:04,630 --> 00:36:09,510
+So, when we do as of that particular timeline, that's what it uses as its a cutoff time.
+
+399
 00:36:09,520 --> 00:36:13,030
-Okay. So, you took us through read and
+Okay.
 
-915
-00:36:13,040 --> 00:36:15,790
-are talking a little bit about time
+400
+00:36:13,030 --> 00:36:19,190
+So, you took us through read and are talking a little bit about time travel read.
 
-916
-00:36:15,800 --> 00:36:19,190
-travel read. The other major operation
+401
+00:36:19,190 --> 00:36:21,830
+The other major operation would be write.
 
-917
-00:36:19,200 --> 00:36:21,830
-would be write. So, can you walk us
+402
+00:36:21,830 --> 00:36:26,710
+So, can you walk us through the write going through all those layers of the tree?
 
-918
-00:36:21,840 --> 00:36:23,910
-through the write going through all
-
-919
-00:36:23,920 --> 00:36:26,710
-those layers of the tree?
-
-920
+403
 00:36:26,720 --> 00:36:29,630
-Absolutely. So, say you are an engine,
+Absolutely.
 
-921
-00:36:29,640 --> 00:36:31,470
-you are trying to do an DML operation or
+404
+00:36:29,630 --> 00:36:33,710
+So, say you are an engine, you are trying to do an DML operation or trying to do an insert, right?
 
-922
-00:36:31,480 --> 00:36:33,710
-trying to do an insert, right? You
+405
+00:36:33,710 --> 00:36:39,830
+You generally you can define what size of a file you would like to populate in the storage.
 
-923
-00:36:33,720 --> 00:36:35,950
-generally you can define what size of a
+406
+00:36:39,830 --> 00:36:43,310
+Let's say you want to maintain 256 GB of files, right?
 
-924
-00:36:35,960 --> 00:36:38,070
-file you would like to populate in the
+407
+00:36:43,310 --> 00:36:46,870
+And you want to write 2560.
 
-925
-00:36:38,080 --> 00:36:39,830
-storage. Let's say you want to maintain
+408
+00:36:46,870 --> 00:36:48,870
+So, it will create 10 files for you.
 
-926
-00:36:39,840 --> 00:36:43,310
-256 GB of files, right? And you want to
+409
+00:36:48,870 --> 00:36:53,510
+And the way it does it, it starts from bottom up.
 
-927
-00:36:43,320 --> 00:36:46,870
-write 2560. So, it will create 10 files
+410
+00:36:53,510 --> 00:36:58,790
+So, first it will write the files in your storage, object storage.
 
-928
-00:36:46,880 --> 00:36:48,870
-for you. And the way it does it, it
+411
+00:36:58,790 --> 00:37:03,550
+But other engines querying wouldn't know because it hasn't written that snapshot or that metadata yet.
 
-929
-00:36:48,880 --> 00:36:53,510
-starts from bottom up. So, first it will
+412
+00:37:03,550 --> 00:37:08,790
+As soon as it writes it, it will write the manifest file.
 
-930
-00:36:53,520 --> 00:36:56,790
-write the files in your storage, object
+413
+00:37:08,790 --> 00:37:12,990
+In manifest file, then it will populate, okay, these are the files I populated.
 
-931
-00:36:56,800 --> 00:36:58,790
-storage. But other engines querying
+414
+00:37:12,990 --> 00:37:16,550
+These are the min and the max values per column, right?
 
-932
-00:36:58,800 --> 00:37:00,910
-wouldn't know because it hasn't written
+415
+00:37:16,550 --> 00:37:18,270
+And other commit time and those kind of things.
 
-933
-00:37:00,920 --> 00:37:03,550
-that snapshot or that metadata yet. As
+416
+00:37:18,280 --> 00:37:23,510
+And then once it creates that manifest file, it will create a manifest list.
 
-934
-00:37:03,560 --> 00:37:06,030
-soon as it writes it, it will write the
+417
+00:37:23,520 --> 00:37:30,590
+And that manifest list will be like, okay, this is the manifest file I need to refer.
 
-935
-00:37:06,040 --> 00:37:08,790
-manifest file. In manifest file, then it
+418
+00:37:30,590 --> 00:37:33,750
+And this is part of X snapshot.
 
-936
-00:37:08,800 --> 00:37:10,790
-will populate, okay, these are the files
+419
+00:37:33,750 --> 00:37:37,230
+And then it will populate the partition information, say, right? If you have any partition information.
 
-937
-00:37:10,800 --> 00:37:12,990
-I populated. These are the min and the
-
-938
-00:37:13,000 --> 00:37:16,550
-max values per column, right? And other
-
-939
-00:37:16,560 --> 00:37:18,270
-commit time and those kind of things.
-
-940
-00:37:18,280 --> 00:37:20,550
-And then once it creates that manifest
-
-941
-00:37:20,560 --> 00:37:23,510
-file, it will create a manifest list.
-
-942
-00:37:23,520 --> 00:37:25,190
-And that manifest list will be like,
-
-943
-00:37:25,200 --> 00:37:27,750
-okay, this is the manifest file I need
-
-944
-00:37:27,760 --> 00:37:30,590
-to refer. And this is part of X
-
-945
-00:37:30,600 --> 00:37:33,750
-snapshot. And then it will populate the
-
-946
-00:37:33,760 --> 00:37:35,870
-partition information, say, right? If
-
-947
-00:37:35,880 --> 00:37:37,230
-you have any partition information.
-
-948
+420
 00:37:37,240 --> 00:37:39,470
-It'll populate that there. Once it's
+It'll populate that there.
 
-949
-00:37:39,480 --> 00:37:41,870
-done with all of this, it will try to
+421
+00:37:39,470 --> 00:37:46,630
+Once it's done with all of this, it will try to write a very final thing, the metadata JSON.
 
-950
-00:37:41,880 --> 00:37:44,230
-write a very final thing, the metadata
+422
+00:37:46,630 --> 00:37:49,190
+And that's where it does compare and swap.
 
-951
-00:37:44,240 --> 00:37:46,630
-JSON. And that's where it does compare
+423
+00:37:49,190 --> 00:37:56,830
+It starts with the latest version and then compares and So, what it does is it tries to figure out, okay, I started writing those 10 files,
 
-952
-00:37:46,640 --> 00:37:49,190
-and swap. It starts with the latest
+424
+00:37:56,830 --> 00:38:02,350
+but in the meantime, did the metadata JSON change?
 
-953
-00:37:49,200 --> 00:37:51,830
-version and then compares and So, what
+425
+00:38:02,350 --> 00:38:12,750
+If it changed, it has to redo the newer version of the JSON, which otherwise would conflict, or otherwise it will just do version plus one.json and write that metadata JSON file.
 
-954
-00:37:51,840 --> 00:37:54,230
-it does is it tries to figure out, okay,
+426
+00:38:12,750 --> 00:38:14,950
+And that will become the current file.
 
-955
-00:37:54,240 --> 00:37:56,830
-I started writing those 10 files, but in
+427
+00:38:14,950 --> 00:38:19,190
+Going on forward, there will be read isolation.
 
-956
-00:37:56,840 --> 00:37:59,110
-the meantime, did the metadata JSON
+428
+00:38:19,190 --> 00:38:22,870
+Anything that is coming into read it will start reading from that particular commit.
 
-957
-00:37:59,120 --> 00:38:02,350
-change? If it changed, it has to redo
-
-958
-00:38:02,360 --> 00:38:05,390
-the newer version of the JSON, which
-
-959
-00:38:05,400 --> 00:38:07,430
-otherwise would conflict, or otherwise
-
-960
-00:38:07,440 --> 00:38:10,070
-it will just do version plus one .json
-
-961
-00:38:10,080 --> 00:38:12,750
-and write that metadata JSON file. And
-
-962
-00:38:12,760 --> 00:38:14,950
-that will become the current file. Going
-
-963
-00:38:14,960 --> 00:38:16,950
-on forward, there will be read
-
-964
-00:38:16,960 --> 00:38:19,190
-isolation. Anything that is coming into
-
-965
-00:38:19,200 --> 00:38:21,470
-read it will start reading from that
-
-966
-00:38:21,480 --> 00:38:22,870
-particular commit.
-
-967
+429
 00:38:22,880 --> 00:38:26,430
-We want our rights to be atomic. Now,
+We want our rights to be atomic.
 
-968
-00:38:26,440 --> 00:38:27,590
-this process you described there are
+430
+00:38:26,430 --> 00:38:29,670
+Now, this process you described there are multiple files that need to be changed.
 
-969
-00:38:27,600 --> 00:38:29,670
-multiple files that need to be changed.
+431
+00:38:29,680 --> 00:38:33,630
+Something could fail before it's completed the process.
 
-970
-00:38:29,680 --> 00:38:31,550
-Something could fail before it's
+432
+00:38:33,640 --> 00:38:46,910
+Does it depend on the final step being created and that the system can tolerate, let's say, dangling references or files with nothing pointing to them from prior failures?
 
-971
-00:38:31,560 --> 00:38:33,630
-completed the process.
+433
+00:38:46,920 --> 00:38:51,670
+It solves all the problems that you talked about. They They are seeing the problem with the hive as well, right?
 
-972
-00:38:33,640 --> 00:38:36,990
-Does it depend on the final step being
-
-973
-00:38:37,000 --> 00:38:38,950
-created and that the system can
-
-974
-00:38:38,960 --> 00:38:41,990
-tolerate, let's say, dangling references
-
-975
-00:38:42,000 --> 00:38:44,990
-or files with nothing pointing to them
-
-976
-00:38:45,000 --> 00:38:46,910
-from prior failures?
-
-977
-00:38:46,920 --> 00:38:48,590
-It solves all the problems that you
-
-978
-00:38:48,600 --> 00:38:50,310
-talked about. They They are seeing the
-
-979
-00:38:50,320 --> 00:38:51,670
-problem with the hive as well, right?
-
-980
+434
 00:38:51,680 --> 00:38:53,670
-So, there are two kind of thing. One is
-
-981
-00:38:53,680 --> 00:38:55,790
-read isolation, one is write. In terms
-
-982
-00:38:55,800 --> 00:38:57,950
-of reads, what it does is like for the
-
-983
-00:38:57,960 --> 00:39:00,870
-audience, if you start at 2:00 p.m.
-
-984
-00:39:00,880 --> 00:39:03,510
-reading something and at 2:01 p.m.
-
-985
-00:39:03,520 --> 00:39:05,430
-something changed, but they give you
-
-986
-00:39:05,440 --> 00:39:07,910
-results at 2:05, you still see the
-
-987
-00:39:07,920 --> 00:39:10,710
-result at 2:00 p.m. It locked you there
-
-988
-00:39:10,720 --> 00:39:12,870
-at the very first time you started
-
-989
-00:39:12,880 --> 00:39:15,190
-reading. But for the rights, the way it
-
-990
-00:39:15,200 --> 00:39:17,390
-does it, it's optimistic write
-
-991
-00:39:17,400 --> 00:39:19,750
-isolation. To put it simply, say Robert
-
-992
-00:39:19,760 --> 00:39:21,310
-is trying to write and Sahil is trying
-
-993
-00:39:21,320 --> 00:39:24,990
-to write. Whoever first writes get the
-
-994
-00:39:25,000 --> 00:39:26,670
-JSON, the other person will get the
-
-995
-00:39:26,680 --> 00:39:28,550
-rejection. And it will go to that
-
-996
-00:39:28,560 --> 00:39:30,790
-engine, okay, Sahil, Robert committed,
-
-997
-00:39:30,800 --> 00:39:33,310
-go back and start writing the engines.
-
-998
-00:39:33,320 --> 00:39:35,390
-But what it doesn't have to do is to
-
-999
-00:39:35,400 --> 00:39:38,630
-rewrite the file. It only has to write
-
-1000
-00:39:38,640 --> 00:39:40,870
-the metadata. The files stay the same.
-
-1001
-00:39:40,880 --> 00:39:42,830
-But assume something happens, the world
-
-1002
-00:39:42,840 --> 00:39:44,590
-crashes and everything and say it's all
-
-1003
-00:39:44,600 --> 00:39:46,310
-of the operations leave in between. You
-
-1004
-00:39:46,320 --> 00:39:48,830
-have those orphan files, but they are
-
-1005
-00:39:48,840 --> 00:39:51,110
-not rendered anywhere because there's no
-
-1006
-00:39:51,120 --> 00:39:53,190
-reference in the metadata. So, they
-
-1007
-00:39:53,200 --> 00:39:55,870
-won't give you corrupt reads. The only
-
-1008
-00:39:55,880 --> 00:39:57,790
-thing you will have to do is clean up
-
-1009
-00:39:57,800 --> 00:40:00,390
-your storage. And that operation has to
-
-1010
-00:40:00,400 --> 00:40:02,510
-be done to remove the orphan files if
-
-1011
-00:40:02,520 --> 00:40:04,350
-you identify. But those are very rare
-
-1012
-00:40:04,360 --> 00:40:05,510
-scenarios.
-
-1013
-00:40:05,520 --> 00:40:08,870
-Does Iceberg support anything for
-
-1014
-00:40:08,880 --> 00:40:12,390
-managing the size of data either I no
-
-1015
-00:40:12,400 --> 00:40:15,550
-longer need historical time travel
-
-1016
-00:40:15,560 --> 00:40:18,390
-beyond a certain date in the past or I
-
-1017
-00:40:18,400 --> 00:40:21,910
-can de-res the data by going from every
-
-1018
-00:40:21,920 --> 00:40:25,830
-single change to once a week or
-
-1019
-00:40:25,840 --> 00:40:28,190
-something like Postgres vacuum that is
-
-1020
-00:40:28,200 --> 00:40:31,870
-just cleaning up spaces created by write
-
-1021
-00:40:31,880 --> 00:40:32,910
-operations.
-
-1022
-00:40:32,920 --> 00:40:34,590
-Yeah, there's something called snapshot
-
-1023
-00:40:34,600 --> 00:40:35,670
-expiry.
-
-1024
-00:40:35,680 --> 00:40:37,950
-So, let's say you're doing a lot of DML
-
-1025
-00:40:37,960 --> 00:40:40,590
-operation every 15 minutes and you don't
-
-1026
-00:40:40,600 --> 00:40:43,510
-necessarily need snapshot from a week
-
-1027
-00:40:43,520 --> 00:40:45,990
-ago or week ago later, right? What you
-
-1028
-00:40:46,000 --> 00:40:48,750
-do is you can configure through engines
-
-1029
-00:40:48,760 --> 00:40:51,910
-that I want to expire or remove the
-
-1030
-00:40:51,920 --> 00:40:54,510
-snapshots after a certain date. And
-
-1031
-00:40:54,520 --> 00:40:56,470
-that's where you will see, okay, you
-
-1032
-00:40:56,480 --> 00:40:59,430
-can't go back beyond a certain date. And
-
-1033
-00:40:59,440 --> 00:41:01,790
-that's a decisions team make depending
-
-1034
-00:41:01,800 --> 00:41:03,310
-on their workloads, what they want to
-
-1035
-00:41:03,320 --> 00:41:05,230
-do, those kind of things, right? And
-
-1036
-00:41:05,240 --> 00:41:06,990
-similarly for the I think you talked
-
-1037
-00:41:07,000 --> 00:41:08,750
-about the vacuum, there's something
-
-1038
-00:41:08,760 --> 00:41:10,950
-called vacuum full in Postgres, if I'm
-
-1039
-00:41:10,960 --> 00:41:12,790
-not wrong. So, essentially what it means
-
-1040
-00:41:12,800 --> 00:41:15,550
-is say you have committed small files
-
-1041
-00:41:15,560 --> 00:41:17,750
-over a period of time. And over the
-
-1042
-00:41:17,760 --> 00:41:20,150
-weekend, you get smaller chunk of files,
-
-1043
-00:41:20,160 --> 00:41:21,830
-for example. But over the weekend, you
-
-1044
-00:41:21,840 --> 00:41:23,390
-get a proper trend. But what you want to
-
-1045
-00:41:23,400 --> 00:41:26,030
-do is you want to make sure your whole
-
-1046
-00:41:26,040 --> 00:41:27,630
-bucket is clean and you don't want to
-
-1047
-00:41:27,640 --> 00:41:29,510
-maintain small files because it still
-
-1048
-00:41:29,520 --> 00:41:30,830
-has to read it, still has to do
-
-1049
-00:41:30,840 --> 00:41:32,270
-everything. What you can do is you can
-
-1050
-00:41:32,280 --> 00:41:34,990
-merge all small files into a standard
-
-1051
-00:41:35,000 --> 00:41:37,230
-large files, which is best for your read
-
-1052
-00:41:37,240 --> 00:41:38,870
-patterns and it's called data
-
-1053
-00:41:38,880 --> 00:41:41,350
-compaction. And a lot of engines provide
-
-1054
-00:41:41,360 --> 00:41:43,270
-that kind of service when you do manage
-
-1055
-00:41:43,280 --> 00:41:45,350
-service with them, but you can manage by
-
-1056
-00:41:45,360 --> 00:41:46,590
-yourself as well.
-
-1057
-00:41:46,600 --> 00:41:49,030
-Most databases have something like the
-
-1058
-00:41:49,040 --> 00:41:52,350
-query planner that decides what order to
+So, there are two kind of thing.
+
+435
+00:38:53,670 --> 00:38:55,790
+One is read isolation, one is write.
+
+436
+00:38:55,790 --> 00:39:05,430
+In terms of reads, what it does is like for the audience, if you start at 2:00 p.m. reading something and at 2:01 p.m. something changed,
+
+437
+00:39:05,430 --> 00:39:15,190
+but they give you results at 2:05, you still see the result at 2:00 p.m. It locked you there at the very first time you started reading.
+
+438
+00:39:15,190 --> 00:39:19,750
+But for the rights, the way it does it, it's optimistic write isolation.
+
+439
+00:39:19,750 --> 00:39:24,990
+To put it simply, say Robert is trying to write and Sahil is trying to write.
+
+440
+00:39:24,990 --> 00:39:28,550
+Whoever first writes get the JSON, the other person will get the rejection.
+
+441
+00:39:28,550 --> 00:39:33,310
+And it will go to that engine, okay, Sahil, Robert committed, go back and start writing the engines.
+
+442
+00:39:33,320 --> 00:39:38,630
+But what it doesn't have to do is to rewrite the file.
+
+443
+00:39:38,630 --> 00:39:40,871
+It only has to write the metadata. The files stay the same.
+
+444
+00:39:40,880 --> 00:39:46,310
+But assume something happens, the world crashes and everything and say it's all of the operations leave in between.
+
+445
+00:39:46,310 --> 00:39:53,190
+You have those orphan files, but they are not rendered anywhere because there's no reference in the metadata.
+
+446
+00:39:53,190 --> 00:39:55,870
+So, they won't give you corrupt reads.
+
+447
+00:39:55,870 --> 00:40:00,390
+The only thing you will have to do is clean up your storage.
+
+448
+00:40:00,390 --> 00:40:05,510
+And that operation has to be done to remove the orphan files if you identify. But those are very rare scenarios.
 
-1059
-00:41:52,360 --> 00:41:55,150
-access different tables in what in a
+449
+00:40:05,520 --> 00:40:12,390
+Does Iceberg support anything for managing the size of data either I
 
-1060
-00:41:55,160 --> 00:41:56,310
-join.
+450
+00:40:12,390 --> 00:40:18,390
+no longer need historical time travel beyond a certain date in the past or
 
-1061
-00:41:56,320 --> 00:41:58,430
-We haven't talked about joins, but does
+451
+00:40:18,390 --> 00:40:25,830
+I can de-res the data by going from every single change to once a week or
 
-1062
-00:41:58,440 --> 00:42:01,590
-Iceberg support joins and does it have a
+452
+00:40:25,840 --> 00:40:32,910
+something like Postgres vacuum that is just cleaning up spaces created by write operations.
 
-1063
-00:42:01,600 --> 00:42:03,430
-query planner or is that process you
+453
+00:40:32,920 --> 00:40:35,670
+Yeah, there's something called snapshot expiry.
 
-1064
-00:42:03,440 --> 00:42:05,190
-described where it's walking through the
+454
+00:40:35,680 --> 00:40:45,990
+So, let's say you're doing a lot of DML operation every 15 minutes and you don't necessarily need snapshot from a week ago or week ago later, right?
 
-1065
-00:42:05,200 --> 00:42:07,390
-metadata to find what it needs, is that
+455
+00:40:45,990 --> 00:40:54,510
+What you do is you can configure through engines that I want to expire or remove the snapshots after a certain date.
 
-1066
-00:42:07,400 --> 00:42:08,790
-the query planner?
+456
+00:40:54,510 --> 00:40:59,430
+And that's where you will see, okay, you can't go back beyond a certain date.
 
-1067
-00:42:08,800 --> 00:42:11,790
-Yeah, so Iceberg handles all of those
+457
+00:40:59,430 --> 00:41:05,230
+And that's a decisions team make depending on their workloads, what they want to do, those kind of things, right?
 
-1068
-00:42:11,800 --> 00:42:14,390
-things to an engine. What it does is it
+458
+00:41:05,230 --> 00:41:12,790
+And similarly for the I think you talked about the vacuum, there's something called vacuum full in Postgres, if I'm not wrong.
 
-1069
-00:42:14,400 --> 00:42:17,430
-tells you, "Okay, this is the metadata I
+459
+00:41:12,790 --> 00:41:17,750
+So, essentially what it means is say you have committed small files over a period of time.
 
-1070
-00:42:17,440 --> 00:42:18,790
-have
+460
+00:41:17,750 --> 00:41:21,830
+And over the weekend, you get smaller chunk of files, for example.
 
-1071
-00:42:18,800 --> 00:42:20,870
-and this is the metadata you should pass
+461
+00:41:21,830 --> 00:41:23,390
+But over the weekend, you get a proper trend.
 
-1072
-00:42:20,880 --> 00:42:24,470
-through to do the query fetch." But, it
+462
+00:41:23,390 --> 00:41:32,270
+But what you want to do is you want to make sure your whole bucket is clean and you don't want to maintain small files because it still has to read it, still has to do everything.
 
-1073
-00:42:24,480 --> 00:42:26,630
-doesn't tell you, "This is how you
+463
+00:41:32,270 --> 00:41:41,350
+What you can do is you can merge all small files into a standard large files, which is best for your read patterns and it's called data compaction.
 
-1074
-00:42:26,640 --> 00:42:29,430
-should do it." It tells you the spec. It
+464
+00:41:41,350 --> 00:41:46,590
+And a lot of engines provide that kind of service when you do manage service with them, but you can manage by yourself as well.
 
-1075
-00:42:29,440 --> 00:42:31,070
-tells you that this is what I have. This
+465
+00:41:46,600 --> 00:41:56,310
+Most databases have something like the query planner that decides what order to access different tables in what in a join.
 
-1076
-00:42:31,080 --> 00:42:33,190
-is how you can traverse through the tree
+466
+00:41:56,320 --> 00:42:08,790
+We haven't talked about joins, but does Iceberg support joins and does it have a query planner or is that process you described where it's walking through the metadata to find what it needs, is that the query planner?
 
-1077
-00:42:33,200 --> 00:42:35,470
-of the metadata, but it doesn't tell
+467
+00:42:08,800 --> 00:42:14,390
+Yeah, so Iceberg handles all of those things to an engine.
 
-1078
-00:42:35,480 --> 00:42:37,750
-you, "Okay, this is up to the engines to
+468
+00:42:14,390 --> 00:42:24,470
+What it does is it tells you, "Okay, this is the metadata I have and this is the metadata you should pass through to do the query fetch."
 
-1079
-00:42:37,760 --> 00:42:38,910
-implement."
+469
+00:42:24,470 --> 00:42:29,431
+But, it doesn't tell you, "This is how you should do it." It tells you the spec.
 
-1080
-00:42:38,920 --> 00:42:40,910
-So far, we've been talking about a
+470
+00:42:29,431 --> 00:42:31,070
+It tells you that this is what I have.
 
-1081
-00:42:40,920 --> 00:42:42,830
-single table or we haven't been
+471
+00:42:31,070 --> 00:42:38,910
+This is how you can traverse through the tree of the metadata, but it doesn't tell you, "Okay, this is up to the engines to implement."
 
-1082
-00:42:42,840 --> 00:42:46,470
-specific. Does Iceberg support joins?
+472
+00:42:38,920 --> 00:42:46,471
+So far, we've been talking about a single table or we haven't been specific. Does Iceberg support joins?
 
-1083
+473
 00:42:46,480 --> 00:42:48,870
-Yes, Iceberg does support joins. You can
+Yes, Iceberg does support joins.
 
-1084
-00:42:48,880 --> 00:42:51,710
-connect multiple tables together to have
+474
+00:42:48,870 --> 00:42:54,030
+You can connect multiple tables together to have a rendered results as you need.
 
-1085
-00:42:51,720 --> 00:42:54,030
-a rendered results as you need. You can
+475
+00:42:54,030 --> 00:43:04,790
+You can join Iceberg to Iceberg or in case of several engines, let's say have their custom table format, you can connect Iceberg to a custom table format, but that's something engine does. But, to answer your question, yes.
 
-1086
-00:42:54,040 --> 00:42:56,430
-join Iceberg to Iceberg or in case of
+476
+00:43:04,800 --> 00:43:09,670
+So, my next question is going to be is there a query planner?
 
-1087
-00:42:56,440 --> 00:42:57,830
-several engines, let's say have their
+477
+00:43:09,680 --> 00:43:17,270
+But, since Iceberg is not an engine, it's just a format, what's the right question I should be asking?
 
-1088
-00:42:57,840 --> 00:42:59,950
-custom table format, you can connect
+478
+00:43:17,280 --> 00:43:21,310
+So, to first we answer the question that it does support join, yes.
 
-1089
-00:42:59,960 --> 00:43:01,510
-Iceberg to a custom table format, but
+479
+00:43:21,310 --> 00:43:25,670
+And to a follow-up question, it's very much engine dependent.
 
-1090
-00:43:01,520 --> 00:43:03,390
-that's something engine does. But, to
+480
+00:43:25,670 --> 00:43:30,710
+Iceberg does provide the stats for better join planning, right? But, it doesn't execute the joins.
 
-1091
-00:43:03,400 --> 00:43:04,790
-answer your question, yes.
+481
+00:43:30,720 --> 00:43:39,430
+Your engine has to plan those joins architecturally the query plan per se based on that, but Iceberg doesn't prescribe that.
 
-1092
-00:43:04,800 --> 00:43:07,510
-So, my next question is going to be is
+482
+00:43:39,440 --> 00:43:44,750
+Are there multiple engines in the marketplace from different vendors?
 
-1093
-00:43:07,520 --> 00:43:09,670
-there a query planner?
+483
+00:43:44,750 --> 00:43:47,911
+Are they commercial? Are they open source?
 
-1094
-00:43:09,680 --> 00:43:12,030
-But, since Iceberg is not an engine,
+484
+00:43:47,920 --> 00:43:51,790
+Yeah, there are multiple engine options you have.
 
-1095
-00:43:12,040 --> 00:43:14,270
-it's just a format,
+485
+00:43:51,790 --> 00:43:55,830
+You have proprietary ones, the commercial ones, and you have the open ones.
 
-1096
-00:43:14,280 --> 00:43:15,990
-what's the right question I should be
+486
+00:43:55,830 --> 00:43:57,550
+You can use Spark, the Flink, the Trino, which is open source.
 
-1097
-00:43:16,000 --> 00:43:17,270
-asking?
+487
+00:43:57,550 --> 00:44:07,070
+But, you can use Snowflake, you can use Databricks, you can use BigQuery, anything which is compatible to the Iceberg spec can use it.
 
-1098
-00:43:17,280 --> 00:43:18,990
-So, to first we answer the question that
+488
+00:44:07,080 --> 00:44:11,510
+You also mentioned there are multiple options for catalog.
 
-1099
-00:43:19,000 --> 00:43:21,310
-it does support join, yes. And to a
+489
+00:44:11,510 --> 00:44:20,110
+As I was reading about this, I found this list consisting of Hadoop, Hive, AWS Glue, and some others.
 
-1100
-00:43:21,320 --> 00:43:22,790
-follow-up question, it's very much
+490
+00:44:20,110 --> 00:44:22,310
+What are some of the more popular catalogs?
 
-1101
-00:43:22,800 --> 00:43:25,670
-engine dependent. Iceberg does provide
-
-1102
-00:43:25,680 --> 00:43:28,110
-the stats for better join planning,
-
-1103
-00:43:28,120 --> 00:43:29,590
-right? But, it doesn't execute the
-
-1104
-00:43:29,600 --> 00:43:30,710
-joins.
-
-1105
-00:43:30,720 --> 00:43:33,430
-Your engine has to plan those joins
-
-1106
-00:43:33,440 --> 00:43:35,870
-architecturally the query plan per se
-
-1107
-00:43:35,880 --> 00:43:38,070
-based on that, but Iceberg doesn't
-
-1108
-00:43:38,080 --> 00:43:39,430
-prescribe that.
-
-1109
-00:43:39,440 --> 00:43:42,390
-Are there multiple engines in the
-
-1110
-00:43:42,400 --> 00:43:44,750
-marketplace from different vendors? Are
-
-1111
-00:43:44,760 --> 00:43:47,910
-they commercial? Are they open source?
-
-1112
-00:43:47,920 --> 00:43:49,670
-Yeah, there are multiple engine options
-
-1113
-00:43:49,680 --> 00:43:51,790
-you have. You have proprietary ones, the
-
-1114
-00:43:51,800 --> 00:43:53,270
-commercial ones, and you have the open
-
-1115
-00:43:53,280 --> 00:43:55,830
-ones. You can use Spark, the Flink, the
-
-1116
-00:43:55,840 --> 00:43:57,550
-Trino, which is open source. But, you
-
-1117
-00:43:57,560 --> 00:43:59,270
-can use Snowflake, you can use
-
-1118
-00:43:59,280 --> 00:44:01,990
-Databricks, you can use BigQuery,
-
-1119
-00:44:02,000 --> 00:44:04,750
-anything which is compatible to the
-
-1120
-00:44:04,760 --> 00:44:07,070
-Iceberg spec can use it.
-
-1121
-00:44:07,080 --> 00:44:09,510
-You also mentioned there are multiple
-
-1122
-00:44:09,520 --> 00:44:11,510
-options for catalog. As I was reading
-
-1123
-00:44:11,520 --> 00:44:14,310
-about this, I found this list consisting
-
-1124
-00:44:14,320 --> 00:44:17,750
-of Hadoop, Hive, AWS Glue, and some
-
-1125
-00:44:17,760 --> 00:44:20,110
-others. What are some of the more
-
-1126
-00:44:20,120 --> 00:44:22,310
-popular catalogs?
-
-1127
+491
 00:44:22,320 --> 00:44:25,670
-Sure. AWS Glue is one of them, and AWS
+Sure.
 
-1128
-00:44:25,680 --> 00:44:28,710
-Glue recently became compatible with
+492
+00:44:25,670 --> 00:44:32,910
+AWS Glue is one of them, and AWS Glue recently became compatible with IRC, which is Iceberg rest compatible, right?
 
-1129
-00:44:28,720 --> 00:44:31,350
-IRC, which is Iceberg rest compatible,
+493
+00:44:32,910 --> 00:44:38,550
+And then you have Snowflake's Horizon, Databricks Unity Catalog, and Hive Metastore.
 
-1130
-00:44:31,360 --> 00:44:32,910
-right? And then you have Snowflake's
+494
+00:44:38,550 --> 00:44:41,790
+But Hive Metastore is usually I haven't seen being used a lot,
 
-1131
-00:44:32,920 --> 00:44:36,150
-Horizon, Databricks Unity Catalog, and
+495
+00:44:41,800 --> 00:44:51,190
+just because with cloud at a Hive Metastore was built better for the HDFS file and everything, but it's it's one of the options as well.
 
-1132
-00:44:36,160 --> 00:44:38,550
-Hive Metastore. But Hive Metastore is
+496
+00:44:51,200 --> 00:44:56,110
+What are some differentiators between different catalogs?
 
-1133
-00:44:38,560 --> 00:44:41,790
-usually I haven't seen being used a lot,
-
-1134
-00:44:41,800 --> 00:44:44,710
-just because with cloud at a Hive
-
-1135
-00:44:44,720 --> 00:44:48,230
-Metastore was built better for the HDFS
-
-1136
-00:44:48,240 --> 00:44:49,950
-file and everything, but it's it's one
-
-1137
-00:44:49,960 --> 00:44:51,190
-of the options as well.
-
-1138
-00:44:51,200 --> 00:44:53,870
-What are some differentiators between
-
-1139
-00:44:53,880 --> 00:44:56,110
-different catalogs?
-
-1140
+497
 00:44:56,120 --> 00:44:58,910
-Very good question. So, it really varies
+Very good question.
 
-1141
-00:44:58,920 --> 00:45:00,750
-what you are trying to do. So, let me
+498
+00:44:58,910 --> 00:45:00,750
+So, it really varies what you are trying to do.
 
-1142
-00:45:00,760 --> 00:45:02,830
-put it this way. As we talked about
+499
+00:45:00,750 --> 00:45:02,830
+So, let me put it this way.
 
-1143
-00:45:02,840 --> 00:45:05,190
-Iceberg spec, there's several versions
+500
+00:45:02,830 --> 00:45:07,430
+As we talked about Iceberg spec, there's several versions of it.
 
-1144
-00:45:05,200 --> 00:45:07,430
-of it. Version one, version two, version
+501
+00:45:07,430 --> 00:45:09,590
+Version one, version two, version three.
 
-1145
-00:45:07,440 --> 00:45:09,590
-three. So, as an example, the current
+502
+00:45:09,590 --> 00:45:14,870
+So, as an example, the current version that is GA is version three, which supports nanoseconds time support.
 
-1146
-00:45:09,600 --> 00:45:11,990
-version that is GA is version three,
+503
+00:45:14,880 --> 00:45:18,790
+So, not all catalogs would support it.
 
-1147
-00:45:12,000 --> 00:45:14,870
-which supports nanoseconds time support.
+504
+00:45:18,790 --> 00:45:27,030
+So, you have to think through how the implementations are, what you're looking into, say Spark is writing it, Snowflake is reading it.
 
-1148
-00:45:14,880 --> 00:45:16,870
-So, not all
-
-1149
-00:45:16,880 --> 00:45:18,790
-catalogs would support it. So, you have
-
-1150
-00:45:18,800 --> 00:45:20,790
-to think through how the implementations
-
-1151
-00:45:20,800 --> 00:45:23,390
-are, what you're looking into, say
-
-1152
-00:45:23,400 --> 00:45:25,870
-Spark is writing it, Snowflake is
-
-1153
-00:45:25,880 --> 00:45:27,030
-reading it.
-
-1154
+505
 00:45:27,040 --> 00:45:29,070
-Can that catalog support it, right? And
-
-1155
-00:45:29,080 --> 00:45:31,030
-then another thing you want to see is
-
-1156
-00:45:31,040 --> 00:45:33,830
-how the RBAX are handled. So, say since
-
-1157
-00:45:33,840 --> 00:45:36,630
-this is interoperable, you want to make
-
-1158
-00:45:36,640 --> 00:45:38,990
-sure that your governance gets applied
-
-1159
-00:45:39,000 --> 00:45:41,310
-from one side to another, right? So, say
-
-1160
-00:45:41,320 --> 00:45:43,430
-you have access via Spark, but you don't
-
-1161
-00:45:43,440 --> 00:45:46,070
-have access via Snowflake to a certain
-
-1162
-00:45:46,080 --> 00:45:47,230
-area. You want to make sure you have the
-
-1163
-00:45:47,240 --> 00:45:48,830
-right roles, and the governance is
-
-1164
-00:45:48,840 --> 00:45:50,950
-handled via the catalog. How strong are
-
-1165
-00:45:50,960 --> 00:45:52,910
-they with the governance, how they vent
-
-1166
-00:45:52,920 --> 00:45:54,790
-the credentials to the storage, those
-
-1167
-00:45:54,800 --> 00:45:57,390
-aspects. So, it's a variety, and I would
-
-1168
-00:45:57,400 --> 00:45:59,750
-evaluate in a way wherein what's my use
-
-1169
-00:45:59,760 --> 00:46:00,350
-case.
-
-1170
-00:46:00,360 --> 00:46:02,750
-I I to move now for the last part of the
-
-1171
-00:46:02,760 --> 00:46:04,950
-interview talking about the bigger
-
-1172
-00:46:04,960 --> 00:46:08,470
-picture of Iceberg in the application
-
-1173
-00:46:08,480 --> 00:46:11,230
-architecture for an entire application.
-
-1174
-00:46:11,240 --> 00:46:14,110
-The idea of a CRUD application is
-
-1175
-00:46:14,120 --> 00:46:17,190
-extremely widespread. Almost everything
-
-1176
-00:46:17,200 --> 00:46:19,550
-we use on the internet for business is
-
-1177
-00:46:19,560 --> 00:46:20,990
-some kind of CRUD application that
-
-1178
-00:46:21,000 --> 00:46:23,910
-writes into OLTP. By application, I mean
-
-1179
-00:46:23,920 --> 00:46:27,230
-something has a database, a middle tier,
-
-1180
-00:46:27,240 --> 00:46:30,070
-and a user interface. What would be uh
-
-1181
-00:46:30,080 --> 00:46:33,390
-some examples of a database application
-
-1182
-00:46:33,400 --> 00:46:35,990
-where Iceberg is the data layer? What is
-
-1183
-00:46:36,000 --> 00:46:38,230
-that application doing? What is its
-
-1184
-00:46:38,240 --> 00:46:39,390
-architecture?
-
-1185
-00:46:39,400 --> 00:46:41,910
-I can give one of my examples that I
-
-1186
-00:46:41,920 --> 00:46:44,550
-recently implemented. We had clickstream
-
-1187
-00:46:44,560 --> 00:46:47,190
-data coming in, and the clickstream data
-
-1188
-00:46:47,200 --> 00:46:50,710
-landed in Postgres. Postgres is OLTP.
-
-1189
-00:46:50,720 --> 00:46:53,630
-And then, from there, it landed via the
-
-1190
-00:46:53,640 --> 00:46:55,630
-Pulsar. Pulsar Apache Pulsar is again
-
-1191
-00:46:55,640 --> 00:46:57,910
-for streaming as well as uh managing the
-
-1192
-00:46:57,920 --> 00:47:01,190
-queues. What it did is it holds data for
-
-1193
-00:47:01,200 --> 00:47:04,070
-about 15 minutes, and then pushes to
-
-1194
-00:47:04,080 --> 00:47:06,230
-Snowflake. And then, when it lands to
-
-1195
-00:47:06,240 --> 00:47:08,710
-Snowflake, that's where you will do a
-
-1196
-00:47:08,720 --> 00:47:10,670
-lot of your cleaning up, transformations
-
-1197
-00:47:10,680 --> 00:47:12,830
-you want to do, and you prepare it or
+Can that catalog support it, right?
+
+506
+00:45:29,070 --> 00:45:33,830
+And then another thing you want to see is how the RBAX are handled.
+
+507
+00:45:33,830 --> 00:45:41,310
+So, say since this is interoperable, you want to make sure that your governance gets applied from one side to another, right?
+
+508
+00:45:41,310 --> 00:45:47,230
+So, say you have access via Spark, but you don't have access via Snowflake to a certain area.
 
-1198
-00:47:12,840 --> 00:47:14,910
-curate it for other teams. And then,
+509
+00:45:47,230 --> 00:45:50,950
+You want to make sure you have the right roles, and the governance is handled via the catalog.
 
-1199
-00:47:14,920 --> 00:47:16,390
-ultimately,
+510
+00:45:50,950 --> 00:45:57,390
+How strong are they with the governance, how they vent the credentials to the storage, those aspects.
 
-1200
-00:47:16,400 --> 00:47:18,950
-the teams wanted to implement the ML
+511
+00:45:57,390 --> 00:46:00,350
+So, it's a variety, and I would evaluate in a way wherein what's my use case.
 
-1201
-00:47:18,960 --> 00:47:21,630
-work or the model on the Spark side. And
+512
+00:46:00,360 --> 00:46:11,230
+I I to move now for the last part of the interview talking about the bigger picture of Iceberg in the application architecture for an entire application.
 
-1202
-00:47:21,640 --> 00:47:23,550
-that's where the interoperability come
+513
+00:46:11,240 --> 00:46:17,190
+The idea of a CRUD application is extremely widespread.
 
-1203
-00:47:23,560 --> 00:47:26,030
-in. They were able to use the Snowflake
+514
+00:46:17,190 --> 00:46:23,910
+Almost everything we use on the internet for business is some kind of CRUD application that writes into OLTP.
 
-1204
-00:47:26,040 --> 00:47:28,270
-engine to do a lot of my transformations
+515
+00:46:23,910 --> 00:46:30,070
+By application, I mean something has a database, a middle tier, and a user interface.
 
-1205
-00:47:28,280 --> 00:47:30,630
-and loading for the right tables. And
+516
+00:46:30,070 --> 00:46:35,990
+What would be uh some examples of a database application where Iceberg is the data layer?
 
-1206
-00:47:30,640 --> 00:47:32,870
-but the ML teams could leverage the
+517
+00:46:35,990 --> 00:46:39,390
+What is that application doing? What is its architecture?
 
-1207
-00:47:32,880 --> 00:47:35,830
-Spark engine for the ML workloads to buy
+518
+00:46:39,400 --> 00:46:44,550
+I can give one of my examples that I recently implemented.
 
-1208
-00:47:35,840 --> 00:47:37,350
-just accessing the table that were
+519
+00:46:44,550 --> 00:46:50,711
+We had clickstream data coming in, and the clickstream data landed in Postgres. Postgres is OLTP.
 
-1209
-00:47:37,360 --> 00:47:40,870
-written by Snowflake on S3. And to
+520
+00:46:50,720 --> 00:46:55,630
+And then, from there, it landed via the Pulsar.
 
-1210
-00:47:40,880 --> 00:47:43,550
-summarize this, I would put it in a way
+521
+00:46:55,630 --> 00:47:01,190
+Pulsar Apache Pulsar is again for streaming as well as uh managing the queues.
 
-1211
-00:47:43,560 --> 00:47:46,790
-wherein your multiple teams need access
+522
+00:47:01,190 --> 00:47:06,230
+What it did is it holds data for about 15 minutes, and then pushes to Snowflake.
 
-1212
-00:47:46,800 --> 00:47:48,590
-to the same data,
+523
+00:47:06,230 --> 00:47:14,910
+And then, when it lands to Snowflake, that's where you will do a lot of your cleaning up, transformations you want to do, and you prepare it or curate it for other teams.
 
-1213
-00:47:48,600 --> 00:47:50,350
-but you don't want to don't want to have
+524
+00:47:14,910 --> 00:47:21,630
+And then, ultimately, the teams wanted to implement the ML work or the model on the Spark side.
 
-1214
-00:47:50,360 --> 00:47:52,870
-a redundant storage in terms of just
+525
+00:47:21,630 --> 00:47:26,030
+And that's where the interoperability come in.
 
-1215
-00:47:52,880 --> 00:47:54,750
-okay for the same use case. You don't
+526
+00:47:26,030 --> 00:47:30,630
+They were able to use the Snowflake engine to do a lot of my transformations and loading for the right tables.
 
-1216
-00:47:54,760 --> 00:47:56,550
-want to have that. It's better you don't
+527
+00:47:30,630 --> 00:47:40,870
+And but the ML teams could leverage the Spark engine for the ML workloads to buy just accessing the table that were written by Snowflake on S3.
 
-1217
-00:47:56,560 --> 00:47:58,910
-do it. Secondly, I have seen a lot of
+528
+00:47:40,870 --> 00:47:48,590
+And to summarize this, I would put it in a way wherein your multiple teams need access to the same data,
 
-1218
-00:47:58,920 --> 00:48:00,590
-teams do doing the similar
+529
+00:47:48,600 --> 00:47:54,750
+but you don't want to don't want to have a redundant storage in terms of just okay for the same use case.
 
-1219
-00:48:00,600 --> 00:48:01,830
-transformation or almost similar
+530
+00:47:54,750 --> 00:47:56,550
+You don't want to have that.
 
-1220
-00:48:01,840 --> 00:48:03,910
-transformation just to give different
+531
+00:47:56,550 --> 00:47:58,910
+It's better you don't do it.
 
-1221
-00:48:03,920 --> 00:48:05,950
-kind of data to different teams, right?
+532
+00:47:58,910 --> 00:48:05,950
+Secondly, I have seen a lot of teams do doing the similar transformation or almost similar transformation just to give different kind of data to different teams, right?
 
-1222
+533
 00:48:05,960 --> 00:48:08,430
-It reduces that. Another thing is, if
+It reduces that.
 
-1223
-00:48:08,440 --> 00:48:11,230
-you have use cases wherein you want to
+534
+00:48:08,430 --> 00:48:16,150
+Another thing is, if you have use cases wherein you want to do anything analytical, that's where I will use it.
 
-1224
-00:48:11,240 --> 00:48:13,750
-do anything analytical, that's where I
+535
+00:48:16,150 --> 00:48:24,470
+Again, AI is one of the use cases that's uh getting very much popular in which what happens is you can have Git-like branching and
 
-1225
-00:48:13,760 --> 00:48:16,150
-will use it. Again, AI is one of the use
+536
+00:48:24,470 --> 00:48:32,030
+you can do AB testing on the data with Nessie catalog and you do branch the data into two layers and do analysis on both layers.
 
-1226
-00:48:16,160 --> 00:48:17,790
-cases that's uh
+537
+00:48:32,040 --> 00:48:40,950
+By AI being an application, are we talking more about training or fine-tuning or
 
-1227
-00:48:17,800 --> 00:48:19,870
-getting very much popular in which what
+538
+00:48:40,950 --> 00:48:49,390
+about using the data to drive inference of models you already have in order to evaluate the models or what do we mean by AI?
 
-1228
-00:48:19,880 --> 00:48:21,630
-happens is you can have Git-like
-
-1229
-00:48:21,640 --> 00:48:24,470
-branching and you can do AB testing on
-
-1230
-00:48:24,480 --> 00:48:27,590
-the data with Nessie catalog and you do
-
-1231
-00:48:27,600 --> 00:48:30,270
-branch the data into two layers and do
-
-1232
-00:48:30,280 --> 00:48:32,030
-analysis on both layers.
-
-1233
-00:48:32,040 --> 00:48:34,630
-By AI being an application, are we
-
-1234
-00:48:34,640 --> 00:48:37,510
-talking more about training or
-
-1235
-00:48:37,520 --> 00:48:40,950
-fine-tuning or about using the data to
-
-1236
-00:48:40,960 --> 00:48:43,510
-drive inference of models you already
-
-1237
-00:48:43,520 --> 00:48:47,350
-have in order to evaluate the models or
-
-1238
-00:48:47,360 --> 00:48:49,390
-what do we mean by AI?
-
-1239
+539
 00:48:49,400 --> 00:48:51,230
-Okay, I just the training the data. If
+Okay, I just the training the data.
 
-1240
-00:48:51,240 --> 00:48:53,430
-you're training the data with data set A
+540
+00:48:51,230 --> 00:49:03,070
+If you're training the data with data set A versus B and you have a branch-like structure, data branch, not a Git branch, data branch-like structure, you can have A and B comparison while training and do analysis.
 
-1241
-00:48:53,440 --> 00:48:55,390
-versus B and you have a branch-like
+541
+00:49:03,080 --> 00:49:08,830
+Well, see here we've covered Iceberg from beginning to end.
 
-1242
-00:48:55,400 --> 00:48:57,590
-structure, data branch, not a Git
+542
+00:49:08,830 --> 00:49:13,510
+Before we wrap up, is anything else about Iceberg that you'd like listeners to take away?
 
-1243
-00:48:57,600 --> 00:48:59,310
-branch, data branch-like structure, you
+543
+00:49:13,520 --> 00:49:20,470
+What I would say is a very exciting field and it's a very exciting world of the Iceberg.
 
-1244
-00:48:59,320 --> 00:49:00,990
-can have A and B comparison while
+544
+00:49:20,470 --> 00:49:26,430
+Now, Iceberg team is working and collaborating on the version V4.
 
-1245
-00:49:01,000 --> 00:49:03,070
-training and do analysis.
+545
+00:49:26,430 --> 00:49:28,870
+It's not final yet, but it's going towards even better product.
 
-1246
-00:49:03,080 --> 00:49:05,710
-Well, see here we've covered Iceberg
+546
+00:49:28,870 --> 00:49:37,110
+And another thing that I've been noticing in industry is that vendors are converging to Iceberg as a standard.
 
-1247
-00:49:05,720 --> 00:49:08,830
-from beginning to end. Before we wrap
+547
+00:49:37,110 --> 00:49:41,870
+They are now not limiting themselves to their own proprietary one.
 
-1248
-00:49:08,840 --> 00:49:11,310
-up, is anything else about Iceberg that
+548
+00:49:41,870 --> 00:49:43,750
+So, I think it's a good time to adopt.
 
-1249
-00:49:11,320 --> 00:49:13,510
-you'd like listeners to take away?
+549
+00:49:43,750 --> 00:49:50,790
+Another thing that I would recommend teams to take away is be more involved in Apache's dev list uh for the Iceberg.
 
-1250
-00:49:13,520 --> 00:49:15,470
-What I would say is a very exciting
+550
+00:49:50,790 --> 00:49:58,710
+You'll get to know how it's developing, what the discussion themes are, what the common themes are, and you'll get to know how things are developing in the world of iceberg.
 
-1251
-00:49:15,480 --> 00:49:17,790
-field and it's a very exciting world of
+551
+00:49:58,710 --> 00:50:01,830
+It's a truly, truly exciting time to be a learning iceberg.
 
-1252
-00:49:17,800 --> 00:49:20,470
-the Iceberg. Now, Iceberg team is
+552
+00:50:01,840 --> 00:50:11,630
+Before we sign off, would you like to direct listeners anywhere they can find you, your publications, or any projects you're involved with?
 
-1253
-00:49:20,480 --> 00:49:23,030
-working and collaborating on the version
-
-1254
-00:49:23,040 --> 00:49:26,430
-V4. It's not final yet, but it's going
-
-1255
-00:49:26,440 --> 00:49:28,870
-towards even better product. And another
-
-1256
-00:49:28,880 --> 00:49:30,150
-thing that I've been noticing in
-
-1257
-00:49:30,160 --> 00:49:33,270
-industry is that vendors are converging
-
-1258
-00:49:33,280 --> 00:49:37,110
-to Iceberg as a standard. They are now
-
-1259
-00:49:37,120 --> 00:49:39,750
-not limiting themselves to their own
-
-1260
-00:49:39,760 --> 00:49:41,870
-proprietary one. So, I think it's a good
-
-1261
-00:49:41,880 --> 00:49:43,750
-time to adopt. Another thing that I
-
-1262
-00:49:43,760 --> 00:49:46,070
-would recommend teams to take away is be
-
-1263
-00:49:46,080 --> 00:49:49,190
-more involved in Apache's dev list uh
-
-1264
-00:49:49,200 --> 00:49:50,790
-for the Iceberg. You'll get to know how
-
-1265
-00:49:50,800 --> 00:49:52,550
-it's developing, what the discussion
-
-1266
-00:49:52,560 --> 00:49:54,590
-themes are, what the common themes are,
-
-1267
-00:49:54,600 --> 00:49:57,070
-and you'll get to know how things are
-
-1268
-00:49:57,080 --> 00:49:58,710
-developing in the world of iceberg. It's
-
-1269
-00:49:58,720 --> 00:50:00,830
-a truly, truly exciting time to be a
-
-1270
-00:50:00,840 --> 00:50:01,830
-learning iceberg.
-
-1271
-00:50:01,840 --> 00:50:04,150
-Before we sign off, would you like to
-
-1272
-00:50:04,160 --> 00:50:06,630
-direct listeners anywhere they can find
-
-1273
-00:50:06,640 --> 00:50:07,630
-you,
-
-1274
-00:50:07,640 --> 00:50:09,750
-your publications, or any projects
-
-1275
-00:50:09,760 --> 00:50:11,630
-you're involved with?
-
-1276
+553
 00:50:11,640 --> 00:50:13,670
-Absolutely. You can reach out to me on
+Absolutely.
 
-1277
-00:50:13,680 --> 00:50:16,910
-my LinkedIn. My LinkedIn is Sahil Walia,
+554
+00:50:13,670 --> 00:50:16,910
+You can reach out to me on my LinkedIn.
 
-1278
-00:50:16,920 --> 00:50:19,150
-as you see my name, and then Syracuse,
+555
+00:50:16,910 --> 00:50:21,750
+My LinkedIn is Sahil Walia, as you see my name, and then Syracuse, Syracuse, New York.
 
-1279
-00:50:19,160 --> 00:50:21,750
-Syracuse, New York. And I can be reached
+556
+00:50:21,750 --> 00:50:27,390
+And I can be reached on I have a medium page where I publish articles, and you can look at my Google Scholar, as well.
 
-1280
-00:50:21,760 --> 00:50:23,950
-on I have a medium page where I publish
+557
+00:50:27,400 --> 00:50:32,710
+Sahil, thank you very much, and thank you for speaking to Software Engineering Radio.
 
-1281
-00:50:23,960 --> 00:50:26,110
-articles, and you can look at my Google
-
-1282
-00:50:26,120 --> 00:50:27,390
-Scholar, as well.
-
-1283
-00:50:27,400 --> 00:50:29,510
-Sahil, thank you very much, and thank
-
-1284
-00:50:29,520 --> 00:50:31,790
-you for speaking to Software Engineering
-
-1285
-00:50:31,800 --> 00:50:32,710
-Radio.
-
-1286
+558
 00:50:32,720 --> 00:50:34,310
-Thank you, Robert. It was great chatting
+Thank you, Robert.
 
-1287
-00:50:34,320 --> 00:50:35,910
-with you. I appreciate it.
+559
+00:50:34,310 --> 00:50:35,911
+It was great chatting with you. I appreciate it.
 
-1288
-00:50:35,920 --> 00:50:38,270
-For Software Engineering Radio, this has
+560
+00:50:35,920 --> 00:50:40,150
+For Software Engineering Radio, this has been Robert Blumen.
 
-1289
-00:50:38,280 --> 00:50:40,150
-been Robert Blumen. Thank you for
+561
+00:50:40,150 --> 00:50:41,845
+Thank you for listening.
 
-1290
-00:50:40,160 --> 00:50:41,845
-listening.
-
-1291
+562
 00:50:41,855 --> 00:50:42,390
 [music]
 
-1292
-00:50:42,400 --> 00:50:43,830
-Thanks for listening to SE Radio, an
+563
+00:50:42,400 --> 00:50:47,830
+Thanks for listening to SE Radio, an educational program brought to you by IEEE Software Magazine.
 
-1293
-00:50:43,840 --> 00:50:45,430
-educational program brought to you by
+564
+00:50:47,830 --> 00:50:53,350
+For more about the podcast, including other episodes, visit our website at se-radio.net.
 
-1294
-00:50:45,440 --> 00:50:47,830
-IEEE Software Magazine. For more about
+565
+00:50:53,360 --> 00:51:03,460
+To provide feedback, you can comment on each episode on the website, or reach us on LinkedIn, Facebook, Twitter, or through our Slack channel at se-radio.slack.com.
 
-1295
-00:50:47,840 --> 00:50:49,550
-the podcast, including other episodes,
-
-1296
-00:50:49,560 --> 00:50:53,350
-visit our website at se-radio.net.
-
-1297
-00:50:53,360 --> 00:50:54,910
-To provide feedback, you can comment on
-
-1298
-00:50:54,920 --> 00:50:56,870
-each episode on the website, or reach us
-
-1299
-00:50:56,880 --> 00:50:59,510
-on LinkedIn, Facebook, Twitter, or
-
-1300
-00:50:59,520 --> 00:51:00,790
-through our Slack channel at
-
-1301
-00:51:00,800 --> 00:51:03,460
-se-radio.slack.com.
-
-1302
+566
 00:51:03,470 --> 00:51:03,990
 [music]
 
-1303
-00:51:04,000 --> 00:51:05,190
-You can also email us at
+567
+00:51:04,000 --> 00:51:08,630
+You can also email us at team@se-radio.net.
 
-1304
-00:51:05,200 --> 00:51:08,630
-team@se-radio.net.
+568
+00:51:10,470 --> 00:51:14,070
+This and all other episodes of SE Radio is licensed under Creative Commons License 2.5.
 
-1305
-00:51:10,470 --> 00:51:10,480
-This and all other episodes of SE Radio
-
-1306
-00:51:10,480 --> 00:51:12,030
-is licensed under Creative Commons
-
-1307
-00:51:12,040 --> 00:51:14,070
-License 2.5. [music]
-
-1308
-00:51:14,080 --> 00:51:16,880
-Thanks for listening.
+569
+00:51:14,070 --> 00:51:16,880
+[music] Thanks for listening.
