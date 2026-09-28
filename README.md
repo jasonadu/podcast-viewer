@@ -65,6 +65,9 @@ python -m subtitle_download.download_video https://www.youtube.com/watch?list=PL
 - 引擎：yt-dlp 元数据 + aria2c 16 连接分块下载，ffmpeg 合并音视频（三者均已就位）。
 - 默认 `--workers 2`（429 限流主要发生在元数据提取阶段，并发过高更快触发，见 issue #2）；需要提速再 `--workers 5`。
 - 防护：任务启动随机间隔 3~8 秒、429 指数退避重试（8s→16s→32s）、`download_archive` 归档按画质/模式独立（中断后重跑自动跳过已成功的）。
+- 归档预检查（两级，都在进入线程池之前）：① 单个视频的 id 直接从 URL 解析（不联网），归档中已有就立刻 `[SKIP] xxx (归档中已存在, 未联网解析)`；② 其余条目（播放列表展开后）解析完统一判定，同样打印 `[SKIP]`。已归档的都不占用 worker、不消耗下载请求；全部已下载时秒退（退出码 0）。
+- 进度可见性：4 个阶段 `[1/4]~[4/4]` + 每个 URL/任务的编号进度（`[worker-1] (3/20)`）；解析、下载这类阻塞步骤超过 15s 会打印 `... 仍在进行, 已用 45s, 临时文件 12.3MiB` 心跳（aria2c 作为外部下载器只在结束时回调一次，没有增量进度，心跳是下载期间唯一的信息来源）；yt-dlp 的 warning/error 会带 `[worker-N]` 前缀转发出来，不再静默等待。
+- 解析阶段（元数据/播放列表）遇到 429 也会自动退避重试（8s→16s→32s），不会因为一次限流就丢掉整个 URL。
 - 输出：`./videos/<标题> [<id>].mp4`（`--output-dir` 可改）；年龄限制/会员视频需 `--cookies-from-browser chrome` 等。
 - 访问 YouTube 需网络可达，必要时设置 `HTTP_PROXY` / `HTTPS_PROXY`（脚本自动透传）。
 
