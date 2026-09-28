@@ -15,9 +15,10 @@ html{scroll-behavior:smooth;}
 body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
   color:var(--ink);background:#fff;line-height:1.7;font-size:15px;}
 #toc{position:fixed;top:0;left:0;width:300px;height:100vh;overflow-y:auto;
-  background:#fafafa;border-right:1px solid var(--border);padding:56px 16px 20px;
+  background:#fafafa;border-right:1px solid var(--border);padding:60px 16px 20px;
   transform:translateX(0);transition:transform .25s ease;z-index:100;}
-#toc.hidden{transform:translateX(-300px);}
+.toc-collapsed #toc{transform:translateX(-300px);}
+#toc-scrim{display:none;}
 #toc h2{font-size:15px;margin:0 0 12px;color:var(--accent);}
 #toc a{display:block;color:#374151;text-decoration:none;padding:4px 8px;border-radius:6px;font-size:13.5px;}
 #toc a:hover{background:var(--zh-bg);}
@@ -25,10 +26,15 @@ body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-ser
 #toc a.l2{padding-left:18px;}
 #toc a.l3{padding-left:36px;font-size:12.5px;color:var(--muted);}
 #toc a.cur{background:var(--zh-bg);color:var(--accent);}
-#menu-btn{position:fixed;top:12px;left:12px;z-index:200;border:1px solid var(--border);
-  background:#fff;border-radius:8px;width:40px;height:40px;font-size:18px;cursor:pointer;
-  box-shadow:0 1px 3px rgba(0,0,0,.08);}
-main{margin-left:300px;max-width:900px;padding:40px 48px 80px;}
+#menu-btn{position:fixed;top:12px;left:12px;z-index:300;display:inline-flex;align-items:center;gap:6px;
+  height:36px;padding:0 12px;border:1px solid var(--border);border-radius:8px;background:#fff;
+  color:#374151;font-family:inherit;font-size:14px;line-height:1;white-space:nowrap;cursor:pointer;
+  box-shadow:0 1px 3px rgba(0,0,0,.08);
+  transition:background .15s ease,color .15s ease,border-color .15s ease;}
+#menu-btn:hover{background:var(--zh-bg);color:var(--accent);border-color:var(--accent);}
+main{margin-left:300px;max-width:900px;padding:40px 48px 80px;
+  transition:margin-left .25s ease,max-width .25s ease,padding-top .25s ease;}
+.toc-collapsed main{margin-left:0;max-width:1000px;padding-top:64px;}
 h1{font-size:28px;border-bottom:3px solid var(--accent);padding-bottom:10px;margin-top:0;}
 h2{font-size:22px;margin-top:38px;color:#111827;border-left:4px solid var(--accent);padding-left:10px;}
 h3{font-size:18px;margin-top:28px;color:#1f2937;}
@@ -63,14 +69,26 @@ p code,li code,td code{background:#fce7f3;color:#be185d;padding:1px 5px;border-r
 .pager a:hover{background:var(--accent);color:#fff;}
 .pager a.disabled{opacity:.4;pointer-events:none;}
 @media(max-width:900px){
-  #toc{transform:translateX(-300px);}
-  #toc.show{transform:translateX(0);}
-  main{margin-left:0;padding:60px 18px 60px;}
+  #toc{transform:translateX(-300px);box-shadow:2px 0 10px rgba(15,23,42,.16);}
+  .toc-open #toc{transform:translateX(0);}
+  main,.toc-collapsed main{margin-left:0;max-width:900px;padding:60px 18px 60px;}
+  .toc-open{overflow:hidden;}
+  .toc-open #toc-scrim{display:block;position:fixed;top:0;left:0;width:100vw;height:100vh;
+    z-index:90;background:rgba(15,23,42,.35);}
 }
 </style>
 </head>
 <body>
-<button id="menu-btn">&#9776;</button>
+<script>
+/* 恢复上次的目录折叠状态（首帧前执行，避免闪烁） */
+try{
+  if(window.innerWidth>900&&localStorage.getItem('sd-aws-toc-collapsed')==='1'){
+    document.documentElement.classList.add('toc-collapsed');
+  }
+}catch(e){}
+</script>
+<button id="menu-btn" type="button" aria-controls="toc" aria-expanded="true"
+  title="收起左侧目录">&#10005; 收起目录</button>
 <nav id="toc">
   <h2>《System Design on AWS》双语阅读</h2>
   <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Part I · Chapter 6</div>
@@ -666,15 +684,65 @@ query {
   </div>
 </main>
 <script>
-const btn=document.getElementById('menu-btn');
-const toc=document.getElementById('toc');
-btn.addEventListener('click',()=>{
-  if(window.innerWidth<=900){toc.classList.toggle('show');}
-  else{toc.classList.toggle('hidden');}
-});
-if(window.innerWidth<=900){
-  toc.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>toc.classList.remove('show')));
-}
+/* 左侧目录折叠：宽屏折叠后正文铺开，窄屏以抽屉 + 遮罩方式展开 */
+(function(){
+  var html=document.documentElement;
+  var toc=document.getElementById('toc');
+  var btn=document.getElementById('menu-btn');
+  if(!toc||!btn){return;}
+  var KEY='sd-aws-toc-collapsed';
+  var mq=window.matchMedia('(max-width:900px)');
+
+  /* 窄屏遮罩：点击目录外区域即收起 */
+  var scrim=document.createElement('div');
+  scrim.id='toc-scrim';
+  document.body.appendChild(scrim);
+
+  function isCollapsed(){return html.classList.contains('toc-collapsed');}
+  function isOpen(){return html.classList.contains('toc-open');}
+  function isHidden(){return mq.matches?!isOpen():isCollapsed();}
+
+  function sync(){
+    var h=isHidden();
+    btn.innerHTML=h?'<span aria-hidden="true">&#9776;</span> 目录'
+                   :'<span aria-hidden="true">&#10005;</span> 收起目录';
+    btn.setAttribute('aria-expanded',h?'false':'true');
+    btn.title=h?'展开左侧目录':'收起左侧目录';
+  }
+
+  function closeDrawer(){
+    if(isOpen()){html.classList.remove('toc-open');sync();}
+  }
+
+  btn.addEventListener('click',function(){
+    if(mq.matches){
+      html.classList.toggle('toc-open');
+    }else{
+      var next=!isCollapsed();
+      html.classList.toggle('toc-collapsed',next);
+      try{localStorage.setItem(KEY,next?'1':'0');}catch(e){}
+    }
+    sync();
+  });
+
+  /* 窄屏点目录项后自动收起 */
+  toc.addEventListener('click',function(e){
+    var el=e.target;
+    while(el&&el!==toc){
+      if(el.tagName==='A'){closeDrawer();break;}
+      el=el.parentNode;
+    }
+  });
+
+  scrim.addEventListener('click',closeDrawer);
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'||e.keyCode===27){closeDrawer();}
+  });
+  if(mq.addEventListener){mq.addEventListener('change',sync);}
+  else if(mq.addListener){mq.addListener(sync);}
+
+  sync();
+})();
 </script>
 </body>
 </html>
