@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>前言 · LLMOps：生产环境中的大语言模型管理</title>
+<style>
+:root{
+  --accent:#2563eb; --zh-bg:#f0f6ff; --zh-border:#2563eb;
+  --code-bg:#0f172a; --code-ink:#e2e8f0; --ink:#1f2937;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0; background:#faf6f1; color:var(--ink);
+  font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  font-size:18px; line-height:1.75;
+}
+#toc{
+  position:fixed; top:0; left:0; width:300px; height:100vh; overflow-y:auto;
+  background:#fff; border-right:1px solid #e5e7eb; padding:20px 14px;
+  transition:transform .25s ease; z-index:50; font-size:14px;
+  transform:translateX(-300px);
+  box-shadow:0 0 20px rgba(0,0,0,.08);
+}
+body.nav-open #toc{transform:translateX(0);}
+#toc .booktitle{font-weight:700; color:var(--accent); font-size:15px; line-height:1.4; margin:10px 0 14px;}
+#toc a{display:block; color:#374151; text-decoration:none; padding:4px 8px; border-radius:6px;}
+#toc a:hover{background:var(--zh-bg);}
+#toc a.l1{font-weight:600; margin-top:8px;}
+#toc a.l2{padding-left:20px; font-size:13px; color:#6b7280;}
+#toc a.active{background:var(--zh-bg); color:var(--accent); font-weight:600;}
+main{margin-left:0; padding:36px 48px 80px; max-width:960px; transition:margin .25s ease;}
+body.nav-open main{margin-left:300px;}
+.menu-btn{
+  position:fixed; top:14px; left:14px; z-index:60; border:none;
+  background:var(--accent); color:#fff; width:40px; height:40px; border-radius:8px;
+  font-size:18px; cursor:pointer; display:block;
+  box-shadow:0 2px 8px rgba(0,0,0,.2);
+}
+.menu-btn:hover{background:#1d4ed8;}
+/* edge toggle tab: collapses / expands the sidebar (desktop).
+   rides the sidebar's right edge when open, slides to the screen edge when closed. */
+.toc-edge{
+  position:fixed; top:46%; left:300px; z-index:55; width:22px; height:60px;
+  border:1px solid #e5e7eb; border-left:none; background:#fff; color:var(--accent);
+  cursor:pointer; border-radius:0 9px 9px 0; font-size:16px; font-weight:700;
+  display:none; align-items:center; justify-content:center; padding:0;
+  box-shadow:2px 0 8px rgba(0,0,0,.07); transition:left .25s ease;
+}
+body:not(.nav-open) .toc-edge{left:0; border-left:1px solid #e5e7eb;}
+.toc-edge:hover{background:var(--zh-bg);}
+.toc-edge .ic-open{display:none;}
+body:not(.nav-open) .toc-edge .ic-open{display:inline;}
+body:not(.nav-open) .toc-edge .ic-close{display:none;}
+@media (min-width:901px){ .toc-edge{display:flex;} }
+h1{font-size:28px; line-height:1.3; margin-top:0; border-bottom:3px solid var(--accent); padding-bottom:10px;}
+h1 .zhh{display:block; font-size:20px; color:var(--accent); font-weight:600; margin-top:4px;}
+h2{font-size:22px; margin-top:34px; color:#111827;}
+h2 .zhh{display:block; font-size:17px; color:var(--accent); font-weight:600;}
+h3{font-size:19px; margin-top:26px;}
+h3 .zhh{display:block; font-size:15px; color:var(--accent); font-weight:600;}
+p.en{margin:14px 0;}
+p.zh, li .zh{
+  background:var(--zh-bg); border-left:4px solid var(--zh-border);
+  border-radius:0 8px 8px 0; padding:10px 16px; margin:8px 0 16px;
+}
+li .zh{display:block; margin:4px 0 8px;}
+li .en{display:block;}
+ul,ol{padding-left:24px;}
+li{margin:6px 0;}
+code{
+  font-family:"SF Mono",Menlo,Consolas,monospace; font-size:14px;
+  background:#fce7f3; color:#be185d; padding:1px 5px; border-radius:4px;
+}
+pre{
+  background:var(--code-bg); color:var(--code-ink); padding:14px 16px;
+  border-radius:8px; overflow-x:auto; font-size:13.5px; line-height:1.5;
+}
+pre code{background:none; color:inherit; padding:0;}
+figure{margin:22px 0;}
+figure img{max-width:100%; border:1px solid #e5e7eb; border-radius:8px; background:#fff;}
+figcaption{font-size:13px; color:#6b7280; margin-top:6px;}
+figcaption .zh{display:block; background:none; border:none; padding:2px 0; margin:2px 0; color:#4b5563;}
+table{border-collapse:collapse; width:100%; margin:18px 0; font-size:15px;}
+th,td{border:1px solid #d1d5db; padding:8px 10px; text-align:left; vertical-align:top;}
+th{background:#f1f5f9;}
+.pagemark{
+  text-align:center; color:#9ca3af; font-size:12px; letter-spacing:2px;
+  margin:26px 0; position:relative;
+}
+.pagemark::before,.pagemark::after{
+  content:""; display:inline-block; width:60px; height:1px; background:#d1d5db;
+  vertical-align:middle; margin:0 12px;
+}
+.pager{display:flex; gap:10px; margin-top:50px;}
+.pager a{
+  flex:1; text-align:center; padding:12px; border:1px solid #d1d5db;
+  border-radius:8px; text-decoration:none; color:var(--ink); background:#fff;
+}
+.pager a:hover{background:var(--accent); color:#fff; border-color:var(--accent);}
+.pager a.disabled{opacity:.4; pointer-events:none;}
+.tochead{font-size:11px; text-transform:uppercase; letter-spacing:1px; color:#9ca3af; margin:14px 0 4px;}
+#toc{padding-top:58px;}
+main{padding:64px 48px 80px;}
+@media (max-width:900px){
+  body.nav-open main{filter:brightness(.6); pointer-events:none;}
+  main{padding:60px 18px 60px;}
+}
+</style>
+</head>
+<body class="nav-open">
+<button class="menu-btn" onclick="toggleToc()" aria-label="切换目录">☰</button>
+<button class="toc-edge" onclick="toggleToc()" aria-label="折叠/展开目录"><span class="ic-close">‹</span><span class="ic-open">›</span></button>
+<nav id="toc"><div class="booktitle">LLMOps：生产环境中的大语言模型管理<br><span style="font-weight:400;font-size:12px;color:#9ca3af">LLMOps: Managing Large Language Models in Production</span></div>
+<div class="tochead">目录</div>
+<a class="l1 active" href="front-matter.html">前言</a>
+<a class="l2" href="#copyright">版权页</a>
+<a class="l2" href="#toc">目录</a>
+<a class="l2" href="#preface">前言</a>
+<a class="l2" href="#conventions">本书约定</a>
+<a class="l2" href="#oreilly">O'Reilly 在线学习</a>
+<a class="l2" href="#contact">如何联系我们</a>
+<a class="l2" href="#ack">致谢</a>
+<a class="l1" href="chapter-01.html">第1章 大语言模型导论</a>
+<a class="l1" href="chapter-02.html">第2章 LLMOps 导论</a>
+<a class="l1" href="chapter-03.html">第3章 基于 LLM 的应用</a>
+<a class="l1" href="chapter-04.html">第4章 LLM 数据工程</a>
+<a class="l1" href="chapter-05.html">第5章 模型领域适配</a>
+<a class="l1" href="chapter-06.html">第6章 API 优先的 LLM 部署</a>
+<a class="l1" href="chapter-07.html">第7章 LLM 评估</a>
+<a class="l1" href="chapter-08.html">第8章 治理：监控、隐私与安全</a>
+<a class="l1" href="chapter-09.html">第9章 扩缩：硬件、基础设施与资源管理</a>
+<a class="l1" href="chapter-10.html">第10章 LLM 与 LLMOps 的未来</a>
+<a class="l1" href="closing.html">附录与索引</a></nav>
+<main>
+<h1><span class="en">Front Matter</span><span class="zhh">前言</span></h1>
+<div class="pagemark">— 原书第 1 页 —</div>
+<div style="text-align:center; padding:40px 0;">
+<p class="en" style="font-size:32px; font-weight:700;">LLMOps</p>
+<p class="en" style="font-size:20px;">Managing Large Language Models<br>in Production</p>
+<p class="zh" style="max-width:520px; margin:16px auto; text-align:left;">LLMOps：生产环境中的大语言模型管理</p>
+<p class="en" style="margin-top:30px; font-style:italic;">Abi Aryan</p>
+</div>
+<div class="pagemark">— 原书第 2 页 —</div>
+<p class="en">“Developing with AI is getting easier, but production is where the real challenges lie. This book is the essential guide I'll use to teach my students how to navigate the complexities of LLMOps and successfully deploy large language models in the real world. With clarity and actionable solutions, LLMOps is a vital read for transforming LLM prototypes into robust, production-ready AI systems.”</p>
+<p class="zh">“用 AI 开发正变得越来越容易，但生产环境才是真正挑战所在。这本书正是我会用来教学生的必备指南——带他们穿越 LLMOps 的复杂性，在真实世界成功部署大语言模型。凭借清晰的讲解和可落地的方案，《LLMOps》是把 LLM 原型转化为健壮、可投产 AI 系统的必读之作。”</p>
+<p class="en">Ammar Mohanna, lead AI consultant at EDT&Partners and lecturer at the American University of Beirut</p>
+<p class="zh">——Ammar Mohanna，EDT&Partners 首席 AI 顾问，贝鲁特美国大学讲师</p>
+<p class="en">“This book demystifies LLMOps with clear, actionable guidance—a perfect resource for ML engineers, platform teams, and anyone taking LLMs from prototype to production.”</p>
+<p class="zh">“这本书以清晰、可落地的指引揭开 LLMOps 的神秘面纱——是 ML 工程师、平台团队以及任何把 LLM 从原型推向生产的人的完美资源。”</p>
+<p class="en">Nirmal Budhathoki, senior data scientist, Microsoft</p>
+<p class="zh">——Nirmal Budhathoki，微软资深数据科学家</p>
+<p class="en">Here's the thing about large language models: they don't play by the old rules. Traditional MLOps completely falls apart when you're dealing with GenAI. The model hallucinates, security assumptions crumble, monitoring breaks, and agents can't operate. Suddenly you're in uncharted territory. That's exactly why LLMOps has emerged as its own discipline.</p>
+<p class="zh">关于大语言模型，事情是这样的：它们不按老规矩出牌。当你面对生成式 AI 时，传统 MLOps 完全失效。模型会幻觉，安全假设崩塌，监控失灵，智能体无法运作。你突然置身于未知领地。这正是 LLMOps 作为一门独立学科崛起的原因。</p>
+<p class="en">LLMOps: Managing Large Language Models in Production is your guide to actually running these systems when real users and real money are on the line. This book isn't about building cool demos. It's about keeping LLM systems running smoothly in the real world.</p>
+<p class="zh">《LLMOps：生产环境中的大语言模型管理》是你在真实用户和真金白银押注时真正运维这些系统的指南。这本书不是教你做酷炫 demo，而是教你在真实世界让 LLM 系统平稳运行。</p>
+<ul>
+<li><span class="en">Navigate the new roles and processes that LLM operations require</span><span class="zh">理清 LLM 运维所需的新角色与新流程</span></li>
+<li><span class="en">Monitor LLM performance when traditional metrics don't tell the whole story</span><span class="zh">在传统指标无法说明全貌时监控 LLM 性能</span></li>
+<li><span class="en">Set up evaluations, governance, and security audits that actually matter for GenAI</span><span class="zh">建立对生成式 AI 真正重要的评估、治理和安全审计</span></li>
+<li><span class="en">Wrangle the operational mess of agents, RAG systems, and evolving prompts</span><span class="zh">搞定智能体、RAG 系统和不断演进的提示所带来的运维乱局</span></li>
+<li><span class="en">Scale infrastructure without burning through your compute budget</span><span class="zh">在不烧光算力预算的前提下扩缩基础设施</span></li>
+</ul>
+<p class="en">Abi Aryan is the founder of Abide AI and a machine learning research engineer with nearly a decade of experience building production-level ML systems. A mathematician by training, she previously served as a visiting research scholar at the Cognitive Systems Lab at UCLA, under Dr. Judea Pearl, where she focused on developing intelligent agents. She's currently advancing research in reflective intelligence in AI agents, distributed self-healing protocols for multi-agent systems, and GPU engineering for very-large-scale AI systems.</p>
+<p class="zh">Abi Aryan 是 Abide AI 的创始人，也是一名机器学习研究工程师，拥有近十年构建生产级 ML 系统的经验。她是数学科班出身，曾作为访问研究学者在 UCLA 认知系统实验室跟随 Judea Pearl 博士工作，专注于开发智能体。她目前的研究方向包括 AI 智能体中的反思智能、多智能体系统的分布式自愈协议，以及超大规模 AI 系统的 GPU 工程。</p>
+<div class="pagemark">— 原书第 3 页 —</div>
+<div style="text-align:center; padding:60px 0;">
+<p class="en" style="font-size:28px; font-weight:700;">LLMOps</p>
+<p class="en" style="font-size:18px;">Managing Large Language<br>Models in Production</p>
+<p class="en" style="margin-top:40px; font-style:italic;">Abi Aryan</p>
+</div>
+<div class="pagemark">— 原书第 4 页 —</div>
+<h2 id="copyright"><span class="en">Copyright</span><span class="zhh">版权页</span></h2>
+<p class="en">LLMOps by Abi Aryan. Copyright © 2025 Abi Aryan and MeyerPerin Inc. All rights reserved. Published by O'Reilly Media, Inc., 1005 Gravenstein Highway North, Sebastopol, CA 95472.</p>
+<p class="zh">《LLMOps》，作者 Abi Aryan。版权 © 2025 Abi Aryan 与 MeyerPerin Inc.。保留所有权利。由 O'Reilly Media, Inc. 出版，地址：1005 Gravenstein Highway North, Sebastopol, CA 95472。</p>
+<p class="en">O'Reilly books may be purchased for educational, business, or sales promotional use. Online editions are also available for most titles (http://oreilly.com). For more information, contact our corporate/institutional sales department: 800-998-9938 or corporate@oreilly.com.</p>
+<p class="zh">O'Reilly 图书可用于教育、商业或销售推广。多数品种也提供在线版本（http://oreilly.com）。详情请联系我们的企业/机构销售部门：800-998-9938 或 corporate@oreilly.com。</p>
+<p class="en">Acquisitions Editor: Nicole Butterfield; Development Editor: Sarah Grey; Production Editor: Beth Kelly; Copyeditor: Paula L. Fleming; Proofreader: Vanessa Moore; Indexer: BIM Creatives, LLC; Cover Designer: Karen Montgomery; Cover Illustrator: Monica Kamsvaag; Interior Designer: David Futato; Interior Illustrator: Kate Dullea.</p>
+<p class="zh">组稿编辑：Nicole Butterfield；开发编辑：Sarah Grey；制作编辑：Beth Kelly；文字编辑：Paula L. Fleming；校对：Vanessa Moore；索引：BIM Creatives, LLC；封面设计：Karen Montgomery；封面插画：Monica Kamsvaag；内页设计：David Futato；内页插画：Kate Dullea。</p>
+<p class="en">July 2025: First Edition. Revision History for the First Edition: 2025-07-10: First Release.</p>
+<p class="zh">2025 年 7 月：第一版。第一版修订历史：2025-07-10 首次发行。</p>
+<p class="en">The O'Reilly logo is a registered trademark of O'Reilly Media, Inc. LLMOps, the cover image, and related trade dress are trademarks of O'Reilly Media, Inc.</p>
+<p class="zh">O'Reilly 标志是 O'Reilly Media, Inc. 的注册商标。LLMOps、封面图片及相关商业外观是 O'Reilly Media, Inc. 的商标。</p>
+<p class="en">The views expressed in this work are those of the publisher's authors and do not necessarily reflect the views of the publisher. While the publisher and the author have used good faith efforts to ensure that the information and instructions contained in this work are accurate, the publisher and the author disclaim all responsibility for errors or omissions, including without limitation responsibility for damages resulting from the use of or reliance on this work. Use of the information and instructions contained in this work is at your own risk.</p>
+<p class="zh">本书所表达的观点仅代表作者本人，不必然代表出版商立场。尽管出版商和作者已本着诚信努力确保本书信息与指令的准确，双方不对错误或遗漏承担任何责任，包括因使用或依赖本书内容而导致的损害责任。使用本书所含信息与指令，风险自负。</p>
+<div class="pagemark">— 原书第 5 页 —</div>
+<h2 id="toc"><span class="en">Table of Contents</span><span class="zhh">目录</span></h2>
+<p class="en">The book is organized into a Preface and ten chapters, followed by an Index. Below is the complete table of contents.</p>
+<p class="zh">全书由前言、十章正文以及末尾索引组成。完整目录如下。</p>
+<ul>
+<li>Preface 前言 <span style="color:#9ca3af">…… p.xi</span></li>
+<li>1. Introduction to Large Language Models 大语言模型导论 <span style="color:#9ca3af">…… p.1</span></li>
+<li>2. Introduction to LLMOps LLMOps 导论 <span style="color:#9ca3af">…… p.21</span></li>
+<li>3. LLM-Based Applications 基于 LLM 的应用 <span style="color:#9ca3af">…… p.45</span></li>
+<li>4. Data Engineering for LLMs LLM 数据工程 <span style="color:#9ca3af">…… p.79</span></li>
+<li>5. Model Domain Adaptation 模型领域适配 <span style="color:#9ca3af">…… p.107</span></li>
+<li>6. API-First LLM Deployment API 优先的 LLM 部署 <span style="color:#9ca3af">…… p.139</span></li>
+<li>7. Evaluation for LLMs LLM 评估 <span style="color:#9ca3af">…… p.167</span></li>
+<li>8. Governance: Monitoring, Privacy, and Security 治理：监控、隐私与安全 <span style="color:#9ca3af">…… p.195</span></li>
+<li>9. Scaling: Hardware, Infrastructure, and Resource Management 扩缩：硬件、基础设施与资源管理 <span style="color:#9ca3af">…… p.221</span></li>
+<li>10. The Future of LLMs and LLMOps LLM 与 LLMOps 的未来 <span style="color:#9ca3af">…… p.239</span></li>
+<li>Index 索引 <span style="color:#9ca3af">…… p.255</span></li>
+</ul>
+<div class="pagemark">— 原书第 6 页 —</div>
+<p class="en">Chapter 1 introduces LLMs: key terms, transformer models, architectures (encoder-only, decoder-only, encoder–decoder, state-space, small language models), how to choose an LLM, open source versus proprietary, enterprise use cases, and ten challenges of building with LLMs.</p>
+<p class="zh">第 1 章介绍 LLM：关键术语、Transformer 模型、架构（仅编码器、仅解码器、编码器–解码器、状态空间、小语言模型）、如何选择 LLM、开源与专有之争、企业用例，以及构建 LLM 应用的十大挑战。</p>
+<p class="en">Chapter 2 introduces LLMOps: operational frameworks, the shift from MLOps to LLMOps, LLMOps teams and roles, the four goals (reliability, scalability, robustness, security), and the LLMOps maturity model.</p>
+<p class="zh">第 2 章介绍 LLMOps：运维框架、从 MLOps 到 LLMOps 的转变、LLMOps 团队与角色、四大目标（可靠性、可扩展性、鲁棒性、安全）以及 LLMOps 成熟度模型。</p>
+<p class="en">Chapter 3 covers LLM-based applications: using AI models in applications, infrastructure applications such as agentic workflows, the Model Context Protocol (MCP), the Agent-to-Agent (A2A) protocol, the rise of vLLMs and multimodal LLMs, and how to control and monitor them.</p>
+<p class="zh">第 3 章讨论基于 LLM 的应用：在应用中使用 AI 模型、基础设施应用（如 agentic 工作流）、模型上下文协议（MCP）、智能体间协议（A2A）、vLLM 与多模态 LLM 的兴起，以及如何控制和监控它们。</p>
+<div class="pagemark">— 原书第 7 页 —</div>
+<p class="en">Chapter 4 covers data engineering for LLMs: the DataOps engineer role, data management, synthetic data, LLM pipelines, training an LLM, data composition, scaling laws, data repetition and quality, a general 10-step data-preprocessing pipeline, and vectorization with vector databases.</p>
+<p class="zh">第 4 章讨论 LLM 的数据工程：DataOps 工程师角色、数据管理、合成数据、LLM 流水线、训练 LLM、数据构成、缩放定律、数据重复与质量、通用的 10 步数据预处理流水线，以及向量库与向量化。</p>
+<p class="en">Chapter 5 covers model domain adaptation: training LLMs from scratch, model ensembling, prompt engineering (one/few-shot, chain-of-thought, RAG, Semantic Kernel), fine-tuning (adapters, prefix tuning, PEFT, instruction tuning, RLHF), mixture of experts, and model optimization for resource-constrained devices.</p>
+<p class="zh">第 5 章讨论模型领域适配：从头训练 LLM、模型集成、提示工程（单样本/少样本、思维链、RAG、Semantic Kernel）、微调（适配器、前缀调优、PEFT、指令微调、RLHF）、混合专家，以及面向资源受限设备的模型优化。</p>
+<div class="pagemark">— 原书第 8 页 —</div>
+<p class="en">Chapter 6 covers API-first LLM deployment: deploying your model, containerization, pipeline automation, workflow orchestration, monitoring, developing REST APIs, credential management, API gateways and versioning, deployment architectures (modular/monolithic/microservices), automating RAG and knowledge graph updates, latency optimization, and orchestrating multiple models.</p>
+<p class="zh">第 6 章讨论 API 优先的 LLM 部署：部署模型、容器化、流水线自动化、工作流编排、监控、开发 REST API、凭据管理、API 网关与版本管理、部署架构（模块化/单体/微服务）、自动化 RAG 与知识图更新、延迟优化，以及多模型编排。</p>
+<p class="en">Chapter 7 covers evaluation for LLMs: why evaluation is hard, evaluating performance, metrics for RAG and agentic systems, general evaluation considerations, traditional metrics' limits, and the observability pipeline.</p>
+<p class="zh">第 7 章讨论 LLM 评估：评估为何是难题、性能评估、RAG 与 agentic 系统的指标、通用评估考量、传统指标的局限，以及可观测性流水线。</p>
+<div class="pagemark">— 原书第 9 页 —</div>
+<p class="en">Chapter 8 covers governance: monitoring, privacy, and security—the data issue, security risks (prompt injection, jailbreaking, other risks), defensive measures via LLMSecOps, and a 10-step LLMSecOps audit.</p>
+<p class="zh">第 8 章讨论治理：监控、隐私与安全——数据问题、安全风险（提示注入、越狱、其他风险）、通过 LLMSecOps 采取的防御措施，以及 10 步 LLMSecOps 审计。</p>
+<p class="en">Chapter 9 covers scaling: hardware, infrastructure, and resource management—choosing an approach, monitoring, A/B and shadow testing, automatic infrastructure provisioning, the compute-optimal argument, optimizing infrastructure (kernel fusion, precision scaling, parallel/distributed computing), ZeRO/DeepSpeed, and backup/failsafe processes.</p>
+<p class="zh">第 9 章讨论扩缩：硬件、基础设施与资源管理——选择方式、监控、A/B 与影子测试、基础设施自动供给、算力最优论证、优化基础设施（内核融合、精度缩放、并行/分布式计算）、ZeRO/DeepSpeed，以及备份与故障保障流程。</p>
+<div class="pagemark">— 原书第 10 页 —</div>
+<p class="en">Chapter 10 looks forward to the future of LLMs and LLMOps: scaling beyond current boundaries, hybrid neurosymbolic architectures, sparse and mixture-of-experts models, memory-augmented models, interpretable and self-optimizing models, cross-model collaboration, RAG's future, advances in GPU technology, data management, privacy and security, evaluation frameworks, and how to succeed as an LLMOps engineer.</p>
+<p class="zh">第 10 章展望 LLM 与 LLMOps 的未来：超越当前边界的扩缩、神经符号混合架构、稀疏与混合专家模型、记忆增强模型、可解释与自优化模型、跨模型协作、RAG 的未来、GPU 技术进步、数据管理、隐私与安全、评估框架，以及如何成为成功的 LLMOps 工程师。</p>
+<p class="en">The book closes with an Index, About the Author, and a Colophon.</p>
+<p class="zh">全书以索引、作者简介和版权页结束。</p>
+<div class="pagemark">— 原书第 11 页 —</div>
+<p class="en">This completes the table of contents. The Preface that follows explains why the author wrote the book and how LLMOps differs from both LLM/AI engineering and traditional MLOps.</p>
+<p class="zh">目录到此结束。接下来的前言解释作者为何写这本书，以及 LLMOps 与 LLM/AI 工程和传统 MLOps 有何不同。</p>
+<div class="pagemark">— 原书第 12 页 —</div>
+<div class="pagemark">— 原书第 13 页 —</div>
+<h2 id="preface"><span class="en">Preface</span><span class="zhh">前言</span></h2>
+<p class="en">I've lost count of how many times I've been asked, “What's the difference between an LLM/AI engineer and an LLMOps engineer?” It's one of those questions that keep popping up, whether I'm in a meeting, at a conference, or just grabbing coffee with someone in the field.</p>
+<p class="zh">我已经记不清被问过多少次：“LLM/AI 工程师和 LLMOps 工程师有什么区别？”这个问题总是反复出现——无论我是在开会、在会议上，还是和同行一起喝咖啡。</p>
+<p class="en">I used to start by explaining the technical distinctions between the roles. But over time, I realized the real issue: people don't fully grasp what it takes to keep the lights on with large language models (LLMs) in production over an extended period.</p>
+<p class="zh">我过去会先解释这两个角色的技术区别。但久而久之，我意识到真正的问题在于：人们并未充分理解，要在生产环境中长期让大语言模型（LLM）“灯火通明”地运转，究竟需要付出什么。</p>
+<p class="en">As I write this in early 2025, the top models, techniques, and best practices are changing every few days. Thus, very few people understand their complexity. Most people still think of operationalizing, or “Ops,” as deployment, but in the LLM context, Ops is really about streamlining people, processes, and technology to make these models secure, robust, and reliable in production.</p>
+<p class="zh">在 2025 年初写作本书时，顶尖模型、技术和最佳实践每隔几天就变一次。因此很少有人理解其复杂性。多数人仍把“运维化”（即“Ops”）等同于部署，但在 LLM 语境下，Ops 真正关乎的是理顺人、流程和技术，让这些模型在生产中安全、鲁棒、可靠。</p>
+<p class="en">Enterprises and their human resource departments are scrambling to figure out what it all means for their teams and their projects, and in this book I have done my best to answer that question. This book isn't a tutorial on defining roles or how to build and deploy an LLM; while it touches on both of those topics, that isn't enough anymore. Once LLM-based applications are in production, someone has to keep them optimized, or they risk becoming overengineered solutions to simple problems or, worse, badly maintained houses of cards that crumble under high demand or a prompt injection attack.</p>
+<p class="zh">企业及其人力资源部门正忙于搞清楚这一切对他们的团队和项目意味着什么，本书中我尽我所能回答了这个问题。本书不是一本定义角色或如何构建、部署 LLM 的教程；虽然它都有所涉及，但这些已经不够了。基于 LLM 的应用一旦投产，就必须有人持续让它们保持优化，否则它们可能沦为对简单问题的过度工程化方案，甚至更糟——变成维护不善的纸牌屋，在高负载或一次提示注入攻击下轰然倒塌。</p>
+<p class="en">In traditional software development (or Software 2.0), you wouldn't ask your lead developer to build and maintain your entire product. Software development engineers build, and reliability engineers maintain. Building and maintaining LLMs requires a similar separation of duties. In Software 3.0, LLM/AI engineers build and LLMOps engineers maintain!</p>
+<p class="zh">在传统软件开发（或软件 2.0）中，你不会让首席开发既构建又维护整个产品。软件开发工程师负责构建，可靠性工程师负责维护。构建和运维 LLM 也需要类似的职责分离。在软件 3.0 中，LLM/AI 工程师负责构建，LLMOps 工程师负责运维！</p>
+<div class="pagemark">— 原书第 14 页 —</div>
+<p class="en">Although machine learning operations (MLOps) are foundational to LLMOps, the MLOps skills that engineers gain from working on structured data and discriminative models don't fully translate to generative models.</p>
+<p class="zh">尽管机器学习运维（MLOps）是 LLMOps 的基础，但工程师在结构化数据和判别式模型上获得的 MLOps 技能，并不能完全迁移到生成式模型上。</p>
+<p class="en">In short, I'm writing this book to help you appreciate the unique aspects of the full LLM-based application lifecycle, from data engineering to model deployment and API design to monitoring, security, and resource optimization. I want to give you a strong foundation for making decisions as you build, maintain, and optimize your LLM data, models, and applications.</p>
+<p class="zh">简而言之，我写这本书是为了帮助你领会整个基于 LLM 应用生命周期的独特之处——从数据工程到模型部署和 API 设计，再到监控、安全和资源优化。我想为你打下坚实基础，让你在构建、运维和优化 LLM 数据、模型与应用时做出决策。</p>
+<h3 id="conventions"><span class="en">Conventions Used in This Book</span><span class="zhh">本书使用的约定</span></h3>
+<p class="en">The following typographical conventions are used in this book: Italic indicates new terms, URLs, email addresses, filenames, and file extensions. Constant width is used for program listings, as well as within paragraphs to refer to program elements such as variable or function names, databases, data types, environment variables, statements, and keywords.</p>
+<p class="zh">本书使用以下排版约定：斜体用于新术语、URL、邮箱地址、文件名和文件扩展名。等宽字体用于程序清单，以及在段落中指代变量或函数名、数据库、数据类型、环境变量、语句和关键字等程序元素。</p>
+<h3 id="oreilly"><span class="en">O'Reilly Online Learning</span><span class="zhh">O'Reilly 在线学习</span></h3>
+<figure><img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAoHCAkIBgoJCAkMCwoMDxoRDw4ODx8WGBMaJSEnJiQhJCMpLjsyKSw4LCMkM0Y0OD0/QkNCKDFITUhATTtBQj//2wBDAQsMDA8NDx4RER4/KiQqPz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz8/Pz//wAARCAEMAyADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD2aiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooqve3ttYWzXF5MkMK9WY/5zQNJt2RYqK4uILaIyXEyRIP4nYKP1rzvXPiFNIWh0aLyk6efKMsfovb8a4q8vLm+mMt5cSTyH+KRs//AKqzc10PXoZTVqK9R8q/E9ZvPG+g2xIW6a4YdoULfr0rKl+JFkp/c6fcOPVmVf8AGvNKKnnZ6cMpw0d7v5/5Ho4+JUGedLlA9ph/hVu3+IulOQJ7e6h99oYfoa8too52U8rwr6W+bPbbDxLo2oELb38W8/wOdjfkcVr1891r6T4j1XSWAtbpjEP+WMnzIfwPT8Kan3OKtk3WlL7/APM9uork/D/jew1NlgvALO6PADH5HPs3b6GusrRNPY8SrRqUZctRWYUUUUzIK5fV/G+k6dK0MZe7mU4YQ42g+hY8flmqPxF12SytY9NtXKS3KlpWB5CdMD6/yFeYVnKVtEe3gMtjWh7Srs9kelwfEizaQCfT540/vK6tj8OK6zS9VstWtvPs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lxTO+lmGIowUIvReR5h/wrjUv+f20/Jv8KP+Fcal/wA/tp+Tf4V6fRS5Eaf2riu6+48w/wCFcal/z+2n5N/hR/wrjUv+f20/Jv8ACvT6KORB/auK7r7jzD/hXGpf8/tp+Tf4Uf8ACuNS/wCf20/Jv8K9Poo5EH9q4ruvuPMP+Fcal/z+2n5N/hR/wrjUv+f20/Jv8K9Poo5EH9q4ruvuOG8MeDL3Rtdivp7q3kjRWBVN2eRjuK7miiqSscdevPES557lLWLR7/R7u0iZVeaJkVm6AkV57/wrjUv+f20/Jv8ACvT6KTimaUMZWw6cab3PMP8AhXGpf8/tp+Tf4Uf8K41L/n9tPyb/AAr0+ilyI6P7VxXdfceYf8K41L/n9tPyb/Cj/hXGpf8AP7afk3+Fen0UciD+1cV3X3HmH/CuNS/5/bT8m/wo/wCFcal/z+2n5N/hXp9FHIg/tXFd19x5h/wrjUv+f20/Jv8ACj/hXGpf8/tp+Tf4V6fRRyIP7VxXdfceXn4calj/AI/bT8m/wr0fTrdrTTLW2chmhhSMkdCQAKs0U1FI58RjKuISVR7BRRRVHIcL4m8F3usa7PfQXVvHHIFAV92RhQOwrK/4VxqX/P7afk3+Fen0VPImehDMsRTioxei8jzaz+H2o299bzteWpWKRXIAbJAIPpXpFLRTSSMMRiqmJadR7BRRRTOYKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKAP/Z" alt="O'Reilly Online Learning" /><figcaption><span class="en">O'Reilly Online Learning</span><span class="zh">O'Reilly 在线学习</span></figcaption></figure>
+<p class="en">For more than 40 years, O'Reilly Media has provided technology and business training, knowledge, and insight to help companies succeed. Our unique network of experts and innovators share their knowledge and expertise through books, articles, and our online learning platform. O'Reilly's online learning platform gives you on-demand access to live training courses, in-depth learning paths, interactive coding environments, and a vast collection of text and video from O'Reilly and 200+ other publishers. For more information, visit https://oreilly.com.</p>
+<p class="zh">40 多年来，O'Reilly Media 一直为企业提供技术与商业培训、知识和洞见，帮助它们取得成功。我们独特的专家与创新者网络通过图书、文章和在线学习平台分享知识与专长。O'Reilly 在线学习平台让你按需获取直播课程、深入的学习路径、交互式编程环境，以及来自 O'Reilly 和 200 多家其他出版商的海量文本与视频。详情访问 https://oreilly.com。</p>
+<div class="pagemark">— 原书第 15 页 —</div>
+<h3 id="contact"><span class="en">How to Contact Us</span><span class="zhh">如何联系我们</span></h3>
+<p class="en">Please address comments and questions concerning this book to the publisher: O'Reilly Media, Inc., 1005 Gravenstein Highway North, Sebastopol, CA 95472. Phone: 800-889-8969 (in the United States or Canada); 707-827-7019 (international or local); fax: 707-829-0104. Email: support@oreilly.com. Web: https://oreilly.com/about/contact.html.</p>
+<p class="zh">有关本书的评论和问题，请致信出版商：O'Reilly Media, Inc., 1005 Gravenstein Highway North, Sebastopol, CA 95472。电话：800-889-8969（美国或加拿大）；707-827-7019（国际或本地）；传真：707-829-0104。邮箱：support@oreilly.com。网址：https://oreilly.com/about/contact.html。</p>
+<p class="en">We have a web page for this book, where we list errata, examples, and any additional information. You can access this page at https://oreil.ly/LLMOps. For news and information about our books and courses, visit https://oreilly.com. Find us on LinkedIn: https://linkedin.com/company/oreilly-media. Watch us on YouTube: https://youtube.com/oreillymedia.</p>
+<p class="zh">我们为本书设立了网页，列出勘误、示例和任何额外信息，地址为 https://oreil.ly/LLMOps。有关我们图书和课程的新闻与信息，请访问 https://oreilly.com。在 LinkedIn 上关注我们：https://linkedin.com/company/oreilly-media。在 YouTube 上观看我们：https://youtube.com/oreillymedia。</p>
+<h3 id="ack"><span class="en">Acknowledgments</span><span class="zhh">致谢</span></h3>
+<p class="en">I would like to thank Lucas Meyer for the incredible support; his ideas have helped shape several chapters of this book. I would also like to thank my editors, Nicole and Sarah, for helping me push through the deadlines; and the technical reviewers, Lalit Chourey, Ammar Mohanna, Nirmal Budhathoki, for their excellent feedback.</p>
+<p class="zh">我要感谢 Lucas Meyer 的鼎力支持；他的想法帮助塑造了本书的好几个章节。我还要感谢我的编辑 Nicole 和 Sarah，帮助我熬过一个个截止日期；感谢技术评审 Lalit Chourey、Ammar Mohanna、Nirmal Budhathoki 的出色反馈。</p>
+<p class="en">And most importantly, to my family—thank you for tolerating my obsession with this book and for your endless supply of tea. And finally, to you—the reader. Whether you've been in this field for years or you're just getting started, I hope this book accelerates your path.</p>
+<p class="zh">最重要的是，感谢我的家人——谢谢你们容忍我对这本书的痴迷，以及你们源源不断提供的茶。最后，感谢你——读者。无论你已在这一行多年还是刚刚起步，我希望这本书能加速你的旅程。</p>
+<div class="pagemark">— 原书第 16 页 —</div>
+
+<nav class="pager"><a class="disabled">← 上一章</a><a href="index.html">返回目录</a><a href="chapter-01.html">下一章 →</a></nav>
+</main>
+<script>
+(function(){
+  // mobile (<=900px): TOC always starts as a closed drawer.
+  // desktop: default open, but honour the user's last collapsed/expanded choice.
+  var saved = null;
+  try{ saved = localStorage.getItem('llmops_nav'); }catch(e){}
+  if(window.innerWidth <= 900){
+    document.body.classList.remove('nav-open');
+  } else if(saved === 'closed'){
+    document.body.classList.remove('nav-open');
+  } else if(saved === 'open'){
+    document.body.classList.add('nav-open');
+  }
+  function persist(){
+    try{ localStorage.setItem('llmops_nav', document.body.classList.contains('nav-open') ? 'open' : 'closed'); }catch(e){}
+  }
+  window.toggleToc = function(){
+    document.body.classList.toggle('nav-open');
+    persist();
+  };
+  document.querySelectorAll('#toc a').forEach(function(a){
+    a.addEventListener('click', function(){
+      if(window.innerWidth <= 900){ document.body.classList.remove('nav-open'); }
+    });
+  });
+  persist();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第6章 · LLMOps：生产环境中的大语言模型管理</title>
+<style>
+:root{
+  --accent:#2563eb; --zh-bg:#f0f6ff; --zh-border:#2563eb;
+  --code-bg:#0f172a; --code-ink:#e2e8f0; --ink:#1f2937;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0; background:#faf6f1; color:var(--ink);
+  font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  font-size:18px; line-height:1.75;
+}
+#toc{
+  position:fixed; top:0; left:0; width:300px; height:100vh; overflow-y:auto;
+  background:#fff; border-right:1px solid #e5e7eb; padding:20px 14px;
+  transition:transform .25s ease; z-index:50; font-size:14px;
+  transform:translateX(-300px);
+  box-shadow:0 0 20px rgba(0,0,0,.08);
+}
+body.nav-open #toc{transform:translateX(0);}
+#toc .booktitle{font-weight:700; color:var(--accent); font-size:15px; line-height:1.4; margin:10px 0 14px;}
+#toc a{display:block; color:#374151; text-decoration:none; padding:4px 8px; border-radius:6px;}
+#toc a:hover{background:var(--zh-bg);}
+#toc a.l1{font-weight:600; margin-top:8px;}
+#toc a.l2{padding-left:20px; font-size:13px; color:#6b7280;}
+#toc a.active{background:var(--zh-bg); color:var(--accent); font-weight:600;}
+main{margin-left:0; padding:36px 48px 80px; max-width:960px; transition:margin .25s ease;}
+body.nav-open main{margin-left:300px;}
+.menu-btn{
+  position:fixed; top:14px; left:14px; z-index:60; border:none;
+  background:var(--accent); color:#fff; width:40px; height:40px; border-radius:8px;
+  font-size:18px; cursor:pointer; display:block;
+  box-shadow:0 2px 8px rgba(0,0,0,.2);
+}
+.menu-btn:hover{background:#1d4ed8;}
+/* edge toggle tab: collapses / expands the sidebar (desktop).
+   rides the sidebar's right edge when open, slides to the screen edge when closed. */
+.toc-edge{
+  position:fixed; top:46%; left:300px; z-index:55; width:22px; height:60px;
+  border:1px solid #e5e7eb; border-left:none; background:#fff; color:var(--accent);
+  cursor:pointer; border-radius:0 9px 9px 0; font-size:16px; font-weight:700;
+  display:none; align-items:center; justify-content:center; padding:0;
+  box-shadow:2px 0 8px rgba(0,0,0,.07); transition:left .25s ease;
+}
+body:not(.nav-open) .toc-edge{left:0; border-left:1px solid #e5e7eb;}
+.toc-edge:hover{background:var(--zh-bg);}
+.toc-edge .ic-open{display:none;}
+body:not(.nav-open) .toc-edge .ic-open{display:inline;}
+body:not(.nav-open) .toc-edge .ic-close{display:none;}
+@media (min-width:901px){ .toc-edge{display:flex;} }
+h1{font-size:28px; line-height:1.3; margin-top:0; border-bottom:3px solid var(--accent); padding-bottom:10px;}
+h1 .zhh{display:block; font-size:20px; color:var(--accent); font-weight:600; margin-top:4px;}
+h2{font-size:22px; margin-top:34px; color:#111827;}
+h2 .zhh{display:block; font-size:17px; color:var(--accent); font-weight:600;}
+h3{font-size:19px; margin-top:26px;}
+h3 .zhh{display:block; font-size:15px; color:var(--accent); font-weight:600;}
+p.en{margin:14px 0;}
+p.zh, li .zh{
+  background:var(--zh-bg); border-left:4px solid var(--zh-border);
+  border-radius:0 8px 8px 0; padding:10px 16px; margin:8px 0 16px;
+}
+li .zh{display:block; margin:4px 0 8px;}
+li .en{display:block;}
+ul,ol{padding-left:24px;}
+li{margin:6px 0;}
+code{
+  font-family:"SF Mono",Menlo,Consolas,monospace; font-size:14px;
+  background:#fce7f3; color:#be185d; padding:1px 5px; border-radius:4px;
+}
+pre{
+  background:var(--code-bg); color:var(--code-ink); padding:14px 16px;
+  border-radius:8px; overflow-x:auto; font-size:13.5px; line-height:1.5;
+}
+pre code{background:none; color:inherit; padding:0;}
+figure{margin:22px 0;}
+figure img{max-width:100%; border:1px solid #e5e7eb; border-radius:8px; background:#fff;}
+figcaption{font-size:13px; color:#6b7280; margin-top:6px;}
+figcaption .zh{display:block; background:none; border:none; padding:2px 0; margin:2px 0; color:#4b5563;}
+table{border-collapse:collapse; width:100%; margin:18px 0; font-size:15px;}
+th,td{border:1px solid #d1d5db; padding:8px 10px; text-align:left; vertical-align:top;}
+th{background:#f1f5f9;}
+.pagemark{
+  text-align:center; color:#9ca3af; font-size:12px; letter-spacing:2px;
+  margin:26px 0; position:relative;
+}
+.pagemark::before,.pagemark::after{
+  content:""; display:inline-block; width:60px; height:1px; background:#d1d5db;
+  vertical-align:middle; margin:0 12px;
+}
+.pager{display:flex; gap:10px; margin-top:50px;}
+.pager a{
+  flex:1; text-align:center; padding:12px; border:1px solid #d1d5db;
+  border-radius:8px; text-decoration:none; color:var(--ink); background:#fff;
+}
+.pager a:hover{background:var(--accent); color:#fff; border-color:var(--accent);}
+.pager a.disabled{opacity:.4; pointer-events:none;}
+.tochead{font-size:11px; text-transform:uppercase; letter-spacing:1px; color:#9ca3af; margin:14px 0 4px;}
+#toc{padding-top:58px;}
+main{padding:64px 48px 80px;}
+@media (max-width:900px){
+  body.nav-open main{filter:brightness(.6); pointer-events:none;}
+  main{padding:60px 18px 60px;}
+}
+</style>
+</head>
+<body class="nav-open">
+<button class="menu-btn" onclick="toggleToc()" aria-label="切换目录">☰</button>
+<button class="toc-edge" onclick="toggleToc()" aria-label="折叠/展开目录"><span class="ic-close">‹</span><span class="ic-open">›</span></button>
+<nav id="toc"><div class="booktitle">LLMOps：生产环境中的大语言模型管理<br><span style="font-weight:400;font-size:12px;color:#9ca3af">LLMOps: Managing Large Language Models in Production</span></div>
+<div class="tochead">目录</div>
+<a class="l1" href="front-matter.html">前言</a>
+<a class="l1" href="chapter-01.html">第1章 大语言模型导论</a>
+<a class="l1" href="chapter-02.html">第2章 LLMOps 导论</a>
+<a class="l1" href="chapter-03.html">第3章 基于 LLM 的应用</a>
+<a class="l1" href="chapter-04.html">第4章 LLM 数据工程</a>
+<a class="l1" href="chapter-05.html">第5章 模型领域适配</a>
+<a class="l1 active" href="chapter-06.html">第6章 API 优先的 LLM 部署</a>
+<a class="l2" href="#deploy">部署你的模型</a>
+<a class="l2" href="#apis">为 LLM 开发 API</a>
+<a class="l2" href="#arch">LLM 部署架构</a>
+<a class="l2" href="#ragpipeline">用检索器-重排器流水线自动化 RAG</a>
+<a class="l2" href="#kgupdate">自动化知识图谱更新</a>
+<a class="l2" href="#latency">部署延迟优化</a>
+<a class="l2" href="#orchest">编排多个模型</a>
+<a class="l2" href="#optimrag">优化 RAG 流水线</a>
+<a class="l2" href="#conclusion">小结</a>
+<a class="l1" href="chapter-07.html">第7章 LLM 评估</a>
+<a class="l1" href="chapter-08.html">第8章 治理：监控、隐私与安全</a>
+<a class="l1" href="chapter-09.html">第9章 扩缩：硬件、基础设施与资源管理</a>
+<a class="l1" href="chapter-10.html">第10章 LLM 与 LLMOps 的未来</a>
+<a class="l1" href="closing.html">附录与索引</a></nav>
+<main>
+<h1><span class="en">API-First LLM Deployment</span><span class="zhh">API 优先的 LLM 部署</span></h1>
+<div class="pagemark">— 原书第 155 页 —</div>
+<p class="en">Choosing the right tools for deploying LLMs can make or break your project. Open source tools give you more control but require you to do more work, while managed services are easier to set up and scale but often come at a higher cost. A popular repository of open source tools and data is HuggingFace, which contains a lot of pretrained models and tools to help with tasks like tokenization, fine-tuning, and data processing.</p>
+<p class="zh">为部署 LLM 选择合适的工具，可能决定你项目的成败。开源工具给你更多控制权，但需要你自己做更多工作；托管服务更容易搭建和扩展，但成本往往更高。HuggingFace 是一个流行的开源工具与数据仓库，包含大量预训练模型和工具，可辅助完成分词、微调和数据处理等任务。</p>
+<p class="en">The business model you choose will impact your revenue, costs, and user experience and, thus, also your deployment decision. By understanding your users’ needs, evaluating your costs, and considering your competition, you can choose a business model that meets your needs and provides value to your users. Options include:</p>
+<p class="zh">你选择的商业模式会影响收入、成本和用户体验，进而影响部署决策。通过理解用户需求、评估成本、考虑竞争格局，你可以选择一种满足自身需求、并为用户提供价值的商业模式。可选模式包括：</p>
+<ul>
+<li><span class="en"><b>Infrastructure as a service (IaaS).</b> This model is suitable for organizations that want to build and deploy their own LLM applications but don’t want to manage the underlying infrastructure. With IaaS, organizations can provision and configure computing resources quickly and easily, without the need for significant up-front investment. It provides flexibility and control over the infrastructure, allowing organizations to customize and optimize the environment for their specific needs. IaaS is a good fit for organizations that have the expertise and resources to manage their own applications and infrastructure. However, it requires a higher level of technical expertise and management than do other business models.</span><span class="zh"><b>基础设施即服务（IaaS）。</b>这种模式适合想构建和部署自己的 LLM 应用、但不想管理底层基础设施的组织。借助 IaaS，组织可以快速便捷地开通和配置计算资源，无需大量前期投入。它提供对基础设施的灵活性和控制权，让组织能根据自身需求定制和优化环境。IaaS 适合具备管理自有应用和基础设施的专业能力与资源的组织；但与其他商业模式相比，它要求更高的技术专长和管理水平。</span></li>
+<li><span class="en"><b>Platform as a service (PaaS).</b> This model is suitable for organizations that want to build and deploy LLM applications quickly and easily, without worrying about the underlying infrastructure. With PaaS, organizations can focus on building and deploying their applications, without the need for significant up-front investment or technical expertise. It provides a simplified and streamlined development and deployment process, allowing organizations to quickly build and deploy applications. PaaS is a good fit for organizations that want to quickly build and deploy LLM applications. However, it may not provide the same level of flexibility and control as other business models.</span><span class="zh"><b>平台即服务（PaaS）。</b>这种模式适合想快速便捷地构建和部署 LLM 应用、而不必操心底层基础设施的组织。借助 PaaS，组织可以专注于构建和部署应用，无需大量前期投入或技术专长。它提供简化、顺畅的开发和部署流程，让组织能快速构建和部署应用。PaaS 适合想快速构建和部署 LLM 应用的组织；但它提供的灵活性和控制权可能不如其他商业模式。</span></li>
+<li><span class="en"><b>Software as a service (SaaS).</b> With SaaS, organizations can access the LLM’s capabilities through a web interface or API, without the need for significant up-front investment or technical expertise. This model provides a simplified and streamlined user experience, allowing organizations to quickly and easily access LLM capabilities. SaaS is a good fit for organizations that want to quickly and easily access LLM capabilities without significant technical expertise or management. However, it may not provide the same level of flexibility and control as other business models.</span><span class="zh"><b>软件即服务（SaaS）。</b>借助 SaaS，组织可以通过网页界面或 API 使用 LLM 的能力，无需大量前期投入或技术专长。这种模式提供简化、顺畅的用户体验，让组织能快速便捷地使用 LLM 能力。SaaS 适合想快速便捷使用 LLM 能力、而不具备大量技术专长或管理能力的组织；但它提供的灵活性和控制权可能不如其他商业模式。</span></li>
+</ul>
+<div class="pagemark">— 原书第 156 页 —</div>
+<p class="en">Most companies today are somewhere between using LLMs as IaaS or SaaS offerings via APIs, in which case the integration is pretty straightforward. This chapter walks you through the deployment steps one by one and then offers tips on APIs, knowledge graphs, latency, and optimization.</p>
+<p class="zh">如今大多数公司处于某种中间状态：通过 API 把 LLM 当作 IaaS 或 SaaS 服务来使用，这种情况下集成就相当直接。本章一步步带你走过部署流程，然后就 API、知识图谱、延迟和优化给出建议。</p>
+<p class="en"><b>Quick Recommendations.</b> If you’re building applications with complex workflows, like RAG applications, you may need more tools, like vector databases. Pinecone offers fast, low-latency vector search and managed services for production workflows. Weaviate is another powerful tool for semantic search, and Milvus or Qdrant are ideal for high-performance similarity searches at scale. Your application may require more structured data relationships; graph databases like Neo4j can model interactions and dependencies. Resource description framework (RDF) stores, such as Virtuoso or Blazegraph, can also be useful for advanced semantic reasoning.</p>
+<p class="zh"><b>快速建议。</b>如果你在构建带复杂工作流的应用（如 RAG 应用），可能需要更多工具，例如向量数据库。Pinecone 为生产工作流提供快速、低延迟的向量搜索和托管服务；Weaviate 是另一个强大的语义搜索工具；Milvus 或 Qdrant 则适合大规模高性能相似性搜索。你的应用可能需要更结构化的数据关系；Neo4j 等图数据库可以建模交互和依赖关系。资源描述框架（RDF）存储，如 Virtuoso 或 Blazegraph，对高级语义推理也很有用。</p>
+<p class="en">LangChain is a great option for preprocessing. It simplifies chaining prompts, adding memory, and creating agent-based systems. Haystack is another strong choice for document retrieval or question-answering pipelines. For integrating LLMs with external data sources, LlamaIndex works efficiently and with minimal effort.</p>
+<p class="zh">LangChain 是预处理的绝佳选择，它简化了提示串联、添加记忆和构建基于智能体的系统。Haystack 是文档检索或问答流水线的另一个有力选择。要把 LLM 与外部数据源集成，LlamaIndex 高效且几乎不费力气。</p>
+<p class="en">Serving and optimizing models is another step in the LLMOps pipeline. Tools like Seldon and KServe let you deploy LLMs in Kubernetes environments. They focus on scalability and ease of management. Both ZenML and MLflow help you track experiments and serve models seamlessly. When it comes to scaling distributed tasks during training or inference, Ray is highly effective.</p>
+<p class="zh">模型的服务与优化是 LLMOps 流水线中的又一步。Seldon、KServe 等工具让你在 Kubernetes 环境中部署 LLM，聚焦可扩展性和易用性。ZenML 和 MLflow 都能帮你跟踪实验并无缝地服务模型。在训练或推理期间扩展分布式任务时，Ray 非常有效。</p>
+<div class="pagemark">— 原书第 157 页 —</div>
+<p class="en">On the other hand, if you prefer minimal setup and can afford the cost, managed services are ideal. Google Cloud Vertex AI offers tools for training, tuning, and deploying LLMs. AWS SageMaker provides similar capabilities, with integrations like Data Wrangler for preprocessing. Snowflake Data Cloud is great for combining data storage, retrieval, and processing within ML workflows. Databricks is another strong contender, especially for fine-tuning and optimizing LLMs at scale. The Microsoft Azure platform is comprehensive, with offers that start at infrastructure, like GPU-based virtual machines (VMs), and end at pretrained models ready for deployment.</p>
+<p class="zh">另一方面，如果你偏好最少的搭建工作且能承担成本，托管服务是理想之选。Google Cloud Vertex AI 提供训练、调优和部署 LLM 的工具；AWS SageMaker 提供类似能力，并集成了 Data Wrangler 等预处理工具；Snowflake Data Cloud 擅长在机器学习工作流中整合数据存储、检索和处理；Databricks 是另一个有力竞争者，尤其适合大规模微调和优化 LLM。微软 Azure 平台很全面， offerings 从基础设施层（如基于 GPU 的虚拟机）一直延伸到可直接部署的预训练模型。</p>
+<h2 id="deploy"><span class="en">Deploying Your Model</span><span class="zhh">部署你的模型</span></h2>
+<p class="en">Deploying an LLM from a cloud service is straightforward. For example, to deploy a model by OpenAI:</p>
+<p class="zh">从云服务部署 LLM 很简单。例如，要部署 OpenAI 的模型：</p>
+<ol>
+<li><span class="en">Go to the OpenAI website and create an account.</span><span class="zh">前往 OpenAI 网站并创建账户。</span></li>
+<li><span class="en">Navigate to the API keys page and create a new API key.</span><span class="zh">进入 API 密钥页面，创建一个新的 API 密钥。</span></li>
+<li><span class="en">Save the API key securely.</span><span class="zh">妥善保存该 API 密钥。</span></li>
+<li><span class="en">Install the OpenAI Python library using pip install openai.</span><span class="zh">用 pip install openai 安装 OpenAI Python 库。</span></li>
+<li><span class="en">Import the OpenAI library in your code.</span><span class="zh">在代码中导入 OpenAI 库。</span></li>
+<li><span class="en">Call the client:</span><span class="zh">调用客户端：</span></li>
+</ol>
+<pre><code>import pandas as pd
+import numpy as np
+import random
+from statistics import mean, stdev
+import os
+from openai import OpenAI
+from dotenv import load_dotenv
+
+load_dotenv()
+
+client = OpenAI(
+    api_key=os.environ.get("OPENAI_API_KEY")
+)
+
+# Define the prompts to test
+PROMPT_A = "Is the following email spam? Respond with spam if the email is spam or ham if the email is not spam. Use only spam or ham as the answers, nothing else.\n\nSubject: {subject}\n\nMessage: {message}"
+PROMPT_B = "After considering it very carefully, do you think it's likely that the email below is spam? Respond with spam if the email is spam or ham if the email is not spam. Use only spam or ham as the answers, nothing else.\n\nSubject: {subject}\n\nMessage: {message}"
+
+# Load the dataset and sample</code></pre>
+<div class="pagemark">— 原书第 158 页 —</div>
+<pre><code>df = pd.read_csv("enron_spam_data.csv")
+spam_df = df[df['Spam/Ham'] == 'spam'].sample(n=30)
+ham_df = df[df['Spam/Ham'] == 'ham'].sample(n=30)
+sampled_df = pd.concat([spam_df, ham_df])
+
+# Define Evaluation function
+
+# Run and display results</code></pre>
+<p class="en">In this chapter, I will assume that you want to deploy your own models. While the principles of MLOps apply to some extent, LLMOps requires specific adjustments to handle the unique challenges of large-scale models.</p>
+<p class="zh">本章我假设你要部署自己的模型。虽然 MLOps 的原则在一定程度上适用，但 LLMOps 需要特定的调整来应对大规模模型的独特挑战。</p>
+<p class="en">Depending on the application, LLMOps workflows may involve pre- and postprocessing, chaining models, inference optimization, and integrating external systems like knowledge bases or APIs. Also, it requires handling large-scale text data, vectorized embeddings, and often RAG techniques for improving context in predictions.</p>
+<p class="zh">根据应用不同，LLMOps 工作流可能涉及预处理和后处理、模型串联、推理优化，以及集成知识库或 API 等外部系统。它还需要处理大规模文本数据、向量化嵌入，并常常用 RAG 技术来改善预测中的上下文。</p>
+<p class="en">Let’s look at how to do that using an example project. Let’s say you have a model you have already developed, called my-llm-model. The next step is to deploy it.</p>
+<p class="zh">我们用一个示例项目看看怎么做。假设你已经开发好一个模型，叫 my-llm-model，下一步就是部署它。</p>
+<p class="en"><b>Step 1: Set Up Your Environment.</b> The first step is to ensure the necessary tools are installed. Some recommendations:</p>
+<p class="zh"><b>第一步：搭建环境。</b>第一步是确保安装了必要的工具。一些建议：</p>
+<ul>
+<li><span class="en">Jenkins for automating CI/CD pipelines</span><span class="zh">Jenkins，用于自动化 CI/CD 流水线</span></li>
+<li><span class="en">Docker to containerize the model and its dependencies</span><span class="zh">Docker，用于把模型及其依赖容器化</span></li>
+<li><span class="en">Kubernetes for orchestrating scalable and fault-tolerant deployments</span><span class="zh">Kubernetes，用于编排可扩展、容错的部署</span></li>
+<li><span class="en">ZenML or MLFlow for more complex workflow orchestration</span><span class="zh">ZenML 或 MLFlow，用于更复杂的工作流编排</span></li>
+</ul>
+<p class="en"><b>Step 2: Containerize the LLM.</b> Containerization ensures that your LLM and its dependencies will be portable and consistent across environments. Create a Dockerfile in the project directory:</p>
+<p class="zh"><b>第二步：把 LLM 容器化。</b>容器化确保你的 LLM 及其依赖在不同环境间可移植、一致。在项目目录中创建一个 Dockerfile：</p>
+<pre><code>#DOCKERFILE
+FROM python:3.9-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+CMD ["python", "serve_model.py"]</code></pre>
+<p class="en">Build the Docker image and test the container locally:</p>
+<p class="zh">构建 Docker 镜像并在本地测试容器：</p>
+<pre><code>docker build -t my-llm-model .
+docker run -p 5000:5000 my-llm-model</code></pre>
+<div class="pagemark">— 原书第 159 页 —</div>
+<p class="en"><b>Step 3: Automate Pipelines with Jenkins.</b> Automating deployment pipelines allows for reliable and repeatable processes. I recommend using Jenkins for CI/CD automation. Here’s how to implement it:</p>
+<p class="zh"><b>第三步：用 Jenkins 自动化流水线。</b>自动化部署流水线能带来可靠、可重复的流程。我推荐用 Jenkins 做 CI/CD 自动化。实现方式如下：</p>
+<ol>
+<li><span class="en">Install Jenkins and configure it to connect with your repository.</span><span class="zh">安装 Jenkins 并配置它连接你的仓库。</span></li>
+<li><span class="en">Create a Jenkinsfile to define the pipeline stages. This pipeline builds the Docker image, pushes it to a container registry, and deploys it to Kubernetes:</span><span class="zh">创建一个 Jenkinsfile 定义流水线各阶段。该流水线构建 Docker 镜像、推送到容器仓库，并部署到 Kubernetes：</span></li>
+</ol>
+<pre><code>pipeline {
+    agent any
+    stages {
+        stage('Build Image') {
+            steps {
+                sh 'docker build -t my-llm-model .'
+            }
+        }
+        stage('Push Image') {
+            steps {
+                sh 'docker tag my-llm-model myregistry/my-llm-model:latest'
+                sh 'docker push myregistry/my-llm-model:latest'
+            }
+        }
+        stage('Deploy to Kubernetes') {
+            steps {
+                sh 'kubectl apply -f deployment.yaml'
+            }
+        }
+    }
+}</code></pre>
+<p class="en"><b>Step 4: Workflow Orchestration.</b> For complex workflows, tools like ZenML and MLFlow let you define modular steps and manage dependencies. Here’s how to install ZenML:</p>
+<p class="zh"><b>第四步：工作流编排。</b>对于复杂工作流，ZenML、MLFlow 等工具让你定义模块化步骤并管理依赖。安装 ZenML 的方式如下：</p>
+<pre><code>from zenml.pipelines import pipeline
+from zenml.steps import step
+
+@step
+def preprocess_data():
+    print("Preprocessing data for LLM training or inference.")
+
+@step
+def deploy_model():
+    print("Deploying the containerized LLM to Kubernetes.")
+
+@pipeline
+def llm_pipeline(preprocess_data, deploy_model):
+    preprocess_data()
+    deploy_model()</code></pre>
+<div class="pagemark">— 原书第 160 页 —</div>
+<pre><code>pipeline_instance = llm_pipeline(preprocess_data=preprocess_data(),
+                                 deploy_model=deploy_model())
+pipeline_instance.run()</code></pre>
+<p class="en"><b>Step 5: Set Up Monitoring.</b> Once deployed, monitoring is the key to making sure your LLM application is performing as expected. Tools like Prometheus and Grafana can track model latency, system resource usage, and error rates, or you can use an LLM-specific tool, like Log10.io.</p>
+<p class="zh"><b>第五步：搭建监控。</b>部署之后，监控是确保你的 LLM 应用按预期运行的关键。Prometheus、Grafana 等工具可以跟踪模型延迟、系统资源使用率和错误率；你也可以用 LLM 专属工具，如 Log10.io。</p>
+<p class="en">Now that you know how to deploy an LLM, you might want to provide your model to other users without making it open source. The next section looks into APIs for LLMs.</p>
+<p class="zh">既然你知道了如何部署 LLM，接下来你可能想在不开源的情况下把模型提供给其他用户。下一节探讨 LLM 的 API。</p>
+<h3 id="apis"><span class="en">Developing APIs for LLMs</span><span class="zhh">为 LLM 开发 API</span></h3>
+<p class="en">APIs provide users a standardized way for clients to interact with their LLM and for developers to access and consume LLM services and models from a variety of sources. Following the best practices of LLMOps, as we’ll show you in this section, will help you make your APIs secure, reliable, easy to use, and ensure that they provide the functionality and performance that LLM-based applications need.</p>
+<p class="zh">API 为客户端提供与 LLM 交互的标准化方式，也让开发者能从各种来源访问和使用 LLM 服务与模型。遵循本节将展示的 LLMOps 最佳实践，有助于你让 API 安全、可靠、易用，并确保它们提供 LLM 应用所需的功能和性能。</p>
+<p class="en">APIs have been around since the 1960s and 1970s. These early APIs were primarily used for system-level programming, allowing different components to communicate with each other within a single OS. With the rise of the internet in the 1990s, people began using APIs for web-based applications as well.</p>
+<p class="zh">API 自 20 世纪六七十年代就已存在。这些早期 API 主要用于系统级编程，让单个操作系统内的不同组件相互通信。随着 90 年代互联网兴起，人们也开始把 API 用于基于 Web 的应用。</p>
+<p class="en">Web APIs allow different websites and web applications to communicate and exchange data with each other, based on two core rules of software development: high cohesion and loose coupling. High cohesion means that the components of an API are closely related and focused on a single task. This makes the API easier to understand and maintain. Loose coupling means that the components of an API are independent of each other, allowing them to change without affecting other parts. This increases flexibility and reduces dependencies.</p>
+<p class="zh">Web API 让不同网站和 Web 应用相互通信、交换数据，其基础是软件开发的两条核心原则：高内聚和低耦合。高内聚指 API 的各组件紧密相关、专注于单一任务，这让 API 更易于理解和维护。低耦合指 API 的各组件彼此独立，可以各自变更而不影响其他部分，这增加了灵活性、减少了依赖。</p>
+<p class="en">Today, web APIs are an essential component of modern web-based applications, enabling developers to create powerful, integrated systems that can be accessed from anywhere at any time. Some common web APIs used by LLM-based applications include NLP APIs and LLMs-as-APIs.</p>
+<p class="zh">如今，Web API 是现代 Web 应用不可或缺的组成部分，让开发者能构建强大、集成的系统，随时随地可访问。LLM 应用常用的 Web API 包括 NLP API 和“LLM 即 API”。</p>
+<p class="en">NLP APIs provide access to natural language processing functionalities such as tokenization, part-of-speech tagging, and named-entity recognition libraries. Tools include Hugging Face and spaCy.</p>
+<p class="zh">NLP API 提供自然语言处理功能的访问，例如分词、词性标注和命名实体识别库。工具包括 Hugging Face 和 spaCy。</p>
+<div class="pagemark">— 原书第 161 页 —</div>
+<p class="en">LLMs-as-APIs provide access to LLMs and make predictions based on user prompts. They can be divided into two main categories. LLM platform APIs provide access to LLM platforms and services that enable developers to build, train, and deploy LLM models. Examples include Google Cloud LLM, Amazon SageMaker, and Microsoft Azure Machine Learning. LLM model APIs provide access to pretrained LLM models that can be used to make inferences on text, images, or speech. Model APIs are typically used for text generation, classification, and language translation. This category includes all the proprietary model APIs: OpenAI, Cohere, Anthropic, Ollama, and so on.</p>
+<p class="zh">“LLM 即 API”提供对 LLM 的访问，并基于用户提示做出预测。它们可分为两大类。LLM 平台 API 提供对 LLM 平台和服务的访问，让开发者能构建、训练和部署 LLM 模型，例如 Google Cloud LLM、Amazon SageMaker 和微软 Azure Machine Learning。LLM 模型 API 提供对预训练 LLM 模型的访问，可用于对文本、图像或语音做推理。模型 API 通常用于文本生成、分类和语言翻译。这一类包括所有专有模型 API：OpenAI、Cohere、Anthropic、Ollama 等。</p>
+<p class="en">Platform APIs provide a range of services and tools for building, training, and deploying LLM models including end-to-end deployment tooling for data preparation, model training, model deployment, and model monitoring. LLM platform APIs’ most important benefit is that they allow developers to reuse existing LLM models and services, reducing the amount of time and effort required to build new applications. For example, Google Studio (with the Gemini family of models) is a suite of LLM services that enables developers to build, train, and deploy LLM models.</p>
+<p class="zh">平台 API 提供一系列用于构建、训练和部署 LLM 模型的服务和工具，包括数据准备、模型训练、模型部署和模型监控的端到端部署工具。LLM 平台 API 最重要的好处是让开发者能复用现有的 LLM 模型和服务，减少构建新应用所需的时间和精力。例如，Google Studio（含 Gemini 模型家族）是一套 LLM 服务，让开发者能构建、训练和部署 LLM 模型。</p>
+<h3 id="apiled"><span class="en">API-Led Architecture Strategies</span><span class="zhh">API 主导的架构策略</span></h3>
+<p class="en">An API-led architecture strategy is a design approach for deploying LLM-based applications using APIs to create complex, integrated systems that are scalable, flexible, and reusable; that can be accessed from anywhere, at any time; and that can handle large volumes of data and traffic. It involves using APIs to expose the functionality and data of different systems and services.</p>
+<p class="zh">API 主导的架构策略是一种部署 LLM 应用的设计方法：用 API 创建复杂、集成的系统，使其可扩展、灵活、可复用，可随时随地访问，并能处理海量数据和流量。它通过 API 暴露不同系统和服务的功能与数据。</p>
+<p class="en">There are two kinds of web APIs: stateful and stateless. A stateful API maintains and manages the state of a client or user session. The server keeps track of the state of the client or user and uses this information to provide personalized and context-aware responses based on the state of the client or user. This can improve the user experience by providing more relevant and useful information. A stateful API can also provide secure access and authentication to protect against unauthorized access and use. Examples of stateful APIs are shopping-cart APIs, user authentication APIs, content management APIs, and real-time communication APIs.</p>
+<p class="zh">Web API 有两类：有状态和无状态。有状态 API 维护和管理客户端或用户会话的状态。服务器跟踪客户端或用户的状态，并据此提供个性化、感知上下文的回复。这能通过提供更相关、更有用的信息来改善用户体验。有状态 API 还可以提供安全访问和认证，以防未授权访问和使用。有状态 API 的例子有购物车 API、用户认证 API、内容管理 API 和实时通信 API。</p>
+<p class="en">Stateless APIs do not store any information about previous requests. Each request is independent and contains all the necessary data to be processed. If one request fails, it doesn’t affect others because there’s no stored state. This means you can use stateless APIs across different environments or platforms without worrying about session continuity.</p>
+<p class="zh">无状态 API 不存储任何关于先前请求的信息。每个请求都是独立的，包含处理所需的全部数据。如果一个请求失败，不会影响其他请求，因为没有存储状态。这意味着你可以在不同环境或平台间使用无状态 API，而不必担心会话连续性。</p>
+<h3 id="rest"><span class="en">REST APIs</span><span class="zhh">REST API</span></h3>
+<p class="en">REST APIs are not inherently stateful or stateless, but they can be used to create both, depending on the requirements and the techniques you use.</p>
+<p class="zh">REST API 本身并非天生有状态或无状态，但你可以根据需求和所用技术，用它来构建两者。</p>
+<div class="pagemark">— 原书第 162 页 —</div>
+<p class="en">Representational State Transfer (REST) is a type of web API that follows the RESTful architectural style. REST APIs are stateless, meaning each request contains all the information needed to complete the request. However, they can still maintain and manage the state of a client or user using techniques such as sessions, cookies, or tokens.</p>
+<p class="zh">表述性状态转移（REST）是一种遵循 RESTful 架构风格的 Web API。REST API 是无状态的，即每个请求都包含完成该请求所需的全部信息。不过，它们仍可通过会话、cookie 或令牌等技术来维护和管理客户端或用户的状态。</p>
+<p class="en">By using REST APIs, you can create scalable, flexible, and reusable systems that can handle large volumes of data and traffic. They can also provide the functionality and performance that modern web-based applications need.</p>
+<p class="zh">通过使用 REST API，你可以创建可扩展、灵活、可复用的系统，处理海量数据和流量。它们还能提供现代 Web 应用所需的功能和性能。</p>
+<h3 id="apiimpl"><span class="en">API Implementation</span><span class="zhh">API 实现</span></h3>
+<p class="en">Let’s look into how to implement an API.</p>
+<p class="zh">下面看看如何实现一个 API。</p>
+<p class="en"><b>Step 1: Define Your API’s Endpoints.</b> Common endpoints include:</p>
+<p class="zh"><b>第一步：定义 API 端点。</b>常见端点包括：</p>
+<ul>
+<li><span class="en">/generate: For generating text</span><span class="zh">/generate：用于生成文本</span></li>
+<li><span class="en">/summarize: For summarization tasks</span><span class="zh">/summarize：用于摘要任务</span></li>
+<li><span class="en">/embed: For retrieving embeddings</span><span class="zh">/embed：用于获取嵌入</span></li>
+</ul>
+<p class="en"><b>Step 2: Choose an API Development Framework.</b> In this example, we will use FastAPI, a Python framework that simplifies API development while supporting asynchronous operations. Let’s implement it:</p>
+<p class="zh"><b>第二步：选择 API 开发框架。</b>本例中我们使用 FastAPI——一个简化 API 开发、同时支持异步操作的 Python 框架。实现如下：</p>
+<pre><code>from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI()
+
+class TextRequest(BaseModel):
+    text: str
+
+@app.post("/generate")
+async def generate_text(request: TextRequest):
+    # Dummy response; replace with LLM inference logic
+    generated_text = f"Generated text based on: {request.text}"
+    return {"input": request.text, "output": generated_text}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)</code></pre>
+<div class="pagemark">— 原书第 163 页 —</div>
+<p class="en"><b>Step 3: Test the API.</b> Start the FastAPI server using python app.py. Once you have created your API, it’s important to manage it effectively to keep it secure, reliable, and performant. API management is a set of practices and tools for monitoring, maintaining, and improving your API. You should consider your API management approach before you even start developing your API. Good API management reduces the risk of security breaches and provides valuable insights into how your API is being used, and it makes the API a valuable asset that delivers value for your organization and users.</p>
+<p class="zh"><b>第三步：测试 API。</b>用 python app.py 启动 FastAPI 服务器。创建 API 之后，重要的是有效管理它，使其保持安全、可靠、高性能。API 管理是一整套用于监控、维护和改进 API 的实践与工具。你甚至应该在开始开发 API 之前就考虑好 API 管理方案。良好的 API 管理能降低安全泄露风险，深入洞察 API 被如何使用，并让 API 成为为组织和用户创造价值的宝贵资产。</p>
+<p class="en">API management activities include monitoring performance, handling errors, implementing security measures, and regularly updating and maintaining the API. Managing the API for an LLM-based application involves several steps. The following list is high level and not all-inclusive:</p>
+<p class="zh">API 管理活动包括监控性能、处理错误、实施安全措施，以及定期更新和维护 API。为 LLM 应用管理 API 涉及若干步骤。下面这份清单是高层概览，并非穷举：</p>
+<ul>
+<li><span class="en">Identify your application’s key functionalities and define the API endpoints you’ll use to access them. For example, you might have endpoints for generating text, retrieving model information, and/or managing user accounts.</span><span class="zh">识别应用的关键功能，并定义用于访问它们的 API 端点。例如，你可能有用于生成文本、获取模型信息和/或管理用户账户的端点。</span></li>
+<li><span class="en">Decide on the API design, such as whether to use a RESTful or GraphQL API, and what data format to use (for example, JSON). Make sure to follow best practices for API design, such as using meaningful endpoint names, providing clear and concise documentation, and using appropriate HTTP status codes.</span><span class="zh">决定 API 设计，例如用 RESTful 还是 GraphQL API，以及用什么数据格式（例如 JSON）。务必遵循 API 设计最佳实践，如使用有意义的端点名、提供清晰简明的文档、使用恰当的 HTTP 状态码。</span></li>
+<li><span class="en">Implement the API using a web framework (such as Flask or Django for Python or Express for Node.js). Make sure to handle errors gracefully, validate input data, and implement appropriate security measures, such as authentication and rate limiting.</span><span class="zh">用 Web 框架实现 API（Python 可用 Flask 或 Django，Node.js 可用 Express）。务必妥善处理错误、校验输入数据，并实施恰当的安全措施，如认证和限流。</span></li>
+<li><span class="en">Integrate the LLM into your API by creating a wrapper around the LLM library or API. This wrapper should handle input/output formatting, error handling, and any other necessary functionality.</span><span class="zh">在 LLM 库或 API 外封装一层，把 LLM 集成进你的 API。这层封装应处理输入/输出格式化、错误处理以及其他必要功能。</span></li>
+<li><span class="en">Thoroughly test the API using automated testing tools such as PyTest or Jest. Make sure to test all endpoints, input validation, error handling, and performance.</span><span class="zh">用 PyTest、Jest 等自动化测试工具彻底测试 API。确保测试所有端点、输入校验、错误处理和性能。</span></li>
+<li><span class="en">Deploy the API to a production environment using a cloud provider such as AWS, Google Cloud, or Azure. Make sure to use best practices for deployment, such as using continuous integration/continuous deployment (CI/CD), monitoring performance, and implementing security measures such as firewalls and access controls.</span><span class="zh">用 AWS、Google Cloud 或 Azure 等云厂商把 API 部署到生产环境。务必遵循部署最佳实践，如使用持续集成/持续部署（CI/CD）、监控性能、实施防火墙和访问控制等安全措施。</span></li>
+<li><span class="en">Monitor the API for performance issues, errors, and security vulnerabilities. Implement logging and alerting mechanisms to notify you of any issues. Regularly maintain the API by updating dependencies, fixing bugs, and adding new features as needed.</span><span class="zh">监控 API 的性能问题、错误和安全漏洞。实现日志和告警机制，在出现问题时通知你。定期维护 API：更新依赖、修复 bug、按需添加新功能。</span></li>
+</ul>
+<div class="pagemark">— 原书第 164 页 —</div>
+<h3 id="credmgmt"><span class="en">Credential Management</span><span class="zhh">凭证管理</span></h3>
+<p class="en">One of the most ignored yet most critical components of API management is credential management. Credentials include any sensitive information, such as API keys, authentication tokens, or user passwords, that are used to access your application or API. To manage credentials effectively, make sure to store them securely, such as by using a secure vault or encryption. Avoid hard-coding credentials into your code or configuration files, as this can increase the risk of exposure. Instead, use environment variables or secure configuration files that are not committed to version control.</p>
+<p class="zh">API 管理中最被忽视却又最关键的组件之一是凭证管理。凭证包括用于访问你的应用或 API 的任何敏感信息，如 API 密钥、认证令牌或用户密码。要有效管理凭证，务必安全存储，例如使用保险库或加密。避免把凭证硬编码到代码或配置文件中，因为这会增加泄露风险。相反，应使用环境变量或不提交到版本控制的安全配置文件。</p>
+<p class="en">You should also implement access controls to limit who can access credentials. This can include using role-based access control (RBAC) or attribute-based access control (ABAC) to restrict access to sensitive information.</p>
+<p class="zh">你还应实施访问控制，限制谁能访问凭证。这可以包括使用基于角色的访问控制（RBAC）或基于属性的访问控制（ABAC），来限制对敏感信息的访问。</p>
+<p class="en">Finally, regularly rotate credentials to reduce the risk of exposure. This can include setting expiration dates for API keys or tokens, or requiring users to change their passwords periodically.</p>
+<p class="zh">最后，定期轮换凭证以降低泄露风险。这可以包括为 API 密钥或令牌设置过期日期，或要求用户定期修改密码。</p>
+<h3 id="apigateway"><span class="en">API Gateways</span><span class="zhh">API 网关</span></h3>
+<p class="en">An API gateway is a critical component of your LLM-based application. It provides a single entry point for all API requests and handles multiple services. It routes requests and handles load balancing, authentication, and sometimes caching or logging, acting as a middle layer between clients and microservices.</p>
+<p class="zh">API 网关是你的 LLM 应用的关键组件。它为所有 API 请求提供单一入口点，并处理多个服务。它路由请求、处理负载均衡和认证，有时还处理缓存或日志，充当客户端与微服务之间的中间层。</p>
+<p class="en">To set up an API gateway for your LLM-based application:</p>
+<p class="zh">为你的 LLM 应用搭建 API 网关：</p>
+<ul>
+<li><span class="en">Choose an API gateway provider that meets your needs in terms of features, scalability, and cost.</span><span class="zh">选择一个在功能、可扩展性和成本上满足你需求的 API 网关提供商。</span></li>
+<li><span class="en">Define your API by specifying the endpoints, methods, and request/response formats. Make sure to use meaningful endpoint names and provide clear, concise documentation and appropriate HTTP status codes.</span><span class="zh">通过指定端点、方法和请求/响应格式来定义你的 API。务必使用有意义的端点名，并提供清晰简明的文档和恰当的 HTTP 状态码。</span></li>
+<li><span class="en">Implement authentication and authorization mechanisms, such as OAuth or JWT, to ensure that only authorized users can access your API.</span><span class="zh">实施认证和授权机制（如 OAuth 或 JWT），确保只有授权用户能访问你的 API。</span></li>
+<li><span class="en">Implement rate limiting to prevent abuse (such as denial-of-service, or DoS, attacks) and ensure fair use of your API. This might include setting a maximum number of requests per minute or hour or implementing more advanced rate-limiting algorithms. Monitor and log API activity to detect and respond to security threats, performance issues, or errors. This can include the implementation of logging and alerting mechanisms to notify you of any issues.</span><span class="zh">实施限流以防滥用（如拒绝服务 DoS 攻击）并确保 API 被公平使用。这可以包括设置每分钟或每小时的最大请求数，或实现更高级的限流算法。监控并记录 API 活动，以检测和响应安全威胁、性能问题或错误。这可以包括实现日志和告警机制，在出现问题时通知你。</span></li>
+</ul>
+<div class="pagemark">— 原书第 165 页 —</div>
+<ul>
+<li><span class="en">Test your API thoroughly to ensure that it meets your functional and nonfunctional requirements.</span><span class="zh">彻底测试 API，确保它满足你的功能和非功能需求。</span></li>
+<li><span class="en">Deploy it to a production environment using AWS, Google Cloud, or Azure.</span><span class="zh">用 AWS、Google Cloud 或 Azure 把它部署到生产环境。</span></li>
+</ul>
+<p class="en">Setting up an API gateway for an LLM-based application has several advantages. It provides a single entry point for all API requests, making it easier to manage and monitor API traffic. This helps you identify and respond to security threats, performance issues, and errors faster. API gateways can handle authentication and authorization tasks, such as verifying API keys or tokens, and enforce access controls. They can also log and monitor API activity, providing valuable insights into how your LLM-based application is being used. Most importantly, an API gateway can implement rate limiting to prevent abuse and ensure fair use of your API.</p>
+<p class="zh">为 LLM 应用搭建 API 网关有若干优势。它为所有 API 请求提供单一入口，让 API 流量更易于管理和监控，帮助你更快识别和响应安全威胁、性能问题和错误。API 网关可以处理认证和授权任务（如验证 API 密钥或令牌），并实施访问控制。它们还能记录和监控 API 活动，深入洞察你的 LLM 应用被如何使用。最重要的是，API 网关可以实施限流以防滥用、确保 API 被公平使用。</p>
+<h3 id="apiversion"><span class="en">API Versioning and Lifecycle Management</span><span class="zhh">API 版本与生命周期管理</span></h3>
+<p class="en">API versioning is the process of maintaining multiple versions of an API to ensure backward compatibility and minimize the impact of changes on existing users. To version your API, first include the version number in the API endpoint or request header. This makes it easy to identify which version of the API is being used. Then use semantic versioning to indicate the level of backward compatibility, which can help users understand the impact of changes and plan accordingly.</p>
+<p class="zh">API 版本管理是维护 API 多个版本的过程，以确保向后兼容、最小化变更对现有用户的影响。要为 API 版本化，首先在 API 端点或请求头中包含版本号，这样容易识别正在使用哪个版本。然后用语义化版本号标明向后兼容的程度，帮助用户理解变更的影响并据此规划。</p>
+<p class="en">Make sure to document all changes between versions, including any breaking changes or deprecated features. This can help users understand how to migrate to the new version. You can include providing tools or scripts to help users update their code or configuration.</p>
+<p class="zh">务必记录版本之间的所有变更，包括任何破坏性变更或废弃功能。这能帮助用户理解如何迁移到新版本。你还可以提供工具或脚本，帮助用户更新代码或配置。</p>
+<p class="en">But it doesn’t stop at versioning. Your LLMOps strategy also needs to define your approach to API lifecycle management, from design and development to deployment and retirement. The first step is to define the API lifecycle stages, such as planning, development, testing, deployment, and retirement. From there, the components you’ll need include:</p>
+<p class="zh">但事情不止于版本管理。你的 LLMOps 策略还需要定义 API 生命周期管理的方法，从设计、开发到部署和退役。第一步是定义 API 生命周期阶段，如规划、开发、测试、部署和退役。在此基础上，你需要的组件包括：</p>
+<ul>
+<li><span class="en"><b>Governance model.</b> A governance model establishes roles and responsibilities, defines processes and workflows, and determines which tools and technologies are acceptable.</span><span class="zh"><b>治理模型。</b>治理模型确立角色与职责，定义流程和工作流，并决定哪些工具和技术是可接受的。</span></li>
+<li><span class="en"><b>Change management process.</b> Defining a change management process will help ensure that any future changes to the API are planned, tested, and communicated to users effectively.</span><span class="zh"><b>变更管理流程。</b>定义变更管理流程，有助于确保 API 未来的任何变更都经过规划、测试，并有效传达给用户。</span></li>
+</ul>
+<div class="pagemark">— 原书第 166 页 —</div>
+<ul>
+<li><span class="en"><b>Monitoring and alerting.</b> You need a monitoring and alerting system to detect and respond to issues or errors. This can include setting up alerts for performance issues, security threats, or errors. Most API deployment platforms offer this as a service. An example is Azure Application Insights, a tool that checks how long each step of your API calls is taking and automatically alerts you to performance problems or errors.</span><span class="zh"><b>监控与告警。</b>你需要一套监控和告警系统来检测并响应问题或错误。这可以包括为性能问题、安全威胁或错误设置告警。大多数 API 部署平台都把它作为服务提供。Azure Application Insights 就是一例，它检查你的 API 调用每一步耗时多久，并在出现性能问题或错误时自动告警。</span></li>
+<li><span class="en"><b>Retirement process.</b> Finally, agree on and document a retirement process to decommission the API when it is no longer needed. This can include notifying users, providing a migration path, and archiving data.</span><span class="zh"><b>退役流程。</b>最后，约定并记录一套退役流程，在 API 不再需要时将其下线。这可以包括通知用户、提供迁移路径和归档数据。</span></li>
+</ul>
+<h2 id="arch"><span class="en">LLM Deployment Architectures</span><span class="zhh">LLM 部署架构</span></h2>
+<p class="en">The two most common deployment architectures for software applications and LLM-based applications are modular and monolithic.</p>
+<p class="zh">软件应用和 LLM 应用最常见的两种部署架构是模块化架构和单体架构。</p>
+<h3 id="modmono"><span class="en">Modular and Monolithic Architectures</span><span class="zhh">模块化架构与单体架构</span></h3>
+<p class="en">Each architecture has its strengths and use cases, and both require careful planning. Modular architectures break the system down into its components. Modular designs are easier to update and scale, making them ideal for applications requiring flexibility. Monolithic architectures handle everything within a single framework. These models offer simplicity and tightly integrated workflows.</p>
+<p class="zh">每种架构都有其优势和用例，两者都需要仔细规划。模块化架构把系统拆成各个组件。模块化设计更易于更新和扩展，非常适合需要灵活性的应用。单体架构在单一框架内处理一切，提供简单性和紧密集成的工作流。</p>
+<p class="en">For modular systems, you’ll train components like retrievers, re-rankers, and generators independently. This approach allows you to focus on optimizing each module. It requires defining the communication between modules extremely well; most issues in modular systems happen when modules communicate incorrectly with one another.</p>
+<p class="zh">对于模块化系统，你会独立训练检索器、重排器、生成器等组件。这种方式让你能专注于优化每个模块。它要求把模块间的通信定义得非常清楚；模块化系统中的大多数问题都发生在模块间通信出错时。</p>
+<p class="en">In contrast, monolithic architectures often involve end-to-end training, which simplifies dependencies but demands significant computational resources. After training, save your model in a format that supports the architecture; for example, use open formats like ONNX for interoperability or native formats like PyTorch or TensorFlow for custom pipelines. Validation is crucial for both approaches. In terms of testing, modular systems require component-specific tests to ensure compatibility and performance, while monolithic architectures need comprehensive end-to-end evaluation to confirm their robustness.</p>
+<p class="zh">相比之下，单体架构通常涉及端到端训练，这简化了依赖，但需要大量计算资源。训练后，把模型保存为支持该架构的格式；例如，用 ONNX 等开放格式以获得互操作性，或用 PyTorch、TensorFlow 等原生格式以适配定制流水线。两种方法都离不开验证。测试方面，模块化系统需要组件专属测试以确保兼容性和性能，而单体架构需要全面的端到端评估以确认其鲁棒性。</p>
+<h3 id="microservices"><span class="en">Implementing a Microservices-Based Architecture</span><span class="zhh">实现基于微服务的架构</span></h3>
+<p class="en">Let’s say you’ve decided to adopt a microservices-based architecture for your LLM application. This is a modular architectural style that breaks a large application down into smaller, independent services that communicate with each other through APIs. Its benefits include improved scalability, flexibility, and maintainability.</p>
+<p class="zh">假设你决定为 LLM 应用采用基于微服务的架构。这是一种模块化架构风格，把大型应用拆成更小、独立的服务，服务间通过 API 通信。其好处包括更好的可扩展性、灵活性和可维护性。</p>
+<div class="pagemark">— 原书第 167 页 —</div>
+<p class="en">In a microservice-based architecture, APIs serve as connectors between the different services. Each service exposes an API that allows other services to interact with it. APIs decouple the different services, allowing them to evolve independently. This means that changes to one service do not impact other services, reducing the risk of breaking changes.</p>
+<p class="zh">在基于微服务的架构中，API 充当不同服务间的连接器。每个服务暴露一个 API，允许其他服务与之交互。API 解耦了不同服务，让它们独立演进。这意味着对一个服务的变更不会影响其他服务，降低了破坏性变更的风险。</p>
+<p class="en">APIs also enable services to scale independently, allowing you to allocate resources more efficiently. For example, you could scale your language translation service independently of your text-to-speech service. With APIs, you can build different services using different technologies and programming languages. This means that you can choose the best technology for each service, improving development speed and reducing technical debt.</p>
+<p class="zh">API 还让服务能独立扩展，从而更高效地分配资源。例如，你可以独立扩展语言翻译服务，而不影响文本转语音服务。借助 API，你可以用不同技术和编程语言构建不同服务，即为每个服务选择最合适的技术，提升开发速度、减少技术债。</p>
+<p class="en">To use different APIs as connectors for a microservice-based architecture for LLM applications:</p>
+<p class="zh">要把不同 API 作为 LLM 应用微服务架构的连接器：</p>
+<ul>
+<li><span class="en">Define clear and consistent APIs for each service, defining the input and output formats, authentication and authorization mechanisms, and error handling.</span><span class="zh">为每个服务定义清晰、一致的 API，明确输入输出格式、认证授权机制和错误处理。</span></li>
+<li><span class="en">Implement standard API communication protocols, such as HTTP or gRPC, for compatibility and interoperability between services.</span><span class="zh">实现标准 API 通信协议（如 HTTP 或 gRPC），以保证服务间的兼容性和互操作性。</span></li>
+<li><span class="en">Implement security mechanisms, such as OAuth or JWT, to authenticate and authorize API requests.</span><span class="zh">实施安全机制（如 OAuth 或 JWT），对 API 请求进行认证和授权。</span></li>
+<li><span class="en">Implement monitoring and logging mechanisms to track API usage and detect issues. This can help you identify and resolve issues quickly and improve the user experience.</span><span class="zh">实现监控和日志机制，跟踪 API 使用情况、检测问题。这有助于你快速发现和解决问题，改善用户体验。</span></li>
+<li><span class="en">Implement versioning mechanisms to manage changes to the APIs and minimize their impact on existing applications and users.</span><span class="zh">实现版本机制，管理 API 变更并最小化其对现有应用和用户的影响。</span></li>
+</ul>
+<p class="en">This approach can help you build a scalable, flexible, and maintainable LLM application with multiple APIs that meets the needs of your users and enables distributed functionality for large-scale applications. Let’s look at how to implement your microservices architecture in more detail.</p>
+<p class="zh">这种方式能帮你构建一个可扩展、灵活、可维护的 LLM 应用——拥有多个 API、满足用户需求、并为大规模应用提供分布式功能。下面更详细地看看如何实现微服务架构。</p>
+<p class="en"><b>Step 1: Decompose the application into its components.</b></p>
+<p class="zh"><b>第一步：把应用拆解为组件。</b></p>
+<ul>
+<li><span class="en">Preprocessing service to tokenize and clean input</span><span class="zh">预处理服务，用于分词和清洗输入</span></li>
+<li><span class="en">Inference service to perform LLM inference</span><span class="zh">推理服务，用于执行 LLM 推理</span></li>
+<li><span class="en">Postprocessing service to format or enrich model outputs</span><span class="zh">后处理服务，用于格式化或丰富模型输出</span></li>
+</ul>
+<p class="en">Let’s look at sample code for a preprocessing service:</p>
+<p class="zh">我们看一个预处理服务的示例代码：</p>
+<pre><code>from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI()</code></pre>
+<div class="pagemark">— 原书第 168 页 —</div>
+<pre><code>class PreprocessRequest(BaseModel):
+    text: str
+
+@app.post("/preprocess")
+async def preprocess(request: PreprocessRequest):
+    # Basic preprocessing logic
+    preprocessed_text = request.text.lower().strip()
+    return {"original": request.text, "processed": preprocessed_text}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8001)</code></pre>
+<p class="en"><b>Step 2: Establish communication between services.</b> You can use HTTP for simplicity or gRPC (Google’s Remote Procedure Call) for high performance. Add a message broker like RabbitMQ or Kafka for asynchronous communication.</p>
+<p class="zh"><b>第二步：建立服务间通信。</b>为简单起见可用 HTTP，或为高性能用 gRPC（Google 远程过程调用）。再加一个 RabbitMQ 或 Kafka 之类的消息代理做异步通信。</p>
+<p class="en"><b>Step 3: Coordinate the microservices to keep the workflows seamless.</b> You can use tools like Consul or Eureka to register and discover services dynamically, or you might implement an API Gateway (such as Kong or NGINX) to route client requests to the appropriate microservice. Here’s an NGINX example:</p>
+<p class="zh"><b>第三步：协调微服务，让工作流无缝衔接。</b>你可以用 Consul、Eureka 等工具动态注册和发现服务，或实现一个 API 网关（如 Kong 或 NGINX）把客户端请求路由到合适的微服务。下面是一个 NGINX 例子：</p>
+<pre><code># nginx.conf
+
+server {
+    listen 80;
+    location /preprocess {
+        proxy_pass http://localhost:8001;
+    }
+    location /generate {
+        proxy_pass http://localhost:8002;
+    }
+}</code></pre>
+<p class="en">If you plan to use a tool like MLFlow or BentoML to manage service dependencies and task execution, you can also implement it at this step.</p>
+<p class="zh">如果你计划用 MLFlow 或 BentoML 之类的工具管理服务依赖和任务执行，也可以在这一步实现。</p>
+<p class="en"><b>Step 4: Create a Dockerfile for each microservice.</b> Here’s an example using Python:</p>
+<p class="zh"><b>第四步：为每个微服务创建 Dockerfile。</b>下面是一个 Python 例子：</p>
+<pre><code>FROM python:3.9-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt</code></pre>
+<div class="pagemark">— 原书第 169 页 —</div>
+<pre><code>COPY . .
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8001"]</code></pre>
+<p class="en">Here’s another example for deploying to Kubernetes:</p>
+<p class="zh">下面是另一个部署到 Kubernetes 的例子：</p>
+<pre><code>apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: preprocessing-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: preprocessing
+  template:
+    metadata:
+      labels:
+        app: preprocessing
+    spec:
+      containers:
+      - name: preprocessing
+        image: myregistry/preprocessing-service:latest
+        ports:
+        - containerPort: 8001</code></pre>
+<p class="en">Finally, to test your Kubernetes deployment:</p>
+<p class="zh">最后，测试你的 Kubernetes 部署：</p>
+<pre><code>kubectl apply -f preprocessing-deployment.yaml</code></pre>
+<h2 id="ragpipeline"><span class="en">Automating RAG with Retriever Re-ranker Pipelines</span><span class="zhh">用检索器-重排器流水线自动化 RAG</span></h2>
+<p class="en">Building efficient retriever re-ranker pipelines is a key step in implementing RAG pipeline workflows. Retriever re-ranker pipelines retrieve relevant context and rank it for input to the LLM. As you’ve seen throughout this book, automation is critical to ensuring a system’s scalability and reliability. As we move through this section, you’ll get pointers about how using frameworks like LangChain and LlamaIndex can simplify this process.</p>
+<p class="zh">构建高效的检索器-重排器流水线是实现 RAG 流水线工作流的关键一步。检索器-重排器流水线检索相关上下文，并对其排序后送入 LLM。正如本书反复强调的，自动化对确保系统的可扩展性和可靠性至关重要。在本节中，你会了解到使用 LangChain、LlamaIndex 等框架如何简化这一过程。</p>
+<p class="en">Start with the retriever, which fetches relevant data based on a query. You can use dense vector embeddings and store them in a vector database, like Pinecone or Milvus. Once it retrieves results, the re-ranker reorders those results by relevance. LangChain provides modular components to integrate these steps seamlessly, allowing you to create pipelines to automate data retrieval and ranking with minimal intervention. LlamaIndex adds features for integrating retrieval systems with structured data sources, offering flexibility in managing knowledge sources.</p>
+<p class="zh">从检索器开始，它基于查询取来相关数据。你可以使用稠密向量嵌入，并把它们存到 Pinecone 或 Milvus 等向量数据库中。检索出结果后，重排器按相关性对结果重新排序。LangChain 提供模块化组件，把这些步骤无缝集成起来，让你能用最少的人工干预创建自动化数据检索和排序的流水线。LlamaIndex 则增加了把检索系统与结构化数据源集成的功能，在管理知识源方面提供灵活性。</p>
+<p class="en">Automation ensures that your retriever re-ranker pipeline is always up-to-date. This is especially useful when dealing with dynamic data, like user-generated content or frequently updated knowledge bases. Regular validation and retraining improve the accuracy of these pipelines over time.</p>
+<p class="zh">自动化确保你的检索器-重排器流水线始终保持最新。这在处理动态数据时尤其有用，例如用户生成内容或频繁更新的知识库。定期验证和重训练会随时间提升这些流水线的准确率。</p>
+<div class="pagemark">— 原书第 170 页 —</div>
+<p class="en">Let’s look at an implementation that retrieves documents, re-ranks them, and feeds the most relevant context to an LLM (Example 6-1).</p>
+<p class="zh">我们看一个实现：检索文档、对其重排，并把最相关的上下文送入 LLM（例 6-1）。</p>
+<p class="en"><b>Example 6-1.</b> Building a retriever re-ranker pipeline.</p>
+<p class="zh"><b>例 6-1.</b> 构建检索器-重排器流水线。</p>
+<pre><code>import os
+from langchain.vectorstores import Pinecone
+from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.chains import RetrievalQA
+from langchain.llms import OpenAI
+from langchain.prompts import PromptTemplate
+from pinecone import init, Index
+
+# Step 1. Set environment variables for API keys
+os.environ["OPENAI_API_KEY"] = "your_openai_api_key"
+os.environ["PINECONE_API_KEY"] = "your_pinecone_api_key"
+os.environ["PINECONE_ENV"] = "your_pinecone_environment"
+
+# Step 2. Initialize Pinecone
+init(api_key=os.environ["PINECONE_API_KEY"], environment=os.environ["PINECONE_ENV"])
+index_name = "your_index_name"
+
+# Ensure the index exists
+if index_name not in Pinecone.list_indexes():
+    print(f"Index '{index_name}' not found. Please create it in Pinecone console.")
+    exit()
+
+# Step 3. Set up the retriever
+embedding_model = OpenAIEmbeddings()
+retriever = Pinecone(index_name=index_name, embedding=embedding_model.embed_query)
+
+# Step 4. Define the re-ranker function
+def rerank_documents(documents, query):
+    """
+    Rerank documents based on a simple similarity scoring using embeddings.
+    """
+    reranked_docs = sorted(
+        documents,
+        key=lambda doc: embedding_model.similarity(query, doc.page_content),
+        reverse=True,
+    )
+    return reranked_docs[:5]  # Return top 5 documents
+
+# Step 5. Set up the LLM and prompt
+llm = OpenAI(model="gpt-4")
+
+prompt_template = """
+You are my hero. Use the following context to answer the user's question:
+Context: {context}
+Question: {question}
+Answer:</code></pre>
+<div class="pagemark">— 原书第 171 页 —</div>
+<pre><code>"""
+prompt = PromptTemplate(template=prompt_template,
+                        input_variables=["context", "question"])</code></pre>
+<p class="en">At step 2, you use Pinecone to fetch the top-k relevant documents based on the query embeddings.</p>
+<p class="zh">在第 2 步，你用 Pinecone 基于查询嵌入取来 top-k 相关文档。</p>
+<p class="en">In step 4, a simple function ranks retrieved documents by semantic similarity using the embedding model.</p>
+<p class="zh">在第 4 步，一个简单函数用嵌入模型按语义相似度对检索到的文档排序。</p>
+<p class="en">For better results, you can replace the simple scoring with neural re-rankers like T5 or BERT, add memory to the pipeline to handle multi-turn queries, or automate database updates using scheduled tasks for dynamic content.</p>
+<p class="zh">为获得更好结果，你可以用 T5、BERT 等神经重排器替换简单打分，给流水线加上记忆以处理多轮查询，或用定时任务为动态内容自动化数据库更新。</p>
+<h2 id="kgupdate"><span class="en">Automating Knowledge Graph Updates</span><span class="zhh">自动化知识图谱更新</span></h2>
+<p class="en">Keeping your knowledge graphs (KGs) up-to-date is essential for maintaining accurate insights. Automation simplifies this process, especially for tasks like entity linking and generating graph embeddings. It reduces manual effort, increases accuracy, and ensures that your knowledge graphs remain a reliable source of information.</p>
+<p class="zh">让知识图谱（KG）保持最新，对于维持准确洞见至关重要。自动化简化了这一过程，尤其是在实体链接和生成图嵌入等任务上。它减少人工工作量、提升准确率，并确保你的知识图谱始终是可靠的信息来源。</p>
+<p class="en">Entity linking ensures that new information connects to the correct nodes in the KG. For example, if a document references “Paris,” entity linking determines whether that refers to the city or a person’s name. Automated pipelines handle this by combining neural natural language processing (NNLP) models with preexisting graph structures and by using embeddings to understand relationships and context. Tools like spaCy and specialized libraries for entity resolution can help you build robust linking systems.</p>
+<p class="zh">实体链接确保新信息连接到知识图谱中正确的节点。例如，如果一篇文档提到“Paris”，实体链接会判断它指的是城市还是人名。自动化流水线通过把神经自然语言处理（NNLP）模型与既有图结构结合，并利用嵌入来理解关系和上下文，从而处理这一任务。spaCy 以及实体消解专用库等工具可以帮你构建健壮的链接系统。</p>
+<p class="en">Graph embeddings are numerical representations of nodes, edges, and their relationships. They enable tasks like graph search, recommendation, and reasoning. To make sure your KG reflects the latest data, it’s wise to automate embedding creation and updates. That way, the pipelines can schedule updates whenever new data arrives, ensuring the KG stays accurate and ready for downstream applications. Libraries like PyTorch Geometric and DGL (Deep Graph Library) provide embedding generation tools. Regularly validate your pipelines to prevent errors from propagating through the graph.</p>
+<p class="zh">图嵌入是节点、边及其关系的数值表示，支持图搜索、推荐和推理等任务。为确保知识图谱反映最新数据，明智的做法是把嵌入的创建和更新自动化。这样，每当新数据到来，流水线就能调度更新，确保知识图谱保持准确、随时可供下游应用使用。PyTorch Geometric 和 DGL（深度图库）等库提供嵌入生成工具。定期验证流水线，防止错误在图中传播。</p>
+<p class="en">The next example walks you through how to automate KG updates by building a pipeline using Python. The libraries used here are spaCy for entity linking and PyTorch Geometric and DGL for graph embeddings. For the KG itself, a Neo4j graph database is used. First, install the libraries:</p>
+<p class="zh">下一个例子带你用 Python 构建流水线，自动化知识图谱更新。这里用 spaCy 做实体链接，用 PyTorch Geometric 和 DGL 做图嵌入；知识图谱本身用 Neo4j 图数据库。首先安装库：</p>
+<pre><code>pip install spacy torch torchvision dgl neo4j pandas
+python -m spacy download en_core_web_sm</code></pre>
+<div class="pagemark">— 原书第 172 页 —</div>
+<p class="en">Now you can implement:</p>
+<p class="zh">现在可以实现：</p>
+<pre><code>#Step 1: Import all the relevant libraries
+import spacy
+import torch
+import dgl
+import pandas as pd
+from neo4j import GraphDatabase
+from spacy.matcher import PhraseMatcher
+from torch_geometric.nn import GCNConv
+from torch_geometric.data import Data
+
+nlp = spacy.load("en_core_web_sm")
+
+# Step 2: Connect to Neo4j for knowledge graph management
+uri = "bolt://localhost:7687"
+username = "neo4j"
+password = "your_neo4j_password"
+driver = GraphDatabase.driver(uri, auth=(username, password))
+
+# Step 3: Define function for entity linking and updating the knowledge graph
+def link_entities_and_update_kg(text, graph):
+    # Process the text using spaCy to extract entities
+    doc = nlp(text)
+    entities = set([ent.text for ent in doc.ents])
+
+    # Update KG with new entities
+    with graph.session() as session:
+        for entity in entities:
+            session.run(f"MERGE (e:Entity {{name: '{entity}'}})")
+
+    print(f"Entities linked and updated in the KG: {entities}")
+
+# Step 4: Generate graph embeddings using graph convolutional networks (GCN)
+def update_graph_embeddings(graph):
+    edges = [(0, 1), (1, 2), (2, 0)]  # Example edges for a graph
+    x = torch.tensor([[1, 2], [2, 3], [3, 4]], dtype=torch.float)
+
+    edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous()
+
+    data = Data(x=x, edge_index=edge_index)
+    gcn = GCNConv(in_channels=2, out_channels=2)
+
+    # Forward pass through the GCN
+    output = gcn(data.x, data.edge_index)
+    print("Updated Graph Embeddings:", output)
+
+# Step 5: Automating the KG update process
+def automate_kg_update(text):
+    link_entities_and_update_kg(text, driver)
+
+    # Step 5b: Update graph embeddings for the KG
+    update_graph_embeddings(driver)</code></pre>
+<div class="pagemark">— 原书第 173 页 —</div>
+<p class="en">In step 3, the link_entities_and_update_kg() function uses spaCy to extract named entities from the input text. It then updates the Neo4j knowledge graph by linking each entity (e.g., “John von Neumann,” “computer science”) as a node. The MERGE clause ensures that entities are created only if they don’t already exist in the graph.</p>
+<p class="zh">在第 3 步，link_entities_and_update_kg() 函数用 spaCy 从输入文本中抽取命名实体，然后把每个实体（例如“John von Neumann”“computer science”）作为节点链接进 Neo4j 知识图谱。MERGE 子句确保仅当实体尚不存在于图中时才创建它。</p>
+<p class="en">In step 4, we use PyTorch Geometric to compute graph embeddings using graph convolutional networks (GCNs). Nodes and edges are defined manually, and the GCNConv layer is applied to compute new embeddings.</p>
+<p class="zh">在第 4 步，我们用 PyTorch Geometric 通过图卷积网络（GCN）计算图嵌入。节点和边是手动定义的，再应用 GCNConv 层计算新的嵌入。</p>
+<p class="en">At step 5, the automate_kg_update() function combines the two steps: it first links entities and updates the KG, and then it computes the graph embeddings to keep the knowledge graph up-to-date with the latest entity information and structure. To automate the process, schedule the automate_kg_update() function to run periodically via cron jobs or a task scheduler like Celery.</p>
+<p class="zh">在第 5 步，automate_kg_update() 函数把两个步骤合在一起：先链接实体并更新知识图谱，再计算图嵌入，让知识图谱与最新的实体信息和结构保持同步。要自动化这一过程，可通过 cron 任务或 Celery 之类的任务调度器，定期运行 automate_kg_update() 函数。</p>
+<h2 id="latency"><span class="en">Deployment Latency Optimization</span><span class="zhh">部署延迟优化</span></h2>
+<p class="en">Reducing latency is one of the most important considerations when deploying LLMs. Latency directly impacts performance and responsiveness. Some applications, such as chatbots, search engines, and real-time decision-making systems, require especially low latency, making it essential to find ways to minimize the time it takes for the system to return results.</p>
+<p class="zh">降低延迟是部署 LLM 时最重要的考量之一。延迟直接影响性能和响应能力。聊天机器人、搜索引擎、实时决策系统等应用对延迟要求尤其低，因此必须想办法最小化系统返回结果所需的时间。</p>
+<p class="en">One effective approach is to use Triton Inference Server, an open source platform designed specifically for high-performance model inference. It supports a wide variety of model types, including TensorFlow, PyTorch, ONNX, and others. Triton significantly optimizes LLM execution, making it possible to handle multiple concurrent inference requests with minimal delay.</p>
+<p class="zh">一个有效方法是使用 Triton Inference Server——一个专为高性能模型推理设计的开源平台。它支持多种模型类型，包括 TensorFlow、PyTorch、ONNX 等。Triton 显著优化 LLM 执行，能以极小延迟处理多个并发推理请求。</p>
+<p class="en">There are a few reasons for this. First, it supports model concurrency and can run models on GPUs. It can also dynamically load and unload models based on demand, which is useful for applications requiring low latency, such as chatbots, search engines, or real-time decision-making systems. Triton also supports batching, which allows it to combine multiple inference requests into a single operation, further improving throughput and reducing the overall response time.</p>
+<p class="zh">原因有几点。首先，它支持模型并发，能在 GPU 上运行模型；还能根据需求动态加载和卸载模型，这对聊天机器人、搜索引擎、实时决策系统等需要低延迟的应用很有用。Triton 还支持批处理，把多个推理请求合并为一次操作，进一步提升吞吐、缩短整体响应时间。</p>
+<p class="en">To deploy an LLM using Triton Inference Server for optimized execution, first install Triton:</p>
+<p class="zh">要用 Triton Inference Server 部署 LLM 以获得优化执行，先安装 Triton：</p>
+<pre><code>docker pull nvcr.io/nvidia/tritonserver:latest</code></pre>
+<p class="en">Next, prepare the model directory. Make sure to save your model in a directory that Triton can access and in a format like TensorFlow SavedModel or PyTorch TorchScript:</p>
+<p class="zh">接下来准备模型目录。确保把模型保存在 Triton 可访问的目录中，并采用 TensorFlow SavedModel 或 PyTorch TorchScript 等格式：</p>
+<div class="pagemark">— 原书第 174 页 —</div>
+<pre><code>model_repository/
+├── my_model/
+│   ├── 1/
+│   │   └── model.pt</code></pre>
+<p class="en">Now run Triton from the terminal:</p>
+<p class="zh">现在在终端运行 Triton：</p>
+<pre><code>docker run --gpus all --rm -p 8000:8000 -p 8001:8001 -p 8002:8002 \
+  -v /path/to/model_repository:/models nvcr.io/nvidia/tritonserver:latest \
+  tritonserver --model-repository=/models</code></pre>
+<p class="en">Finally, query the server for inference. You can use a client library like tritonclient to send requests to the Triton server:</p>
+<p class="zh">最后，向服务器发起推理查询。你可以用 tritonclient 之类的客户端库向 Triton 服务器发送请求：</p>
+<pre><code>import tritonclient.grpc
+from tritonclient.grpc import service_pb2, service_pb2_grpc
+
+# Set up the Triton client
+triton_client = tritonclient.grpc.InferenceServerClient(url="localhost:8001")
+
+# Prepare the input data
+input_data = some_input_data()
+
+# Send inference request
+response = triton_client.infer(model_name="my_model", inputs=[input_data])
+
+print(response)</code></pre>
+<h2 id="orchest"><span class="en">Orchestrating Multiple Models</span><span class="zhh">编排多个模型</span></h2>
+<p class="en">To achieve efficiency and good response times in systems that require multiple models to work together, you’ll need to use multi-model orchestration, which involves breaking models down into microservices. You’ll then deploy each model as an independent service, and they can interact through APIs or message queues. There are multiple ready-to-use orchestrators out there including Multi-Agent Orchestrator by AWS, and proxy tools like LiteLLM that allow you to switch between multiple models and APIs. But as with everything else in software, the higher the dependencies, the higher the debugging complexity when inferencing fails in mission-critical tasks.</p>
+<p class="zh">要在需要多个模型协同工作的系统中实现高效率和好的响应时间，你需要使用多模型编排，即把模型拆成微服务。然后把每个模型部署为独立服务，它们通过 API 或消息队列交互。市面上有很多现成编排器，包括 AWS 的 Multi-Agent Orchestrator，以及 LiteLLM 之类的代理工具，让你在多个模型和 API 间切换。但和软件中其他事情一样，依赖越多，在关键任务推理失败时调试的复杂度就越高。</p>
+<p class="en">For example, you might have separate models for different stages of processing: one for text preprocessing, another for text-to-speech, and another for generating responses. Orchestration can ensure that each part of the process happens concurrently and efficiently, reducing bottlenecks and speeding up the overall system.</p>
+<p class="zh">例如，你可能为处理的不同阶段设置独立模型：一个做文本预处理，一个做文本转语音，另一个生成回复。编排能确保流程的每一部分并发、高效地进行，减少瓶颈、加快整个系统。</p>
+<p class="en">You can use container orchestration tools like Kubernetes or Docker Compose to manage multiple models running as microservices. Here’s how to create a docker-compose.yml file:</p>
+<p class="zh">你可以用 Kubernetes 或 Docker Compose 等容器编排工具管理作为微服务运行的多个模型。下面是创建 docker-compose.yml 文件的方式：</p>
+<div class="pagemark">— 原书第 175 页 —</div>
+<pre><code>version: '3'
+services:
+  model1:
+    image: model1_image
+    ports:
+      - "5001:5001"
+  model2:
+    image: model2_image
+    ports:
+      - "5002:5002"
+  model3:
+    image: model3_image
+    ports:
+      - "5003:5003"
+</code></pre>
+<p class="en">Orchestrate the communication between the models using a message queue like RabbitMQ or through direct API calls. Each service listens for input and processes it sequentially or concurrently as needed.</p>
+<p class="zh">用 RabbitMQ 之类的消息队列或直接的 API 调用来编排模型间的通信。每个服务监听输入，按需顺序或并发地处理。</p>
+<p class="en">You’ll also need to set up load balancing to manage traffic between models and distribute requests efficiently. You’ll need to configure Kubernetes or Docker Swarm to run multiple instances of your models and balance the incoming traffic. Kubernetes uses a service to route requests to the appropriate pod, while Docker Swarm uses Docker’s built-in load balancer to automatically distribute traffic between containers.</p>
+<p class="zh">你还需要搭建负载均衡，管理模型间的流量并高效分发请求。你需要配置 Kubernetes 或 Docker Swarm 来运行模型的多个实例并均衡传入流量。Kubernetes 用一个服务把请求路由到合适的 pod，而 Docker Swarm 用 Docker 内置的负载均衡器在容器间自动分发流量。</p>
+<p class="en">Let’s assume you have a Docker container running a model; for instance, a model_image Docker image. You want to deploy multiple instances of this model and use Kubernetes to load-balance the incoming requests. First, create a Kubernetes deployment configuration file, which will define the model container, and specify how many replicas of it you want:</p>
+<p class="zh">假设你有一个运行模型的 Docker 容器，例如一个 model_image Docker 镜像。你想部署这个模型的多个实例，并用 Kubernetes 对传入请求做负载均衡。首先，创建一个 Kubernetes 部署配置文件，定义模型容器，并指定你想要多少个副本：</p>
+<pre><code>apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: model-deployment
+spec:
+  replicas: 3  # Number of instances to scale
+  selector:
+    matchLabels:
+      app: model
+  template:
+    metadata:
+      labels:
+        app: model
+    spec:
+      containers:
+        - name: model-container
+          image: model_image:latest  # Your actual Docker image
+          ports:
+            - containerPort: 5000</code></pre>
+<div class="pagemark">— 原书第 176 页 —</div>
+<p class="en">This configuration will deploy three replicas. The Kubernetes Deployment will manage the pods running these models (the smallest deployable units in Kubernetes) and will automatically balance traffic. To distribute traffic among them, you need to expose them using a Kubernetes Service:</p>
+<p class="zh">这个配置会部署三个副本。Kubernetes Deployment 会管理运行这些模型的 pod（Kubernetes 中最小的可部署单元），并自动均衡流量。要在它们之间分发流量，你需要用一个 Kubernetes Service 把它们暴露出来：</p>
+<pre><code>apiVersion: v1
+kind: Service
+metadata:
+  name: model-service
+spec:
+  selector:
+    app: model  # Match the app label from the deployment
+  ports:
+    - protocol: TCP
+      port: 80  # External port
+      targetPort: 5000  # Port the model container is listening to
+  type: LoadBalancer</code></pre>
+<p class="en">This service will expose the three model replicas on port 80 and balance the traffic among them. Now you can deploy the model and the service to your Kubernetes cluster:</p>
+<p class="zh">这个服务会在 80 端口暴露三个模型副本，并在它们之间均衡流量。现在你可以把模型和服务部署到 Kubernetes 集群：</p>
+<pre><code>kubectl apply -f model-deployment.yaml
+kubectl apply -f model-service.yaml
+kubectl get deployments
+kubectl get services</code></pre>
+<p class="en">There are a few advantages to this level of modularity. For one thing, it allows you to scale each model independently, based on the demand for its specific task. For instance, if you have more requests for text generation than for entity recognition, you can scale up the text generation model without affecting the other models. Additionally, if one model fails, the other models can continue to operate, keeping the system available. That means you can swap out one model for a newer version or replace it with a different model to improve performance.</p>
+<p class="zh">这种程度的模块化有几个优点。首先，它让你能根据对各模型特定任务的需求独立扩缩。例如，如果文本生成的请求比实体识别多，你可以扩容文本生成模型而不影响其他模型。此外，如果一个模型故障，其他模型可以继续运行，保持系统可用。这意味着你可以把一个模型换成更新版本，或替换成另一个模型以提升性能。</p>
+<p class="en"><i>Choosing Between Kubernetes and Docker Swarm. Kubernetes’ self-healing capabilities offer a significant advantage in managing application deployment and scaling in that it can automatically detect failures and restore the desired state of your application without manual intervention. If a pod crashes or becomes unhealthy, Kubernetes’s ReplicaSet controller will automatically replace it by spinning up a new pod to maintain the desired number of replicas. The Pod Lifecycle controller performs health checks on containers within pods; if a pod fails to meet the criteria, it will be terminated and replaced. While Docker is an excellent containerization tool, it doesn’t offer the same level of orchestration or automated management that Kubernetes provides. Docker is focused on managing individual containers and offers some basic features for managing multiple containers, but it doesn’t inherently have the mechanisms to manage the complexity of large-scale distributed systems. This makes Kubernetes far more suitable for production environments that require continuous uptime and minimal manual intervention.</i></p>
+<p class="zh"><i>Kubernetes 与 Docker Swarm 之选。Kubernetes 的自愈能力在管理应用部署和扩缩方面是一大优势：它能自动检测故障、无需人工干预就恢复应用的期望状态。如果某个 pod 崩溃或不健康，Kubernetes 的 ReplicaSet 控制器会自动起一个新 pod 来替换它，以维持期望的副本数。Pod 生命周期控制器对 pod 内容器做健康检查；如果某个 pod 不达标，就会被终止并替换。Docker 虽是优秀的容器化工具，却不具备 Kubernetes 那样的编排或自动化管理能力。Docker 专注于管理单个容器，提供一些管理多容器的基础功能，但它本身不具备管理大规模分布式系统复杂性的机制。这使 Kubernetes 远更适合需要持续在线、最少人工干预的生产环境。</i></p>
+<div class="pagemark">— 原书第 177 页 —</div>
+<h3 id="optimrag"><span class="en">Optimizing RAG Pipelines</span><span class="zhh">优化 RAG 流水线</span></h3>
+<p class="en">Optimizing RAG pipelines is crucial for achieving efficiency and low latency in information retrieval and text generation tasks. Their performance depends heavily on how well you optimized the retrieval pipeline. This section will show you several techniques to significantly improve RAG performance.</p>
+<p class="zh">优化 RAG 流水线对于在信息检索和文本生成任务中实现高效率和低延迟至关重要。它们的性能很大程度上取决于你对检索流水线优化得有多好。本节展示几种显著提升 RAG 性能的技术。</p>
+<p class="en"><b>Asynchronous Querying.</b> Asynchronous querying is a powerful optimization technique that allows multiple queries to be processed concurrently, reducing the waiting time for each query. In traditional synchronous retrieval systems, each query is processed sequentially, but this causes delays when multiple requests are made at once. Asynchronous querying addresses this bottleneck by allowing the system to send queries to the vector store simultaneously and then wait for the responses in parallel.</p>
+<p class="zh"><b>异步查询。</b>异步查询是一种强大的优化技术，允许多个查询并发处理，减少每个查询的等待时间。在传统同步检索系统中，每个查询顺序处理，但同时发起多个请求时就会造成延迟。异步查询通过让系统同时向向量存储发送查询、再并行等待响应，来解决这一瓶颈。</p>
+<p class="en">Here’s an example of how you might implement asynchronous querying using Python:</p>
+<p class="zh">下面是用 Python 实现异步查询的例子：</p>
+<pre><code>import asyncio
+import faiss
+import numpy as np
+
+# Example function to retrieve vectors from FAISS
+async def retrieve_from_faiss(query_vector, index):
+    # Simulate a query to FAISS
+    return index.search(np.array([query_vector]), k=5)
+
+async def batch_retrieve(query_vectors, index):
+    tasks = [
+        retrieve_from_faiss(query_vector, index)
+        for query_vector in query_vectors
+    ]
+
+    results = await asyncio.gather(*tasks)
+    return results
+
+# Initialize FAISS index
+dimension = 128  # Example dimension
+index = faiss.IndexFlatL2(dimension)  # Use L2 distance for similarity search
+
+# Create some random query vectors
+query_vectors = np.random.rand(10, dimension).astype('float32')</code></pre>
+<div class="pagemark">— 原书第 178 页 —</div>
+<pre><code># Perform asynchronous retrieval
+results = asyncio.run(batch_retrieve(query_vectors, index))
+print(results)</code></pre>
+<p class="en">In this example, asyncio.gather() sends all queries to Facebook AI Similarity Search (FAISS) at once and waits for the responses asynchronously. This allows the system to process multiple queries in parallel, reducing the overall latency.</p>
+<p class="zh">本例中，asyncio.gather() 一次性把所有查询发给 Facebook AI 相似性搜索（FAISS），并异步等待响应。这让系统能并行处理多个查询，降低整体延迟。</p>
+<p class="en"><b>Combining Dense and Sparse Retrieval Methods.</b> Dense retrieval leverages embeddings to represent both queries and documents in a vector space, allowing for similarity searches based on vector distances. Sparse retrieval methods, such as TF-IDF, rely on term-based matching, which can capture more nuanced keyword-based relevance. Dense retrieval is particularly useful for capturing semantic relevance, while sparse retrieval excels at exact keyword matching. Combining both methods allows you to leverage the strengths of each for more accurate and comprehensive results. To do so, try the following code:</p>
+<p class="zh"><b>结合稠密与稀疏检索方法。</b>稠密检索利用嵌入在向量空间中表示查询和文档，从而基于向量距离做相似性搜索。稀疏检索方法（如 TF-IDF）依赖基于词项的匹配，能捕捉更细微的基于关键词的相关性。稠密检索尤其擅长捕捉语义相关性，而稀疏检索擅长精确关键词匹配。结合两者可以取长补短，获得更准确、更全面的结果。做法如下代码所示：</p>
+<pre><code>from whoosh.index import create_in
+from whoosh.fields import Schema, TEXT
+import faiss
+import numpy as np
+
+# Initialize FAISS index for dense retrieval
+dimension = 128
+dense_index = faiss.IndexFlatL2(dimension)
+
+# Simulate sparse retrieval with Whoosh
+schema = Schema(content=TEXT(stored=True))
+ix = create_in("index", schema)
+writer = ix.writer()
+
+writer.add_document(content="This is a test document.")
+writer.add_document(content="Another document for retrieval.")
+writer.commit()
+
+# Query for dense and sparse retrieval
+def retrieve_dense(query_vector):
+    return dense_index.search(np.array([query_vector]), k=5)
+
+def retrieve_sparse(query):
+    searcher = ix.searcher()
+    results = searcher.find("content", query)
+    return [hit['content'] for hit in results]
+
+query_vector = np.random.rand(1, dimension).astype('float32')
+sparse_query = "document"
+
+# Perform combined retrieval
+dense_results = retrieve_dense(query_vector)</code></pre>
+<div class="pagemark">— 原书第 179 页 —</div>
+<pre><code>sparse_results = retrieve_sparse(sparse_query)
+
+# Combine dense and sparse results
+combined_results = dense_results + sparse_results
+print("Combined results:", combined_results)</code></pre>
+<p class="en">In this example, FAISS handles dense vector-based retrieval, while Whoosh handles the sparse, keyword-based search. The results are then combined, offering both semantic and exact-match retrieval, which can improve the overall accuracy and completeness of the system’s responses.</p>
+<p class="zh">本例中，FAISS 处理基于稠密向量的检索，Whoosh 处理稀疏的基于关键词的搜索。结果随后合并，同时提供语义检索和精确匹配检索，从而提升系统回复的整体准确率和完整性。</p>
+<p class="en"><b>Cache Embeddings.</b> Instead of recomputing embeddings for frequently queried data, use embedding caching to let the system store embeddings and reuse them for subsequent queries. If the embeddings for a query are already stored in the cache, the system retrieves them; otherwise, it computes the embeddings and stores them for future use. This reduces the need to reprocess the same data, significantly decreasing response times and improving efficiency.</p>
+<p class="zh"><b>缓存嵌入。</b>不要为频繁查询的数据重复计算嵌入，而应使用嵌入缓存，让系统存储嵌入并在后续查询中复用。如果某个查询的嵌入已存在于缓存中，系统直接取回；否则计算嵌入并存起来供将来使用。这减少了重复处理相同数据的需要，显著缩短响应时间、提升效率。</p>
+<p class="en">Here’s an example of how to implement embedding caching:</p>
+<p class="zh">下面是实现嵌入缓存的例子：</p>
+<pre><code>import joblib
+import numpy as np
+from sentence_transformers import SentenceTransformer
+
+model = SentenceTransformer('MiniLM')
+
+# Check if embeddings are cached
+def get_embeddings(query):
+    cache_file = "embedding_cache.pkl"
+
+    # Check if cache exists
+    try:
+        embeddings_cache = joblib.load(cache_file)
+    except FileNotFoundError:
+        embeddings_cache = {}
+
+    # If query is not in cache, compute and cache the embeddings
+    if query not in embeddings_cache:
+        embedding = model.encode([query])
+        embeddings_cache[query] = embedding
+        joblib.dump(embeddings_cache, cache_file)  # Save cache to disk
+
+    return embeddings_cache[query]
+
+# Query
+query = "What is the capital of France?"
+embedding = get_embeddings(query)
+print("Embedding for the query:", embedding)</code></pre>
+<div class="pagemark">— 原书第 180 页 —</div>
+<p class="en"><b>Key–Value Caching.</b> Key–value (KV) caching works similarly to embedding caching. It stores the results of key-value pairs, where the key is a query or an intermediate result and the value is the corresponding response or computed result. This allows the system to retrieve precomputed results instead of recalculating them each time it processes a repeated query. KV caching speeds up both the retrieval and generation, especially in large-scale, high-traffic systems.</p>
+<p class="zh"><b>键值缓存。</b>键值（KV）缓存的工作方式与嵌入缓存类似。它存储键值对的结果，其中键是一个查询或中间结果，值是相应的回复或计算结果。这让系统能取回预计算结果，而不必在每次处理重复查询时重新计算。KV 缓存同时加速检索和生成，尤其在大规模、高流量系统中。</p>
+<p class="en">In RAG systems, KV caching is typically applied during the retrieval phase to speed up the query–response cycle. In the generation phase, the model may use versions or parts of cached documents and responses to build its final output. Let’s look at how to implement it in Python:</p>
+<p class="zh">在 RAG 系统中，KV 缓存通常应用于检索阶段，以加速查询-响应循环。在生成阶段，模型可能使用缓存文档和回复的某些版本或片段来构建最终输出。下面看看如何用 Python 实现：</p>
+<pre><code>import redis
+import numpy as np
+from sentence_transformers import SentenceTransformer
+
+# Step 1. Initialize Redis client
+r = redis.Redis(host='localhost', port=6379, db=0)
+
+# Step 2. Initialize sentence transformer model
+model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
+
+# Step 3. Function to get embeddings and cache them in Redis
+def get_embeddings_from_cache_or_compute(query):
+    cache_key = f"embedding:{query}"  # Key to store the query embeddings
+
+    # Check if the embedding exists in the cache
+    cached_embedding = r.get(cache_key)
+
+    if cached_embedding:
+        print("Cache hit, returning cached embedding")
+        return np.frombuffer(cached_embedding, dtype=np.float32)
+    else:
+        print("Cache miss, computing and storing embedding")
+        embedding = model.encode([query])
+        r.set(cache_key, embedding.tobytes())  # Store embedding in Redis
+        return embedding
+
+# Step 4. Query the system
+query = "What is the capital of France?"
+embedding = get_embeddings_from_cache_or_compute(query)
+print("Embedding:", embedding)</code></pre>
+<div class="pagemark">— 原书第 181 页 —</div>
+<p class="en">In step 1, you connect to a Redis instance running locally to store the key-value pairs for quick lookup.</p>
+<p class="zh">在第 1 步，你连接到本地运行的 Redis 实例，存储键值对以便快速查找。</p>
+<p class="en">Then step 3 stipulates that when a query is received, the code checks if the embeddings for that query are already cached in Redis by checking the key (embedding:<query>). If the cache contains the embeddings (called a cache hit), it directly retrieves and returns them. If not (a cache miss), the embeddings are computed using SentenceTransformer and then stored. The embeddings are stored in Redis as bytes using tobytes() to ensure they can be retrieved in the same format.</p>
+<p class="zh">第 3 步规定：当收到一个查询时，代码通过检查键（embedding:<query>）来判断该查询的嵌入是否已缓存在 Redis 中。如果缓存中有该嵌入（称为缓存命中），就直接取回并返回；如果没有（缓存未命中），就用 SentenceTransformer 计算嵌入再存起来。嵌入用 tobytes() 以字节形式存入 Redis，确保能以相同格式取回。</p>
+<p class="en">By reducing the need to recompute embeddings or model responses, KV caching can help lower compute costs and reduce the strain on both the retrieval and generation components, ensuring that the system remains responsive even under heavy load.</p>
+<p class="zh">通过减少重新计算嵌入或模型回复的需要，KV 缓存有助于降低计算成本、减轻检索和生成组件的压力，确保系统在高负载下仍保持响应。</p>
+<p class="en"><b>Scalability and Reusability.</b> Scalability and reusability are essential for handling high-traffic systems. In large-scale environments, the ability to scale your infrastructure efficiently is critical. Distributed inference orchestration allows the system to distribute the load across multiple nodes as traffic increases, with each handling a portion of the overall request. This reduces the chances of any single machine becoming overwhelmed. Kubernetes is usually used to manage the scaling process by automating task distribution and adjusting resources as needed.</p>
+<p class="zh"><b>可扩展性与可复用性。</b>可扩展性和可复用性对于处理高流量系统至关重要。在大规模环境中，高效扩展基础设施的能力是关键。分布式推理编排让系统在流量增长时把负载分发到多个节点，每个节点处理整体请求的一部分，从而降低任一机器被压垮的概率。Kubernetes 通常被用来管理扩缩过程，自动化任务分发并按需调整资源。</p>
+<p class="en">Reusable components make it easier to scale and manage your pipeline. They can be replicated across different services or projects quickly because they don’t require significant modifications. This is especially important in environments with constant updates and iterations. ZenML and similar orchestration tools allow you to create reusable pipelines, which you can modify or extend without disrupting the entire system. As you build new models or add new tasks, you can reuse existing components to maintain consistency and reduce development time.</p>
+<p class="zh">可复用组件让扩展和管理流水线更容易。它们可以快速在不同服务或项目间复制，因为不需要大量修改。这在不断更新和迭代的环境中尤其重要。ZenML 及类似编排工具让你创建可复用流水线，可以修改或扩展而不扰乱整个系统。当你构建新模型或添加新任务时，可以复用现有组件，保持一致性并缩短开发时间。</p>
+<p class="en">Distributed inference orchestration and reusable components work hand in hand to ensure that your system is both scalable and maintainable. When traffic spikes or new use cases arise, it’s important to know that you can rely on your existing infrastructure to handle the demands. This makes the entire system more resilient and agile in adapting to new challenges.</p>
+<p class="zh">分布式推理编排与可复用组件协同作用，确保系统既可扩展又可维护。当流量激增或出现新用例时，重要的是你能依赖现有基础设施应对需求。这让整个系统在适应新挑战时更有韧性、更敏捷。</p>
+<p class="en">Scalability and reusability are not just nice-to-haves but necessary features for high-traffic LLM systems. Distributed inference orchestration ensures that your system can scale to meet demand, while reusable components make it easier to maintain and expand the system over time. Together, they allow for efficient and effective handling of large-scale LLM deployments.</p>
+<p class="zh">可扩展性和可复用性不是可有可无的锦上添花，而是高流量 LLM 系统的必备特性。分布式推理编排确保系统能按需扩展，可复用组件让系统更易于长期维护和扩展。两者结合，就能高效而有效地处理大规模 LLM 部署。</p>
+<div class="pagemark">— 原书第 182 页 —</div>
+<h2 id="conclusion"><span class="en">Conclusion</span><span class="zhh">小结</span></h2>
+<p class="en">The right stack will depend on your project goals. Open source tools are great if you need flexibility and have technical resources to manage the setup. Managed services are perfect for teams that prioritize speed and simplicity. Carefully assess your needs before committing to a stack, as the right choice will save time, improve performance, and help you deploy more effectively.</p>
+<p class="zh">合适的技术栈取决于你的项目目标。如果你需要灵活性、并有技术资源来管理搭建，开源工具很好；如果团队更看重速度和简单，托管服务则是完美之选。在选定技术栈之前仔细评估你的需求，因为正确的选择会节省时间、提升性能，并帮你更有效地部署。</p>
+
+<nav class="pager"><a href="chapter-05.html">← 上一章</a><a href="index.html">返回目录</a><a href="chapter-07.html">下一章 →</a></nav>
+</main>
+<script>
+(function(){
+  // mobile (<=900px): TOC always starts as a closed drawer.
+  // desktop: default open, but honour the user's last collapsed/expanded choice.
+  var saved = null;
+  try{ saved = localStorage.getItem('llmops_nav'); }catch(e){}
+  if(window.innerWidth <= 900){
+    document.body.classList.remove('nav-open');
+  } else if(saved === 'closed'){
+    document.body.classList.remove('nav-open');
+  } else if(saved === 'open'){
+    document.body.classList.add('nav-open');
+  }
+  function persist(){
+    try{ localStorage.setItem('llmops_nav', document.body.classList.contains('nav-open') ? 'open' : 'closed'); }catch(e){}
+  }
+  window.toggleToc = function(){
+    document.body.classList.toggle('nav-open');
+    persist();
+  };
+  document.querySelectorAll('#toc a').forEach(function(a){
+    a.addEventListener('click', function(){
+      if(window.innerWidth <= 900){ document.body.classList.remove('nav-open'); }
+    });
+  });
+  persist();
+})();
+</script>
+</body>
+</html>
