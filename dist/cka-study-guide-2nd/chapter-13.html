@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Resource Requirements, Limits, and Quotas | 资源需求、限制与配额 | CKA 双语精读</title>
+<style>
+:root{
+  --accent:#2563eb; --zh-bg:#f0f6ff; --zh-border:#2563eb;
+  --code-bg:#0f172a; --code-ink:#e2e8f0; --ink:#1f2937;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0; background:#faf6f1; color:var(--ink);
+  font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  font-size:18px; line-height:1.75;
+}
+#toc-toggle{
+  position:fixed; top:14px; left:14px; z-index:100;
+  width:42px; height:42px; border:none; border-radius:8px;
+  background:var(--accent); color:#fff; font-size:20px; cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,.2);
+}
+nav#toc{
+  position:fixed; top:0; left:0; width:300px; height:100vh; overflow-y:auto;
+  background:#fff; border-right:1px solid #e5e7eb; padding:64px 16px 32px;
+  transition:transform .25s ease; z-index:90; font-size:14.5px;
+}
+nav#toc.hidden{transform:translateX(-300px);}
+nav#toc .toc-title{font-weight:700; font-size:15px; margin:0 0 12px; color:var(--accent);}
+nav#toc a{display:block; color:#374151; text-decoration:none; padding:4px 8px; border-radius:6px;}
+nav#toc a:hover{background:var(--zh-bg); color:var(--accent);}
+nav#toc a.l2{font-weight:700; margin-top:8px;}
+nav#toc a.l3{padding-left:28px; font-size:13.5px; color:#6b7280;}
+main{
+  margin-left:300px; max-width:900px; padding:48px 48px 80px;
+  transition:margin .25s ease;
+}
+body.toc-hidden main{margin-left:0;}
+.chapter-label{color:var(--accent); font-weight:700; letter-spacing:1px; font-size:14px; text-transform:uppercase;}
+h1{font-size:30px; line-height:1.3; margin:.3em 0 .2em;}
+h1 .h-zh{display:block; font-size:20px; color:#6b7280; font-weight:500; margin-top:4px;}
+h2{font-size:23px; margin:1.6em 0 .5em; padding-bottom:.3em; border-bottom:2px solid var(--accent); scroll-margin-top:20px;}
+h2 .h-zh{display:block; font-size:17px; color:#6b7280; font-weight:500;}
+h3{font-size:19px; margin:1.3em 0 .4em; color:#111827; scroll-margin-top:20px;}
+h3 .h-zh{font-size:15px; color:#6b7280; font-weight:500;}
+p.en{margin:.6em 0;}
+p.zh{
+  background:var(--zh-bg); border-left:4px solid var(--zh-border);
+  border-radius:0 8px 8px 0; padding:10px 16px; margin:.4em 0 1em;
+}
+ul,ol{margin:.5em 0 1em; padding-left:24px;}
+li{margin:.3em 0;}
+li .zh{
+  display:block; background:var(--zh-bg); border-left:4px solid var(--zh-border);
+  border-radius:0 8px 8px 0; padding:6px 12px; margin:.25em 0 .6em; font-size:.97em;
+}
+li .en{display:block;}
+figure{margin:1.2em 0; text-align:center;}
+figure img{max-width:100%; border:1px solid #e5e7eb; border-radius:8px;}
+figcaption{margin-top:.5em; font-size:14px; color:#6b7280;}
+figcaption .cap-zh{display:block;}
+.note{
+  background:#fffbeb; border:1px solid #fcd34d; border-radius:8px;
+  padding:12px 16px; margin:1.2em 0;
+}
+.note-title{font-weight:700; margin-bottom:.4em; color:#92400e;}
+.note-title .cap-zh{font-weight:500; color:#b45309; margin-left:8px;}
+.note p.en{font-size:.95em; margin:.3em 0;}
+.note p.zh{background:#fff; border-left-color:#f59e0b; margin:.3em 0 0;}
+pre{
+  background:var(--code-bg); color:var(--code-ink); padding:14px 16px;
+  border-radius:8px; overflow-x:auto; font-size:13.5px; line-height:1.55;
+  font-family:"SF Mono",Menlo,Consolas,monospace;
+}
+code{font-family:"SF Mono",Menlo,Consolas,monospace;}
+p code,li code,td code{
+  background:#fce7f3; color:#be185d; padding:1px 6px; border-radius:4px; font-size:.9em;
+}
+table{border-collapse:collapse; width:100%; margin:1em 0; font-size:15px;}
+th,td{border:1px solid #d1d5db; padding:6px 10px; text-align:left;}
+th{background:#f1f5f9;}
+tr.zh-row td{background:var(--zh-bg); border-left:3px solid var(--zh-border);}
+.page-marker{
+  text-align:center; color:#9ca3af; font-size:12px; letter-spacing:2px;
+  margin:2.2em 0 .5em;
+}
+.pager{
+  display:flex; justify-content:space-between; gap:12px; margin-top:3em;
+  border-top:1px solid #e5e7eb; padding-top:18px;
+}
+.pager a{
+  flex:1; text-align:center; padding:10px; border-radius:8px; text-decoration:none;
+  background:#fff; border:1px solid #e5e7eb; color:var(--ink); font-size:14px;
+}
+.pager a:hover{background:var(--accent); color:#fff;}
+.pager a.disabled{opacity:.4; pointer-events:none;}
+@media (max-width:900px){
+  nav#toc{transform:translateX(-300px); box-shadow:2px 0 16px rgba(0,0,0,.15);}
+  nav#toc.show{transform:translateX(0);}
+  main{margin-left:0; padding:60px 18px 60px;}
+}
+</style></head>
+<body>
+<button id="toc-toggle" aria-label="目录">☰</button>
+<nav id="toc"><div class="toc-title">目录</div><a class="l2" href="#resource-requirements">Working with Resource Requirements　使用资源需求</a><a class="l3" href="#container-requests">Defining Container Resource Requests　定义容器资源 requests</a><a class="l3" href="#container-limits">Defining Container Resource Limits　定义容器资源 limits</a><a class="l3" href="#requests-and-limits">Defining Container Resource Requests and Limits　同时定义容器资源 requests 与 limits</a><a class="l2" href="#resource-quotas">Working with Resource Quotas　使用 ResourceQuota</a><a class="l3" href="#creating-quota">Creating ResourceQuotas　创建 ResourceQuota</a><a class="l3" href="#describing-quota">Rendering ResourceQuota Details　查看 ResourceQuota 详情</a><a class="l3" href="#quota-runtime">Exploring a ResourceQuota's Runtime Behavior　探究 ResourceQuota 的运行时行为</a><a class="l2" href="#limit-ranges">Working with Limit Ranges　使用 LimitRange</a><a class="l3" href="#creating-limitrange">Creating LimitRanges　创建 LimitRange</a><a class="l3" href="#describing-limitrange">Rendering LimitRange Details　查看 LimitRange 详情</a><a class="l3" href="#limitrange-runtime">Exploring a LimitRange's Runtime Behavior　探究 LimitRange 的运行时行为</a><a class="l2" href="#summary">Summary　本章小结</a><a class="l2" href="#exam-essentials">Exam Essentials　考试要点</a><a class="l2" href="#exercises">Sample Exercises　样题练习</a></nav>
+<main>
+<div class="chapter-label">Chapter 13</div>
+<h1><span class="h-en">Resource Requirements, Limits, and Quotas</span><span class="h-zh">资源需求、限制与配额</span></h1>
+<p class="en">A workload executed in Pods will consume a certain amount of resources (e.g., CPU and memory). You should define resource requirements for those applications. On a container level, you can define a minimum amount of resources needed to run the application, as well as the maximum amount of resources the application is allowed to consume. Application developers should determine the right sizing with load tests or at runtime by monitoring the resource consumption.</p><p class="zh">在 Pod 中运行的工作负载会消耗一定数量的资源（例如 CPU 和内存）。你应当为这些应用定义资源需求。在容器层面，你可以定义运行应用所需的最小资源量，以及允许应用消耗的最大资源量。应用开发者应通过负载测试或在运行时监控资源消耗来确定合适的资源规格。</p><aside class="note"><div class="note-title"><span class="cap-en">Resource units in Kubernetes</span><span class="cap-zh">Kubernetes 中的资源单位</span></div><p class="en">Kubernetes measures CPU resources in millicores (m), also called millicpu, and memory resources in bytes. That's why you might see resources defined as 600m or 100Mi. For a deep dive on those resource units, it's worth cross-referencing "Resource units in Kubernetes" in the official documentation.</p><p class="zh">Kubernetes 以毫核（m，也称 millicpu）为单位度量 CPU 资源，以字节为单位度量内存资源。这就是为什么你会看到资源被定义为 600m 或 100Mi。要深入了解这些资源单位，建议参考官方文档中的"Resource units in Kubernetes"。</p></aside><aside class="note"><div class="note-title"><span class="cap-en">Coverage of Curriculum Objectives</span><span class="cap-zh">考试大纲覆盖范围</span></div><p class="en">This chapter addresses the following curriculum objective:
+
+- Configure Pod admission and scheduling (limits, node affinity, etc.)</p><p class="zh">本章对应以下考试大纲目标：
+
+- 配置 Pod 准入与调度（限制、节点亲和性等）</p></aside><p class="en">Kubernetes administrators can put measures in place to enforce the use of available resource capacity. This chapter discusses two Kubernetes primitives in this realm: the ResourceQuota and the LimitRange. The ResourceQuota defines aggregate resource constraints on a namespace level. A LimitRange is a policy that constrains or defaults the resource allocations for a single object of a specific type (such as for a Pod or a PersistentVolumeClaim).</p><p class="zh">Kubernetes 管理员可以采取措施来强制使用可用的资源容量。本章讨论这一领域的两个 Kubernetes 原语：ResourceQuota 和 LimitRange。ResourceQuota 在 namespace 级别定义聚合资源约束。LimitRange 是一种策略，用于约束或默认设定某个特定类型单个对象（例如 Pod 或 PersistentVolumeClaim）的资源分配。</p><div class="page-marker">— PDF p.187 —</div><h2 id="resource-requirements"><span class="h-en">Working with Resource Requirements</span><span class="h-zh">使用资源需求</span></h2><p class="en">It's recommended practice that you specify resource requests and limits for every container. Determining those resource expectations is not always easy, specifically for applications that haven't been exercised in a production environment yet. Load testing the application early during the development cycle can help with analyzing the resource needs. Further adjustments can be made by monitoring the application's resource consumption after deploying it to the cluster.</p><p class="zh">建议你为每个容器都指定资源 requests 和 limits。确定这些资源预期并不总是容易的，尤其是对那些尚未在生产环境中运行过的应用。在开发周期早期对应用进行负载测试，可以帮助分析资源需求。在把应用部署到集群后，还可以通过监控其资源消耗做进一步调整。</p><p class="en">Quality of Service (QoS) classes in Kubernetes automatically categorize Pods into Guaranteed, Burstable, or BestEffort tiers based on their resource requests and limits, determining their eviction priority when nodes experience resource pressure. While understanding QoS is valuable for production workloads, it's not explicitly covered in the CKA exam, which focuses more on practical resource management and Pod scheduling rather than the underlying eviction priorities.</p><p class="zh">Kubernetes 中的服务质量（QoS）级别会根据 Pod 的资源 requests 和 limits，自动把 Pod 划分为 Guaranteed、Burstable 或 BestEffort 三档，决定节点出现资源压力时它们被驱逐的优先级。虽然理解 QoS 对生产工作负载很有价值，但 CKA 考试并不明确考查它——考试更关注实用的资源管理和 Pod 调度，而非底层的驱逐优先级。</p><h3 id="container-requests"><span class="h-en">Defining Container Resource Requests</span><span class="h-zh">定义容器资源 requests</span></h3><p class="en">One metric that comes into play for workload scheduling is the resource request defined by the containers in a Pod. Commonly used resources that can be specified are CPU and memory. The scheduler ensures that the node's resource capacity can fulfill the resource requirements of the Pod. More specifically, the scheduler determines the sum of resource requests per resource type across all containers defined in the Pod and compares them with the node's available resources.</p><p class="zh">工作负载调度中起作用的一个指标是 Pod 中各容器定义的资源 request。常用的可指定资源是 CPU 和内存。调度器会确保节点的资源容量能够满足 Pod 的资源需求。更具体地说，调度器会把 Pod 中定义的所有容器按资源类型求和，并与节点的可用资源进行比较。</p><p class="en">Each container in a Pod can define its own resource requests. Table 13-1 describes the available options, including an example value.</p><p class="zh">Pod 中的每个容器都可以定义自己的资源 requests。表 13-1 描述了可用选项及示例值。</p><p class="en">Table 13-1. Options for resource requests</p><p class="zh">表 13-1. 资源 requests 的可选项</p><table><thead><tr><th>YAML attribute</th><th>Description</th><th>Example value</th></tr></thead><tbody><tr><td>spec.containers[].resources.requests.cpu</td><td>CPU resource type</td><td>500m (five hundred millicpu)</td></tr><tr class="zh-row"><td class="zh-cell">spec.containers[].resources.requests.cpu</td><td class="zh-cell">CPU 资源类型</td><td class="zh-cell">500m（五百毫核）</td></tr><tr><td>spec.containers[].resources.requests.memory</td><td>Memory resource type</td><td>64Mi (2^26 bytes)</td></tr><tr class="zh-row"><td class="zh-cell">spec.containers[].resources.requests.memory</td><td class="zh-cell">内存资源类型</td><td class="zh-cell">64Mi（2^26 字节）</td></tr><tr><td>spec.containers[].resources.requests.hugepages-&lt;size&gt;</td><td>Huge page resource type</td><td>hugepages-2Mi: 60Mi</td></tr><tr class="zh-row"><td class="zh-cell">spec.containers[].resources.requests.hugepages-&lt;size&gt;</td><td class="zh-cell">大页资源类型</td><td class="zh-cell">hugepages-2Mi: 60Mi</td></tr><tr><td>spec.containers[].resources.requests.ephemeral-storage</td><td>Ephemeral storage resource type</td><td>4Gi</td></tr><tr class="zh-row"><td class="zh-cell">spec.containers[].resources.requests.ephemeral-storage</td><td class="zh-cell">临时存储资源类型</td><td class="zh-cell">4Gi</td></tr></tbody></table><p class="en">To clarify the uses of these resource requests, we'll look at an example definition. The Pod YAML manifest shown in Example 13-1 defines two containers, each with its own resource requests. Any node that is allowed to run the Pod needs to be able to support a minimum memory capacity of 320 Mi and 1250 m CPU, the sum of resources across both containers.</p><p class="zh">为阐明这些资源 requests 的用途，我们来看一个示例定义。示例 13-1 中的 Pod YAML 清单定义了两个容器，每个都有自己的资源 requests。任何被允许运行该 Pod 的节点，都需要能支持至少 320 Mi 内存和 1250 m CPU——这是两个容器资源的总和。</p><div class="page-marker">— PDF p.188 —</div><p class="en">Example 13-1. Setting container resource requests</p><p class="zh">示例 13-1. 设置容器资源 requests</p><pre><code>apiVersion: v1
+kind: Pod
+metadata:
+  name: rate-limiter
+spec:
+  containers:
+  - name: business-app
+    image: bmuschko/nodejs-business-app:1.0.0
+    ports:
+    - containerPort: 8080
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "1"
+  - name: ambassador
+    image: bmuschko/nodejs-ambassador:1.0.0
+    ports:
+    - containerPort: 8081
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "250m"</code></pre><p class="en">It's certainly possible that a Pod cannot be scheduled due to insufficient resources available on the nodes. In those cases, the event log of the Pod will indicate this situation with the reasons PodExceedsFreeCPU or PodExceedsFreeMemory. For more information on how to troubleshoot and resolve this situation, see the relevant section in the documentation.</p><p class="zh">由于节点可用资源不足，Pod 无法被调度是完全可能发生的。在这些情况下，Pod 的事件日志会以原因 PodExceedsFreeCPU 或 PodExceedsFreeMemory 指出这一状况。关于如何排查和解决该情况的更多信息，请参阅文档中的相关章节。</p><h3 id="container-limits"><span class="h-en">Defining Container Resource Limits</span><span class="h-zh">定义容器资源 limits</span></h3><p class="en">Another metric you can set for a container is the resource limits. Resource limits ensure that the container cannot consume more than the allotted resource amounts. For example, you could express that the application running in the container should be constrained to 1,000 m of CPU and 512 Mi of memory.</p><p class="zh">你可以为容器设置的另一个指标是资源 limits。资源 limits 确保容器不能消耗超过分配额度的资源量。例如，你可以规定容器中运行的应用应被限制在 1000 m CPU 和 512 Mi 内存以内。</p><p class="en">Depending on the container runtime used by the cluster, exceeding any of the allowed resource limits results in a termination of the application process running in the container or results in the system preventing the allocation of resources beyond the limits. For an in-depth discussion on how resource limits are treated by the container runtime Docker Engine, see the documentation.</p><p class="zh">根据集群所使用的容器运行时不同，超出任何允许的资源 limits，要么会导致容器中运行的应用进程被终止，要么会让系统阻止分配超出 limits 的资源。关于容器运行时 Docker Engine 如何处理资源 limits 的深入讨论，请参阅文档。</p><p class="en">Table 13-2 describes the available options, including an example value.</p><p class="zh">表 13-2 描述了可用选项及示例值。</p><div class="page-marker">— PDF p.189 —</div><p class="en">Table 13-2. Options for resource limits</p><p class="zh">表 13-2. 资源 limits 的可选项</p><table><thead><tr><th>YAML attribute</th><th>Description</th><th>Example value</th></tr></thead><tbody><tr><td>spec.containers[].resources.limits.cpu</td><td>CPU resource type</td><td>500m (500 millicpu)</td></tr><tr class="zh-row"><td class="zh-cell">spec.containers[].resources.limits.cpu</td><td class="zh-cell">CPU 资源类型</td><td class="zh-cell">500m（500 毫核）</td></tr><tr><td>spec.containers[].resources.limits.memory</td><td>Memory resource type</td><td>64Mi (2^26 bytes)</td></tr><tr class="zh-row"><td class="zh-cell">spec.containers[].resources.limits.memory</td><td class="zh-cell">内存资源类型</td><td class="zh-cell">64Mi（2^26 字节）</td></tr><tr><td>spec.containers[].resources.limits.hugepages-&lt;size&gt;</td><td>Huge page resource type</td><td>hugepages-2Mi: 60Mi</td></tr><tr class="zh-row"><td class="zh-cell">spec.containers[].resources.limits.hugepages-&lt;size&gt;</td><td class="zh-cell">大页资源类型</td><td class="zh-cell">hugepages-2Mi: 60Mi</td></tr><tr><td>spec.containers[].resources.limits.ephemeral-storage</td><td>Ephemeral storage resource type</td><td>4Gi</td></tr><tr class="zh-row"><td class="zh-cell">spec.containers[].resources.limits.ephemeral-storage</td><td class="zh-cell">临时存储资源类型</td><td class="zh-cell">4Gi</td></tr></tbody></table><p class="en">Example 13-2 shows the definition of limits in action. Here, the container named business-app cannot use more than 256 Mi of memory. The container named ambassador defines a limit of 64 Mi of memory.</p><p class="zh">示例 13-2 展示了 limits 定义的实际用法。这里，名为 business-app 的容器不能使用超过 256 Mi 内存；名为 ambassador 的容器定义了 64 Mi 内存的 limit。</p><p class="en">Example 13-2. Setting container resource limits</p><p class="zh">示例 13-2. 设置容器资源 limits</p><pre><code>apiVersion: v1
+kind: Pod
+metadata:
+  name: rate-limiter
+spec:
+  containers:
+  - name: business-app
+    image: bmuschko/nodejs-business-app:1.0.0
+    ports:
+    - containerPort: 8080
+    resources:
+      limits:
+        memory: "256Mi"
+  - name: ambassador
+    image: bmuschko/nodejs-ambassador:1.0.0
+    ports:
+    - containerPort: 8081
+    resources:
+      limits:
+        memory: "64Mi"</code></pre><h3 id="requests-and-limits"><span class="h-en">Defining Container Resource Requests and Limits</span><span class="h-zh">同时定义容器资源 requests 与 limits</span></h3><p class="en">To provide Kubernetes with the full picture of your application's resource expectations, you must specify resource requests and limits for every container. Example 13-3 combines resource requests and limits in a single YAML manifest.</p><p class="zh">要让 Kubernetes 全面了解你应用的资源预期，必须为每个容器指定资源 requests 和 limits。示例 13-3 在同一份 YAML 清单中结合了 requests 和 limits。</p><p class="en">Example 13-3. Setting container resource requests and limits</p><p class="zh">示例 13-3. 同时设置容器资源 requests 和 limits</p><div class="page-marker">— PDF p.190 —</div><pre><code>apiVersion: v1
+kind: Pod
+metadata:
+  name: rate-limiter
+spec:
+  containers:
+  - name: business-app
+    image: bmuschko/nodejs-business-app:1.0.0
+    ports:
+    - containerPort: 8080
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "1"
+      limits:
+        memory: "256Mi"
+  - name: ambassador
+    image: bmuschko/nodejs-ambassador:1.0.0
+    ports:
+    - containerPort: 8081
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "250m"
+      limits:
+        memory: "64Mi"</code></pre><p class="en">Assigning static container resource requirements is an approximation process. You want to maximize an efficient utilization of resources in your Kubernetes cluster. Unfortunately, the Kubernetes documentation does not offer a lot of guidance on best practices. The blog post "For the Love of God, Stop Using CPU Limits on Kubernetes" by Natan Yellin provides the following guidance:</p><p class="zh">为容器分配静态资源需求是一个近似过程。你希望最大化 Kubernetes 集群中资源的有效利用率。遗憾的是，Kubernetes 文档并没有提供太多最佳实践方面的指导。Natan Yellin 的博文"For the Love of God, Stop Using CPU Limits on Kubernetes"给出了以下建议：</p><ul><li><span class="en">Always define memory requests.</span><span class="zh">始终定义内存 requests。</span></li><li><span class="en">Always define memory limits.</span><span class="zh">始终定义内存 limits。</span></li><li><span class="en">Always set your memory requests equal to your limit.</span><span class="zh">始终让内存 requests 等于 limit。</span></li><li><span class="en">Always define CPU requests.</span><span class="zh">始终定义 CPU requests。</span></li><li><span class="en">Do not use CPU limits.</span><span class="zh">不要使用 CPU limits。</span></li></ul><p class="en">After launching your application to production, you still need to monitor your application resource consumption patterns. Review resource consumption at runtime and keep track of actual scheduling behavior and potential undesired behaviors once the application receives load. Finding a happy medium can be challenging. Projects like Goldilocks and KRR emerged to provide recommendations and guidance on appropriately determining resource requests. Other options, like the container resize policies introduced in Kubernetes 1.27, allow for more fine-grained control over how containers' CPU and memory resources are resized automatically at runtime.</p><p class="zh">把应用发布到生产后，你仍需监控其资源消耗模式。在运行时审查资源消耗，并跟踪应用一旦接收负载后的实际调度行为和潜在的不良行为。找到一个平衡点可能颇具挑战。Goldilocks 和 KRR 等项目应运而生，为合理确定资源 requests 提供建议和指导。其他选择（如 Kubernetes 1.27 引入的容器 resize 策略）则允许更细粒度地控制运行时如何自动调整容器的 CPU 和内存资源。</p><div class="page-marker">— PDF p.191 —</div><h2 id="resource-quotas"><span class="h-en">Working with Resource Quotas</span><span class="h-zh">使用 ResourceQuota</span></h2><p class="en">The Kubernetes primitive ResourceQuota establishes the usable maximum amount of resources per namespace. Once put in place, the Kubernetes scheduler will take care of enforcing those rules. The following list should give you an idea of the rules that can be defined:</p><p class="zh">Kubernetes 原语 ResourceQuota 为每个 namespace 设定可用资源的上限。一旦设置，Kubernetes 调度器会负责强制执行这些规则。下面的列表让你了解可以定义哪些规则：</p><ul><li><span class="en">Setting an upper limit for the number of objects that can be created for a specific type (e.g., a maximum of three Pods)</span><span class="zh">为特定类型可创建的对象数量设定上限（例如最多 3 个 Pod）</span></li><li><span class="en">Limiting the total sum of compute resources (e.g., 3 Gi of RAM)</span><span class="zh">限制计算资源的总和（例如 3 Gi 内存）</span></li><li><span class="en">Expecting a Quality of Service (QoS) class for a Pod (e.g., BestEffort to indicate that the Pod must not make any memory or CPU limits or requests)</span><span class="zh">为 Pod 指定期望的服务质量（QoS）级别（例如 BestEffort，表示该 Pod 不得设置任何内存或 CPU 的 limits 或 requests）</span></li></ul><h3 id="creating-quota"><span class="h-en">Creating ResourceQuotas</span><span class="h-zh">创建 ResourceQuota</span></h3><p class="en">It's usually your task as a Kubernetes administrator to create ResourceQuotas. First, create the namespace the quota should apply to:</p><p class="zh">作为 Kubernetes 管理员，创建 ResourceQuota 通常是你的任务。首先，创建该配额要应用到的 namespace：</p><pre><code>$ kubectl create namespace team-awesome
+namespace/team-awesome created</code></pre><p class="en">Next, define the ResourceQuota in YAML. To demonstrate the functionality of a ResourceQuota, add constraints to the namespace, as shown in Example 13-4.</p><p class="zh">接下来，用 YAML 定义 ResourceQuota。为演示 ResourceQuota 的功能，给该 namespace 添加约束，如示例 13-4 所示。</p><p class="en">Example 13-4. Defining hard resource limits with a ResourceQuota</p><p class="zh">示例 13-4. 用 ResourceQuota 定义硬性资源限制</p><pre><code>apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: awesome-quota
+  namespace: team-awesome
+spec:
+  hard:
+    pods: 2
+    requests.cpu: "1"
+    requests.memory: 1024Mi
+    limits.cpu: "4"
+    limits.memory: 4096Mi</code></pre><ul><li><span class="en">Limit the number of Pods to 2.</span><span class="zh">把 Pod 数量限制为 2。</span></li><li><span class="en">Across all Pods in a nonterminal state, the sum of CPU requests cannot exceed this value.</span><span class="zh">所有处于非终止状态的 Pod 的 CPU requests 总和不能超过此值。</span></li></ul><div class="page-marker">— PDF p.192 —</div><ul><li><span class="en">Across all Pods in a nonterminal state, the sum of memory requests cannot exceed this value.</span><span class="zh">所有处于非终止状态的 Pod 的内存 requests 总和不能超过此值。</span></li></ul><p class="en">You're ready to create a ResourceQuota for the namespace:</p><p class="zh">你已准备好为该 namespace 创建 ResourceQuota：</p><pre><code>$ kubectl create -f awesome-quota.yaml
+resourcequota/awesome-quota created</code></pre><h3 id="describing-quota"><span class="h-en">Rendering ResourceQuota Details</span><span class="h-zh">查看 ResourceQuota 详情</span></h3><p class="en">You can render a table overview of used resources versus hard limits using the kubectl describe command:</p><p class="zh">你可以使用 kubectl describe 命令查看已用资源与硬性限制的表格概览：</p><pre><code>$ kubectl describe resourcequota awesome-quota -n team-awesome
+Name:            awesome-quota
+Namespace:       team-awesome
+Resource         Used  Hard
+---------         ----  ----
+limits.cpu       0     4
+limits.memory    0     4Gi
+pods             0     2
+requests.cpu     0     1
+requests.memory  0     1Gi</code></pre><p class="en">The Hard column lists the same values you provided with the ResourceQuota definition. Those values won't change as long as you don't modify the object's specification. Under the Used column, you can find the actual aggregate resource consumption within the namespace. At this time, all values are 0 given that no Pods have been created yet.</p><p class="zh">Hard 列列出的就是你在 ResourceQuota 定义中提供的相同值。只要你不修改对象的规格，这些值就不会改变。在 Used 列下，你可以看到该 namespace 内实际的聚合资源消耗。此时由于尚未创建任何 Pod，所有值都为 0。</p><h3 id="quota-runtime"><span class="h-en">Exploring a ResourceQuota's Runtime Behavior</span><span class="h-zh">探究 ResourceQuota 的运行时行为</span></h3><p class="en">With the quota rules in place for the namespace team-awesome, we'll want to see its enforcement in action. We'll start by creating more than the maximum number of Pods, which is two. To test this, we can create Pods with any definition we like. For example, we use a bare-bones definition that runs the image nginx:1.25.3 in the container, as shown in Example 13-5.</p><p class="zh">既然 namespace team-awesome 已经设置了配额规则，我们就想看看它的强制生效。我们先创建超过最大数量（即 2 个）的 Pod。为测试这一点，我们可以用任意定义创建 Pod。例如，我们用一份最简定义，在容器中运行镜像 nginx:1.25.3，如示例 13-5 所示。</p><p class="en">Example 13-5. A Pod without resource requirements</p><p class="zh">示例 13-5. 一个没有资源需求的 Pod</p><pre><code>apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  namespace: team-awesome
+spec:
+  containers:
+  - image: nginx:1.25.3
+    name: nginx</code></pre><div class="page-marker">— PDF p.193 —</div><p class="en">From that YAML definition stored in nginx-pod.yaml, let's create a Pod and see what happens. In fact, Kubernetes will reject the creation of the object with the following error message:</p><p class="zh">我们从存储在 nginx-pod.yaml 中的这份 YAML 定义创建一个 Pod，看看会发生什么。事实上，Kubernetes 会拒绝创建该对象，并给出以下错误信息：</p><pre><code>$ kubectl apply -f nginx-pod.yaml
+Error from server (Forbidden): error when creating "nginx-pod.yaml": pods "nginx" is forbidden: failed quota: awesome-quota: must specify limits.cpu for: nginx; limits.memory for: nginx; requests.cpu for: nginx; requests.memory for: nginx</code></pre><p class="en">Because we defined minimum and maximum resource quotas for objects in the namespace, we have to ensure that Pod objects actually define resource requests and limits. Modify the initial definition by updating the instruction under resources, as shown in Example 13-6.</p><p class="zh">由于我们为该 namespace 中的对象定义了最小和最大资源配额，就必须确保 Pod 对象确实定义了资源 requests 和 limits。修改初始定义，更新 resources 下的指令，如示例 13-6 所示。</p><p class="en">Example 13-6. A Pod with resource requirements</p><p class="zh">示例 13-6. 一个带资源需求的 Pod</p><pre><code>apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  namespace: team-awesome
+spec:
+  containers:
+  - image: nginx:1.25.3
+    name: nginx
+    resources:
+      requests:
+        cpu: "0.5"
+        memory: "512Mi"
+      limits:
+        cpu: "1"
+        memory: "1024Mi"</code></pre><p class="en">We should be able to create two uniquely named Pods—nginx1 and nginx2—with that manifest; the combined resource requirements still fit with the boundaries defined in the ResourceQuota:</p><p class="zh">用这份清单，我们应当能够创建两个不同名字的 Pod——nginx1 和 nginx2；它们合并起来的资源需求仍然落在 ResourceQuota 定义的边界之内：</p><pre><code>$ kubectl apply -f nginx-pod1.yaml
+pod/nginx1 created
+$ kubectl apply -f nginx-pod2.yaml
+pod/nginx2 created
+$ kubectl describe resourcequota awesome-quota -n team-awesome
+Name:            awesome-quota
+Namespace:       team-awesome
+Resource         Used  Hard
+---------         ----  ----
+limits.cpu       2     4
+limits.memory    2Gi   4Gi
+pods             2     2</code></pre><div class="page-marker">— PDF p.194 —</div><pre><code>requests.cpu     1     1
+requests.memory  1Gi   1Gi</code></pre><p class="en">You may be able to imagine what would happen if we tried to create another Pod with the definition of nginx1 and nginx2. It will fail for two reasons. The first reason is that we're not allowed to create a third Pod in the namespace, as the maximum number is set to two. The second reason is that we'd exceed the allotted maximum for requests.cpu and requests.memory. The following error message provides us with this information:</p><p class="zh">你大概能想象，如果我们试图用 nginx1 和 nginx2 的定义再创建一个 Pod，会发生什么。它会因两个原因失败。第一个原因是我们不允许在该 namespace 中创建第三个 Pod，因为最大数量被设为 2。第二个原因是我们会超出 requests.cpu 和 requests.memory 的分配上限。以下错误信息向我们提供了这些情况：</p><pre><code>$ kubectl apply -f nginx-pod3.yaml
+Error from server (Forbidden): error when creating "nginx-pod3.yaml": pods "nginx3" is forbidden: exceeded quota: awesome-quota, requested: pods=1,requests.cpu=500m,requests.memory=512Mi, used: pods=2,requests.cpu=1,requests.memory=1Gi, limited: pods=2,requests.cpu=1,requests.memory=1Gi</code></pre><h2 id="limit-ranges"><span class="h-en">Working with Limit Ranges</span><span class="h-zh">使用 LimitRange</span></h2><p class="en">In the previous section, you learned how a resource quota can restrict the consumption of resources within a specific namespace in aggregate. For individual Pod objects, the resource quota cannot set any constraints. That's where the limit range comes in. The enforcement of LimitRange rules happens during the admission control phase when processing an API request.</p><p class="zh">在上一节中，你了解了资源配额如何从聚合层面限制特定 namespace 内的资源消耗。但对单个 Pod 对象，资源配额无法设置任何约束。这正是 limit range 的用武之地。LimitRange 规则的强制生效发生在处理 API 请求时的准入控制阶段。</p><aside class="note"><div class="note-title"><span class="cap-en">Defining more than one LimitRange in a namespace</span><span class="cap-zh">在一个 namespace 中定义多个 LimitRange</span></div><p class="en">It is best to create only a single LimitRange object per namespace. Default resource requests and limits specified by multiple LimitRange objects in the same namespace causes nondeterministic selection of those rules. Only one of the default definitions will win, but you can't predict which one.</p><p class="zh">最好每个 namespace 只创建一个 LimitRange 对象。同一 namespace 中由多个 LimitRange 对象指定的默认资源 requests 和 limits，会导致这些规则的选择不确定。最终只有一个默认定义会生效，但你无法预测是哪一个。</p></aside><p class="en">The LimitRange is a Kubernetes primitive that constrains or defaults the resource allocations for specific object types:</p><p class="zh">LimitRange 是一个 Kubernetes 原语，用于约束或默认设定特定对象类型的资源分配：</p><ul><li><span class="en">Enforces minimum and maximum compute resource usage per Pod or container in a namespace</span><span class="zh">强制规定 namespace 中每个 Pod 或容器的计算资源用量上下限</span></li><li><span class="en">Enforces minimum and maximum storage request per PersistentVolumeClaim in a namespace</span><span class="zh">强制规定 namespace 中每个 PersistentVolumeClaim 的存储 request 上下限</span></li></ul><div class="page-marker">— PDF p.195 —</div><ul><li><span class="en">Enforces a ratio between request and limit for a resource in a namespace</span><span class="zh">强制规定 namespace 中某资源的 request 与 limit 之间的比例</span></li><li><span class="en">Sets default requests/limits for compute resources in a namespace and automatically injects them into containers at runtime</span><span class="zh">为 namespace 中的计算资源设定默认 requests/limits，并在运行时自动注入容器</span></li></ul><h3 id="creating-limitrange"><span class="h-en">Creating LimitRanges</span><span class="h-zh">创建 LimitRange</span></h3><p class="en">The LimitRange offers a list of configurable constraint attributes. All are described in great detail in the Kubernetes API documentation for a LimitRangeSpec. Example 13-7 shows a YAML manifest for a LimitRange that uses some of the constraint attributes.</p><p class="zh">LimitRange 提供了一系列可配置的约束属性。所有这些属性都在 LimitRangeSpec 的 Kubernetes API 文档中有详细描述。示例 13-7 展示了一份使用了部分约束属性的 LimitRange YAML 清单。</p><p class="en">Example 13-7. A LimitRange defining multiple constraint criteria</p><p class="zh">示例 13-7. 一个定义了多项约束条件的 LimitRange</p><pre><code>apiVersion: v1
+kind: LimitRange
+metadata:
+  name: cpu-resource-constraint
+spec:
+  limits:
+  - type: Container
+    defaultRequest:
+      cpu: 200m
+    default:
+      cpu: 200m
+    min:
+      cpu: 100m
+    max:
+      cpu: "2"</code></pre><ul><li><span class="en">The context to apply the constraints to (in this case, to a container running in a Pod)</span><span class="zh">应用约束的对象上下文（在本例中，即 Pod 中运行的容器）</span></li><li><span class="en">The default CPU resource request value assigned to a container if not provided</span><span class="zh">若未提供，则分配给容器的默认 CPU 资源 request 值</span></li><li><span class="en">The default CPU resource limit value assigned to a container if not provided</span><span class="zh">若未提供，则分配给容器的默认 CPU 资源 limit 值</span></li><li><span class="en">The minimum and maximum CPU resource request and limit value assignable to a container</span><span class="zh">可分配给容器的最小和最大 CPU 资源 request 与 limit 值</span></li></ul><p class="en">As usual, we can create an object from the manifest with the kubectl create or kubectl apply command. The definition of the LimitRange has been stored in the file cpu-resource-constraint-limitrange.yaml:</p><p class="zh">与往常一样，我们可以用 kubectl create 或 kubectl apply 命令从清单创建对象。该 LimitRange 的定义已存储在文件 cpu-resource-constraint-limitrange.yaml 中：</p><pre><code>$ kubectl apply -f cpu-resource-constraint.yaml
+limitrange/cpu-resource-constraint created</code></pre><div class="page-marker">— PDF p.196 —</div><p class="en">The constraints will be applied automatically when creating new objects. Changing the constraints for an existing LimitRange object won't have any effect on already-running Pods.</p><p class="zh">创建新对象时，这些约束会自动应用。更改现有 LimitRange 对象的约束，不会对已经在运行的 Pod 产生任何影响。</p><h3 id="describing-limitrange"><span class="h-en">Rendering LimitRange Details</span><span class="h-zh">查看 LimitRange 详情</span></h3><p class="en">Live LimitRange objects can be inspected using the kubectl describe command. The following command renders the details of the LimitRange object named cpu-resource-constraint:</p><p class="zh">在线的 LimitRange 对象可以用 kubectl describe 命令查看。以下命令查看名为 cpu-resource-constraint 的 LimitRange 对象的详情：</p><pre><code>$ kubectl describe limitrange cpu-resource-constraint
+Name:       cpu-resource-constraint
+Namespace:  default
+Type        Resource  Min   Max  Default Request  Default Limit   ...
+----        --------  ---   ---  ---------------  -------------
+Container   cpu       100m  2    200m             200m            ...</code></pre><p class="en">The output of the command renders each limit constraint on a single line. Any constraint attribute that has not been set explicitly by the object will show a dash character (-) as the assigned value.</p><p class="zh">该命令的输出把每条 limit 约束显示在单独一行。对象未显式设置的任何约束属性，其赋值会显示为短横线（-）。</p><h3 id="limitrange-runtime"><span class="h-en">Exploring a LimitRange's Runtime Behavior</span><span class="h-zh">探究 LimitRange 的运行时行为</span></h3><p class="en">Let's demonstrate what effect the LimitRange has on the creation of Pods. We will walk through two different use cases:</p><p class="zh">我们来演示 LimitRange 对创建 Pod 有什么影响。我们将走两个不同的用例：</p><ul><li><span class="en">Automatically setting resource requirements if they have not been provided by the Pod definition</span><span class="zh">如果 Pod 定义未提供资源需求，则自动设置</span></li><li><span class="en">Preventing the creation of a Pod if the declared resource requirements are forbidden by the LimitRange</span><span class="zh">如果声明的资源需求被 LimitRange 禁止，则阻止创建 Pod</span></li></ul><p class="en">Setting default resource requirements</p><p class="zh">设置默认资源需求</p><p class="en">The LimitRange defines a default CPU resource request of 200 m and a default CPU resource limit of 200 m. That means if a Pod is about to be created, and it doesn't define a CPU resource request and limit, the LimitRange will automatically assign the default values.</p><p class="zh">该 LimitRange 定义了默认 CPU 资源 request 为 200 m、默认 CPU 资源 limit 为 200 m。这意味着如果即将创建一个 Pod，而它没有定义 CPU 资源 request 和 limit，LimitRange 就会自动分配这些默认值。</p><p class="en">Example 13-8 shows a Pod definition without resource requirements.</p><p class="zh">示例 13-8 展示了一个没有资源需求的 Pod 定义。</p><p class="en">Example 13-8. A Pod defining no resource requirements</p><p class="zh">示例 13-8. 一个未定义资源需求的 Pod</p><div class="page-marker">— PDF p.197 —</div><pre><code>apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-without-resource-requirements
+spec:
+  containers:
+  - image: nginx:1.25.3
+    name: nginx</code></pre><p class="en">Creating the object from the contents stored in the file nginx-without-resource-requirements.yaml will work as expected:</p><p class="zh">从文件 nginx-without-resource-requirements.yaml 中存储的内容创建对象，将按预期工作：</p><pre><code>$ kubectl apply -f nginx-without-resource-requirements.yaml
+pod/nginx-without-resource-requirements created</code></pre><p class="en">The Pod object will be mutated in two ways. First, the default resource requirements set by the LimitRange are applied. Second, an annotation with the key kubernetes.io/limit-ranger will be added that provides meta information on what has been changed. You can find both pieces of information in the output of the describe command:</p><p class="zh">该 Pod 对象会以两种方式被修改。第一，应用了 LimitRange 设置的默认资源需求。第二，会添加一个键为 kubernetes.io/limit-ranger 的注解，提供关于发生了哪些变更的元信息。你可以在 describe 命令的输出中同时找到这两部分信息：</p><pre><code>$ kubectl describe pod nginx-without-resource-requirements
+...
+Annotations:      kubernetes.io/limit-ranger: LimitRanger plugin set: cpu request for container nginx; cpu limit for container nginx
+...
+Containers:
+  nginx:
+    ...
+    Limits:
+      cpu: 200m
+    Requests:
+      cpu: 200m
+...</code></pre><p class="en">Enforcing resource requirements</p><p class="zh">强制资源需求</p><p class="en">The LimitRange can enforce resource limits as well. For the LimitRange object we created earlier, the minimum amount of CPU was set to 100 m, and the maximum amount of CPU was set to 2. To see the enforcement behavior in action, we'll create a new Pod as shown in Example 13-9.</p><p class="zh">LimitRange 也可以强制资源 limits。对于我们先前创建的 LimitRange 对象，CPU 最小量被设为 100 m，最大量被设为 2。为看到强制行为的实际效果，我们将创建一个新 Pod，如示例 13-9 所示。</p><p class="en">Example 13-9. A Pod defining CPU resource requests and limits</p><p class="zh">示例 13-9. 一个定义了 CPU 资源 requests 和 limits 的 Pod</p><pre><code>apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-with-resource-requirements
+spec:
+  containers:
+  - image: nginx:1.25.3
+    name: nginx
+    resources:
+      requests:</code></pre><div class="page-marker">— PDF p.198 —</div><pre><code>        cpu: "50m"
+      limits:
+        cpu: "3"</code></pre><p class="en">The resource requirements of this Pod do not follow the constraints expected by the LimitRange object. The CPU resource request is less than 100 m, and the CPU resource limit is greater than 2. As a result, the object won't be created and an appropriate error message will be rendered:</p><p class="zh">这个 Pod 的资源需求不满足 LimitRange 对象所预期的约束。CPU 资源 request 小于 100 m，而 CPU 资源 limit 大于 2。因此，该对象不会被创建，并会给出相应的错误信息：</p><pre><code>$ kubectl apply -f nginx-with-resource-requirements.yaml
+Error from server (Forbidden): error when creating "nginx-with-resource-requirements.yaml": pods "nginx-with-resource-requirements" is forbidden: [minimum cpu usage per Container is 100 m, but request is 50 m, maximum cpu usage per Container is 2, but limit is 3]</code></pre><p class="en">The error message provides some guidance on expected resource definitions. Unfortunately, the message doesn't point to the name of the LimitRange object enforcing those expectations. Proactively check if a LimitRange object has been created for the namespace and what parameters have been set using kubectl get limitranges.</p><p class="zh">该错误信息对预期的资源定义给出了一些指引。遗憾的是，它并没有指出强制这些预期的 LimitRange 对象的名字。你应主动用 kubectl get limitranges 检查该 namespace 是否创建了 LimitRange 对象、设置了哪些参数。</p><h2 id="summary"><span class="h-en">Summary</span><span class="h-zh">本章小结</span></h2><p class="en">Resource requests are one of the many factors that the kube-scheduler algorithm considers when making decisions about which node a Pod can be scheduled. A container can specify requests using spec.containers[].resources.requests. The scheduler chooses a node based on its available hardware capacity. The resource limits ensure that the container cannot consume more than the allotted resource amounts. Limits can be defined for a container using the attribute spec.containers[].resources.limits. Should an application consume more than the allowed amount of resources (e.g., due to a memory leak in the implementation), the container runtime will likely terminate the application process.</p><p class="zh">资源 requests 是 kube-scheduler 算法在决定 Pod 可以调度到哪个节点时所考虑的众多因素之一。容器可以使用 spec.containers[].resources.requests 指定 requests。调度器根据节点可用的硬件容量选择节点。资源 limits 确保容器不能消耗超过分配额度的资源量。可以使用属性 spec.containers[].resources.limits 为容器定义 limits。如果应用消耗了超过允许量的资源（例如由于实现中的内存泄漏），容器运行时很可能会终止该应用进程。</p><p class="en">A resource quota defines the computing resources (e.g., CPU, RAM, and ephemeral storage) available to a namespace to prevent unbounded consumption by Pods running it. Accordingly, Pods have to work within those resource boundaries by declaring their minimum and maximum resource expectations. You can also limit the number of resource types (like Pods, Secrets, or ConfigMaps) that are allowed to be created. The Kubernetes scheduler will enforce those boundaries upon a request for object creation.</p><p class="zh">资源配额定义了 namespace 可用的计算资源（例如 CPU、内存和临时存储），以防止其中运行的 Pod 无限制地消耗资源。相应地，Pod 必须通过声明其最小和最大资源预期，在这些资源边界内工作。你还可以限制允许创建的资源类型数量（如 Pod、Secret 或 ConfigMap）。Kubernetes 调度器会在对象创建请求时强制这些边界。</p><p class="en">The limit range is different from the ResourceQuota in that it defines resource constraints for a single object of a specific type. It can also help with governance for objects by specifying resource default values that should be applied automatically should the API create request not provide the information.</p><p class="zh">limit range 与 ResourceQuota 的不同之处在于，它为特定类型的单个对象定义资源约束。它还可以通过指定默认资源值来帮助治理对象——当 API 创建请求未提供该信息时，自动应用这些默认值。</p><div class="page-marker">— PDF p.199 —</div><h2 id="exam-essentials"><span class="h-en">Exam Essentials</span><span class="h-zh">考试要点</span></h2><ul><li><span class="en">Experience the effects of resource requirements on scheduling and autoscaling. A container defined by a Pod can specify resource requests and limits. Work through scenarios where you define those requirements individually and together for single- and multi-container Pods. Upon creation of the Pod, you should be able to see the effects on scheduling the object on a node. Furthermore, practice how to identify the available resource capacity of a node.</span><span class="zh">体验资源需求对调度和自动扩缩容的影响。Pod 定义的容器可以指定资源 requests 和 limits。通过各种场景，为单容器和多容器 Pod 分别或共同定义这些需求。Pod 创建后，你应能看到它在节点上调度的效果。此外，练习如何识别节点的可用资源容量。</span></li><li><span class="en">Understand the purpose and runtime effects of resource quotas. A ResourceQuota defines the resource boundaries for objects living within a namespace. The most commonly used boundaries apply to computing resources. Practice defining them, and understand their effect on the creation of Pods. It's important to know the command for listing the hard requirements of a ResourceQuota and the resources currently in use. You will find that a ResourceQuota offers other options. Discover them in more detail for a broader exposure to the topic.</span><span class="zh">理解资源配额的用途和运行时影响。ResourceQuota 为 namespace 内的对象定义资源边界。最常用的边界应用于计算资源。练习定义它们，并理解它们对创建 Pod 的影响。重要的是要知道列出 ResourceQuota 硬性要求和当前已用资源的命令。你会发现 ResourceQuota 还提供其他选项。更深入地了解它们，以更广泛地接触该主题。</span></li><li><span class="en">Understand the purpose and runtime effects of limit ranges. A LimitRange can specify resource constraints and defaults of specific primitives. Should you run into a situation where you receive an error message upon creation of an object, check if a LimitRange object enforces those constraints. Unfortunately, the error message does not point out the object that enforces it, so you may have to proactively list LimitRange objects to identify the constraints.</span><span class="zh">理解 limit range 的用途和运行时影响。LimitRange 可以指定特定原语的资源约束和默认值。如果你在创建对象时遇到错误信息，检查是否有 LimitRange 对象在强制这些约束。遗憾的是，错误信息并不指出是哪个对象在强制，因此你可能需要主动列出 LimitRange 对象来识别这些约束。</span></li></ul><h2 id="exercises"><span class="h-en">Sample Exercises</span><span class="h-zh">样题练习</span></h2><p class="en">Solutions to these exercises are available in Appendix A.</p><p class="zh">这些练习的解答见附录 A。</p><ol><li><span class="en">You have been tasked with creating a Pod for running an application in a container. During application development, you ran a load test for figuring out the minimum amount of resources needed and the maximum amount of resources the application is allowed to grow to. Define those resource requests and limits for the Pod. Define a Pod named hello-world running the container image bmuschko/nodejs-hello-world:1.0.0. The container exposes the port 3000. Add a volume of type emptyDir and mount it in the container path /var/log. For the container, specify the following minimum number of resources: CPU: 100 m; Memory: 500 Mi; Ephemeral storage: 1 Gi.</span><span class="zh">你被指派创建一个 Pod，用于在容器中运行应用。在应用开发期间，你运行了一次负载测试，以弄清楚所需的最小资源量，以及应用允许增长到的最大资源量。为该 Pod 定义这些资源 requests 和 limits。创建一个名为 hello-world 的 Pod，运行容器镜像 bmuschko/nodejs-hello-world:1.0.0。容器暴露端口 3000。添加一个 emptyDir 类型的 volume，并挂载到容器路径 /var/log。为该容器指定以下最小资源量：CPU：100 m；内存：500 Mi；临时存储：1 Gi。</span></li></ol><div class="page-marker">— PDF p.200 —</div><ol><li><span class="en">For the container, specify the following maximum number of resources: Memory: 500 Mi; Ephemeral storage: 2 Gi. Create the Pod from the YAML manifest. Inspect the Pod details. Which node does the Pod run on?</span><span class="zh">为该容器指定以下最大资源量：内存：500 Mi；临时存储：2 Gi。从 YAML 清单创建 Pod。查看 Pod 详情。该 Pod 运行在哪个节点上？</span></li><li><span class="en">In this exercise, you will create a resource quota with specific CPU and memory limits for a new namespace. Pods created in the namespace will have to adhere to those limits. Create a ResourceQuota named app under the namespace rq-demo using the following YAML definition in the file resourcequota.yaml:</span><span class="zh">在本练习中，你将为一个新 namespace 创建一个具有特定 CPU 和内存限制的资源配额。在该 namespace 中创建的 Pod 必须遵守这些限制。使用文件 resourcequota.yaml 中的以下 YAML 定义，在 namespace rq-demo 下创建一个名为 app 的 ResourceQuota：</span></li></ol><pre><code>apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: app
+spec:
+  hard:
+    pods: "2"
+    requests.cpu: "2"
+    requests.memory: 500Mi</code></pre><ol><li><span class="en">Create a new Pod that exceeds the limits of the resource quota requirements, e.g., by defining 1 Gi of memory, but stays below the CPU, e.g., 0.5. Write down the error message. Change the request limits to fulfill the requirements to ensure that the Pod can be created successfully. Write down the output of the command that renders the used amount of resources for the namespace.</span><span class="zh">创建一个超出资源配额限制的新 Pod，例如定义 1 Gi 内存，但 CPU 仍低于限制，例如 0.5。记下错误信息。修改 request 限制以满足要求，确保 Pod 能被成功创建。记下显示该 namespace 已用资源量的命令输出。</span></li><li><span class="en">A LimitRange can restrict resource consumption for Pods in a namespace, and assign default computing resources if no resource requirements have been defined. You will practice the effects of a LimitRange on the creation of a Pod in different scenarios. Navigate to the directory app-a/ch13/limitrange of the checked-out GitHub repository bmuschko/cka-study-guide. Inspect the YAML manifest definition in the file setup.yaml. Create the objects from the YAML manifest file. Create a new Pod named pod-without-resource-requirements in the namespace d92 that uses the container image nginx:1.23.4-alpine without any resource requirements. Inspect the Pod details. What resource definitions do you expect to be assigned? Create a new Pod named pod-with-more-cpu-resource-requirements in the namespace d92 that uses the container image nginx:1.23.4-alpine with a CPU resource request of 400 m and limits of 1.5. What runtime behavior do you expect to see?</span><span class="zh">LimitRange 可以限制 namespace 中 Pod 的资源消耗，并在未定义资源需求时分配默认计算资源。你将在不同场景中练习 LimitRange 对创建 Pod 的影响。进入已克隆的 GitHub 仓库 bmuschko/cka-study-guide 的目录 app-a/ch13/limitrange。查看文件 setup.yaml 中的 YAML 清单定义。从该 YAML 清单文件创建对象。在 namespace d92 中创建一个名为 pod-without-resource-requirements 的新 Pod，使用容器镜像 nginx:1.23.4-alpine，不设任何资源需求。查看 Pod 详情。你预计会被分配哪些资源定义？在 namespace d92 中创建一个名为 pod-with-more-cpu-resource-requirements 的新 Pod，使用容器镜像 nginx:1.23.4-alpine，CPU 资源 request 为 400 m、limit 为 1.5。你预计会看到什么运行时行为？</span></li></ol><div class="page-marker">— PDF p.201 —</div><ol><li><span class="en">Create a new Pod named pod-with-less-cpu-resource-requirements in the namespace d92 that uses the container image nginx:1.23.4-alpine with a CPU resource request of 350 m and limits of 400 m. What runtime behavior do you expect to see?</span><span class="zh">在 namespace d92 中创建一个名为 pod-with-less-cpu-resource-requirements 的新 Pod，使用容器镜像 nginx:1.23.4-alpine，CPU 资源 request 为 350 m、limit 为 400 m。你预计会看到什么运行时行为？</span></li></ol><div class="page-marker">— PDF p.202 —</div>
+<div class="pager"><a href="chapter-12.html">← 第 12 章：工作负载扩缩容</a><a href="index.html">返回目录</a><a href="chapter-14.html">第 14 章：Pod 调度 →</a></div>
+</main>
+<script>
+const btn=document.getElementById('toc-toggle');
+const toc=document.getElementById('toc');
+const mq=window.matchMedia('(max-width:900px)');
+function apply(){
+  if(mq.matches){toc.classList.add('hidden');toc.classList.remove('show');}
+  else{toc.classList.remove('hidden','show');}
+}
+apply(); mq.addEventListener('change',apply);
+btn.addEventListener('click',()=>{
+  if(mq.matches){toc.classList.toggle('show');}
+  else{toc.classList.toggle('hidden');document.body.classList.toggle('toc-hidden');}
+});
+toc.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{
+  if(mq.matches) toc.classList.remove('show');
+}));
+</script>
+</body></html>

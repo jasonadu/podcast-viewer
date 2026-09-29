@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 10 · Metrics That Matter for Engineering Teams</title>
+<style>
+:root {
+  --accent: #2563eb;
+  --zh-bg: #f0f6ff;
+  --zh-border: #2563eb;
+  --code-bg: #0f172a;
+  --code-ink: #e2e8f0;
+  --ink: #1f2937;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: #faf6f1;
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 1.7;
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ---- sidebar TOC ---- */
+#toc-toggle { display: none; }
+.toc-btn {
+  position: fixed; top: 14px; right: 18px; z-index: 300;
+  width: 40px; height: 40px; border-radius: 8px;
+  background: #fff; border: 1px solid #d1d5db; cursor: pointer;
+  font-size: 20px; line-height: 40px; text-align: center; color: var(--ink);
+  box-shadow: 0 1px 3px rgba(0,0,0,.1);
+}
+.toc-btn:hover { background: var(--zh-bg); }
+nav#toc {
+  position: fixed; top: 0; left: 0; width: 300px; height: 100vh;
+  overflow-y: auto; background: #fff; border-right: 1px solid #e5e7eb;
+  padding: 24px 16px 40px; transition: transform .25s ease; z-index: 200;
+}
+.toc-title { font-weight: 700; font-size: 15px; color: var(--ink); margin: 4px 8px 14px; }
+.toc-chapter { font-weight: 700; font-size: 16px; color: var(--accent); margin: 14px 8px 6px; }
+nav#toc a {
+  display: block; padding: 5px 8px; border-radius: 6px;
+  color: var(--ink); font-size: 14.5px; line-height: 1.4;
+}
+nav#toc a.l2 { font-weight: 700; }
+nav#toc a.l3 { padding-left: 28px; font-weight: 400; color: #4b5563; }
+nav#toc a:hover { background: var(--zh-bg); text-decoration: none; }
+
+/* ---- main column ---- */
+main {
+  margin-left: 300px; max-width: 900px;
+  padding: 40px 48px 96px; transition: margin .25s ease;
+}
+.chapter-kicker { color: var(--accent); font-weight: 600; letter-spacing: .05em; text-transform: uppercase; font-size: 14px; }
+h1.ch-title { font-size: 34px; line-height: 1.25; margin: 6px 0 4px; color: var(--ink); }
+h1.ch-title-zh { font-size: 22px; font-weight: 500; color: #6b7280; margin: 0 0 28px; }
+h2 { font-size: 25px; margin: 40px 0 12px; scroll-margin-top: 20px; color: var(--ink); }
+h3 { font-size: 20px; margin: 28px 0 10px; scroll-margin-top: 20px; color: var(--ink); }
+h2.zh-h { font-size: 18px; font-weight: 500; color: #6b7280; margin: -8px 0 16px; scroll-margin-top: 20px; }
+h3.zh-h { font-size: 16px; font-weight: 500; color: #6b7280; margin: -6px 0 12px; }
+
+p.en { margin: 14px 0; }
+p.zh {
+  background: var(--zh-bg);
+  border-left: 4px solid var(--zh-border);
+  border-radius: 0 8px 8px 0;
+  padding: 10px 16px; margin: 10px 0 18px;
+}
+li p.zh {
+  background: var(--zh-bg);
+  border-left: 4px solid var(--zh-border);
+  border-radius: 0 8px 8px 0;
+  padding: 8px 14px; margin: 6px 0;
+}
+ul, ol { padding-left: 26px; }
+li { margin: 6px 0; }
+
+/* ---- code ---- */
+pre {
+  background: var(--code-bg); color: var(--code-ink);
+  padding: 14px 16px; border-radius: 8px;
+  overflow-x: auto; font-size: 13.5px; line-height: 1.55;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+}
+code {
+  font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .92em;
+}
+p code, li code {
+  background: #be185d; color: #fff; padding: 1px 6px; border-radius: 5px;
+}
+
+/* ---- tables ---- */
+table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 15px; }
+th, td { border: 1px solid #d1d5db; padding: 8px 12px; text-align: left; vertical-align: top; }
+th { background: #f1f5f9; }
+
+/* ---- figures ---- */
+figure { margin: 22px 0; text-align: center; }
+figure img { max-width: 100%; border: 1px solid #e5e7eb; border-radius: 8px; }
+figcaption { font-size: 13.5px; color: #6b7280; margin-top: 8px; }
+.cap-en { display: block; }
+.cap-zh { display: block; color: #4b5563; }
+.fig-note { color: #9ca3af; font-style: italic; }
+
+/* ---- page marker ---- */
+.pagemark {
+  text-align: center; color: #9ca3af; font-size: 13px;
+  margin: 34px 0 26px; letter-spacing: .05em;
+}
+
+/* ---- pager ---- */
+.pager {
+  display: flex; gap: 12px; margin-top: 64px; padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+.pager a, .pager span.disabled {
+  flex: 1 1 0; text-align: center; padding: 12px 10px; border-radius: 8px;
+  background: #fff; border: 1px solid #d1d5db; color: var(--accent);
+  font-size: 15px; line-height: 1.3;
+}
+.pager a:hover { background: var(--zh-bg); text-decoration: none; }
+.pager span.disabled { color: #9ca3af; opacity: .5; cursor: not-allowed; }
+
+/* ---- wide screen: unchecked hides the sidebar ---- */
+@media (min-width: 901px) {
+  #toc-toggle:not(:checked) ~ nav#toc { transform: translateX(-300px); }
+  #toc-toggle:not(:checked) ~ main { margin-left: 0; }
+}
+/* ---- narrow screen: sidebar becomes a slide-in drawer ---- */
+@media (max-width: 900px) {
+  nav#toc { transform: translateX(-300px); box-shadow: 2px 0 14px rgba(0,0,0,.18); }
+  #toc-toggle:checked ~ nav#toc { transform: translateX(0); }
+  main { margin-left: 0; padding: 60px 20px 80px; }
+  h1.ch-title { font-size: 26px; }
+}
+</style>
+</head>
+<body>
+<input type="checkbox" id="toc-toggle" checked>
+<label class="toc-btn" for="toc-toggle" title="目录">☰</label>
+<nav id="toc"><div class="toc-title">Engineering Leadership: The Hard Parts</div>
+<div class="toc-chapter">Chapter 10</div>
+<a class="l2" href="#why-measure">Why Measure Anything at All?</a>
+<a class="l2" href="#metrics-as-product">Metrics as a Product</a>
+<a class="l3" href="#design-intentionally">Design Intentionally</a>
+<a class="l3" href="#want-vs-need">The Trap of Want Versus Need</a>
+<a class="l3" href="#constructing-questions">Constructing Questions</a>
+<a class="l3" href="#right-metrics">Choosing the Right Metrics</a>
+<a class="l3" href="#take-stock">Take Stock of What You Measure</a>
+<a class="l2" href="#velocity">Velocity: The Most Misused Metric</a>
+<a class="l3" href="#velocity-goes-wrong">Why Velocity Goes Wrong</a>
+<a class="l3" href="#velocity-correctly">How to Use Velocity Correctly</a>
+<a class="l2" href="#build-metrics-customers">Build Your Metrics with Customers in Mind</a>
+<a class="l3" href="#human-side-metrics">The Human Side of Metrics</a>
+<a class="l3" href="#quant-qual">Balancing Quantitative and Qualitative Data</a>
+<a class="l3" href="#humans-metrics">Humans and Metrics</a>
+<a class="l2" href="#make-visible">Make Metrics Visible and Accessible</a>
+<a class="l2" href="#ongoing-maintenance">Metrics Need Ongoing Maintenance</a>
+<a class="l2" href="#ai-metrics">AI Doesn’t Change Your Approach</a>
+<a class="l2" href="#conclusion">Conclusion: Measurement as Illumination</a>
+</nav>
+<main>
+<div class="chapter-kicker">Chapter 10</div>
+<h1 class="ch-title">Metrics That Matter for Engineering Teams</h1>
+<h1 class="ch-title-zh">工程团队真正重要的指标</h1>
+<p class="en">You’re sitting in a meeting, and someone asks, “How’s the engineering team doing?” There are a few things that happen next. Firstly, your stomach drops. Because explaining engineering productivity is complicated—especially to people whose understanding of the work of engineering is murky at best. Secondly, measuring that work is challenging. And thirdly, measuring it in a revelatory way is even harder. Suddenly, everyone is staring at dashboards full of squiggly lines going up and down, like a heart monitor during a horror movie. Some numbers are green, some are red, and nobody quite knows what any of it means for the actual health of your product or team.</p>
+<p class="zh">你正坐在会议室里，有人突然问：“工程团队现在怎么样？”接下来会发生几件事。第一，你的胃一沉。因为要解释工程生产力有多复杂——尤其是面对那些对工程工作的理解本就模糊的人。第二，度量这份工作本身就很难。第三，还要度量得有洞见，那就更难了。突然间，所有人都盯着满是上下扭动曲线的仪表盘，像恐怖电影里的心电监护仪。有些数字是绿的，有些是红的，但没人真正说得清这一切对你产品或团队的真实健康意味着什么。</p>
+<p class="en">If this scenario sounds familiar, you’re not alone. The world of software engineering metrics can feel like navigating a maze with a broken compass. There are countless things you could measure, but figuring out what you should measure and how to interpret those measurements without losing your mind is tricky.</p>
+<p class="zh">如果这个场景听着耳熟，那你并不孤单。软件工程度量的世界，感觉就像拿着一个坏了的指南针在迷宫里穿行。你可以度量的东西数不胜数，但要搞清楚该度量什么、又如何在不发疯的前提下解读这些度量，并不容易。</p>
+<p class="en">In this chapter, we will cut through the noise and discuss metrics that truly matter. These aren’t vanity metrics that look impressive in a slide deck but tell you nothing useful, and they aren’t metrics that make teams feel like an overeager hall monitor is watching them. Here, we will introduce you to the real and meaningful measurements that help you understand what’s happening, identify problems before they escalate, and make informed decisions about where to focus your energy.</p>
+<p class="zh">本章我们将滤掉噪音，讨论真正重要的指标。它们不是那种在幻灯片上好看却毫无用处的虚荣指标，也不是那种让团队感觉有个过度热情的走廊巡视员在盯着自己的指标。在这里，我们会向你介绍真正有意义的度量——它们帮你理解正在发生什么、在问题升级之前识别出来，并就精力该投向何处做出知情决策。</p>
+<div class="pagemark">— 原书第 227 页 —</div>
+<h2 id="why-measure">Why Measure Anything at All?</h2>
+<h2 class="zh-h">到底为什么要度量？</h2>
+<p class="en">Before we dive into specific frameworks and numbers, let’s address the elephant in the room: why bother measuring stuff in the first place? In chaotic environments, just keeping the lights on can feel like a victory. Adding yet another layer of tracking and reporting is a luxury you can’t afford. But here’s the thing: trying to improve</p>
+<p class="zh">在深入具体框架和数字之前，我们先说说房间里的大象：到底为什么要费劲度量？在混乱的环境里，光是把灯亮着就像打了胜仗。再加一层追踪和汇报，像是你负担不起的奢侈品。但问题是：想要改进，</p>
+<div class="pagemark">— 原书第 228 页 —</div>
+<p class="en">without measuring means that you have no idea if you’re improving. You might feel like you’re making progress, but it’s all based on vibes rather than reality.</p>
+<p class="zh">（接上文）却不做度量，意味着你根本不知道自己是否真的在进步。你可能感觉在前进，但那全凭感觉，而非现实。</p>
+<p class="en">Good metrics serve two essential functions:</p>
+<p class="zh">好的指标承担两个基本功能：</p>
+<ol>
+<li><p class="en">They help identify problems before they become disasters. Trends in your metrics often reveal issues while they’re still small enough to fix easily.</p><p class="zh">它们帮你在问题变成灾难之前识别出来。指标的趋势往往在问题还小、容易修复时就暴露出来。</p></li>
+<li><p class="en">They indicate whether your improvement efforts are working. That fancy new CI/CD pipeline might feel like a win, but has it reduced your deploy times or failure rates?</p><p class="zh">它们表明你的改进努力是否奏效。那条酷炫的新 CI/CD 管线可能感觉像一场胜利，但它真的缩短了部署时间或降低了失败率吗？</p></li>
+</ol>
+<p class="en">That said, there’s a dark side to metrics. When used poorly, they can create perverse incentives, demoralize teams, and lead to worse outcomes than having no metrics at all. Throughout this chapter, we’ll discuss how to avoid these pitfalls and create a measurement system that helps, rather than hurts.</p>
+<p class="zh">话虽如此，指标也有阴暗面。用得不好，它们会制造扭曲的激励、打击团队士气，结果比完全没有指标还糟。本章我们会讨论如何避开这些坑，建立一套帮你而不是害你的度量体系。</p>
+<div style="background:#fffbe6;border-left:4px solid #f59e0b;border-radius:0 8px 8px 0;padding:12px 18px;margin:20px 0;"><p class="en"><strong>In Practice: April’s Story</strong></p>
+<p class="zh"><strong>实战：April 的故事</strong></p>
+<p class="en">April discovered this truth during her first month at PixelCurl. When asked about team performance, the three senior engineers each told different stories. Marcus claimed that they were “crushing it” because the backend handled 10,000 requests per second. Sarah said they were struggling because feature delivery took forever. Derek insisted everything was fine because there hadn’t been any database outages. Without shared metrics, they were three ignorant people describing different parts of an elephant. April implemented her first metric: feature cycle time from ticket creation to production. The results were shocking—average cycle time was 47 days, with features bouncing between the siloed engineers who couldn’t review each other’s code. This single metric transformed vague complaints into a concrete problem that they could address.</p>
+<p class="zh">April 在 PixelCurl 第一个月就发现了这个真相。当被问到团队绩效时，三位高级工程师各说各话。Marcus 说他们“干得飞起”，因为后端每秒能处理 10,000 个请求。Sarah 说他们很挣扎，因为发个功能遥遥无期。Derek 则坚称一切都好，因为数据库从没挂过。没有共同指标，他们就像三个盲人在摸大象的不同部位。April 落地了她的第一个指标：从工单创建到上线的功能周期时间。结果令人震惊——平均周期时间是 47 天，功能在各自为战、彼此没法 review 代码的工程师之间来回弹。这一个指标，把模糊的抱怨变成了一个可以着手解决的具体问题。</p>
+</div>
+<h2 id="metrics-as-product">Metrics as a Product</h2>
+<h2 class="zh-h">把指标当作产品来做</h2>
+<p class="en">Creating metrics for the sake of metrics is a common pitfall; it’s often easy to collect data and even display it on a dashboard. Indeed, there is a classic scenario in observability: you spend 90% of the project building infrastructure and instrumentation, and then the remaining 10% is spent analyzing and visualizing the data. But data isn’t insight. Your data has to solve a problem or provide answers. To ensure we focus on the insights and not just the data, try to think of your metrics as a product. They have customers, including you and other stakeholders, such as your leadership. And like any product, they don’t need to be perfect at launch, but they should serve their users and get better over time. Treating them like a product helps you focus on what matters: solving real problems, delivering value, and setting clear goals.</p>
+<p class="zh">为了指标而做指标，是一个常见陷阱；收集数据、甚至把它摆到仪表盘上，往往很容易。确实，可观测性里有个经典场景：你把项目 90% 的时间花在建基础设施和埋点上，然后剩下 10% 才用来分析和可视化数据。但数据不等于洞察。你的数据必须解决一个问题或给出答案。为了确保我们聚焦洞察而不只是数据，试着把你的指标当作一个产品来思考。它们有客户，包括你和其他干系人（比如你的领导）。和任何产品一样，它们不需要一上线就完美，但应当服务好用户，并随时间越变越好。把指标当产品对待，能帮你聚焦真正重要的事：解决真实问题、交付价值、设定清晰目标。</p>
+<div class="pagemark">— 原书第 229 页 —</div>
+<p class="en">While a whole book could be written on this topic, we’ll focus on intentionally designing, balancing needs and wants, ensuring your metrics include human factors and psychological safety, identifying common pitfalls, and navigating evolution.</p>
+<p class="zh">虽然这个主题可以写一整本书，但我们这里聚焦：有意识地设计、平衡“需要”与“想要”、确保指标考虑人的因素和心理安全、识别常见陷阱，以及驾驭演进。</p>
+<h3 id="design-intentionally">Design Intentionally</h3>
+<h3 class="zh-h">有意识地设计</h3>
+<p class="en">For metrics to be helpful, start with the basics: who they’re for and why those folks need them. We do this by being very explicit about what we want: asking a question that is answered by one or more metrics and provides insight into the health of your world. Ensure your questions address real business needs; they shouldn’t just be another layer of abstraction for collecting data without purpose.</p>
+<p class="zh">指标要有用，就从最基本的问题开始：它们是给谁用的？那些人为什么需要它们？我们通过非常明确地说出自己想要什么来做到这一点：提出一个问题，用一个或多个指标来回答它，并能洞察你所处世界的健康状况。确保你的问题针对的是真实的业务需求；它们不该只是又一层无目的地收集数据的抽象。</p>
+<p class="en">Identify your customers and understand their needs. Your customers will likely fall into three groups: leaders outside of engineering, engineering leadership (including you), and individual contributors (such as engineers on your team).</p>
+<p class="zh">识别你的客户并理解他们的需求。你的客户大概分三类：工程部门之外的领导、工程领导层（包括你自己），以及个人贡献者（比如你团队里的工程师）。</p>
+<p class="en">You don’t have to guess what your customers need: ask them. You’ve probably already gathered some data about friction points for your organization and team, but expand this to understand what insights each group needs by conducting some user research and identifying goals for each group:</p>
+<p class="zh">你不必猜客户需要什么：直接问他们。你大概已经收集了一些关于组织和团队摩擦点的数据，但要扩展这件事——通过做一些用户研究、为每个群体识别目标，来理解每个群体需要什么洞察：</p>
+<ul>
+<li><p class="en"><strong>Engineers.</strong> For engineers, 95% of the time, it is metrics that relate to how they work and any friction inherent in their work. What metrics and insights would help them work more efficiently?</p><p class="zh"><strong>工程师。</strong>对工程师来说，95% 的情况下，他们需要的是与“自己怎么干活”以及工作中固有摩擦相关的指标。哪些指标和洞察能帮他们更高效地工作？</p></li>
+<li><p class="en"><strong>Engineering managers.</strong> For engineering managers (and yourself), explore what metrics would help you (and your peers) identify bottlenecks and make improvements.</p><p class="zh"><strong>工程经理。</strong>对工程经理（以及你自己），去探索哪些指标能帮你（和你的同级）识别瓶颈并做出改进。</p></li>
+<li><p class="en"><strong>Leaders outside engineering.</strong> For leaders outside of engineering, focus on their strategic concerns. Are they worried about costs, investment returns, or engineering velocity?</p><p class="zh"><strong>工程部门之外的领导。</strong>聚焦他们的战略关切：他们担心的是成本、投资回报，还是工程交付速度？</p></li>
+</ul>
+<h3 id="want-vs-need">The Trap of Want Versus Need</h3>
+<h3 class="zh-h">“想要”与“需要”的陷阱</h3>
+<p class="en">There is a trap for new players in user research like this: sometimes what customers want and what they need are not the same. This trap is particularly prevalent in engineering metrics because stakeholders often ask for what sounds impressive or what they’ve seen elsewhere, rather than what would actually drive meaningful improvements. This trap is particularly endemic with regard to engineering velocity.</p>
+<p class="zh">在这类用户研究里，新手会踩一个坑：客户想要的和他们需要的，往往不是一回事。这个坑在工程指标里尤其常见，因为干系人常常要那些听起来厉害、或他们在别处见过的东西，而不是真正能推动有意义改进的东西。这个坑在工程交付速度上尤其泛滥。</p>
+<p class="en">James had a chief executive officer (CEO) who logged into GitHub and read through recent pull requests. In their next one-on-one meeting, the CEO declared that two engineers were far more productive than the others, while some others were labeled as lazy. When James asked how this CEO had worked that out, they indicated that the</p>
+<p class="zh">James 遇到过一位 CEO，会登录 GitHub 翻最近的 pull request。在接下来的一对一会议上，CEO 断言两个工程师比其他人高效得多，而另一些人被贴上了“懒”的标签。James 问这位 CEO 是怎么得出这个结论的，对方指出：那两位突出的工程师提交了几千行代码，而其他人只提交了几百行甚至更少。</p>
+<div class="pagemark">— 原书第 230 页 —</div>
+<p class="en">two standout engineers had committed thousands of lines of code, while others had committed hundreds of lines or fewer. James explained that the two most productive engineers were frontend engineers, who committed npm packages, JavaScript, and CSS (Cascading Style Sheets) code. He noted that the volume of code committed didn’t reflect their productivity, but rather the nature of the code they worked on. The others, primarily backend engineers, committed far fewer lines of code. The CEO threw up their hands and asked, “So how do I know who is a good engineer or not?”</p>
+<p class="zh">（接上文）James 解释说，那两位最高产的工程师是前端工程师，提交的是 npm 包、JavaScript 和 CSS（层叠样式表）代码。他指出，提交代码的数量并不反映他们的生产力，而是反映他们所写代码的性质。其他人主要是后端工程师，提交的代码行少得多。CEO 摊手问道：“那我怎么知道谁是好工程师？”</p>
+<div style="background:#fffbe6;border-left:4px solid #f59e0b;border-radius:0 8px 8px 0;padding:12px 18px;margin:20px 0;"><p class="en"><strong>In Practice: April’s Story</strong></p>
+<p class="zh"><strong>实战：April 的故事</strong></p>
+<p class="en">April faced similar pressure at PixelCurl. The vice president of product, seeing GitHub’s contribution graph, declared Marcus the “MVP” because his graph was solid green while Derek’s was mostly empty. April decided to pull actual data: Marcus committed 50 times daily (auto-formatting changes, console.log additions/removals, and constant WIP commits), while Derek committed once weekly with carefully crafted, fully tested features. April reframed the conversation: “What decision would you make differently if you knew who committed more often?” The vice president admitted that they wouldn’t change anything. So, April shifted focus to deployment frequency and change failure rate—metrics that actually influence business decisions like release planning and customer communications.</p>
+<p class="zh">April 在 PixelCurl 也面对过类似压力。产品副总裁看到 GitHub 的贡献图，宣布 Marcus 是“MVP”，因为他的图是满绿的，而 Derek 的基本是空的。April 决定拉真实数据看看：Marcus 每天提交 50 次（自动格式化改动、加/删 console.log、不断的 WIP 提交），而 Derek 每周提交一次，都是精心打磨、充分测试过的功能。April 重新框定了对话：“如果你知道谁提交更频繁，你会因此做出什么不同的决策吗？”副总裁承认他们什么都不会改。于是 April 把焦点转向部署频率和变更失败率——这些才是真正影响发布规划、客户沟通等业务决策的指标。</p>
+</div>
+<p class="en">Other questions we’ve both been asked include the following:</p>
+<p class="zh">我们俩都被问过的其他问题包括：</p>
+<ul>
+<li><p class="en">Which team writes the best code?</p><p class="zh">哪个团队写的代码最好？</p></li>
+<li><p class="en">Which team is the most productive?</p><p class="zh">哪个团队生产力最高？</p></li>
+<li><p class="en">How many hours do the engineers work every day?</p><p class="zh">工程师每天工作几小时？</p></li>
+<li><p class="en">Which engineers work the most hours?</p><p class="zh">哪些工程师工作时间最长？</p></li>
+</ul>
+<p class="en">None of these questions is inherently bad, as they are attempts to quantify a domain with which the questioner is not comfortable. Naturally, we all ask questions of other professionals in our lives when we’re trying to establish a baseline of understanding: accountants, plumbers, doctors, lawyers, and so on. So, don’t demean someone for asking. Instead, provide them with better information. If you need to explain why a question or proposed metric is problematic or too simple—for example, a vanity metric like lines of code—then do so politely and suggest alternatives that will deliver real answers. It’s your job to educate your leadership about the work you do and provide confidence in delivery, execution, and your leadership.</p>
+<p class="zh">这些问题本身都不是坏问题，它们都是提问者在试图量化一个自己并不熟悉的领域。很自然，我们在生活中都会向其他专业人士提问——会计师、水管工、医生、律师等等——当我们想建立一个理解基线时。所以，不要因为别人提问而贬低他们。相反，给他们更好的信息。如果你需要解释为什么某个问题或提议的指标有问题、或过于简单——比如像代码行数这样的虚荣指标——那就礼貌地说明，并建议能给出真实答案的替代方案。教育你的领导理解你所做的工作、让他们对你的交付、执行和领导力有信心，这是你的职责。</p>
+<p class="en">To do that, we must find the underlying question and answer it. So, for “Which team is the most productive,” what are they really asking? It’s likely the real question is about the predictability of delivery and potential bottlenecks in shipping software. Questions about hours worked and time tracking in general are likely related to</p>
+<p class="zh">要做到这一点，我们必须找到背后的真正问题并回答它。那么，对于“哪个团队生产力最高”，他们真正在问什么？很可能真正的问题是关于交付的可预测性，以及发布软件时可能存在的瓶颈。关于工作时长和一般时间追踪的问题，则很可能与交付信心和所提供的价值有关。</p>
+<div class="pagemark">— 原书第 231 页 —</div>
+<p class="en">confidence in delivery and the value provided. Ask more detailed questions to dig deeper, like the following:</p>
+<p class="zh">（接上文）要问更细的问题来深挖，比如：</p>
+<ul>
+<li><p class="en">What decisions will these answers help you make?</p><p class="zh">这些答案会帮你做出什么决策？</p></li>
+<li><p class="en">What would you do, or not do, differently if you had access to this information?</p><p class="zh">如果你有了这些信息，你会在做什么或不做什么上有所不同？</p></li>
+</ul>
+<p class="en">Reframe the question in the context of these answers. And in our opinion, in a significant number of cases, the questions actually boil down to, “Are we okay?” What people actually want to know is, “Will we meet our objectives? Are we getting value for money from our engineering investments? Is the quality of our software sufficient for our customers? Are we executing as we need to be?”</p>
+<p class="zh">在这些答案的语境下重新框定问题。而且在我们看来，在相当多的情况下，这些问题实际上归结为一句：“我们还好吗？”人们真正想知道的是：“我们能达成目标吗？我们在工程上的投资物有所值吗？我们软件的质量对客户来说够好吗？我们的执行到位吗？”</p>
+<h3 id="constructing-questions">Constructing Questions</h3>
+<h3 class="zh-h">构建问题</h3>
+<p class="en">Before diving into solutions, review what you’ve learned. Take all the research and group it into key themes. You’ll likely identify thematic groups with questions that apply to each customer but with differing levels of granularity. In answering the broader question of “Is our engineering velocity acceptable, and does it achieve our business goals?”, for example, you can break this down into the following subquestions:</p>
+<p class="zh">在跳入解决方案之前，回顾你学到了什么。把所有研究归成若干关键主题。你很可能会识别出若干主题组，其中的问题适用于每一类客户，只是粒度不同。比如，要回答“我们的工程交付速度是否可接受、是否达成业务目标？”这个更宽泛的问题，你可以把它拆成以下子问题：</p>
+<ul>
+<li><p class="en"><strong>Leadership</strong> — How fast are we shipping software?</p><p class="zh"><strong>领导层</strong>——我们发布软件有多快？</p></li>
+<li><p class="en"><strong>Engineering leadership</strong> — How many points of stories are we shipping? How accurate are our estimates? How many times do we deploy?</p><p class="zh"><strong>工程领导层</strong>——我们发布了多少故事点？我们的估算有多准？我们部署了多少次？</p></li>
+<li><p class="en"><strong>Engineers</strong> — What is the cycle time from starting a story to reviewing and deploying the resulting pull request? How long do CI or CI/CD runs take to build, test, and deploy code?</p><p class="zh"><strong>工程师</strong>——从开始做一个故事到 review 并部署对应的 PR，周期时间是多少？CI 或 CI/CD 跑一轮构建、测试、部署代码要多久？</p></li>
+</ul>
+<p class="en">In many cases, the thematic groupings are ordered by granularity. For example, the “How fast are we shipping software?” query is a combination of the leadership and engineering questions that follow it. One of the easiest ways to ensure that you remain focused on getting the correct answers is to start with a big picture view and break it down.</p>
+<p class="zh">在很多情况下，这些主题组是按粒度排序的。比如“我们发布软件有多快？”这个问题，就是后面领导层和工程师问题的组合。确保你始终聚焦于拿到正确答案，最简单的方法之一就是：从大局视角出发，再把它拆解。</p>
+<p class="en">All answers to our questions should have a metric and measurable success criterion; this helps validate the answers and makes it easier to associate them with a specific goal. Some questions might be more binary or have an endpoint—for example, achieving a goal and then entering a maintenance period. A good example here is CI</p>
+<p class="zh">我们所有问题的答案都应当有一个指标和一个可度量的成功标准；这有助于验证答案，也更容易把它们与特定目标关联起来。有些问题可能更二元、或有一个终点——比如达成目标后进入维护期。一个好例子是 CI 测试：</p>
+<div class="pagemark">— 原书第 232 页 —</div>
+<p class="en">tests, for which we aim to achieve a minimum coverage or reduce their runtime to below a certain threshold, and then monitor it.</p>
+<p class="zh">（接上文）我们的目标是达到最低覆盖率，或把运行时间降到某个阈值以下，然后持续监控。</p>
+<p class="en">In Table 10-1, let’s break down one of these questions into component pieces.</p>
+<p class="zh">在表 10-1 中，我们把其中一个问题拆成各个组成部分。</p>
+<figure><table>
+<caption><span class="cap-en">Table 10-1. Example breakdown of a CI/CD-related engineering-velocity question into components, considerations, and measurable criteria</span>
+<span class="cap-zh">表 10-1. 将一个与 CI/CD 相关的工程速度问题拆解为组成部分、考量与可度量标准的示例</span></caption>
+<tr><th>Component / 组成部分</th><th>Description / 描述</th></tr>
+<tr><td>High level / 高层</td><td>Our engineering velocity is acceptable and meets our business goals. / 我们的工程交付速度可接受，并达成业务目标。</td></tr>
+<tr><td>Question / 问题</td><td>How long do CI or CI/CD runs take to build, test, and deploy code? / CI 或 CI/CD 跑一轮构建、测试、部署代码要多久？</td></tr>
+<tr><td>Success criteria / 成功标准</td><td>CI test runs take less than 15 minutes to run. CI/CD runs take less than 30 minutes to run and deploy. / CI 测试运行少于 15 分钟；CI/CD 运行并部署少于 30 分钟。</td></tr>
+<tr><td>Metrics / 指标</td><td>CI test run time; CI/CD deployment run time. / CI 测试运行时间；CI/CD 部署运行时间。</td></tr>
+<tr><td>Maintenance goal / 维护目标</td><td>In 95% of both types of runs—CI and CI/CD—the success criteria are met or exceeded. / 在 CI 和 CI/CD 两类运行中，95% 的次数达到或超过成功标准。</td></tr>
+</table></figure>
+<h3 id="right-metrics">Choosing the Right Metrics for Your Context</h3>
+<h3 class="zh-h">为你的情境选择合适的指标</h3>
+<p class="en">By now, you might be thinking, “There are a lot of potential metrics. Do I need to track all of them?” And the answer is a resounding no. Metric overload is a real issue, and it’s just as counterproductive as having no metrics at all. You don’t need a stock of metrics; you need a focused set that provides clear insights into your team’s health and performance.</p>
+<p class="zh">到这儿你可能在想：“潜在指标这么多，我全都要追踪吗？”答案是响亮的“不”。指标过载是个真问题，它和完全没有指标一样适得其反。你不需要指标的大库存；你需要一组聚焦的指标，能清晰洞察团队的健康和绩效。</p>
+<p class="en">The good news is that you don’t have to reinvent the wheel. The DORA (DevOps Research and Assessment) metrics provide an excellent foundation because they’re well-tested, focus on outcomes that matter, and can be implemented with most existing tooling. These four metrics capture the essential dimensions of software delivery performance. The DORA foundation consists of four metrics:</p>
+<p class="zh">好消息是你不必重新发明轮子。DORA（DevOps 研究与评估）指标提供了极佳的基础——它们经过充分检验、聚焦于真正重要的结果，并且能用大多数现有工具落地。这四个指标捕捉了软件交付绩效的关键维度。DORA 基础由四个指标构成：</p>
+<ul>
+<li><p class="en"><strong>Deployment frequency.</strong> How often you deploy to production.</p><p class="zh"><strong>部署频率。</strong>你多久向生产环境部署一次。</p></li>
+<li><p class="en"><strong>Lead time for changes.</strong> Time from code committed to running in production.</p><p class="zh"><strong>变更前置时间。</strong>从代码提交到在生产环境运行的时间。</p></li>
+<li><p class="en"><strong>Change failure rate.</strong> Percentage of deployments that require immediate fixes.</p><p class="zh"><strong>变更失败率。</strong>需要立即修复的部署所占百分比。</p></li>
+<li><p class="en"><strong>Time to restore service.</strong> How quickly you recover from incidents.</p><p class="zh"><strong>服务恢复时间。</strong>你从事故中恢复的速度。</p></li>
+</ul>
+<div class="pagemark">— 原书第 233 页 —</div>
+<p class="en">These metrics work because they balance speed and quality while focusing on outcomes that your customers and business leaders care about. Most teams can implement basic versions using existing Git, CI/CD, and monitoring tools without significant additional investment.</p>
+<p class="zh">这些指标之所以有效，是因为它们在平衡速度与质量的同时，聚焦于客户和业务领导真正关心的结果。大多数团队用现有的 Git、CI/CD 和监控工具就能落地基础版本，无需大量额外投资。</p>
+<p class="en">Then, add context-specific metrics. This means one or two metrics based on your biggest current pain point that provide deeper insight.</p>
+<p class="zh">然后，再加情境特定的指标。也就是基于你当前最大的痛点，加一两个能提供更深洞察的指标。</p>
+<p class="en">If reliability is your biggest challenge, consider the following:</p>
+<p class="zh">如果可靠性是你最大的挑战，考虑以下指标：</p>
+<ul>
+<li><p class="en">Production incident volume by severity</p><p class="zh">按严重程度划分的生产事故数量</p></li>
+<li><p class="en">Mean time between failures (MTBF)</p><p class="zh">平均故障间隔时间（MTBF）</p></li>
+</ul>
+<p class="en">If delivery predictability is the issue, consider the following:</p>
+<p class="zh">如果交付可预测性是问题，考虑以下指标：</p>
+<ul>
+<li><p class="en">Feature cycle time (idea to production)</p><p class="zh">功能周期时间（从想法到上线）</p></li>
+<li><p class="en">Sprint goal achievement rate</p><p class="zh">Sprint 目标达成率</p></li>
+</ul>
+<p class="en">If quality concerns dominate, consider these:</p>
+<p class="zh">如果质量问题占主导，考虑这些：</p>
+<ul>
+<li><p class="en">Bug escape rate (defects found in production versus preproduction)</p><p class="zh">Bug 逃逸率（在生产环境发现的缺陷 vs. 上线前发现的缺陷）</p></li>
+<li><p class="en">Testing coverage for critical paths</p><p class="zh">关键路径的测试覆盖率</p></li>
+</ul>
+<p class="en">And if team health is suffering, consider the following:</p>
+<p class="zh">如果团队健康状况在恶化，考虑以下指标：</p>
+<ul>
+<li><p class="en">Developer satisfaction surveys (quarterly)</p><p class="zh">开发者满意度调研（每季度）</p></li>
+<li><p class="en">On-call load distribution</p><p class="zh">on-call 值班负荷分布</p></li>
+</ul>
+<p class="en">This approach gives you five to six total metrics, which are enough to understand what’s happening without overwhelming your team with data that they can’t act on.</p>
+<p class="zh">这种做法总共给你五到六个指标，足以理解正在发生什么，又不会用团队无法采取行动的数据把他们淹没。</p>
+<p class="en">The implementation strategy includes the following steps:</p>
+<p class="zh">落地策略包括以下步骤：</p>
+<ul>
+<li><p class="en"><strong>Start small.</strong> Implement the four DORA metrics first using existing tools.</p><p class="zh"><strong>从小处开始。</strong>先用现有工具落地四个 DORA 指标。</p></li>
+<li><p class="en"><strong>Collect baseline data.</strong> Gather four to six weeks’ worth of data before making changes.</p><p class="zh"><strong>收集基线数据。</strong>在做改变之前，先积累四到六周的数据。</p></li>
+<li><p class="en"><strong>Add context.</strong> Once DORA metrics are stable, add one or two context-specific metrics.</p><p class="zh"><strong>加入情境。</strong>等 DORA 指标稳定后，再加一两个情境特定指标。</p></li>
+<li><p class="en"><strong>Review and adjust.</strong> Quarterly, assess which metrics are driving decisions and which aren’t.</p><p class="zh"><strong>复盘与调整。</strong>每季度评估哪些指标在驱动决策、哪些没有。</p></li>
+</ul>
+<div class="pagemark">— 原书第 234 页 —</div>
+<p class="en">Remember that the goal isn’t to maximize any single metric but to maintain a healthy balance across all dimensions. Teams with the best long-term outcomes optimize for sustainable delivery of valuable, reliable software—something this focused set of metrics will help you achieve.</p>
+<p class="zh">请记住：目标不是最大化任何单一指标，而是在所有维度间维持健康的平衡。长期结果最好的团队，优化的是“可持续地交付有价值、可靠的软件”——而这组聚焦的指标会帮你做到。</p>
+<h3 id="take-stock">Take Stock of What You Already Measure</h3>
+<h3 class="zh-h">盘点你已有的度量</h3>
+<p class="en">Before adding new metrics, understand what you’re already tracking. Many teams are surprised to discover that they already have access to more data than they realize, particularly when implementing DORA metrics.</p>
+<p class="zh">在加新指标之前，先搞清楚你已经在追踪什么。很多团队会惊讶地发现：他们能拿到的数据比自己以为的多——尤其是在落地 DORA 指标时。</p>
+<p class="en">Common existing data sources include:</p>
+<p class="zh">常见的现有数据源包括：</p>
+<ul>
+<li><p class="en"><strong>Git repositories.</strong> Commit frequency, lead time data.</p><p class="zh"><strong>Git 仓库。</strong>提交频率、前置时间数据。</p></li>
+<li><p class="en"><strong>CI/CD pipelines.</strong> Deployment frequency, build success rates.</p><p class="zh"><strong>CI/CD 管线。</strong>部署频率、构建成功率。</p></li>
+<li><p class="en"><strong>Issue tracking systems.</strong> Cycle times, incident tracking.</p><p class="zh"><strong>工单追踪系统。</strong>周期时间、事故追踪。</p></li>
+<li><p class="en"><strong>Monitoring systems.</strong> Uptime, error rates, recovery times.</p><p class="zh"><strong>监控系统。</strong>可用性、错误率、恢复时间。</p></li>
+</ul>
+<p class="en">James worked with more than one team that was about to invest in an expensive new metrics platform but then realized they could extract most of what they needed from the systems they already had. By connecting their existing Jira, GitHub, and CircleCI data, they could track all four DORA metrics—plus additional context-specific measurements—without the need for additional tools.</p>
+<p class="zh">James 遇到过不止一个团队，本来要投资一个昂贵的新指标平台，结果发现他们从现有系统里就能抽出大部分需要的数据。通过连接现有的 Jira、GitHub 和 CircleCI 数据，他们就能追踪全部四个 DORA 指标——再加一些情境特定的度量——而无需额外工具。</p>
+<p class="en">Most modern development toolchains can support DORA metrics with minimal configuration. For example:</p>
+<p class="zh">大多数现代开发工具链只需极少配置就能支持 DORA 指标。例如：</p>
+<ul>
+<li><p class="en">Deployment frequency and lead time come from Git and CI/CD systems.</p><p class="zh">部署频率和前置时间来自 Git 和 CI/CD 系统。</p></li>
+<li><p class="en">Change failure rate can be tracked through incident management or monitoring alerts.</p><p class="zh">变更失败率可以通过事故管理或监控告警来追踪。</p></li>
+<li><p class="en">Time to restore service often exists in your monitoring or ticketing systems.</p><p class="zh">服务恢复时间通常已经存在于你的监控或工单系统里。</p></li>
+</ul>
+<p class="en">Once you’ve inventoried your existing metrics, you’ll face the classic build-versus-buy decision. Some teams discover that they can answer 80% of their measurement questions with a simple dashboard that pulls data from existing tools. Others find that a commercial platform’s analytics and visualization capabilities justify the investment. The key is to start small; whether you build a lightweight integration or run a vendor proof-of-concept, validate that your chosen approach helps your team improve before</p>
+<p class="zh">盘点完现有指标后，你会面对经典的“自研还是采购”决策。有些团队发现，用一个从现有工具拉数据的简单仪表盘，就能回答 80% 的度量问题。另一些团队则发现，商业平台的分析和可视化能力值回票价。关键是从小处开始；不管你是搭一个轻量集成，还是跑一个供应商 PoC，都要在投入大量资源之前，验证你选的路子确实能帮团队改进。</p>
+<div class="pagemark">— 原书第 235 页 —</div>
+<p class="en">committing significant resources. The best metrics solution is the one your team will actually use.</p>
+<p class="zh">（接上文）最好的指标方案，是你的团队真的会用的那个。</p>
+<h2 id="velocity">Velocity: The Most Misused Metric in Software</h2>
+<h2 class="zh-h">Velocity：软件行业被误用最狠的指标</h2>
+<p class="en">Ah, velocity, the metric that everyone loves to hate. In theory, velocity is simply a measure of how much work a team can complete in a given time (usually a sprint). In practice, it’s often weaponized in ways that make us want to hide under our desks. Let’s be clear: velocity is a capacity planning tool, not a productivity metric. Its primary purpose is to help teams predict how much work they can take on in future sprints. Using it to measure whether a team is “improving” or to compare different teams is about as useful as comparing the gas mileage of a sports car and a delivery truck.</p>
+<p class="zh">唉，velocity——那个所有人又爱又恨的指标。理论上，velocity 只是衡量一个团队在给定时间内（通常是一个 sprint）能完成多少工作的指标。实践中，它常常被武器化，用得我们都想钻到桌子底下。说清楚：velocity 是一个容量规划工具，不是生产力指标。它的首要目的是帮团队预测未来 sprint 能接多少活。用它来衡量一个团队是否“在进步”、或在不同团队之间做比较，其用处大概相当于拿跑车和送货卡车比油耗。</p>
+<h3 id="velocity-goes-wrong">Why Velocity Goes Wrong</h3>
+<h3 class="zh-h">Velocity 为什么会走偏</h3>
+<p class="en">The most common velocity mistakes we see are as follows:</p>
+<p class="zh">我们最常见的 velocity 误用包括：</p>
+<ul>
+<li><p class="en"><strong>Treating it as a performance metric.</strong> “Team A has a velocity of 50 points while Team B only has 30. Clearly, Team A is better!” No, no, no. Points are arbitrary and unique to each team. Perhaps Team B has more challenging problems, greater technical debt, or simply sizes their stories differently.</p><p class="zh"><strong>把它当成绩效指标。</strong>“A 团队 velocity 50 点，B 团队才 30 点，显然 A 团队更牛！”不不不。故事点是任意的，每个团队自成一套。也许 B 团队面对的问题更难、技术债更多，或者只是估点方式不同。</p></li>
+<li><p class="en"><strong>Setting targets based on past peaks.</strong> “You reached 45 points once, so that’s your new baseline!” This encourages teams to game the system by inflating estimates or taking shortcuts that create technical debt.</p><p class="zh"><strong>基于历史峰值定目标。</strong>“你有一次做到了 45 点，那以后就按这个来！”这会鼓励团队钻系统的空子——把估算吹大，或走捷径制造技术债。</p></li>
+<li><p class="en"><strong>Comparing velocity among teams.</strong> Different teams estimate differently, work on different types of problems, and have different team compositions. Comparing their velocities is like comparing apples to spaceships.</p><p class="zh"><strong>在团队之间比较 velocity。</strong>不同团队估算方式不同、做不同类型的问题、人员构成也不同。比较它们的 velocity，就像拿苹果和飞船比。</p></li>
+</ul>
+<p class="en">James tells a painful story about an organization that decided to “standardize” story points across teams to make velocities comparable. The result? Teams argued more about estimation than actual technical problems. Some teams artificially inflated their points to appear competitive, while others became demoralized when their “velocity” seemed lower than others. Eventually, management abandoned the approach after realizing they had created a competition that was actively harming product quality.</p>
+<p class="zh">James 讲过一个惨痛的故事：某家公司决定在各团队间“标准化”故事点，好让 velocity 可以横向比较。结果呢？团队花在争论估算上的时间比争论实际技术问题还多。有些团队人为吹高点数以显得有竞争力，另一些团队则因为自己的“velocity”显得比别人低而士气低落。最终管理层意识到，他们制造了一场正在 actively 损害产品质量的竞赛，于是放弃了这种做法。</p>
+<div class="pagemark">— 原书第 236 页 —</div>
+<div style="background:#fffbe6;border-left:4px solid #f59e0b;border-radius:0 8px 8px 0;padding:12px 18px;margin:20px 0;"><p class="en"><strong>In Practice: April’s Story</strong></p>
+<p class="zh"><strong>实战：April 的故事</strong></p>
+<p class="en">April inherited a velocity mess at PixelCurl. The previous manager tried to “motivate” the team by posting everyone’s individual story points on a leaderboard. Marcus gamed it by breaking every task into five one-point stories. Sarah inflated her estimates to always reach her “committed” points. Derek stopped caring entirely. The juniors were terrified to take any stories over three points. April removed the leaderboard immediately and shifted to tracking team velocity privately. She used a three-sprint rolling average for capacity planning only. When the vice president asked, “How many points did each engineer complete?”, April responded with, “That’s like asking which musician in a band played the most notes. The question is: did we ship the features our customers needed?”</p>
+<p class="zh">April 在 PixelCurl 接手了一个 velocity 烂摊子。前任经理试图用排行榜公布每个人的故事点来“激励”团队。Marcus 钻空子，把每个任务拆成五个一点的故事。Sarah 把估算吹高，好总能达到自己“承诺”的点数。Derek 则彻底不在乎了。初级工程师不敢接任何超过三点的故事。April 立刻撤掉排行榜，改为私下追踪团队 velocity。她只用三个 sprint 的滚动平均来做容量规划。当副总裁问“每个工程师完成了多少点？”时，April 回答：“这就像问乐队里哪个乐手吹的音符最多。问题应该是：我们发布了客户需要的功能吗？”</p>
+</div>
+<h3 id="velocity-correctly">How to Use Velocity Correctly</h3>
+<h3 class="zh-h">如何正确使用 Velocity</h3>
+<p class="en">If you do track velocity (and it can be helpful when used right), here’s how to keep it healthy:</p>
+<p class="zh">如果你确实要追踪 velocity（用对了确实有帮助），下面是保持它健康的做法：</p>
+<ul>
+<li><p class="en"><strong>Use it for capacity planning.</strong> You can make considerations like, “Based on our average velocity, we can probably take on these five stories next sprint.”</p><p class="zh"><strong>用它做容量规划。</strong>你可以这样考虑：“根据我们的平均 velocity，下个 sprint 大概能接这五个故事。”</p></li>
+<li><p class="en"><strong>Look for dramatic changes.</strong> A sudden drop or spike in velocity might indicate a problem worth investigating.</p><p class="zh"><strong>关注剧烈变化。</strong>velocity 突然下降或飙升，可能意味着有值得调查的问题。</p></li>
+<li><p class="en"><strong>Keep it within the team.</strong> Velocity is most useful as an internal team metric, not something to report to upper management.</p><p class="zh"><strong>把它留在团队内部。</strong>velocity 作为团队内部指标最有用，不是用来汇报给上层的东西。</p></li>
+</ul>
+<p class="en">Remember that the goal isn’t to maximize velocity; it’s to deliver valuable, high-quality software at a sustainable pace.</p>
+<p class="zh">请记住：目标不是最大化 velocity，而是以可持续的节奏交付有价值、高质量的软件。</p>
+<p class="en">James worked with a team that tracked their velocity privately, within the team. They used a rolling three-sprint average to plan upcoming work and kept an eye out for unexpected changes. When their velocity dropped by 40% over two sprints, they had an honest conversation about what was happening and discovered that technical debt in a critical component was slowing them down. Because this metric wasn’t judging them, they could safely bring the issue to their product owner and make the case for spending a sprint addressing the technical debt.</p>
+<p class="zh">James 曾和一个团队共事，他们在团队内部私下追踪 velocity。他们用三个 sprint 的滚动平均来规划接下来的工作，并留意意外变化。当 velocity 在两个 sprint 里掉了 40% 时，他们坦诚地聊了聊发生了什么，发现是某个关键组件里的技术债在拖慢他们。因为这个指标不是在评判他们，他们可以放心地把问题带到产品负责人那里，论证该花一个 sprint 来处理这笔技术债。</p>
+<h2 id="build-metrics-customers">Build Your Metrics with Your Customers in Mind</h2>
+<h2 class="zh-h">为你的客户构建指标</h2>
+<p class="en">Your solutions will take different shapes for different audiences. While dashboards are common, they’re not the only way to communicate. Your metrics toolkit might include reports as source material for workshops or brainstorming sessions, and</p>
+<p class="zh">你的方案会因受众不同而呈现不同形态。仪表盘很常见，但不是唯一的沟通方式。你的指标工具箱里，可能还包括作为工作坊或头脑风暴素材的报告，这些报告可以附在 runbook 和日常活动上。</p>
+<div class="pagemark">— 原书第 237 页 —</div>
+<p class="en">these reports can be attached to runbooks and activities. Observe how your audience consumes and interprets the metrics, and be prepared to adapt accordingly. If you notice teams struggling to use your dashboards or make sense of the metrics, conduct further user research to determine if the metrics need to be adjusted or if they are not suitable for their intended purpose.</p>
+<p class="zh">（接上文）观察你的受众如何消费和解读指标，并准备好相应调整。如果你注意到团队用不好你的仪表盘、或搞不懂这些指标，就做进一步的用户研究，判断是指标需要调整，还是它们本就不适合预期用途。</p>
+<h3 id="human-side-metrics">The Human Side of Metrics</h3>
+<h3 class="zh-h">指标中有人的一面</h3>
+<p class="en">Let’s not forget the human element. Metrics exist to serve people, not the other way around. We briefly discussed this when we explored the want-versus-need trap, but it’s also a broader concern: if you want to drive improvement rather than fear, you need to create psychological safety around metrics. There are some simple steps you can take to ensure your metrics are safe:</p>
+<p class="zh">我们不要忘了人的因素。指标是为人服务的，不是反过来。我们在讨论“想要 vs. 需要”陷阱时简短提过这点，但它也是一个更广泛的关切：如果你想驱动改进而不是恐惧，就需要在指标周围创造心理安全。你可以采取一些简单步骤来确保你的指标是“安全”的：</p>
+<ul>
+<li><p class="en"><strong>Measure teams, not individuals.</strong> Individual metrics almost always create unhealthy competition and behaviors. However, this doesn’t mean managers should ignore individual performance entirely. The key distinction is between measuring individuals and identifying those who need support.</p><p class="zh"><strong>度量团队，而不是个人。</strong>个人指标几乎总会制造不健康的竞争和行为。但这并不意味着经理应该完全忽视个人绩效。关键区别在于：度量个人，和识别谁需要支持，是两回事。</p></li>
+</ul>
+<div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:12px 18px;margin:20px 0;font-size:15px;"><p class="en"><strong>How to Identify Underperforming Team Members Without Individual Metrics.</strong> Individual performance issues typically surface through qualitative signals before they appear in quantitative data:</p>
+<p class="zh"><strong>如何在没有个人指标的情况下识别绩效不佳的团队成员。</strong>个人绩效问题通常先通过定性信号浮现，然后才出现在定量数据里：</p></div>
+<ul>
+<li><p class="en"><strong>Code review patterns.</strong> Are their pull requests consistently requiring extensive rework? Are they struggling to get reviews approved?</p><p class="zh"><strong>代码评审模式。</strong>他们的 PR 是否总是需要大改？他们是不是很难通过评审？</p></li>
+<li><p class="en"><strong>Collaboration signals.</strong> Are they participating in team discussions? Are they asking questions when they’re stuck, or helping their teammates?</p><p class="zh"><strong>协作信号。</strong>他们参与团队讨论吗？卡住时会问问题吗？会帮助队友吗？</p></li>
+<li><p class="en"><strong>Delivery patterns.</strong> Are they consistently missing sprint commitments? Are they taking much longer on similar-sized tasks than their peers?</p><p class="zh"><strong>交付模式。</strong>他们总是 missed sprint 承诺吗？类似大小的任务，他们比同事花的时间长得多吗？</p></li>
+<li><p class="en"><strong>Knowledge sharing.</strong> Can they explain their work clearly? Are they learning from feedback?</p><p class="zh"><strong>知识分享。</strong>他们能清楚解释自己的工作吗？他们会从反馈中学习吗？</p></li>
+</ul>
+<div class="pagemark">— 原书第 238 页 —</div>
+<ul>
+<li><p class="en"><strong>Use metrics as context, not judgment.</strong> When you notice these qualitative concerns, team-level metrics can provide helpful context. If the team’s cycle time has increased and you’ve observed one person struggling with code reviews, that’s a coaching opportunity, not a performance evaluation.</p><p class="zh"><strong>把指标当背景信息，而不是评判。</strong>当你注意到这些定性的担忧时，团队级指标可以提供有用的背景。如果团队周期时间变长了，而你观察到某个人在代码评审上挣扎，那是一个辅导机会，不是绩效评估。</p></li>
+<li><p class="en"><strong>Focus on support, not surveillance.</strong> The goal is identifying when someone needs help—whether that’s mentoring, training, creating clearer requirements, or addressing external factors affecting their work. Frame conversations around “How can I help you be more effective?” rather than “Your numbers are low.”</p><p class="zh"><strong>聚焦支持，而不是监视。</strong>目标是识别什么时候有人需要帮助——不管是带教、培训、写出更清晰的需求，还是处理影响其工作的外部因素。把对话框定为“我怎么帮你更高效？”而不是“你的数字很低。”</p></li>
+<li><p class="en"><strong>Involve teams in choosing metrics.</strong> People support what they help create. Teams should have input on which metrics are most relevant to their work. When teams participate in defining their measurements, they’re more likely to use them constructively.</p><p class="zh"><strong>让团队参与选择指标。</strong>人们会支持他们参与创造的东西。团队应当对哪些指标与自己的工作最相关有发言权。当团队参与定义自己的度量时，他们更有可能建设性地使用它们。</p></li>
+<li><p class="en"><strong>Create a blameless culture.</strong> When things go wrong (and they will), focus on learning rather than placing blame. This applies both to system failures and individual performance issues. A team member struggling with delivery might be dealing with unclear requirements, technical debt, or knowledge gaps—all systemic issues that metrics alone won’t reveal.</p><p class="zh"><strong>建立无指责文化。</strong>出问题时（一定会出），聚焦学习而不是指责。这既适用于系统故障，也适用于个人绩效问题。一个交付上挣扎的团队成员，可能面对的是不清晰的需求、技术债或知识缺口——这些都是指标本身揭示不了的系统性问题。</p></li>
+</ul>
+<div style="background:#fffbe6;border-left:4px solid #f59e0b;border-radius:0 8px 8px 0;padding:12px 18px;margin:20px 0;"><p class="en"><strong>In Practice: April’s Story</strong></p>
+<p class="zh"><strong>实战：April 的故事</strong></p>
+<p class="en">April learned this lesson painfully. She initially tracked pull request review time by reviewer, hoping to identify bottlenecks. The data showed that Derek took three-times longer than others to review. When she shared the metric publicly, Derek started approving reviews without real scrutiny to improve his “score.” Bug escape rates tripled in the next two weeks. April dug deeper: Derek’s reviews caught 89% of production bugs before shipping, while faster reviewers missed critical issues. April immediately changed approach: she tracked the team-level review time and bug escape rate together, showing that thorough reviews correlate with fewer production issues. She celebrated Derek’s thoroughness while pairing him with juniors to share his bug-spotting expertise.</p>
+<p class="zh">April 是吃了苦头才学到这一课的。她最初按评审人追踪 PR 评审时间，希望找出瓶颈。数据显示 Derek 的评审时间是其他人的三倍。当她公开这个指标后，Derek 开始不加真正审查就批准评审，好让自己的“分数”好看。接下来两周，bug 逃逸率翻了三倍。April 深挖下去：Derek 的评审在上线前抓住了 89% 的生产 bug，而那些更快的评审者反而漏掉了关键问题。April 立刻改了做法：她把团队级评审时间和 bug 逃逸率放在一起追踪，显示详尽评审与更少生产问题之间的相关性。她表彰了 Derek 的细致，同时安排他和初级工程师结对，分享他找 bug 的专长。</p>
+</div>
+<p class="en">The best individual performance insights come from regular one-on-ones, peer feedback, and direct observation of work quality and collaboration patterns. Metrics should inform these conversations, not replace them.</p>
+<p class="zh">关于个人绩效，最好的洞察来自定期一对一、同级反馈，以及对工作质量和协作模式的直接观察。指标应当为这些对话提供信息，而不是取代它们。</p>
+<h3 id="quant-qual">Balancing Quantitative and Qualitative Data</h3>
+<h3 class="zh-h">平衡定量与定性数据</h3>
+<p class="en">We also recommend striking a balance between the use of quantitative and qualitative data. Hard numbers tell part of the story, but not all of it, and the why behind a metric’s</p>
+<p class="zh">我们还建议在定量数据和定性数据的使用之间取得平衡。硬数字只讲了故事的一部分，不是全部；而一个指标之所以有价值，其背后的“为什么”可能根本不是技术原因。</p>
+<div class="pagemark">— 原书第 239 页 —</div>
+<p class="en">value might not be anything technical. To capture some of this information, you’re probably already doing some of what you need. If you’re conducting retrospectives on sprints, include questions about morale and how people are feeling, and ask participants to share concerns, friction points, and issues. You’ve also got clients that you deliver products and services to, so ask them about their experiences. Frameworks like NPS (net promoter scores) are straightforward to implement. Even easier is the happy/neutral/sad approach—for example, post-ticket surveys where customers click on a happy face, neutral face, or sad face. You can also embed this into product features and directly ask customers for feedback using a single one-click tool like this. The richest insights often come from combining quantitative trends with qualitative explanations.</p>
+<p class="zh">（接上文）要捕捉这类信息，你大概已经在做一部分了。如果你在做 sprint 复盘，就加上关于士气和感受的问题，让参与者分享担忧、摩擦点和问题。你还有交付产品和服务的客户，那就去问他们的体验。像 NPS（净推荐值）这样的框架很容易落地。更简单的是开心/中性/难过表情法——比如工单结束后的调研，让客户点一个笑脸、平脸或哭脸。你也可以把它嵌入产品功能，用一个一键工具直接向客户征求反馈。最丰富的洞察，往往来自把定量趋势和定性解释结合起来。</p>
+<h3 id="humans-metrics">Humans and Metrics</h3>
+<h3 class="zh-h">人与指标</h3>
+<p class="en">It’s also important to remember that the people on your team will not only interpret metrics but they’ll also change their behavior in response to them.</p>
+<p class="zh">还有一点很重要：你团队里的人不仅会解读指标，还会根据指标改变自己的行为。</p>
+<div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:12px 18px;margin:20px 0;font-size:15px;"><p class="en">Also consider the concept of demand characteristics, which is seen in experimental studies, where participants form an interpretation of the experiment’s purpose and subconsciously change their behavior to fit that interpretation. Or in our case, people make assumptions about why something is being measured and subconsciously behave differently.</p>
+<p class="zh">另外请考虑“需求特征”（demand characteristics）这个概念——它见于实验研究：参与者会对实验目的形成一种解读，并下意识地改变行为去迎合这种解读。放到我们的场景里就是：人们会对“为什么要度量这件事”做出假设，然后下意识地表现得不一样。</p></div>
+<p class="en"><strong>Goodhart’s Law.</strong> Goodhart’s Law states that “When a measure becomes a target, it ceases to be a good measure.” Once people know they’re being measured, they will optimize for that metric—sometimes at the expense of what actually matters. For example, if teams measure only feature development or availability, they will tend to focus solely on building features or prioritizing availability at the expense of performance. This also applies to nontechnical domains, such as costs (as discussed in Chapter 7). Focusing on cost savings sometimes costs you more money in the long term because the quality of service suffers. A good way to avoid getting bitten here is to focus on outcomes as well as volumes—for example, recognizing that it’s great that you built all those features, but also assessing whether they were good features that met your customers’ needs.</p>
+<p class="zh"><strong>古德哈特定律（Goodhart’s Law）。</strong>古德哈特定律说：“当一项度量变成目标时，它就不再是一项好的度量。”一旦人们知道自己在被度量，就会为那个指标做优化——有时以牺牲真正重要的东西为代价。比如，如果团队只度量功能开发或可用性，他们就会倾向于只做功能、或把可用性排在性能之前。这也适用于非技术领域，比如成本（见第 7 章）。一味省钱，长期来看有时反而花更多钱，因为服务质量受损。避免被咬到的一个好办法是：既看产出量，也看结果——比如，承认你做了那么多功能很棒，但也要评估这些是不是满足客户需求的好功能。</p>
+<div class="pagemark">— 原书第 240 页 —</div>
+<div style="background:#fffbe6;border-left:4px solid #f59e0b;border-radius:0 8px 8px 0;padding:12px 18px;margin:20px 0;"><p class="en"><strong>In Practice: April’s Story</strong></p>
+<p class="zh"><strong>实战：April 的故事</strong></p>
+<p class="en">April experienced Goodhart’s Law firsthand when PixelCurl’s board demanded “improved velocity.” She increased story points from 30 to 45 per sprint. Was it a success? Not quite. The team achieved this by marking stories complete without documentation, skipping code reviews for “trivial” changes (which weren’t in fact trivial), and deferring all technical debt work. After two months of “improved velocity,” the system became so fragile that a routine deployment took down production for six hours. April presented the correlation to leadership: when velocity became the target, quality metrics (test coverage, code review thoroughness, documentation completeness) all declined. She implemented a balanced scorecard: velocity, quality, and stability metrics must all stay within acceptable ranges.</p>
+<p class="zh">当 PixelCurl 董事会要求“提升 velocity”时，April 亲身体会了古德哈特定律。她把每个 sprint 的故事点从 30 提到 45。成功了吗？并没有。团队靠这些做到的：不写文档就把故事标记完成、对“琐碎”的改动跳过代码评审（其实并不琐碎）、把所有技术债工作往后推。两个月“提升 velocity”之后，系统脆弱到一次常规部署就把生产环境搞挂了 6 个小时。April 向领导层展示了这种相关性：当 velocity 变成目标，质量指标（测试覆盖率、代码评审详尽度、文档完整度）全部下降。她落地了一张平衡计分卡：velocity、质量和稳定性指标都必须保持在可接受范围内。</p>
+</div>
+<p class="en"><strong>Context ignorance.</strong> Metrics without context are meaningless at best, and misleading at worst. We saw this in the discussion about want versus need. Never share metrics without some color and context that explains the following:</p>
+<p class="zh"><strong>无视上下文。</strong>没有上下文的指标，最好的情况是毫无意义，最坏的情况是误导人。我们在讨论“想要 vs. 需要”时已经看到了这一点。永远不要在没有任何背景和上下文的情况下分享指标，至少要解释：</p>
+<ul>
+<li><p class="en">What the metrics measure</p><p class="zh">这些指标度量的是什么</p></li>
+<li><p class="en">What the metric value means, especially if it looks like an outlier or an oddity</p><p class="zh">指标值意味着什么——尤其是当它看起来像离群值或异常值时</p></li>
+</ul>
+<p class="en">You only have yourself to blame if you provide an ambiguous metric that causes the audience to make assumptions or having to fill in the gaps themselves—because they’ll always assume something that you don’t expect, or don’t want.</p>
+<p class="zh">如果你给了一个模糊的指标，让受众自己去假设、自己去填空，那只能怪你自己——因为他们猜的，永远会是你不期望、或不希望他们猜到的东西。</p>
+<p class="en"><strong>“What gets measured gets done.”</strong> This sounds awesome, right? We measure things, and that provides a focus for the team, enabling them to get things done. There is a downside, though: anything not being measured tends to be overlooked. As we’ve said, you can’t measure everything, so you’re always making trade-offs about what deserves attention and what doesn’t. The problem of invisible work is real. Think about all the crucial activities that keep your systems running but rarely show up on dashboards—the time spent mentoring junior engineers, the hours of documentation writing, the careful code reviews that prevent future disasters, or the relationship building with stakeholders that smooths the path for future projects. These activities aren’t typically measured, yet they’re fundamental to long-term success.</p>
+<p class="zh"><strong>“被度量的事才会被完成。”</strong>这话听着很棒，对吧？我们度量事情，就给了团队一个焦点，让他们把事做成。但它有个阴暗面：任何没被度量的事，都容易被忽视。我们说过，你不可能度量一切，所以你永远在做权衡：什么值得关注、什么不值得。隐性工作的问题是真实存在的。想想那些让你的系统持续运转、却很少出现在仪表盘上的关键活动——花在带初级工程师上的时间、写文档的那些小时、预防未来灾难的细致代码评审、以及为未来项目铺平道路的干系人关系建设。这些活动通常不被度量，但它们对长期成功至关重要。</p>
+<p class="en">This creates a particularly nasty trap for teams trying to “do the right thing.” If your metrics focus exclusively on velocity and feature delivery, what disappears? Technical debt remediation, security improvements, and infrastructure upgrades all take a back seat because they don’t move the needle on what’s being measured. Teams know these things matter, but when performance reviews and team goals are tied to specific metrics, the unmeasured work becomes career limiting.</p>
+<p class="zh">这给那些努力“做正确的事”的团队设下了一个特别恶心的陷阱。如果你的指标只盯着 velocity 和功能交付，什么会消失？技术债偿还、安全改进、基础设施升级，全都退居次席——因为它们在被度量的东西上拉不动指针。团队知道这些事重要，但当绩效评估和团队目标绑在具体指标上时，没被度量的工作就变成了“影响职业发展”的事。</p>
+<p class="en">The solution isn’t to measure everything—in that, lies chaos and metric fatigue. Instead, acknowledge the limitation explicitly. When rolling out metrics, be clear about what you’re not measuring and why that work still matters. Consider rotating your focus metrics quarterly or semiannually to ensure that different aspects of the work receive their time in the spotlight.</p>
+<p class="zh">解决方案不是度量一切——那会带来混乱和指标疲劳。相反，要明确承认这种局限。推出指标时，说清楚你没在度量什么、以及为什么那项工作仍然重要。考虑每季度或每半年轮换一次焦点指标，确保工作的不同方面都能获得聚光灯。</p>
+<div class="pagemark">— 原书第 241 页 —</div>
+<p class="en">Most importantly, create space for the unmeasured work. Google’s famous “20% time” wasn’t just about innovation—it was an acknowledgment that not everything valuable can or should be measured. Whether it’s dedicated time for technical debt, learning, or relationship building, protecting time for unmeasured activities ensures they don’t get completely crowded out by the tyranny of the dashboard.</p>
+<p class="zh">最重要的是，为未被度量的工作创造空间。Google 著名的“20% 时间”不只是为了创新——它是一种承认：不是所有有价值的东西都能、或都应该被度量。不管是专门留给技术债、学习还是关系建设的时间，保护这些未被度量活动的时间，能确保它们不被仪表盘的暴政完全挤掉。</p>
+<p class="en">Metrics are a tool for understanding and improving your work, not a complete definition of what constitutes valuable work. The best teams understand this distinction and act accordingly.</p>
+<p class="zh">指标是理解和改进你工作的工具，而不是“什么才算有价值的工作”的完整定义。最好的团队理解这种区别，并据此行事。</p>
+<h2 id="make-visible">Make Metrics Visible and Accessible</h2>
+<h2 class="zh-h">让指标可见、可及</h2>
+<p class="en">Metrics hidden in a dashboard that nobody looks at might as well not exist. Make your key metrics visible:</p>
+<p class="zh">藏在一个没人看的仪表盘里的指标，跟不存在差不多。让你的关键指标可见：</p>
+<ul>
+<li><p class="en">Place dashboards on team TVs or shared screens.</p><p class="zh">把仪表盘投到团队电视或共享屏幕上。</p></li>
+<li><p class="en">Ensure automated reports are sent to team communication channels.</p><p class="zh">确保自动化报告发送到团队沟通频道。</p></li>
+<li><p class="en">And don’t forget the reviews we mentioned earlier in team meetings and beyond.</p><p class="zh">别忘了我们前面提到的复盘——在团队会议及其他场合。</p></li>
+</ul>
+<p class="en">The goal is to make metrics an integral part of everyday conversation, not something reserved only for quarterly reviews.</p>
+<p class="zh">目标是让指标成为日常对话中不可或缺的一部分，而不是只留给季度复盘的东西。</p>
+<h2 id="ongoing-maintenance">Metrics Need Ongoing Maintenance, Just Like Code</h2>
+<h2 class="zh-h">指标也像代码一样需要持续维护</h2>
+<p class="en">Track versions and changes you make to metrics. Keep a changelog of what changed and why. When you update how a metric is calculated, document it. Your future self (and everyone else) will thank you. For example, if you change how you measure pull request review time to exclude weekends, that’s a big deal—write it down! (Or better yet, create a new metric and give it a meaningful name so it’s easy to understand.) This helps teams understand why their numbers might look different and maintains trust in your metrics.</p>
+<p class="zh">追踪指标的版本和你对它做的改动。维护一份变更日志，记录改了什么、为什么改。当你更新一个指标的计算方式时，把它写下来。未来的你（以及其他所有人）都会感谢你。比如，如果你把 PR 评审时间的度量改成排除周末，那可是件大事——写下来！（或者更好的做法是，新建一个指标，给它起个有意义的名字，让人一看就懂。）这能帮团队理解为什么数字看起来不一样，并维持对指标的信任。</p>
+<p class="en">Think of versioning in this way: small tweaks receive a minor version bump (e.g., v1.1 to v1.2), while more significant changes that may impact historical comparisons warrant a major version update (e.g., v1.0 to v2.0). This makes it easier to track changes over time and understand when metrics might not be directly comparable.</p>
+<p class="zh">可以这样理解版本管理：小调整升一个小版本号（比如 v1.1 到 v1.2），而可能影响历史对比的较大改动则值得升一个大版本号（比如 v1.0 到 v2.0）。这样更容易随时间追踪变化，并理解指标什么时候可能不能直接比较。</p>
+<p class="en">Make ownership crystal clear. Someone needs to own these metrics—both the technical implementation and the business value they provide. Without clear ownership, metrics tend to get boring or break without anyone noticing. Your metrics owner should do the following:</p>
+<p class="zh">把归属权搞得清清楚楚。这些指标需要有人负责——既包括技术实现，也包括它们提供的业务价值。没有明确归属，指标往往会在没人注意的情况下变得无聊或坏掉。你的指标负责人应该做以下事情：</p>
+<div class="pagemark">— 原书第 242 页 —</div>
+<ul>
+<li><p class="en">Keep an eye on data quality and reliability.</p><p class="zh">关注数据质量和可靠性。</p></li>
+<li><p class="en">Check that metrics still align with team goals.</p><p class="zh">检查指标是否仍与团队目标对齐。</p></li>
+<li><p class="en">Handle questions and concerns from teams.</p><p class="zh">处理团队的问题和关切。</p></li>
+<li><p class="en">Plan and prioritize improvements.</p><p class="zh">规划并排定改进的优先级。</p></li>
+</ul>
+<p class="en">This doesn’t mean one person does everything, but someone does need to be responsible for the health of your metrics system. Think of them as the product manager for your metrics.</p>
+<p class="zh">这不是说一个人做所有事，但确实需要有人为指标系统的健康负责。把他们想象成你指标的产品经理。</p>
+<p class="en">Listen to your users and evolve. Your metrics are a product, remember? That means gathering feedback from your users (the leaders, managers, and engineers we discussed earlier) and using it to drive improvement. Some ways to do this include the following:</p>
+<p class="zh">倾听你的用户并持续演进。指标是产品，记得吗？这意味着从你的用户（我们前面讨论过的领导、经理和工程师）那里收集反馈，并用它来驱动改进。一些做法包括：</p>
+<ul>
+<li><p class="en">Regular check-ins with teams using the metrics</p><p class="zh">与使用指标的团队定期沟通</p></li>
+<li><p class="en">Surveys about metric usefulness and pain points</p><p class="zh">关于指标有用性和痛点的调研</p></li>
+<li><p class="en">Watching which metrics actually drive decisions (and which ones nobody uses)</p><p class="zh">观察哪些指标真正在驱动决策（哪些根本没人用）</p></li>
+<li><p class="en">Looking for gaps where teams need data but don’t have it</p><p class="zh">寻找团队需要数据却拿不到的缺口</p></li>
+</ul>
+<p class="en">Sometimes you’ll find metrics that seem great in theory but aren’t actually helping anyone make decisions. That’s fine; eradicate them! It’s better to have fewer, more valuable metrics than a dashboard full of numbers that nobody uses.</p>
+<p class="zh">有时你会发现有些指标理论上很好，实际上并没帮任何人做决策。没关系，除掉它们！有更少但更有价值的指标，远胜于一个塞满没人用的数字的仪表盘。</p>
+<p class="en">Stay ahead of changes to your products, platforms, and environments. Your environment is constantly evolving, with new tools, updated platforms, and different processes. Your metrics need to keep up. Keep an eye on the following:</p>
+<p class="zh">走在产品、平台和环境变化的前面。你的环境在不断演进：新工具、更新的平台、不同的流程。你的指标需要跟上。留意以下几点：</p>
+<ul>
+<li><p class="en"><strong>New data sources becoming available.</strong> This means assessing whether that shiny new CI system has better build metrics.</p><p class="zh"><strong>新数据源出现。</strong>这意味着要评估那个闪亮的新 CI 系统是否有更好的构建指标。</p></li>
+<li><p class="en"><strong>Existing tools being deprecated.</strong> This is the reverse, where consideration is needed as to whether you have a plan for when the old build system is removed.</p><p class="zh"><strong>现有工具被弃用。</strong>反过来，这需要考虑：当旧构建系统被移除时，你有没有预案。</p></li>
+<li><p class="en"><strong>Changes in how teams work.</strong> If everyone switches to trunk-based development, your pull request metrics might need updates.</p><p class="zh"><strong>团队工作方式变化。</strong>如果所有人都切到 trunk-based 开发，你的 PR 指标可能需要更新。</p></li>
+</ul>
+<div class="pagemark">— 原书第 243 页 —</div>
+<p class="en">Remember to phase out your metrics. Not every metric needs to live forever. When a metric stops being useful, remove it. You may have solved the problem it was tracking, or teams may have moved on to different challenges. Having too many metrics can be just as detrimental as having too few, as it makes it harder for teams to focus on what truly matters.</p>
+<p class="zh">记得逐步淘汰你的指标。不是每个指标都要永远存在。当一个指标不再有用时，就删掉它。你可能已经解决了它在追踪的问题，或者团队已经转向不同的挑战。指标太多和太少一样有害，因为它让团队更难聚焦真正重要的事。</p>
+<p class="en">Before removing a metric, check on the following:</p>
+<p class="zh">删除一个指标之前，检查以下几点：</p>
+<ul>
+<li><p class="en">If anyone is still using it for decision making</p><p class="zh">是否还有人在用它做决策</p></li>
+<li><p class="en">If it’s part of any regular reports or dashboards</p><p class="zh">它是否出现在任何定期报告或仪表盘里</p></li>
+<li><p class="en">Ensuring you’ve stored historical data for compliance or comparison</p><p class="zh">确保你已保存历史数据以备合规或对比</p></li>
+<li><p class="en">Considering whether there’s a newer metric that better serves the same purpose</p><p class="zh">考虑是否有更新的指标能更好地服务于同一目的</p></li>
+</ul>
+<p class="en">So, what is the bottom line? Your metrics aren’t a set-it-and-forget-it thing. They need regular attention to stay relevant and reliable. However, with clear ownership, effective feedback loops, and a willingness to evolve, they’ll continue to help teams make better decisions.</p>
+<p class="zh">那么，底线是什么？你的指标不是“设好就不管”的东西。它们需要持续关注，才能保持相关性和可靠性。然而，有了清晰的归属、有效的反馈闭环，以及演进的意愿，它们就会持续帮团队做出更好的决策。</p>
+<h2 id="ai-metrics">AI Doesn’t Change Your Approach to Metrics</h2>
+<h2 class="zh-h">AI 不会改变你的度量方法论</h2>
+<p class="en">As AI tools become integrated into development workflows, your fundamental metrics approach remains sound; you still need balanced metrics that drive decision making and improvement. What evolves isn’t the methodology but the specific measurements and how you present them. Your metrics product should adapt by creating segmented views that compare AI and non-AI performance, highlighting both efficiency gains and quality impacts. This approach incorporates feedback loops to identify where AI tools deliver the most value and introduces new visualizations that track the impact of AI on collaboration patterns.</p>
+<p class="zh">随着 AI 工具被整合进开发工作流，你的基本度量方法论依然成立；你仍然需要平衡的指标来驱动决策和改进。演进的不是方法论，而是具体的度量项以及你呈现它们的方式。你的指标产品应当适应变化：创建对比 AI 与非 AI 绩效的分视图，同时展示效率提升和质量影响。这种做法纳入反馈闭环，以识别 AI 工具在哪里交付最多价值，并引入新的可视化来追踪 AI 对协作模式的影响。</p>
+<p class="en">For productivity measurement, the key dimensions remain equally valuable for AI-augmented development. You’ll want to measure developer satisfaction with AI tools and their impact on work quality, while tracking concrete outcomes (such as defect rates or feature completion times) with AI assistance. Monitor AI usage patterns, generated code volume, and pull request throughput to understand activity levels. Pay attention to how AI affects collaboration between team members and across teams, or how it helps create or replace documentation. Most importantly, measure the time saved and workflow changes resulting from AI adoption to quantify efficiency gains.</p>
+<p class="zh">在生产力度量上，关键维度对 AI 增强的开发同样有价值。你会想要度量开发者对 AI 工具的满意度、以及它们对工作质量的影响，同时追踪有 AI 辅助时的具体结果（比如缺陷率或功能完成时间）。监控 AI 使用模式、生成代码量和 PR 吞吐量，以了解活跃度。留意 AI 如何影响团队成员之间、跨团队的协作，或它如何帮助创建或替代文档。最重要的是，度量采用 AI 后节省的时间和工作流变化，以量化效率提升。</p>
+<div class="pagemark">— 原书第 244 页 —</div>
+<div style="background:#fffbe6;border-left:4px solid #f59e0b;border-radius:0 8px 8px 0;padding:12px 18px;margin:20px 0;"><p class="en"><strong>In Practice: April’s Story</strong></p>
+<p class="zh"><strong>实战：April 的故事</strong></p>
+<p class="en">When PixelCurl adopted GitHub Copilot, the vice president expected velocity to double overnight. But April knew better. She segmented metrics to track AI-assisted versus traditional development. The data told a nuanced story: AI speeds up boilerplate code by three times, but barely affected complex business logic. Junior engineers using AI shipped 40% faster but with two-times more bugs initially. Senior engineers saw minimal speed improvement but used AI for documentation, improving their docs quality by 60%. April presented this nuanced view: “AI is transforming how we work, not just the speed at which we work. We need to measure quality and knowledge transfer, not just velocity.” She added new metrics: percentage of AI-generated code that survives code review, time spent debugging AI suggestions, and documentation completeness scores.</p>
+<p class="zh">当 PixelCurl 采用 GitHub Copilot 时，副总裁指望 velocity 一夜翻倍。但 April 更清醒。她把指标切分，分别追踪 AI 辅助和传统开发。数据讲了一个微妙的故事：AI 把样板代码速度提升了三倍，但对复杂业务逻辑几乎没影响。用 AI 的初级工程师交付快了 40%，但初期 bug 多了一倍。高级工程师速度提升甚微，但把 AI 用在文档上，文档质量提升了 60%。April 展示了这个细致的视角：“AI 正在改变我们工作的方式，而不只是工作的速度。我们需要度量质量和知识传递，而不只是 velocity。”她加了新指标：通过代码评审的 AI 生成代码比例、调试 AI 建议所花的时间、文档完整度评分。</p>
+</div>
+<p class="en">Beyond traditional productivity metrics, you may need to add new dimensions, particularly around trust. Measuring engineers’ trust in AI-generated code, comments, and recommendations becomes crucial because this trust dimension directly affects adoption patterns and the ultimate value that teams derive from AI tools.</p>
+<p class="zh">在传统生产力指标之外，你可能需要增加新的维度，尤其是围绕信任。度量工程师对 AI 生成代码、评论和建议的信任度，变得至关重要——因为这个信任维度直接影响采用模式，以及团队最终从 AI 工具中获得的价值。</p>
+<p class="en">Your metrics strategy should anticipate the questions that stakeholders will inevitably ask about AI adoption. Where is AI providing the most value? Are we seeing quality trade-offs? Which teams are benefiting most from these tools? Having these insights ready builds confidence in your AI implementation strategy while helping teams make better decisions about where and how to leverage these tools. The teams that succeed with AI are those that measure its impact thoughtfully, adjusting their approach based on data rather than assumptions about how AI should theoretically improve productivity.</p>
+<p class="zh">你的指标战略应当预见到干系人关于采用 AI 必然会问的问题。AI 在哪里提供最大价值？我们是否看到了质量上的权衡？哪些团队从这些工具中受益最多？把这些洞察准备好，既能建立大家对你 AI 落地战略的信心，又能帮团队就”在哪里、如何利用这些工具”做出更好的决策。在 AI 上取得成功的团队，是那些认真度量其影响、基于数据而非“AI 理论上该如何提升生产力”的假设来调整做法的团队。</p>
+<h2 id="conclusion">Conclusion: Measurement as Illumination</h2>
+<h2 class="zh-h">结语：度量即照亮</h2>
+<p class="en">Throughout this chapter, we’ve explored how to create metrics that help rather than hinder your engineering teams. The key insight running through every example and framework is that metrics should serve as guides on your journey rather than become the destination itself.</p>
+<p class="zh">本章我们探索了如何创建那些帮助而不是阻碍工程团队的指标。贯穿每个例子和框架的关键洞察是：指标应当是你旅途上的向导，而不是目的地本身。</p>
+<p class="en">Effective metrics illuminate what’s happening in your engineering organization, helping teams make informed decisions about where to focus their energy. They reveal hidden bottlenecks, validate or challenge your assumptions about productivity, and help you prioritize improvements that matter. But remember, they’re instruments for understanding, not hammers for judgment. When metrics transform from measurement tools into performance targets disconnected from real outcomes, they lose their ability to drive genuine improvement and often create harmful behaviors instead.</p>
+<p class="zh">有效的指标照亮你工程组织里正在发生什么，帮团队就精力投向何处做出知情决策。它们揭示隐藏的瓶颈、验证或挑战你对生产力的假设，并帮你把重要的改进排上优先级。但请记住：它们是用来理解的工具，不是用来评判的锤子。当指标从度量工具变成与真实结果脱钩的绩效目标时，它们就失去了驱动真正改进的能力，反而常常制造有害行为。</p>
+<div class="pagemark">— 原书第 245 页 —</div>
+<p class="en">As you develop your metrics strategy, keep these principles in mind. Focus on measuring outcomes that matter to your customers and business, not just outputs that clutter your dashboards. Recognize that speed, quality, cost, and team well-being exist in constant tension; optimizing for any single dimension while ignoring the others leads to predictable failures. Treat your metrics program as you would any other product by understanding your users’ needs, gathering feedback regularly, and iterating based on what you learn. Start simply with a handful of carefully chosen measurements rather than overwhelming teams with dozens of confusing datapoints. Most importantly, build psychological safety around your metrics so that teams view them as tools for learning and improvement, rather than as weapons for blame.</p>
+<p class="zh">在制定指标战略时，请记住这些原则。聚焦度量对客户和业务重要的结果，而不只是塞满你仪表盘的产出。认识到速度、质量、成本和团队福祉之间始终存在张力；只优化单一维度而忽视其他，会导致可预见的失败。像对待任何其他产品一样对待你的指标项目：理解用户需求、定期收集反馈、基于所学迭代。从少量精心挑选的度量开始，而不是用几十个令人困惑的数据点把团队淹没。最重要的是，在指标周围建立心理安全，让团队把它们看作学习和改进的工具，而不是指责的武器。</p>
+<p class="en">The real value of metrics lies not in the numbers themselves but in what they enable. Good metrics spark meaningful conversations about improvement, reveal insights that challenge conventional thinking, and inspire teams to experiment with better ways of working. When used thoughtfully, they become powerful allies in your quest to build not just better software, but better teams and more sustainable engineering cultures. The goal isn’t to become beholden to the dashboard but to use data wisely in service of creating environments where both people and products can thrive.</p>
+<p class="zh">指标的真正价值不在于数字本身，而在于它们所成就的事情。好的指标能激发关于改进的有意义对话、揭示挑战常规思维的洞察，并激励团队试验更好的工作方式。用得深思熟虑时，它们会成为你求索路上的强大盟友——不仅是构建更好的软件，更是构建更好的团队和更可持续的工程文化。目标不是变成仪表盘的附庸，而是明智地运用数据，服务于创造一个人和产品都能蓬勃生长的环境。</p>
+<p class="en">In the next (and final!) chapter, we’ll summarize everything you’ve learned so far.</p>
+<p class="zh">在下一章（也是最后一章！），我们会总结你迄今为止学到的一切。</p>
+<div class="pagemark">— 原书第 246 页 —</div>
+
+<nav class="pager"><a href="chapter-09.html">← 上一章</a><a href="index.html">目录</a><a href="chapter-11.html">下一章 →</a></nav>
+</main>
+
+<script>
+  var t = document.getElementById('toc-toggle');
+  document.querySelectorAll('nav#toc a').forEach(function(a){
+    a.addEventListener('click', function(){
+      if (window.innerWidth <= 900) { t.checked = false; }
+    });
+  });
+</script>
+
+</body>
+</html>
