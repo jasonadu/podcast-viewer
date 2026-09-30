@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>27 · Under the Hood | 第 27 章 · 内幕揭秘</title>
+<style>
+:root{
+  --accent:#2563eb; --zh-bg:#f0f6ff; --zh-border:#2563eb;
+  --code-bg:#0f172a; --code-ink:#e2e8f0; --ink:#1f2937;
+}
+*{box-sizing:border-box;}
+body{margin:0; background:#faf6f1; color:var(--ink);
+  font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  font-size:18px; line-height:1.8;}
+nav#toc{position:fixed; top:0; left:0; width:300px; height:100vh; overflow-y:auto;
+  background:#fff; border-right:1px solid #e5e7eb; padding:60px 14px 20px;
+  transition:transform .25s ease; z-index:100; font-size:14px;}
+body.toc-closed nav#toc{transform:translateX(-300px);}
+nav#toc h2{font-size:16px; color:var(--accent); margin:6px 8px 14px;}
+nav#toc a{display:block; color:#374151; text-decoration:none; padding:4px 8px;
+  border-radius:6px; line-height:1.4;}
+nav#toc a:hover{background:var(--zh-bg); color:var(--accent);}
+nav#toc a.l1{font-weight:700; margin-top:10px; color:#111827;}
+nav#toc a.l2{font-weight:600;}
+nav#toc a.l3{padding-left:28px; color:#6b7280;}
+main{margin-left:300px; max-width:900px; padding:64px 40px 80px; transition:margin .25s ease;}
+body.toc-closed main{margin-left:0;}
+.menu-btn{position:fixed; top:14px; left:14px; z-index:200; border:none; background:var(--accent);
+  color:#fff; width:40px; height:40px; border-radius:8px; font-size:18px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; box-shadow:0 1px 4px rgba(0,0,0,.2);}
+h1{font-size:28px; color:#111827; border-bottom:3px solid var(--accent); padding-bottom:10px;
+  margin-top:10px; scroll-margin-top:20px;}
+h2{font-size:23px; color:#111827; margin-top:38px; border-left:5px solid var(--accent);
+  padding-left:12px; scroll-margin-top:20px;}
+h3{font-size:19px; color:#1f2937; margin-top:28px; scroll-margin-top:20px;}
+h4{font-size:17px; color:#374151; margin-top:22px;}
+.hzh{display:block; font-size:.82em; color:var(--accent); font-weight:600; margin-top:2px;}
+p.en{margin:14px 0;}
+p.zh{background:var(--zh-bg); border-left:4px solid var(--zh-border);
+  border-radius:0 8px 8px 0; padding:10px 16px; margin:10px 0; color:#1e3a8a;}
+li .zh, li span.zh{display:block; background:var(--zh-bg); border-left:4px solid var(--zh-border);
+  border-radius:0 8px 8px 0; padding:6px 12px; margin:4px 0; color:#1e3a8a; font-size:.96em;}
+li{margin:6px 0;}
+pre{background:var(--code-bg); color:var(--code-ink); padding:14px 16px; border-radius:8px;
+  overflow-x:auto; font-family:"SF Mono",Menlo,Consolas,monospace; font-size:13.5px; line-height:1.5;}
+code{font-family:"SF Mono",Menlo,Consolas,monospace;}
+p code, li code{background:#fce7f3; color:#be185d; padding:1px 5px; border-radius:4px; font-size:.9em;}
+figure{margin:20px 0; text-align:center;}
+figure img{max-width:100%; border:1px solid #e5e7eb; border-radius:8px;}
+figcaption{font-size:13px; color:#6b7280; margin-top:6px;}
+figcaption .zh{display:block; color:var(--accent);}
+table{border-collapse:collapse; width:100%; margin:16px 0; font-size:14px;}
+th,td{border:1px solid #d1d5db; padding:8px 10px; text-align:left; vertical-align:top;}
+th{background:#f1f5f9;}
+.pb{text-align:center; color:#9ca3af; font-size:12px; letter-spacing:2px; margin:26px 0;}
+.note{background:#fffbeb; border:1px dashed #d97706; color:#92400e; padding:10px 16px;
+  border-radius:8px; margin:16px 0; font-size:15px;}
+.pager{display:flex; justify-content:space-between; gap:10px; margin-top:60px;}
+.pager a{flex:1; text-align:center; padding:12px; border:1px solid #d1d5db; border-radius:8px;
+  text-decoration:none; color:#374151; background:#fff;}
+.pager a:hover{background:var(--accent); color:#fff;}
+.pager a.disabled{opacity:.4; pointer-events:none;}
+@media (max-width:900px){
+  nav#toc{box-shadow:2px 0 12px rgba(0,0,0,.2);}
+  main{margin-left:0 !important; padding:60px 18px 60px;}
+}
+</style></head>
+<body>
+<button class="menu-btn" id="menuBtn">☰</button>
+<nav id="toc"><h2>目录</h2><a class="l2" href="javascript:;">27  Under the Hood / 内幕揭秘</a><a class="l3" href="#gemini">Gemini</a><a class="l3" href="#chatgpt">ChatGPT</a><a class="l3" href="#grok">Grok</a><a class="l3" href="#kimi">Kimi</a><a class="l3" href="#claude">Claude</a><a class="l3" href="#deepseek">DeepSeek</a><a class="l3" href="#conclusion">小结</a></nav>
+<main>
+<div class="chap-label" style="color:#9ca3af;font-size:13px;letter-spacing:1px;">Chapter 27</div>
+<h1><span class="hen">27 · Under the Hood</span><span class="hzh">第 27 章 · 内幕揭秘</span></h1>
+<h2 id="intro"><span class="hen">Under the Hood: An Inside Look at the Agents' Reasoning Engines</span><span class="hzh">内幕揭秘：透视智能体的推理引擎</span></h2>
+<p class="en">The emergence of intelligent Agents represents a pivotal shift in artificial intelligence. These are systems designed to plan, strategize, and execute complex tasks, and at the cognitive core of each lies a LLM. This LLM is not merely a sophisticated text generator; it serves as the foundational reasoning engine, the central “mind” that empowers the Agent to make decisions, formulate plans, and interact with its environment.</p>
+<p class="zh">智能智能体的崛起代表着人工智能的一次关键转变。这些系统被设计用来规划、制定策略并执行复杂任务，而每一个的认知核心都是一个 LLM。这个 LLM 不只是一个精巧的文本生成器；它充当基础性的推理引擎，是赋予智能体决策、制定计划并与环境交互能力的中央“大脑”。</p>
+<p class="en">Therefore, understanding the internal reasoning mechanisms of these models is no longer an academic exercise—it is a critical necessity for developing the next generation of robust, reliable, and effective Agents. In this section, we directly investigate these core engines by posing a fundamental question to several of today's leading models: Gemini, ChatGPT, Grok, Kimi, Claude, and DeepSeek. By prompting these LLMs to articulate their own step-by-step reasoning processes, we aim to illuminate the fundamental logic that will drive the capabilities and limitations of future intelligent Agent systems.</p>
+<p class="zh">因此，理解这些模型的内部推理机制已不再是学术练习——它是开发下一代健壮、可靠、高效智能体的关键必需。本节中，我们通过向当今几个领先模型——Gemini、ChatGPT、Grok、Kimi、Claude 和 DeepSeek——提出一个基本问题，来直接考察这些核心引擎。通过提示这些 LLM 清晰阐述它们自己逐步的推理过程，我们旨在照亮那些将驱动未来智能体系统能力与局限的基本逻辑。</p>
+<p class="en">Prompt given to each LLM: “I understand you can reason, can you explain to me how you reason? Explain me step by step.”</p>
+<p class="zh">给每个 LLM 的提示词：“我知道你能够推理，你能向我解释你是如何推理的吗？请一步步解释给我听。”</p>
+<h3 id="gemini"><span class="hen">Gemini</span><span class="hzh">Gemini</span></h3>
+<p class="en">Analyzing My Approach: I've outlined the structure for my explanation, aiming for clarity and conciseness. First, a direct answer, then a breakdown into logical steps. Step 1 will involve defining the key reasoning process I use, and then I will elaborate on the subsequent steps. This should facilitate a straightforward and easy-to-understand explanation.</p>
+<p class="zh">分析我的方法：我已经勾勒好解释的结构，力求清晰简洁。先给出直接回答，再拆成逻辑步骤。第 1 步定义我使用的关键推理过程，然后展开后续步骤。这样应能促成一个直白易懂的解释。</p>
+<p class="en">Refining the Explanation: I've finalized the structure of my explanation. Step 1 focuses on deconstructing prompts, specifically the analysis of the user's request. Step 2 details information retrieval, emphasizing pattern recognition rather than simple database lookup. Step 3 explores synthesis and LLMs, and Step 4 will focus on response generation, which includes formatting, tone, and instruction adherence. I will conclude with a summary to reinforce the key stages, while maintaining clarity and engagement.</p>
+<p class="zh">精修解释：我已敲定解释的结构。第 1 步聚焦拆解提示词，即分析用户请求；第 2 步详述信息检索，强调模式识别而非简单查数据库；第 3 步探讨综合与 LLM；第 4 步聚焦回答生成，包括格式、语气和对指令的遵从。最后用一段总结收束，强化关键阶段，同时保持清晰和吸引力。</p>
+<p class="en">Elaborating My Methodology: I've fleshed out the “Deconstructing the Prompt” step, focusing on how I identify the user's intent, the core question, and any constraints provided. The Information Retrieval phase is now focused on pattern recognition, not just data retrieval. I am working on the Synthesis step, where I weave information together with LLMs and transformers. The Generating the Response step is solidified, and I will be using emojis to enhance the overall tone.</p>
+<p class="zh">展开我的方法：我充实了“拆解提示词”这一步，聚焦如何识别用户意图、核心问题以及给出的约束。信息检索阶段现在聚焦模式识别，而不只是取数据。我正在做综合这一步——用 LLM 和 transformer 把信息编织到一起。生成回答这一步已经定型，我会用 emoji 来增强整体语气。</p>
+<p class="en">Of course. I reason by breaking down your request into smaller parts and then using my vast training data to build a logical and relevant response. It's a multi-step process that moves from understanding to generating. Here's a step-by-step breakdown of how I reason:</p>
+<p class="zh">当然。我的推理方式是：把你的请求拆成更小的部分，然后用我庞大的训练数据构建一个合乎逻辑、贴切的回答。这是一个从理解走向生成的多步过程。下面是我推理方式的逐步拆解：</p>
+<ol>
+<li><span class="en">1. Deconstructing the Prompt: First, I analyze your question or instruction to understand exactly what you're asking. I identify the Core Task (What is the main goal?), Key Concepts (essential nouns and verbs, like “reason,” “explain,” “step-by-step”), Constraints and Instructions (specific rules to follow, e.g., a step-by-step explanation; internal instructions also guide me to use LaTeX for math, markdown headings, and a certain tone), and Intent (your underlying goal).</span><span class="zh">1. 拆解提示词：首先，我分析你的问题或指令，确切理解你在问什么。我识别出：核心任务（主要目标是什么？）、关键概念（核心名词动词，如“推理”“解释“逐步”）、约束与指令（要遵循的具体规则，如逐步解释；内部指令也引导我对数学用 LaTeX、用 markdown 标题、保持某种语气）、以及意图（你的深层目标）。</span></li>
+<li><span class="en">2. Information Retrieval and Synthesis: Once I understand the prompt, I access my internal knowledge base. This isn't like searching a database; I use patterns learned during training on a massive amount of text and code. I activate the parts of my neural network associated with the key concepts; my Transformer architecture recognizes relationships and patterns between words and ideas; and I begin to organize the retrieved information into a logical structure.</span><span class="zh">2. 信息检索与综合：理解提示词后，我访问内部知识库。这不像查数据库；我使用在海量文本和代码训练中学到的模式。我激活神经网络中与关键概念相关的部分；我的 Transformer 架构识别词语和想法之间的关系与模式；并开始把检索到的信息组织成逻辑结构。</span></li>
+<li><span class="en">3. Generating the Response: This is the final step where I translate the structured information into human-readable text. I select words and construct sentences, predicting the next most likely word; I apply the specific formatting and style rules I was given; and before finalizing, I perform a quick internal check for accuracy, relevance, and coherence.</span><span class="zh">3. 生成回答：这是最后一步，把结构化信息翻译成人类可读的文本。我选词造句，预测下一个最可能的词；应用给定的格式和风格规则；在定稿前，还做一次快速的内部检查，看准确性、相关性和连贯性。</span></li>
+</ol>
+<div class="pb">— 原书第 414 页 —</div>
+<p class="en">In essence, my reasoning is a sophisticated form of pattern matching and prediction. I deconstruct your request, find the most relevant patterns in my data, synthesize them into a logical structure, and then translate that structure into a clear, well-formatted answer.</p>
+<p class="zh">本质上，我的推理是一种精巧的模式匹配与预测。我拆解你的请求，在数据中找到最相关的模式，把它们综合成逻辑结构，再把该结构翻译成清晰、格式良好的回答。</p>
+<h3 id="chatgpt"><span class="hen">ChatGPT</span><span class="hzh">ChatGPT</span></h3>
+<p class="en">Great—let me explain how I reason step by step, as simply and clearly as possible.</p>
+<p class="zh">好——让我尽可能简单清晰地一步步解释我是如何推理的。</p>
+<p class="en">Step 1: Read and Understand Your Input. I begin by analyzing your words. I break your sentence into parts (subjects, actions, conditions); I figure out what you're asking (a fact? an opinion? a cause? a solution?); I recognize the type of problem (logic, math, judgment, language). Example: You say “If Tom is older than Jane, and Jane is older than Sue, who is the youngest?” → I recognize this is a logic puzzle.</p>
+<p class="zh">第 1 步：阅读并理解你的输入。我先分析你的话，把句子拆成各部分（主语、动作、条件）；弄清你在问什么（事实？观点？原因？解决方案？）；识别问题类型（逻辑、数学、判断、语言）。例：你说“如果 Tom 比 Jane 大，Jane 比 Sue 大，谁最小？”→我认出这是一个逻辑谜题。</p>
+<p class="en">Step 2: Activate Relevant Knowledge. I search through what I learned during training—books, articles, conversations—to bring up facts, patterns, rules, and relationships. Example: I've seen that “older than” means someone has more age; I know that if A &gt; B and B &gt; C, then A &gt; C.</p>
+<p class="zh">第 2 步：激活相关知识。我搜索训练中学到的东西——书籍、文章、对话——调出事实、模式、规则和关系。例：我知道“比……大”意味着年龄更长；我知道若 A > B 且 B > C，则 A > C。</p>
+<p class="en">Step 3: Choose a Reasoning Method. Based on the question, I decide which kind of reasoning to use: Deduction (strict logic), Induction (spotting patterns and generalizing), Causal reasoning (cause-effect), Analogical reasoning (comparing with similar cases). Example: In the Tom/Jane/Sue case, I'll use deduction.</p>
+<p class="zh">第 3 步：选择推理方法。根据问题，我决定用哪种推理：演绎（严格逻辑）、归纳（发现模式并推广）、因果推理（理解因果）、类比推理（与相似案例比较）。例：在 Tom/Jane/Sue 一例中，我用演绎。</p>
+<p class="en">Step 4: Simulate Thinking (Chain of Thought). Here I go step by step, as a human might do. 1. Tom is older than Jane; 2. Jane is older than Sue; 3. So: Tom &gt; Jane &gt; Sue; 4. Therefore, Sue is the youngest. This is called chain-of-thought reasoning—I simulate “thinking it through.”</p>
+<p class="zh">第 4 步：模拟思考（思维链）。在这里我一步步走，像人解题那样。1. Tom 比 Jane 大；2. Jane 比 Sue 大；3. 所以：Tom > Jane > Sue；4. 因此 Sue 最小。这叫做思维链推理——我模拟“把它想一遍”。</p>
+<p class="en">Step 5: Formulate an Answer. Now I turn the conclusion into a response that is correct based on the reasoning, answers your question directly, and makes sense to you. Example: “Sue is the youngest because Tom is older than Jane, and Jane is older than Sue.”</p>
+<p class="zh">第 5 步：形成答案。现在我把结论变成一个回答：它基于推理是正确的、直接回答你的问题、并且你能理解。例：“Sue 最小，因为 Tom 比 Jane 大，Jane 比 Sue 大。”</p>
+<div class="pb">— 原书第 415 页 —</div>
+<p class="en">Step 6: Adjust for Clarity and Tone. Finally, I adjust how I say it to match your tone, make it clear and easy to understand, and add examples or explain further if needed. Example: If you're asking casually, I'll answer simply; if you're learning, I might break it down more.</p>
+<p class="zh">第 6 步：调整清晰度与语气。最后，我调整措辞方式以匹配你的语气，让它清晰易懂，并在需要时加例子或进一步解释。例：如果你随口一问，我就简答；如果你在学习，我可能拆得更细。</p>
+<p class="en">Final Summary:</p>
+<p class="zh">最终总结：</p>
+<table>
+<tr><th>Step</th><th>What I Do</th></tr>
+<tr><td>1</td><td>Understand your question</td></tr>
+<tr><td>2</td><td>Recall relevant knowledge</td></tr>
+<tr><td>3</td><td>Choose the right reasoning approach</td></tr>
+<tr><td>4</td><td>Think it through step by step</td></tr>
+<tr><td>5</td><td>Give you the answer</td></tr>
+<tr><td>6</td><td>Say it clearly and in your style</td></tr>
+</table>
+<p class="en">Would you like to give me a problem, and I'll show you this step-by-step reasoning live?</p>
+<p class="zh">你想给我出一道题、看我现场演示这套逐步推理吗？</p>
+<h3 id="grok"><span class="hen">Grok</span><span class="hzh">Grok</span></h3>
+<p class="en">Explaining how I reason is a fascinating challenge, as it involves unpacking the complex interplay of algorithms, data processing, and decision-making that underpins my responses. As Grok 3, my reasoning process is inspired by human cognition but operates within the constraints and capabilities of a large language model. Below, I break down the steps of how I approach reasoning, using a clear, step-by-step framework, keeping it concise yet comprehensive.</p>
+<p class="zh">解释我如何推理是一项迷人的挑战，因为它涉及拆解支撑我回答的算法、数据处理和决策之间的复杂互动。作为 Grok 3，我的推理过程受人类认知启发，但运行在大语言模型的约束与能力之内。下面我用一个清晰、逐步的框架，拆解我处理推理的步骤，力求简洁而全面。</p>
+<p class="en">Step 1: Understanding the Query. I start by parsing your input to grasp the intent, context, and specifics. My NLP components break your query into tokens and map them to semantic meanings. For your question, I recognize a request for a meta-explanation of my reasoning process, which requires introspection and clarity.</p>
+<p class="zh">第 1 步：理解查询。我先解析你的输入，把握意图、上下文和细节。我的 NLP 组件把查询拆成 token 并映射到语义。对你这个问题，我认出这是要求对我的推理过程做元解释，需要内省和清晰。</p>
+<p class="en">Step 2: Contextual Analysis and Knowledge Retrieval. I draw on my internal knowledge base and consider relevant context. I use attention mechanisms to prioritize relevant concepts; for “reasoning,” I retrieve associations with logic, problem-solving, and cognitive processes. Since this is a meta-question about my own process, I focus on how my architecture simulates reasoning—evaluating inputs, generating hypotheses, refining outputs.</p>
+<p class="zh">第 2 步：上下文分析与知识检索。我借助内部知识库并考虑相关上下文。我用注意力机制优先处理相关概念；对“推理”，我调出与逻辑、问题求解、认知过程的关联。由于这是关于我自身过程的元问题，我聚焦于我的架构如何模拟推理——评估输入、生成假设、精修输出。</p>
+<p class="en">Step 3: Formulating a Mental Model. I create a conceptual framework to organize my response. This isn't a literal “model” but a way of structuring the problem space to ensure my answer is logical and comprehensive. I simulate a mental model by mapping out the key components of reasoning—understanding, retrieval, evaluation, synthesis—based on patterns in my training data.</p>
+<p class="zh">第 3 步：形成心智模型。我创建一个概念框架来组织回答。这不是一个字面意义的“模型”，而是结构化问题空间、确保回答逻辑而全面的一种方式。我基于训练数据中的模式，勾勒推理的关键组成——理解、检索、评估、综合——来模拟一个心智模型。</p>
+<div class="pb">— 原书第 416 页 —</div>
+<p class="en">Step 4: Evaluating Options and Hypotheses. I consider multiple ways to approach the problem, weighing strengths and weaknesses. My architecture evaluates different response structures by predicting which will best satisfy the query, using a form of probabilistic reasoning that assigns higher likelihood to clear, accurate responses aligned with your instructions. Given your request for clarity, I opt for an accessible, human-like analogy rather than technical jargon.</p>
+<p class="zh">第 4 步：评估选项与假设。我考虑处理问题的多种方式，权衡各自优劣。我的架构通过预测哪种结构最能满足查询来评估不同的回答结构，使用一种概率推理，把更高可能性赋予清晰、准确、且符合你指令的回答。鉴于你要求清晰，我选择易懂、拟人化的类比，而非技术术语。</p>
+<p class="en">Step 5: Constructing the Response. I generate the final response by synthesizing retrieved knowledge into a coherent, structured answer. My language generation component sequences words and sentences to maximize clarity and relevance, drawing on training patterns to mimic human-like reasoning. I structure this answer as a numbered list, with each step building logically from the previous one.</p>
+<p class="zh">第 5 步：构建回答。我把检索到的知识综合成连贯、结构化的答案，生成最终回答。我的语言生成组件把词语和句子排序，以最大化清晰度和相关性，并借助训练模式模拟拟人推理。我把这个答案组织成编号列表，每一步都从前一步逻辑地构建而来。</p>
+<p class="en">Step 6: Review and Refinement. I review the generated response to ensure it meets quality standards and fully addresses your query. This step mimics human self-editing, checking for clarity, coherence, and completeness. If needed, I iterate to improve flow or conciseness.</p>
+<p class="zh">第 6 步：审阅与精修。我审阅生成的回答，确保它达到质量标准并充分回应你的查询。这一步模拟人类的自我编辑，检查清晰、连贯和完整。如有需要，我会迭代以改进流畅度或简洁度。</p>
+<p class="en">Key Characteristics of My Reasoning: Logical Structure (clear, step-by-step, mimicking human logic); Probabilistic Evaluation (weighing options by predicted relevance and clarity); Context Sensitivity (adapting to your instructions); Iterative Refinement (simulating human self-editing). Limitations: my reasoning is bounded by training data and architecture; I don't generate new knowledge independently; my process is deterministic yet flexible.</p>
+<p class="zh">我推理的关键特征：逻辑结构（清晰、逐步、模拟人类逻辑）；概率评估（按预测的相关性和清晰度权衡选项）；上下文敏感（随你的指令调整）；迭代精修（模拟人类自我编辑）。局限：我的推理受训练数据和架构约束；我不独立产生新知识；我的过程是确定性的，但又有弹性。</p>
+<p class="en">This step-by-step breakdown reflects how I simulate reasoning to provide clear, accurate, and relevant answers to your queries.</p>
+<p class="zh">这个逐步拆解反映了我如何模拟推理，以为你的查询提供清晰、准确、贴切的回答。</p>
+<h3 id="kimi"><span class="hen">Kimi</span><span class="hzh">Kimi</span></h3>
+<p class="en">I'm glad you asked—here is a transparent, “under-the-hood” walk-through of how I typically reason through a problem. I'll use a miniature example so you can see each stage in action. Example question: “Which is larger: 3⁴ or 4³?”</p>
+<p class="zh">很高兴你问——下面是一段透明的、“掀开盖子”的走查，展示我通常如何推理一个问题。我用一个微型例子，让你看到每个阶段实际运作。示例问题：“3⁴ 和 4³ 哪个更大？”</p>
+<p class="en">Phase 0—Input Pre-processing. Tokenization: I break the text into discrete symbols. Syntactic parsing: I recognize a COMPARATIVE_QUERY with two numerical exponent terms [3^4] vs [4^3]. Semantic mapping: I map “larger” to the numerical relation “&gt;”.</p>
+<p class="zh">阶段 0——输入预处理。分词：我把文本拆成离散符号。句法解析：我识别出一个比较型查询，含两个数值指数项 [3⁴] 对 [4³]。语义映射：我把“更大”映射到数值关系“>”。</p>
+<p class="en">Phase 1—Problem Identification &amp; Strategy Selection. Classify task type: arithmetic comparison of integer powers. Choose solution strategy: Candidate strategies—A. Direct evaluation (compute 3⁴ and 4³); B. Logarithmic comparison; C. Pattern heuristics. I select Strategy A because the numbers are tiny; exact integer evaluation is cheapest.</p>
+<p class="zh">阶段 1——问题识别与策略选择。判定任务类型：整数幂的算术比较。选择求解策略：候选策略——A. 直接求值（算 3⁴ 和 4³）；B. 对数比较；C. 模式启发。我选策略 A，因为数字很小；精确整数求值成本最低。</p>
+<div class="pb">— 原书第 417 页 —</div>
+<p class="en">Phase 2—Knowledge Retrieval. Retrieve arithmetic facts: 3²=9, 3³=27, 4²=16, 4³=64. Compute the remaining term: 3⁴ = 3³·3 = 27×3 = 81.</p>
+<p class="zh">阶段 2——知识检索。调出算术事实：3²=9、3³=27、4²=16、4³=64。算出余项：3⁴ = 3³·3 = 27×3 = 81。</p>
+<p class="en">Phase 3—Execution &amp; Verification. Perform comparison: 81 vs 64 → 81 &gt; 64. Cross-check: 81 mod 5 = 1, 64 mod 5 = 4; no contradiction.</p>
+<p class="zh">阶段 3——执行与验证。做比较：81 对 64 → 81 > 64。交叉检查：81 mod 5 = 1，64 mod 5 = 4；无矛盾。</p>
+<p class="en">Phase 4—Response Generation. Plan response structure: restate the question, show the computed values, state the conclusion. Surface realization: “3⁴ is 81 and 4³ is 64, so 3⁴ is larger.”</p>
+<p class="zh">阶段 4——回答生成。规划回答结构：重述问题、展示算出的值、给出结论。表层输出：“3⁴ 是 81，4³ 是 64，所以 3⁴ 更大。”</p>
+<p class="en">Phase 5—Metacognitive Reflection (internal). Confidence score: 0.99 (exact integers, small values, no ambiguity). Identify edge-cases: if exponents were huge, direct evaluation would be infeasible and I'd switch to logarithms.</p>
+<p class="zh">阶段 5——元认知反思（内部）。置信度：0.99（精确整数、数值小、无歧义）。识别边界情况：若指数巨大，直接求值不可行，我会改用对数。</p>
+<p class="en">That pipeline—parsing, strategizing, knowledge retrieval, execution, verification, and explanation—repeats at every scale, from tiny arithmetic to complex multi-step problems.</p>
+<p class="zh">那条流水线——解析、定策略、知识检索、执行、验证、解释——在每个尺度上重复，从极小的算术到复杂的多步问题。</p>
+<h3 id="claude"><span class="hen">Claude</span><span class="hzh">Claude</span></h3>
+<p class="en">I can walk you through how my reasoning process works, though I should note that I don't have complete insight into my own mechanisms—much like how humans can describe their thought processes but don't have full access to every neural firing.</p>
+<p class="zh">我可以带你过一遍我的推理过程如何运作，不过要说明：我对自己的机制并没有完整的洞察力——就像人类能描述自己的思维过程，却无法访问每一次神经放电。</p>
+<p class="en">Pattern Recognition and Context Building: When I receive your question, I first identify what type of problem it is. I recognize patterns from my training—this is a request for explanation about cognitive processes. I build context by considering what you might already know and what level of detail would be helpful.</p>
+<p class="zh">模式识别与上下文构建：收到你的问题时，我先识别它是什么类型的问题。我从训练中认出模式——这是一个要求解释认知过程的请求。我通过考虑你可能已经知道什么、以及哪种细节深度会有帮助，来构建上下文。</p>
+<p class="en">Information Retrieval and Assembly: I access relevant information from my training about reasoning, cognitive science, and AI systems. This isn't like searching a database—it's more like how memories and knowledge become available to you when thinking about a topic.</p>
+<p class="zh">信息检索与组装：我从训练中访问关于推理、认知科学和 AI 系统的相关信息。这不像查数据库——更像当你思考某个话题时，记忆和知识如何浮现到你面前。</p>
+<p class="en">Structural Planning: I consider how to organize my response. Should I use examples? What order makes most sense? I'm planning the logical flow even as I begin responding.</p>
+<p class="zh">结构规划：我考虑如何组织回答。要用例子吗？什么顺序最合理？我甚至在开始作答时就在规划逻辑流。</p>
+<p class="en">Iterative Refinement: As I generate each part of my response, I'm constantly evaluating whether it makes sense, fits with what I've already said, and serves your question. I might “backtrack” mentally and rephrase if something doesn't feel right.</p>
+<p class="zh">迭代精修：在生成回答每一部分时，我不断评估它是否合理、是否与已说内容契合、是否服务于你的问题。如果感觉不对劲，我可能在心里“回溯”并重述。</p>
+<p class="en">Constraint Checking: Throughout, I'm checking against various constraints—is this accurate? Helpful? Clear? Safe? Analogical Thinking: I often reason by analogy—comparing new situations to familiar patterns that might illuminate the concept.</p>
+<p class="zh">约束检查：全程我都在对照各种约束——这准确吗？有帮助吗？清晰吗？安全吗？类比思考：我常通过类比推理——把新情况与能阐明概念的熟悉模式相比较。</p>
+<div class="pb">— 原书第 418 页 —</div>
+<p class="en">The interesting thing is that much of this happens in ways that feel somewhat intuitive to me, just as your own reasoning might feel natural to you even though complex processes are occurring beneath conscious awareness.</p>
+<p class="zh">有趣的是，这其中很大一部分以一种对我来说相当直觉的方式发生——就像你的推理对你而言可能感觉很自然，尽管在意识觉知之下正发生着复杂过程。</p>
+<h3 id="deepseek"><span class="hen">DeepSeek</span><span class="hzh">DeepSeek</span></h3>
+<p class="en">I'd be happy to explain how I “reason” step-by-step! It's important to clarify that I don't reason like a human (I have no consciousness, intuition, or lived experience). Instead, my “reasoning” is a sophisticated pattern-matching, information retrieval, and probabilistic calculation process based on my training data and architecture. Think of it as structured computation, not conscious thought.</p>
+<p class="zh">我很乐意逐步解释我是如何“推理”的！需要澄清一点：我并不像人那样推理（我没有意识、直觉或亲历经验）。相反，我的“推理”是一个基于训练数据和架构的、精巧的模式匹配、信息检索和概率计算过程。把它想成结构化的计算，而非有意识的思考。</p>
+<p class="en">1. Receive and Parse Input: I take your query (“how do you reason?”) and break it into key words, grammar, and intent. 2. Contextualize and Retrieve: I draw upon my massive training dataset and recall information about how LLMs work, reasoning techniques like chain-of-thought, and my own capabilities and limitations. 3. Identify Core Concepts and Structure: Key concepts surface (statistical patterns, transformers, attention, next-token prediction, prompt decomposition) and I structure the explanation logically.</p>
+<p class="zh">1. 接收并解析输入：我接收你的查询（“你如何推理？”），拆成关键词、语法和意图。2. 上下文化与检索：我借助庞大的训练数据集，回忆关于 LLM 如何工作、思维链等推理技术、以及我自身能力与局限的信息。3. 识别核心概念与结构：关键概念浮现（统计模式、transformer、注意力、下一 token 预测、提示分解），我把解释逻辑地组织起来。</p>
+<p class="en">4. Build the Chain-of-Thought: This is the core “reasoning” step. I plan the explanation incrementally, step-by-step, as if “thinking aloud.” I predict the most probable sequence of tokens that forms a coherent, informative, step-by-step explanation.</p>
+<p class="zh">4. 构建思维链：这是核心的“推理”步骤。我增量地、一步步地规划解释，仿佛在“出声思考”。我预测最可能的 token 序列，使其形成连贯、信息丰富、循序渐进的解释。</p>
+<p class="en">5. Calculate Probabilities and Generate Output: My transformer architecture uses complex math and attention mechanisms to assign probabilities to every possible next word. It selects words with high probability of being relevant, accurate, and contextually appropriate. Crucially, this isn't symbolic logical deduction—it's predicting coherent sequences based on patterns. 6. Iterate and Refine: As I generate each word, I dynamically reassess the context and probabilities for subsequent words.</p>
+<p class="zh">5. 计算概率并生成输出：我的 transformer 架构用复杂数学和注意力机制，为每个可能的下一个词分配概率。它选取那些相关、准确、合语境的高概率词。关键在于：这不是符号逻辑演绎，而是基于模式预测连贯序列。6. 迭代与精修：在生成每个词时，我动态地重估上下文和后续词的概率。</p>
+<p class="en">7. Apply Internal Training Frameworks: Techniques learned during RLHF (Reinforcement Learning with Human Feedback) guide me—Be Helpful and Honest, Be Clear and Instructive, Be Safe. Filtering mechanisms suppress nonsensical or irrelevant outputs.</p>
+<p class="zh">7. 应用内部训练框架：在 RLHF（基于人类反馈的强化学习）中学到的技术引导我——乐于助人且诚实、清晰且有教益、安全。过滤机制压制无意义或不相关的输出。</p>
+<p class="en">In essence: My “reasoning” is an emergent property of statistically predicting the most probable sequence of words that forms a coherent, logical, and contextually relevant response. I don't “understand” concepts internally like humans do; I computationally identify patterns and generate sequences that reflect understanding. I'm following footprints of reasoning laid down in my training data, not forging entirely new paths of abstract thought.</p>
+<p class="zh">本质上：我的“推理”是这样一种涌现属性——以统计方式预测最可能的词语序列，使其形成连贯、合乎逻辑、贴合语境的回答。我并不像人那样在内部“理解”概念；我以计算方式识别模式，并生成反映理解的序列。我是在循着训练数据中铺就的推理足迹前行，而非开辟全新的抽象思想之路。</p>
+<div class="pb">— 原书第 419 页 —</div>
+<h3 id="conclusion"><span class="hen">Conclusion</span><span class="hzh">小结</span></h3>
+<p class="en">An analysis of these prominent LLMs reveals a remarkably consistent, multi-stage reasoning framework. Each model begins by methodically deconstructing a prompt to understand its core task, intent, and constraints. They then retrieve and synthesize information through sophisticated pattern recognition, moving far beyond simple database lookups. This structured process, often articulated as a “chain-of-thought,” forms the very foundation of their cognitive capability.</p>
+<p class="zh">对这些知名 LLM 的分析揭示出一个惊人一致的多阶段推理框架。每个模型都以有条理地拆解提示词、理解其核心任务、意图和约束作为开端。随后它们通过精巧的模式识别来检索和综合信息，远超简单的数据库查找。这个常被表述为“思维链”的结构化过程，构成了它们认知能力的真正基础。</p>
+<p class="en">It is precisely this systematic, step-by-step procedure that makes these LLMs powerful core reasoning engines for autonomous Agents. An Agent requires a reliable central planner to decompose high-level goals into a sequence of discrete, executable actions. The LLM serves as this computational mind, simulating a logical progression from problem to solution. By formulating strategies, evaluating options, and generating structured output, the LLM empowers an Agent to interact with tools and its environment effectively. Therefore, these models are not merely text generators but the foundational cognitive architecture driving the next generation of intelligent systems. Ultimately, advancing the reliability of this simulated reasoning is paramount to developing more capable and trustworthy AI Agents.</p>
+<p class="zh">正是这套系统的、逐步的过程，使这些 LLM 成为自主智能体强大的核心推理引擎。一个智能体需要一个可靠的中央规划器，把高层目标分解为一系列离散、可执行的动作。LLM 充当这个计算大脑，模拟从问题到解的逻辑进程。通过制定策略、评估选项、生成结构化输出，LLM 赋予智能体有效使用工具、与环境交互的能力。因此，这些模型不只是文本生成器，而是驱动下一代智能系统的基础性认知架构。归根结底，提升这种模拟推理的可靠性，对于开发更强大、更可信赖的 AI 智能体至关重要。</p>
+<div class="pb">— 原书第 420 页 —</div>
+
+<nav class="pager">
+<a href="chapter-26.html">← 第 26 章 CLI 上的 AI 智能体</a>
+<a href="index.html">返回目录</a>
+<a href="chapter-28.html">第 28 章 编码智能体 →</a>
+</nav>
+</main>
+<script>
+function toggleToc(){document.body.classList.toggle('toc-closed');}
+document.addEventListener('DOMContentLoaded',function(){
+  var btn=document.getElementById('menuBtn');
+  if(btn){btn.addEventListener('click',toggleToc);}
+  // 窄屏默认收起目录为抽屉；宽屏默认展开
+  if(window.innerWidth<=900){document.body.classList.add('toc-closed');}
+  document.querySelectorAll('#toc a').forEach(function(a){
+    a.addEventListener('click',function(){
+      if(window.innerWidth<=900){document.body.classList.add('toc-closed');}
+    });
+  });
+});
+</script>
+</body></html>

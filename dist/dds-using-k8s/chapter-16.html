@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>常见失败模式 - Common Failure Patterns</title>
+<style>
+:root{
+  --accent:#2563eb; --zh-bg:#f0f6ff; --zh-border:#2563eb;
+  --code-bg:#0f172a; --code-ink:#e2e8f0; --ink:#1f2937;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0; background:#faf6f1; color:var(--ink);
+  font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  font-size:18px; line-height:1.75;
+}
+#toc{
+  position:fixed; top:0; left:0; width:300px; height:100vh;
+  overflow-y:auto; background:#fff; border-right:1px solid #e5e7eb;
+  padding:20px 16px; transition:transform .25s ease; z-index:100;
+}
+#toc h2{font-size:16px; color:var(--accent); margin:0 0 12px;}
+#toc a{
+  display:block; color:var(--ink); text-decoration:none;
+  padding:4px 8px; border-radius:6px; font-size:14px;
+}
+#toc a.l2{font-weight:700; margin-top:8px;}
+#toc a.l3{padding-left:24px; font-size:13.5px; color:#4b5563;}
+#toc a.l4{padding-left:40px; font-size:13px; color:#6b7280;}
+#toc a:hover{background:var(--zh-bg);}
+main{
+  margin-left:300px; max-width:900px; padding:32px 40px 80px;
+}
+#menu-btn{
+  position:fixed; top:14px; left:316px; z-index:200;
+  background:var(--accent); color:#fff; border:none; border-radius:8px;
+  padding:8px 12px; cursor:pointer; font-size:16px;
+}
+body.toc-hidden #toc{transform:translateX(-300px);}
+body.toc-hidden #menu-btn{left:14px;}
+h1{font-size:30px; border-bottom:3px solid var(--accent); padding-bottom:10px;}
+h2{font-size:24px; margin-top:40px; color:#111827; scroll-margin-top:20px;}
+h3{font-size:20px; margin-top:28px; color:#1f2937; scroll-margin-top:20px;}
+h4{font-size:17px; margin-top:20px; color:#374151;}
+h1 .zh,h2 .zh,h3 .zh,h4 .zh{display:block; font-size:.8em; color:var(--accent); font-weight:600; margin-top:4px;}
+p.en{margin:14px 0 4px;}
+p.zh{
+  background:var(--zh-bg); border-left:4px solid var(--zh-border);
+  border-radius:0 8px 8px 0; padding:10px 16px; margin:0 0 14px;
+}
+li{margin:6px 0;}
+li .zh{
+  display:block; background:var(--zh-bg); border-left:4px solid var(--zh-border);
+  border-radius:0 8px 8px 0; padding:6px 12px; margin-top:4px;
+}
+li .en{display:block;}
+.callout{
+  background:#fffbeb; border:1px solid #f59e0b; border-radius:8px;
+  padding:14px 18px; margin:18px 0;
+}
+.callout p.zh{background:#fef3c7; border-color:#f59e0b;}
+pre{
+  background:var(--code-bg); color:var(--code-ink); border-radius:8px;
+  padding:16px; overflow-x:auto; font-size:13.5px; line-height:1.6;
+  font-family:"SF Mono",Menlo,Consolas,monospace;
+}
+code{font-family:"SF Mono",Menlo,Consolas,monospace;}
+p code,li code{
+  background:#fce7f3; color:#be185d; padding:1px 6px; border-radius:4px;
+  font-size:.9em;
+}
+figure{margin:22px 0; text-align:center;}
+figure img{max-width:100%; border:1px solid #e5e7eb; border-radius:8px;}
+figcaption{font-size:13px; color:#6b7280; margin-top:8px;}
+figcaption .zh{display:block; color:var(--accent);}
+table{border-collapse:collapse; width:100%; margin:16px 0; font-size:14px;}
+th,td{border:1px solid #d1d5db; padding:8px 12px; text-align:left; vertical-align:top;}
+th{background:#f1f5f9;}
+td .zh{display:block; background:var(--zh-bg); padding:4px 8px; margin-top:4px; border-radius:4px;}
+.pagemark{
+  text-align:center; color:#9ca3af; font-size:12px; letter-spacing:2px;
+  margin:28px 0 8px;
+}
+.pager{
+  display:flex; justify-content:space-between; gap:10px; margin-top:60px;
+  border-top:1px solid #e5e7eb; padding-top:20px;
+}
+.pager a{
+  flex:1; text-align:center; padding:12px; border-radius:8px;
+  background:#fff; border:1px solid #d1d5db; text-decoration:none; color:var(--ink);
+}
+.pager a:hover{background:var(--accent); color:#fff;}
+.pager a.disabled{opacity:.4; pointer-events:none;}
+@media(max-width:900px){
+  #toc{transform:translateX(-300px); box-shadow:2px 0 12px rgba(0,0,0,.15);}
+  body.toc-open #toc{transform:translateX(0);}
+  main{margin-left:0; padding:24px 18px 60px;}
+  #menu-btn{left:14px;}
+}
+</style>
+</head>
+<body>
+<button id="menu-btn">☰ 目录</button>
+<nav id="toc">
+<h2>常见失败模式</h2><a class="l2" href="#s1">The Thundering Herd</a>
+<a class="l2" href="#s2">The Absence of Errors Is an Error</a>
+<a class="l2" href="#s3">"Client" and "Expected" Errors</a>
+<a class="l2" href="#s4">Versioning Errors</a>
+<a class="l2" href="#s5">The Myth of Optional Components</a>
+<a class="l2" href="#s6">Oops, We "Cleaned Up" Everything</a>
+<a class="l2" href="#s7">Challenges with the Breadth of Inputs</a>
+<a class="l2" href="#s8">Processing Obsolete Work</a>
+<a class="l2" href="#s9">The "Second System" Problem</a>
+<a class="l2" href="#summary">Summary</a>
+</nav>
+<main>
+<h1><span class="en">Common Failure Patterns</span><span class="zh">常见失败模式</span></h1>
+<div class="pagemark">— PDF 第 197 页 —</div>
+<p class="en">So far this book has covered various patterns to help you build your distributed system. This chapter is going to be a little different. Instead of helping you know what to do, it is intended to help you know what not to do. Over numerous years of developing, operating, and debugging systems, certain kinds of problems repeat themselves. These patterns are divided into mistakes that are made in building the systems, as well as common ways in which systems fail. By understanding both what not to do and what to try to prevent, we can learn from these shared mistakes and prevent them from repeating in the future.</p>
+<p class="zh">到目前为止，本书介绍了各种帮助你构建分布式系统的模式。本章略有不同：它不是教你该做什么，而是帮你知道不该做什么。在多年开发、运维和调试系统的过程中，某些问题会反复出现。这些模式可分为两类：构建系统时犯下的错误，以及系统常见的失败方式。同时理解了“不该做什么”与“该防范什么”，我们就能从这些共同的错误中学习，并防止它们在未来重演。</p>
+<h2 id="s1"><span class="en">The Thundering Herd</span><span class="zh">惊群效应</span></h2>
+<p class="en">The thundering herd derives its name from the metaphor of a bison or other large animal on the prairie. Individually they may be manageable, but when moving together, charging, they are capable of destroying anything they are directed toward. The easiest way to understand the thundering herd is to imagine yourself interacting with a website that is not behaving properly. You attempt to navigate to a particular location, the loading progress bar spins slowly, not making very much progress, eventually you become impatient and you hit the reload button. You may not know it, but you have become the thundering herd.</p>
+<p class="zh">惊群效应（thundering herd）得名于草原上野牛或其他大型动物的比喻。单独一头或许尚可应付，但当它们一起冲锋时，足以摧毁所指向的一切。理解惊群效应最简单的方式，是想象你正在访问一个表现异常的网站。你试图跳转到某个页面，加载进度条缓慢转动、几乎没有进展，终于你不耐烦了，点了刷新按钮。你或许并未意识到，但你已经成为了惊群中的一员。</p>
+<p class="en">Any particular application has a maximum capacity. Typically we try to size our applications so that its maximum capacity is greater than any load that it experiences, even at its most busy. Unfortunately, sometimes, because of failures, lost capacity, or unanticipated demand, the requests sent to a service exceed its ability to service those requests. Let's call the size of this overload traffic X requests per second. Being overloaded is bad; many, if not all, of those X requests per second time out or fail, but what happens next is even worse. In the next minute, those same X requests become 2X requests. This doubling is the result of any net new traffic (X) as well as all of those previous requests being retried. The result is even more failures, even more retries, and even more new requests. What was already a bad situation has become irrecoverable. This is especially true when there are multiple chained calls and multiple retry algorithms involved. The amplification of one request into many requests can rapidly overwhelm a system.</p>
+<p class="zh">任何一个应用都有最大容量。通常我们会按容量来规划应用，使其最大容量大于它所经历的任何负载——哪怕是最忙的时候。不幸的是，有时由于故障、容量损失或意料之外的需求，发往服务的请求会超过它的处理能力。我们把这股过载流量记为每秒 X 个请求。过载本身已经很糟：这每秒 X 个请求中即便不是全部、也是大量超时或失败；但接下来发生的事更糟。下一分钟，这同样的 X 个请求变成了 2X。这个翻倍既来自新增的净流量（X），也来自此前那批请求全部被重试。结果是更多失败、更多重试、更多新请求。原本已经很糟的局面就此变得不可收拾。当涉及多层链式调用和多种重试算法时尤其如此。一个请求被放大成大量请求，能迅速压垮整个系统。</p>
+<div class="pagemark">— PDF 第 198 页 —</div>
+<p class="en">When we build our systems, we build in retry in order to handle when requests fail, but if we blindly retry when we see errors, we make the thundering herd worse and worse. On the client side, the first way to handle this is to use exponential backoff. Instead of immediately retrying, the client waits a period of time before trying again. Every time the client sees an error, it doubles the time it waits.</p>
+<p class="zh">我们构建系统时会加入重试机制，以应对请求失败；但如果一看到错误就盲目重试，只会让惊群效应愈演愈烈。在客户端，应对的第一招是使用指数退避（exponential backoff）。客户端不是立刻重试，而是先等待一段时间再试；每次遇到错误，等待时间就翻倍。</p>
+<p class="en">Exponential backoff is good, but it is imperfect; in addition to exponential backoff, it is also very useful to add jitter. Jitter is a small amount of randomness which spreads load across time. Without jitter, a situation can occur where everyone fails at the same time, waits the same amount of time, and then hammers the service again at the same time. Jitter is especially important in situations where programs are talking to other programs. Humans are sufficiently random that they add their own jitter, but unfortunately, machines are not.</p>
+<p class="zh">指数退避很好，但并不完美；除了指数退避之外，加入抖动（jitter）也非常有用。抖动是一小段随机性，它把负载在时间上摊开。没有抖动的话，可能出现这种情况：大家同时失败、等待相同时长，然后又在同一时刻一起猛砸服务。抖动在“程序与程序对话”的场景中尤为重要。人类的行为本身足够随机，会自带抖动；但不幸的是，机器不会。</p>
+<p class="en">The final and most comprehensive way to solve the thundering herd is to add a circuit breaker to your client. The circuit breaker is something that trips when error rates exceed some threshold and stops all traffic for a period of time, giving the system time to recover. Finally, to aid in recovery, sometimes it is also necessary to only gradually let traffic back into the system. Many systems can be stable under high load but must be brought up to that load level gradually. Dumping 100% of the traffic on a server all at once can simply reintroduce the thundering herd.</p>
+<p class="zh">解决惊群效应的最后一招、也是最全面的一招，是在客户端加入熔断器（circuit breaker）。当错误率超过某个阈值时，熔断器就会跳闸，暂停所有流量一段时间，给系统留出恢复时间。最后，为辅助恢复，有时还需要只逐步把流量放回系统。许多系统在高负载下是可以稳定运行的，但必须逐步把负载提升到那个水平。一次性把 100% 流量全压到服务器上，只会重新引发惊群效应。</p>
+<h2 id="s2"><span class="en">The Absence of Errors Is an Error</span><span class="zh">没有错误本身就是一种错误</span></h2>
+<p class="en">We will move from problems of too much traffic to problems caused by too little traffic. When building a system, it is common to build monitoring and alerts to fire when there are too many errors in the system. Obviously, too many errors is a problem that requires a person to look into the system, determine the cause of the errors, and restore the service. But what about too few errors? Though it can seem counter-intuitive, some small number of errors is the steady state for most distributed systems. It is generally very hard and not worth the effort to prevent any errors from ever occurring; thus, there is a low level of ambient errors that are handled by retry and other error-correction systems. Consequently, the absence of any errors is more likely to indicate a serious problem rather than that everything is awesome.</p>
+<p class="zh">我们从“流量过多”的问题，转到“流量过少”引发的问题。构建系统时，人们通常会配置监控与告警，当系统中错误过多时触发。显然，错误过多是需要人去排查、定位原因并恢复服务的问题。但错误过少呢？虽然看起来有违直觉，但对大多数分布式系统而言，少量错误才是稳态。要彻底杜绝任何错误通常既非常困难、也不值得；因此总会有很低水平的环境错误，由重试和其他纠错系统处理掉。因此，一个错误都没有，更可能意味着出了严重问题，而不是“一切都很棒”。</p>
+<div class="pagemark">— PDF 第 199 页 —</div>
+<p class="en">To understand how this can happen, imagine monitoring a system which adds subtitles to movies that are uploaded to a storage bucket. Whenever a movie is uploaded, the system performs speech to text and translation to add subtitles and then stores the new movie back into the storage bucket. Imagine what happens when the process that uploads movies accidentally loses permissions to upload those movies. If you are only monitoring for conditions where errors are greater than some percentage (say, 10%), then you will never alert for this condition. If the uploader cannot upload movies, then no movies are being processed, so no errors can occur, so your error rate is 0%. But clearly, if your uploader can't upload movies, your system is broken. Alerting on both too many and too few errors (or too few requests generally) will enable you to catch (and fix) such problems in your systems.</p>
+<p class="zh">要理解这是怎么发生的，请想象你在监控一个系统：它给上传到存储桶的电影加字幕。每上传一部电影，系统就做语音转文字和翻译以添加字幕，再把新电影存回存储桶。想象一下，如果上传电影的进程意外丢失了上传权限，会发生什么？如果你只监控“错误率超过某个百分比（比如 10%）”这种条件，那你永远不会为这种情况告警。如果上传者传不了电影，那就没有电影在被处理，也就不会产生任何错误，于是你的错误率是 0%。但显然，上传者传不了电影，你的系统就是坏的。同时对“错误过多”和“错误过少”（或一般意义上的“请求过少”）告警，才能让你在系统中捕捉（并修复）这类问题。</p>
+<h2 id="s3"><span class="en">"Client" and "Expected" Errors</span><span class="zh">“客户端”错误与“预期”错误</span></h2>
+<p class="en">The next pattern considered is also related to errors in the system, but this time related to ways in which we feel OK ignoring errors. Many systems take in user input and requests for processing. In such systems, it is possible for users (or clients generally) to send requests which are invalid or unprocessable in some way. When calculating the reliability of a service, it's clearly problematic to treat errors caused by bad client requests as true errors, since the service isn't in control of what the clients send.</p>
+<p class="zh">下一个要讨论的模式同样与系统中的错误有关，但这次是关于那些我们觉得“可以忽略”的错误。许多系统接收用户输入和待处理请求。在这类系统中，用户（或一般意义上的客户端）有可能发出无效、或在某种意义上无法处理的请求。在计算服务可靠性时，把客户端坏请求导致的错误当作真正的错误显然是有问题的，因为服务无法控制客户端发什么。</p>
+<p class="en">While this is true in general, in practice such "not my problem" buckets become convenient places to ignore true system errors. Imagine, for example, something as simple as an authorization error. Certainly a user not being authorized to make a request is a "client" error and doesn't indicate a problem with reliability. But what if suddenly all users are unauthorized? That's probably a problem with our authorization code. But if you treat all unauthorized errors as "user errors" and you don't look for anomalies like all users failing authorization, you probably won't alert when you break your authorization code.</p>
+<p class="zh">虽然总体上这没错，但在实践中，这种“不归我管”的分类桶会变成方便忽略真正系统错误的地方。例如，想象一个再简单不过的场景：授权错误。某个用户无权发起某个请求，这当然是“客户端”错误，并不表示可靠性出了问题。但如果突然之间所有用户都未授权呢？那很可能是我们的授权代码出了问题。但如果你把所有未授权错误都当作“用户错误”，又不去观察“所有用户授权都失败”这类异常，那当你改坏授权代码时，你大概也不会收到告警。</p>
+<p class="en">The same thing can be true of "expected" errors. I mentioned in "The Absence of Errors Is an Error" on page 180 that there's a certain level of errors that are expected in the system, but for synthetic requests that you create, that's not true. When monitoring a system, it is also important to monitor real client requests where some small percentage of errors is expected and also to write synthetic or system-generated requests, which you control entirely. With synthetic requests, you control both the client and server side of the interactions and, consequently, there should never be any "client" or "expected" errors for those requests. By combining monitoring of real traffic with monitoring of synthetic requests, you can quickly identify situations where your code changes are causing errors which would otherwise be ignored as client errors.</p>
+<p class="zh">“预期”错误也是同样的道理。我在第 180 页“没有错误本身就是一种错误”一节中提到，系统中存在一定水平的预期错误；但对你自己构造的合成请求而言，情况并非如此。监控系统时，既要监控真实客户端请求（其中有一小部分错误是预期的），也要编写你完全掌控的合成请求或系统生成请求。对于合成请求，交互的客户端与服务端都在你掌控之中，因此这些请求绝不应该出现任何“客户端”或“预期”错误。把真实流量监控与合成请求监控结合起来，你就能迅速识别出：代码改动正在引发本会被当作客户端错误而忽略的那些错误。</p>
+<div class="pagemark">— PDF 第 200 页 —</div>
+<h2 id="s4"><span class="en">Versioning Errors</span><span class="zh">版本化错误</span></h2>
+<p class="en">Whenever you are building software, you are going to need to iterate and make changes to that software; but clients require and expect consistency in how they interact with your systems. If you need to update every client at the exact same time as you update your system, you haven't actually built a decoupled, distributed system. Any system is made up of the external API that it exposes to clients and the internal in-memory representation of that API. At first glance, it seems that the best solution is to make these two representations the same. If they are different, then translation logic needs to be applied to take the external representation to the internal representation and vice versa. And of course, when you start out, the external and internal representations are identical.</p>
+<p class="zh">只要你在构建软件，就必然需要迭代和修改；但客户端要求并期待它们与你系统交互的方式保持一致。如果你必须在更新系统的同时、精确地同步更新每一个客户端，那你实际上并没有构建出一个解耦的分布式系统。任何系统都由两部分组成：对外暴露给客户端的 API，以及该 API 在内部内存中的表示。乍看之下，让这两种表示保持一致似乎是最佳方案。如果二者不同，就需要编写转换逻辑，把外部表示映射到内部表示，反之亦然。当然，在起步时，外部表示与内部表示是完全相同的。</p>
+<p class="en">In practice, it turns out that separating the internal on-disk or in-memory representation of your API from the external client-perceived representation of your API pays immense dividends. For starters, it makes it relatively easy to have multiple different external client API versions implemented by the same internal in-memory version. This means that different clients can talk to you using different versions of your APIs, and you don't need to tightly synchronize your clients and your application. Additionally, the separate internal representation means that it is easier for you to iterate on your API implementation; adding, removing, or merging API fields as necessary to support your application can be done without the client noticing as long as you maintain the translation logic between external and internal representations.</p>
+<p class="zh">实践表明，把 API 的内部磁盘/内存表示与外部客户端感知表示分离开，会带来巨大回报。首先，它让“同一个内部内存版本支持多个不同外部客户端 API 版本”变得相对容易。这意味着不同客户端可以用不同版本的 API 与你通信，而你无需把客户端与应用紧紧同步。此外，独立的内部表示让你更容易迭代 API 实现；只要维护好外部与内部表示之间的转换逻辑，你就可以根据应用需要增删或合并 API 字段，而客户端毫无察觉。</p>
+<p class="en">Though the benefits of this separation are often seen in supporting multiple clients, the same can be applied to your internal storage versioning. Ultimately, your application will also need to store the objects in your API in some data store. This storage also needs to be versioned. If it is tightly coupled with a specific version of your code, it can make it very difficult to roll out changes to your storage layer, or roll back code when there are bugs.</p>
+<p class="zh">虽然这种分离的好处常体现在支持多客户端上，但同样的思路也适用于内部存储版本管理。归根结底，你的应用还需要把 API 中的对象存到某种数据存储中。这个存储也需要版本化。如果它与某个特定版本的代码紧耦合，那么向存储层发布变更、或在出现 bug 时回滚代码，都会变得非常困难。</p>
+<p class="en">Even though it may seem overly complicated to begin with, building every application with an external (client) version, an internal (in-memory) version, and a storage (on-disk or database) version as well as the logic to translate between them pays significant dividends in decoupling and agility that will benefit your application in the long run.</p>
+<p class="zh">尽管一开始看起来过于复杂，但为每个应用都构建外部（客户端）版本、内部（内存）版本和存储（磁盘或数据库）版本，以及它们之间互相转换的逻辑，会在解耦与敏捷性上带来显著回报，长期来看将使你的应用受益。</p>
+<h2 id="s5"><span class="en">The Myth of Optional Components</span><span class="zh">可选组件的迷思</span></h2>
+<p class="en">Distributed systems are organic systems. We may design them in one way to start, but over time and in reaction to outages, scale challenges, and business changes, they morph and adapt to meet new requirements. One of the most common changes is the addition of caches in various locations to improve performance and reduce load.</p>
+<p class="zh">分布式系统是有机生长的系统。我们一开始可能按某种方式设计它们，但随着时间推移，在应对故障、规模挑战和业务变化的过程中，它们会不断变形、演进以满足新需求。最常见的变化之一，就是在各处加缓存以提升性能、降低负载。</p>
+<div class="pagemark">— PDF 第 201 页 —</div>
+<p class="en">Typically, when these caches are added to the system, they are treated as "optional" components. After all, a cache is just a performance improvement. If the system needs to, it can always obtain the data from the source of truth. The problem with theoretically optional components in your system is that, over time, they become required parts of your design. Consider adding a cache to a system. It is an optional performance improvement when originally added. However, as the load on the system grows over time, its performance becomes more and more dependent on the presence of the cache until the system can no longer meet its performance goals without the cache.</p>
+<p class="zh">通常，当这些缓存被加入系统时，它们被当作“可选”组件。毕竟，缓存只是一项性能优化；系统需要数据时，总可以从权威数据源获取。系统中那些“理论上可选”的组件的问题在于：随着时间推移，它们会变成设计中不可或缺的部分。以给系统加缓存为例。刚加进去时，它是一项可选的性能优化。然而，随着系统负载随时间增长，它的性能越来越依赖缓存的存在，直到没有缓存系统就再也无法达到性能目标。</p>
+<p class="en">Unfortunately, this increased reliance often goes unnoticed, and the overall reliability of the caches in the system is not maintained in correspondence with its increased criticality to overall system stability.</p>
+<p class="zh">不幸的是，这种日益增长的依赖常常不被察觉，而系统中缓存的整体可靠性，也没有随着它对整体系统稳定性的关键性上升而相应地被维护。</p>
+<p class="en">One of the most common ways that this manifests is in the difference between a local and a global cache. A local cache, as the name suggests, is a cache that is maintained locally in the memory of your application, often as a simple hash table. Such caches are very easy to implement. Unfortunately, as the system grows, the overall size of such local caches has to grow proportionally, and eventually the overall memory demands of the system become too great to sustain the cache. Furthermore, there is a tendency to add many such in-memory caches within a single application because it is so easy to do. Consequently, the memory usage of such caches is difficult both to visualize and manage.</p>
+<p class="zh">这一点最常见的体现之一，就是本地缓存与全局缓存的差异。顾名思义，本地缓存是在应用内存中本地维护的缓存，通常就是一个简单的哈希表。这类缓存非常容易实现。不幸的是，随着系统增长，这类本地缓存的总体大小也必须成比例增长，最终系统整体内存需求会大到无法维持该缓存。此外，由于做起来太容易，人们倾向于在单个应用里加许多这类内存缓存。结果就是，这类缓存的内存占用既难以可视化、也难以管理。</p>
+<p class="en">Additionally, as discussed in Chapter 15 on caching, local caches are very bad at optimizing memory usage. Consequently, if you ever find yourself adding a local "optional" cache or any other theoretically "optional" component to your system, accept that you are actually making a permanent (and very required) change to your overall distributed system that deserves the attention of any other significant change or refactor.</p>
+<p class="zh">此外，正如第 15 章讨论缓存时所说，本地缓存非常不善于优化内存使用。因此，当你发现自己正在给系统加一个本地“可选”缓存、或任何其他理论上“可选”的组件时，请接受这个事实：你实际上正在对整个分布式系统做一次永久性（而且是非常必要）的改动，它理应得到与其他任何重大改动或重构同等的重视。</p>
+<h2 id="s6"><span class="en">Oops, We "Cleaned Up" Everything</span><span class="zh">糟了，我们把一切都“清理”掉了</span></h2>
+<p class="en">In any real system, it's an unfortunate truth that errors occur. Bugs and failures are bound to happen. Given this, it is often important to consider how errors and failures might impact the overall state of the system that we are building. When doing this, it is important to think about more than just the operation of the individual pieces that make up the system, but also to think in terms of how all of these pieces interact together to manage the entire distributed system. Failing to anticipate how these systems might interact together in the presence of a failure is a common cause of severe problems. One of the most severe is a runaway deletion of a system because of some sort of unanticipated interaction effect.</p>
+<p class="zh">在任何真实系统中，错误的发生都是不幸却真实的事实。bug 与故障在所难免。鉴于此，考虑错误和故障会如何影响我们所构建系统的整体状态，往往十分重要。做这种考虑时，重要的是不能只想着构成系统的各个部件如何单独运作，还要思考所有这些部件如何交互在一起、共同管理整个分布式系统。未能预料这些系统在故障发生时会如何互相影响，是严重问题的常见根源。其中最严重的一种，就是由于某种意料之外的交互效应，导致系统发生失控删除。</p>
+<div class="pagemark">— PDF 第 202 页 —</div>
+<p class="en">Deleting everything in your system seems like such an extreme failure that it is hard to understand how it might happen by accident via a minor bug. Consequently, it is useful to examine real-world examples of how such a thing might happen.</p>
+<p class="zh">把系统里的一切都删掉，看起来是一种极端故障，很难想象它怎么会因为一个小 bug 而意外发生。因此，考察一下这类事情在现实中如何发生的例子会很有帮助。</p>
+<p class="en">An example is a photo storage system. Imagine that it has four components:</p>
+<p class="zh">以一个照片存储系统为例。想象它有四个组件：</p>
+<ul>
+<li><span class="en">A database that stores user information</span><span class="zh">存储用户信息的数据库</span></li>
+<li><span class="en">A frontend RESTful API server that implements the user API</span><span class="zh">实现用户 API 的前端 RESTful API 服务器</span></li>
+<li><span class="en">A file storage system where all of the photos are stored</span><span class="zh">存放所有照片的文件存储系统</span></li>
+<li><span class="en">A garbage collection system, which cleans up photos for users after their accounts are deleted</span><span class="zh">垃圾回收系统，在用户账号被删除后清理其照片</span></li>
+</ul>
+<p class="en">In normal operation, a user initiates an account deletion through the website, and the user is removed from the database. Then, for each photo stored in the filesystem, the garbage collection system looks up the user in the database. If the user can't be found, the photo is deleted. This garbage collection system exists to keep the system compliant with data privacy laws as well as to ensure photos don't "leak" and cause infinite growth in the filesystem.</p>
+<p class="zh">正常运行时，用户通过网站发起账号删除，该用户被从数据库中移除。然后，对文件系统中存储的每一张照片，垃圾回收系统都会在数据库中查询该用户；如果查不到该用户，这张照片就被删除。这个垃圾回收系统的存在，既是为了让系统符合数据隐私法规，也是为了防止照片“泄漏”导致文件系统无限增长。</p>
+<p class="en">Now consider a piece of code written in the frontend RESTful API to look up a user. It initiates a connection to the database, looks up the user's information, and then returns it to the caller. But what if the database is unavailable for some reason? Suppose the person who coded that piece of logic chooses to return a 404 indicating that the user couldn't be found. "Not Found" is perhaps not the best error to return in this case—500 internal service error is definitely better; but it is hard to see how this error code is important until you think about the garbage collection system. When the garbage collection system inquires about any user, they will all appear to be missing, and the garbage collection system will delete all images. Fortunately, because people anticipated catastrophic problems, the photos were restored from backups; but the service was down for many hours while these backups were restored from cold storage. During this period, user confidence in something so deeply personal and important as your family photos was shaken, and the service had to work very hard to restore confidence.</p>
+<p class="zh">现在看前端 RESTful API 中一段查询用户的代码。它建立数据库连接，查询用户信息，再返回给调用方。但如果数据库因某种原因不可用怎么办？假设写这段逻辑的人选择返回 404，表示用户找不到。在这种情况下，“未找到”也许不是最佳的错误返回——500 内部服务错误肯定更好；但在你想到垃圾回收系统之前，很难看出这个错误码为什么重要。当垃圾回收系统查询任何用户时，所有用户看起来都“不存在”，于是垃圾回收系统会删除所有图片。幸运的是，因为人们预料到了灾难性问题，照片从备份中被恢复了；但在从冷存储恢复这些备份期间，服务中断了好几个小时。在这段时间里，用户对“家庭照片”这种极其私人、极其重要的东西的信任被动摇了，服务方不得不非常努力地去重建这份信任。</p>
+<p class="en">So what went wrong? There are secondary basic failure points in this system that caused the catastrophic failure. The first is a human failing. Namely, it is hard for any human to keep the full context of a distributed system in their head at all times. Especially in a situation where one team may have owned the user API system, while a different team, possibly in a different geographic location, owned the garbage collection system. It is tempting to focus on this human failure. The developer made a mistake and "caused" this outage. Unfortunately, human failures are an inherent part of distributed systems; and ultimately they cannot be fixed, only prevented. Humans, regardless of their seniority, will make mistakes. Our systems must anticipate and prevent the effects of those mistakes.</p>
+<p class="zh">那么到底哪里出了问题？这个系统中有若干次级的基本故障点，最终导致了这场灾难。第一个是人的失误。也就是说，任何一个人都很难在脑子里时刻装着整个分布式系统的完整上下文。尤其是在这样一种情形下：用户 API 系统可能由一个团队负责，而垃圾回收系统由另一个团队负责，后者可能还在不同地理位置。人们很容易把注意力集中在这个人的失误上。开发者犯了错，“导致”了这次宕机。不幸的是，人的失误是分布式系统固有的一部分；归根结底，它们无法被消除，只能被预防。无论资历多深，人都会犯错。我们的系统必须预见并防范这些错误造成的影响。</p>
+<div class="pagemark">— PDF 第 203 页 —</div>
+<p class="en">This leads us to the second failing: the process or technical failure in the system, namely, rate limiting and a circuit breaker in the garbage collection logic. In the system under normal operation, there is always roughly the same number of users deleting their accounts. Let's say that one percent of all users delete their accounts in a given day; this will lead to a relatively constant rate of image deletes. When this bug occurred, the rate of image deletes increased by 100 times. This is clearly unusual, and the system should have detected and prevented such a high rate of deletes. The first systematic improvement would be the addition of throttling to the deletes. The throttling sets an upper bound on deletes per second and would have dramatically slowed down the rate at which all of the photos could be deleted to give humans a better chance to react and stop the process. The second is a "circuit breaker," much like the circuit breakers in our houses; when this high rate of deletes was hit for an extended period of time, the garbage collection system should have stopped itself from performing any deletes until a human reset the breaker. Combined, while these technical changes couldn't prevent there being some impact from the human mistake, they would dramatically reduce the impact on both the customers of the service and the brand of the service itself.</p>
+<p class="zh">这就引出第二个故障点：系统中的流程或技术失败，即在垃圾回收逻辑中缺少限流与熔断器。在正常运行的系统中，每天删除账号的用户数量大致是稳定的。假设每天有百分之一的用户删除账号，这会带来相对恒定的图片删除速率。当这个 bug 发生时，图片删除速率上升了 100 倍。这显然不正常，系统本应检测到并阻止如此高的删除速率。第一项系统性改进是给删除操作加限流。限流会给每秒删除数设一个上限，从而大幅拖慢删光所有照片的速度，让人有更好的机会反应并中止该进程。第二项是“熔断器”，就像我们家里的空气开关一样；当这种高删除速率持续一段时间后，垃圾回收系统本应自行停止一切删除，直到有人手动复位熔断器。综合来看，这些技术改动虽然无法完全消除人为失误带来的影响，但会显著降低对服务客户和服务品牌本身的冲击。</p>
+<p class="en">Such accidentally "we cleaned up everything" scenarios are actually surprisingly common, because as developers we tend to focus on the happy path where everything is working correctly. In that world, the call to the user API can never return a wrong answer. Experience in distributed systems teaches us that we always need to be thinking about a world where things are going right, but also what happens when things go wrong.</p>
+<p class="zh">这种“一不小心把一切都清理掉了”的场景实际上出乎意料地常见，因为作为开发者，我们倾向于关注一切正常工作的“快乐路径”。在那个世界里，调用用户 API 永远不会返回错误答案。分布式系统的经验告诉我们：我们不仅要思考一切顺利时的世界，还要思考出问题时会发生什么。</p>
+<h2 id="s7"><span class="en">Challenges with the Breadth of Inputs</span><span class="zh">输入广度带来的挑战</span></h2>
+<p class="en">One of the most disappointing kinds of failures is the failure that slips through all of your testing and goes undetected until a customer notices it. Such failures are frustrating to your customers. "Don't you test your code?" is a hard question to answer well in such cases. They are equally embarrassing because often they sit in your codebase for a long time before someone notices and/or complains loud enough to get you to notice.</p>
+<p class="zh">最令人沮丧的故障之一，是那种溜过了你所有测试、直到客户发现才被察觉的故障。这类故障让客户恼火。“你们不测试代码的吗？”这种问题在这种情形下很难答得漂亮。它们同样令人难堪，因为往往在有人注意到、或者抱怨得足够大声让你注意到之前，它们已经在你的代码库里躺了很久。</p>
+<p class="en">Sometimes these errors are undetected because it takes a very rare confluence of events to make them happen, e.g., tricky race conditions that occur once in a blue moon. Such bugs are actually significantly less likely to frustrate an end user; they just look like flakiness. We have all been trained to "reload and try again," which generally fixes such bugs.</p>
+<p class="zh">有时这些错误未被发现，是因为它们需要非常罕见的事件巧合才会触发，例如百年一遇的微妙竞态条件。这类 bug 实际上不太会让终端用户真正恼火；它们看起来只是偶发不稳定而已。我们都被训练成“刷新再试一次”，而这通常就能修好这类 bug。</p>
+<div class="pagemark">— PDF 第 204 页 —</div>
+<p class="en">The bad ones are the ones which occur for specific users 100% of the time, but only for a small number of users. I typically call these problems "compiler" problems, because they typically occur when there is a very broad set of allowed inputs to our system. In such a system, very specific combinations of input can cause problems 100% of the time, but only certain users present such inputs.</p>
+<p class="zh">真正糟糕的是那种对特定用户 100% 发生、但只影响一小部分用户的故障。我通常把这类问题称为“编译器式”问题，因为它们通常出现在系统允许输入范围非常广的时候。在这样的系统中，非常特定的输入组合会 100% 触发问题，但只有某些用户会呈现出这样的输入。</p>
+<p class="en">These are called "compiler" problems because the compiler is one of the first programs where such problems manifest themselves. For any given programming language, the space of possible legal programs is effectively infinite. Given enough programmers working on enough programs, sooner or later, one of them will write a program that is by the book legal, but exposes a bug in the compiler that causes it to crash. Sometimes these inputs are the product of random chance and human nature, but more and more often these inputs are created by fuzzing programs, special purpose code that fire random data at APIs in the hopes of causing crashes to deny service or exploit weaknesses in the APIs. An (in)famous version of such attacks were the SQL injection attacks that were typical of the early web, where bits of random SQL (e.g., '; DROP TABLES) were provided as inputs to places where no developer could reasonably expect SQL statements (e.g., a credit card number). Though, by now, SQL injection attacks are largely a thing of the past, accidentally breaking legitimate users or randomized "fuzzing" attacks are still quite common.</p>
+<p class="zh">它们被称为“编译器式”问题，是因为编译器是最早暴露这类问题的程序之一。对任何一门编程语言而言，合法程序的空间实际上是无穷的。只要有足够多的程序员编写足够多的程序，迟早会有人写出一个完全合规、却暴露编译器 bug 导致它崩溃的程序。有时这些输入是随机偶然与人性使然的产物，但越来越多的时候，这些输入是由模糊测试（fuzzing）程序生成的——这类专用代码向 API 喷射随机数据，以期引发崩溃、造成拒绝服务或利用 API 弱点。这类攻击中一个（臭）名昭著的版本是早期 Web 常见的 SQL 注入攻击：在开发者绝不会预料到 SQL 语句出现的地方（例如信用卡号输入框），塞入随机 SQL 片段（例如 '; DROP TABLES）。虽然时至今日 SQL 注入攻击 largely 已成为过去，但意外影响合法用户、或随机“模糊”攻击仍然相当常见。</p>
+<p class="en">Ultimately, this failure represents a failure of coverage in testing. If the surface area of a program is completely tested, such failures can't happen; but the space of valid inputs for many APIs is infinite or near infinite. How can you ensure coverage of your testing in such a situation? There are two basic solutions.</p>
+<p class="zh">归根结底，这类故障代表的是测试覆盖度的失败。如果一个程序的所有接触面都被完整测试过，这类故障就不可能发生；但许多 API 的合法输入空间是无穷或接近无穷的。在这种情况下，你如何确保测试的覆盖度？有两种基本方案。</p>
+<p class="en">The first is to record a representative sample of real-world inputs. This sample can never be exhaustive, but if you record (for example) all user inputs over the last two months, you can be reasonably sure that you are unlikely to break a legitimate user. When you are doing this recording, though, you need to be careful about both where and when you record it. If you have a global service, but only record inputs in North America, you will likely miss many bugs in inputs with Asian characters. Similarly, if your input varies between night and day, and you only record at a certain time, you will miss variation in your inputs due to the time of day. High-quality coverage in testing only comes when your test data is representative of all of your users.</p>
+<p class="zh">第一种方案是记录一份有代表性的真实世界输入样本。这个样本永远不可能穷尽，但如果你记录（例如）过去两个月的所有用户输入，就可以 reasonably 确信自己不太会破坏某个合法用户。不过在做这种记录时，你需要小心记录的地点与时间。如果你的服务是全球性的，却只在北美记录输入，你很可能会漏掉那些含亚洲字符输入中的许多 bug。类似地，如果你的输入在昼夜间有变化，而你只在某个时间点记录，就会漏掉因时段不同而产生的输入变化。只有当测试数据能代表你所有用户时，测试才能获得高质量的覆盖。</p>
+<p class="en">The second solution is to use fully randomized or "fuzzed" data for your inputs. These tests can be significantly more comprehensive, but they are also much harder to create. For a simple API that perhaps only takes a few integers as parameters, it is easy enough to generate random numbers, but for more complicated APIs with richer semantics, you may need to write custom random input generation logic (for example, something that generates random but valid IP addresses). Lately, innovation in the space of LLMs and generative AI makes it possible to generate valid but random inputs for even more classes of data.</p>
+<p class="zh">第二种方案是使用完全随机的、即“模糊化”的数据作为输入。这类测试的覆盖可以全面得多，但创建起来也困难得多。对于一个也许只接收几个整数参数的简单 API，生成随机数足够容易；但对于语义更丰富、更复杂的 API，你可能需要编写定制的随机输入生成逻辑（例如生成随机但合法的 IP 地址的逻辑）。近来，LLM 与生成式 AI 领域的创新，使得为更多种类的数据生成合法但随机的输入成为可能。</p>
+<div class="pagemark">— PDF 第 205 页 —</div>
+<p class="en">The combination of testing previously seen inputs as well as using fuzzed data can help ensure that your new code won't break existing users and that it is hardened against possible attacks via random or maliciously crafted command inputs.</p>
+<p class="zh">把“测试此前见过的输入”与“使用模糊数据”结合起来，可以帮助确保你的新代码不会破坏现有用户，并且能抵御通过随机或恶意构造的命令输入发起的可能攻击。</p>
+<h2 id="s8"><span class="en">Processing Obsolete Work</span><span class="zh">处理过时的工作</span></h2>
+<p class="en">We've all been faced with an unresponsive computer system: an email system where searching isn't working, a retail site which refuses to load the next page. This chapter is full of the many different ways in which systems can fail to operate correctly. Faced with these failing systems, what do we all do? We hit the reload button. And thus, an additional way to fail has been created for our services.</p>
+<p class="zh">我们都遇到过无响应的计算机系统：邮件系统搜索失灵，零售网站拒载下一页。本章通篇讲的都是系统无法正确运行的各种方式。面对这些出故障的系统，我们都会做什么？我们点刷新按钮。于是，我们的服务又多了一种失败方式。</p>
+<p class="en">In "The Thundering Herd" on page 179, we discussed the thundering herd and how retries or failovers can rapidly take down an entire system. The problem discussed in this section has somewhat of the opposite flavor, and that is a system struggling to catch back up.</p>
+<p class="zh">在第 179 页“惊群效应”一节中，我们讨论了惊群效应，以及重试或故障转移如何迅速拖垮整个系统。本节讨论的问题味道恰好相反：系统挣扎着想要追赶回来。</p>
+<p class="en">Imagine a system that is searching for photos that match a photo of our favorite pet. In this system, requests come in, they are processed asynchronously, and the results are made available for the person making the request. But what if, by the time the results come back, the person is no longer waiting? What if they have hit reload and resubmitted one, or even countless additional requests. With no one waiting for the results, the work done to produce the results is wasted, and worse yet, the time taken to produce those results has delayed our system responding to actual user requests.</p>
+<p class="zh">想象一个系统，它正在搜索与我们心爱宠物照片相匹配的照片。在这个系统中，请求进来后被异步处理，结果再呈现给发起请求的人。但如果结果返回时，那个人已经不在等了呢？如果他点了刷新、重新提交了一个请求、甚至无数个额外请求呢？既然没有人在等结果，为产生这些结果所做的工作就白费了；更糟的是，产生这些结果所花的时间，还耽误了系统响应真正的用户请求。</p>
+<p class="en">To understand how this happens, imagine that our photo processing system has suffered a failure in its object recognition microservice. Processing requests grinds to a stop, but the inbound requests keep arriving. A little like a jam in an assembly line, even though no work is being processed, new work keeps coming down the conveyor belt. This is obviously problematic; but working quickly, we manage to resolve the problem, and work starts being processed again. But what happens now?</p>
+<p class="zh">要理解这是怎么发生的，请想象我们的照片处理系统在其物体识别微服务上发生了故障。请求处理戛然而止，但入站请求仍在不断涌来。有点像装配线上的堵塞：虽然没有任何工作被处理，新工作却不断沿传送带送来。这显然有问题；但我们迅速行动，设法解决了问题，工作又开始被处理了。可现在会发生什么？</p>
+<p class="en">During the time that the system wasn't processing any work, a backlog of work has accrued at the component which failed. If the system is close to its optimal load at steady state, as is desirable for maximal efficiency, the system will have a very hard time processing through this backlog. As long as the backlog exists, new requests are delayed. It's not uncommon in such situations for a short outage, say less than 10 minutes, to cause a multihour increase in the latency of request processing, and corresponding degradation in customer experience.</p>
+<p class="zh">在系统停止处理任何工作的那段时间里，失败的组件处已经堆积起一批积压工作。如果系统在稳态下接近最优负载（这是为了最大化效率所期望的），那么它将非常难以处理掉这批积压。只要积压存在，新请求就会被延迟。在这种情形下，一次短至 10 分钟以内的短暂中断，导致请求处理延迟上升数小时、并相应地降低客户体验，这种情况并不罕见。</p>
+<p class="en">So how can we build our systems to respond better in the face of such backlogs and latency increases? There are three approaches which can be used independently or together to solve the situation. The first is timing out requests. Every request that enters the system should have a timeout, the time after which the request is considered invalid and failed. When the request times out, any work associated with that request is aborted. Timeouts can help the system shed work when significantly overloaded. However, it is important to note that timeouts by themselves cannot resolve the problem described above. If the latency of each request is high, but slightly lower than the timeout value, your system will seem very sluggish, but it won't ever shed work to get back to normal.</p>
+<p class="zh">那么，我们该如何构建系统，使其面对这类积压与延迟上升时能更好地应对？有三种方法，可以单独使用也可以组合使用来解决这种局面。第一种是给请求设置超时。每个进入系统的请求都应该有一个超时时间，超过该时间请求即被视为无效并失败。请求超时后，与该请求相关的所有工作都被中止。当系统严重过载时，超时可以帮助它甩掉工作。但要注意，超时本身并不能解决上述问题。如果每个请求的延迟都很高、但略低于超时阈值，你的系统会显得非常迟钝，却永远不会甩掉工作回到正常状态。</p>
+<div class="pagemark">— PDF 第 206 页 —</div>
+<p class="en">The second approach is to use autoscaling based on request latency. We are used to seeing autoscaling based on CPU or memory usage, but often it makes even more sense to autoscale based on user-facing metrics like processing latency. If your system can enable autoscaling, scaling based on request latency can help process the backlog that accumulated when it was down. Even simply manually scaling after an outage, while less efficient, can be an effective mitigation.</p>
+<p class="zh">第二种方法是基于请求延迟进行自动扩缩容。我们已经习惯看到基于 CPU 或内存使用率的自动扩缩容，但通常基于面向用户的指标（如处理延迟）来自动扩缩容往往更有意义。如果你的系统支持自动扩缩容，那么基于请求延迟的扩容可以帮助处理宕机期间堆积的积压。即使只是在宕机后手动扩容，虽然效率较低，也能成为一种有效的缓解手段。</p>
+<p class="en">The final approach is to explicitly prioritize newer requests over older requests when your queues grow too long or latency grows too high. This approach is a form of triage, which sacrifices the experience of some users, who in all likelihood already abandoned that request anyway, to ensure that more recent requests, likely the same users hitting reload, have a better experience.</p>
+<p class="zh">最后一种方法，是当队列过长或延迟过高时，显式地让新请求优先于旧请求。这种方法是一种分流（triage），它牺牲部分用户的体验——这些用户十有八九早已放弃了那个请求——以确保更新的请求（很可能就是那些点了刷新的同一批用户）获得更好的体验。</p>
+<p class="en">Designing reliable distributed systems means not only designing systems that prevent failures from occurring, but also systems that recover quickly when failures do occur. Users are far more accepting of short outages when the system recovers quickly than prolonged outages where recovery takes a long time, even after the problem is "fixed."</p>
+<p class="zh">设计可靠的分布式系统，不仅意味着设计能预防故障发生的系统，还意味着设计在故障真的发生时能快速恢复的系统。用户对“系统迅速恢复”的短暂中断的接受度，远高于“问题虽已修复、恢复却耗时良久”的长时间中断。</p>
+<h2 id="s9"><span class="en">The "Second System" Problem</span><span class="zh">“第二套系统”问题</span></h2>
+<p class="en">So far we have seen numerous common problems that arise in distributed systems. As you have read through this chapter, you may have recognized several different problems that are present in your current system. Seeing the possibility of failures, you are eager to improve the system, but how can you do it?</p>
+<p class="zh">到目前为止，我们已经看到了分布式系统中出现的众多常见问题。在阅读本章时，你或许已经认出了自己当前系统中存在的好几个问题。看到了故障的可能性，你急于改进系统，但该怎么做呢？</p>
+<p class="en">Sometimes there are only a few changes needed, and it's obvious how to make these minor improvements to the existing system—roll them out and be done with it. Unfortunately, more often than not, the problems seem so large and so hard to fix in the existing system that it seems the most efficient solution is to build a new system, from scratch, that replaces the existing system at some date in the future. This approach is attractive for a number of reasons: it's always easier to build from scratch rather than refactor; it is always more exciting to build something new than it is to refactor an existing solution; and finally, building the new system alongside the old system allows the new system to be built without the pressures of being used in production until it is ready.</p>
+<p class="zh">有时只需要少量改动，如何对现有系统做这些小改进也显而易见——发布上线就完事了。不幸的是，更多时候，问题在现有系统中显得如此庞大、如此难以修复，以至于看起来最高效的方案是从零开始建一套新系统，在未来某个日期替换掉现有系统。这种做法之所以诱人，有若干原因：从零搭建总比重构容易；建新东西总比重构现有方案令人兴奋；最后，与旧系统并行建设新系统，可以让新系统在“准备就绪”之前，不用承受生产环境使用的压力。</p>
+<p class="en">The attraction of all of these perceived benefits makes building the "second system" one of the most common failures in distributed systems; but it is this last phrase, "until it is ready," that turns out to be the curse of the second system. In practice, many second systems never actually become ready. There are many different organizational reasons why this can happen, but the most common are that the second system is forever playing catch-up to the current system and that it never gets the production mileage necessary to replace the original system.</p>
+<p class="zh">所有这些被感知到的好处，让“建造第二套系统”成为分布式系统中最常见的失败之一；但正是最后这个说法——“直到它准备就绪”——成了第二套系统的诅咒。实践中，许多第二套系统实际上永远都没准备就绪。背后有各种组织上的原因，但最常见的是：第二套系统永远在追赶当前系统，而且它永远积累不到替换原有系统所需的生产实战里程。</p>
+<div class="pagemark">— PDF 第 207 页 —</div>
+<p class="en">The second system tends to play catch-up precisely because it is not the current system in production. This means that while it is being built, all of the important features, bug fixes, and improvements necessary to run the business land in the original system. Suppose it takes six months to complete the second system. At the moment when it is "complete," there are six more months of features and fixes that it needs to implement until it matches the capabilities of the original system. Unless you are willing to significantly over-staff the team building the second system, you are always playing catch-up.</p>
+<p class="zh">第二套系统之所以总是在追赶，恰恰是因为它不是当前在生产中运行的系统。这意味着，在它被建造期间，所有跑业务所必需的重要特性、bug 修复和改进，都落到了原有系统里。假设完成第二套系统需要六个月。在它“完成”的那一刻，还有另外六个月的特性与修复需要它实现，才能追平原有系统的能力。除非你愿意给建第二套系统的团队大幅超额配人，否则你永远在追赶。</p>
+<p class="en">The need for over-staffing the development of the second system leads to the other failing, which is the production readiness of the second system. In order for any system to become production ready, it needs mileage on it. No matter how good you think your code is, I guarantee that there are bugs that will only be found once it is released into production. But when bugs are found in the second system, the tendency is to turn it off—after all, the original system didn't have those bugs. This dramatically reduces the exposure and overall mileage that the second system can obtain toward being truly production ready. Just like the feature debt that accumulates as the second system is built, the production readiness debt accrues, and it is very hard for the second system to catch up.</p>
+<p class="zh">第二套系统开发需要超额配人这一点，又引出了另一个失败：第二套系统的生产就绪度。任何系统要达到生产就绪，都需要在上面积累实战里程。无论你觉得自己的代码多好，我保证总有一些 bug 要等到它发布到生产环境才会被发现。但当第二套系统中发现 bug 时，人们的倾向是把它关掉——毕竟原有系统没有那些 bug。这大大削减了第二套系统为达到真正生产就绪所能获得的暴露度与总里程。正如建造第二套系统期间会累积“特性债”一样，“生产就绪债”也在累积，而第二套系统很难追上。</p>
+<p class="en">Given that there are probably design problems or technical debt in your distributed system that you need or want to fix, and the "second system" approach is often doomed to failure, what can you do? The solution lies in the nature of the distributed system itself. Rather than replacing the entire distributed system, focusing on improving individual microservices can make real progress tractable and significantly reduce the costs of running two systems in production at once. Similarly, it makes sense to invest in abstractions that separate the core business logic from code that may need to change as you grow and scale, for example, the storage layer. This separation means that you can iterate your core systems like storage independently from your business logic and even run two different storage layers side by side for evaluation and testing.</p>
+<p class="zh">既然你的分布式系统中很可能存在需要或想要修复的设计问题或技术债，而“第二套系统”做法又常常注定失败，那你能做什么？答案就在分布式系统本身的特性之中。与其替换整个分布式系统，不如聚焦改进各个微服务，这样能让真正的进展变得可驾驭，并显著降低同时在生产中运行两套系统的成本。类似地，投资于一些抽象也是有意义的——把核心业务逻辑与那些会随业务增长和扩展而变化的代码（例如存储层）分离开。这种分离意味着你可以独立于业务逻辑来迭代存储等核心系统，甚至可以并行运行两个不同的存储层来做评估和测试。</p>
+<p class="en">Much like many other aspects of our lives, the urge to throw away the old and build something new, while tempting, is ultimately far less successful than adapting and improving our existing systems to meet the new needs of our businesses and our users.</p>
+<p class="zh">就像我们生活中许多其他方面一样，扔掉旧的、建新的这种冲动虽然诱人，但最终远不如改造和改进现有系统、使其满足业务与用户新需求来得成功。</p>
+<div class="pagemark">— PDF 第 208 页 —</div>
+<h2 id="summary"><span class="en">Summary</span><span class="zh">小结</span></h2>
+<p class="en">This chapter is unlike any of the others; instead of discussing how to build, it discusses how not to build. Hopefully, seeing the common ways that distributed systems fail helps you find problems in your existing systems and also to build more reliable new systems. Learning from the failures of others prevents you from making these common mistakes in your systems.</p>
+<p class="zh">本章与其他各章都不同；它不是讨论如何构建，而是讨论如何不构建。希望了解分布式系统常见的失败方式，能帮助你发现现有系统中的问题，并构建出更可靠的新系统。从他人的失败中学习，能让你避免在自己的系统中重蹈这些常见错误。</p>
+
+<div class="pager"><a href="chapter-15.html">← 上一章</a><a href="index.html">返回目录</a><a href="closing.html">下一章 →</a></div>
+</main>
+<script>
+const btn=document.getElementById('menu-btn');
+const body=document.body;
+btn.addEventListener('click',()=>{
+  if(window.innerWidth<=900){body.classList.toggle('toc-open');}
+  else{body.classList.toggle('toc-hidden');}
+});
+// close drawer on link click (narrow screens)
+document.querySelectorAll('#toc a').forEach(a=>{
+  a.addEventListener('click',()=>{if(window.innerWidth<=900){body.classList.remove('toc-open');}});
+});
+</script>
+</body>
+</html>

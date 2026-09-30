@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>监控与可观测性模式 - Monitoring and Observability Patterns</title>
+<style>
+:root{
+  --accent:#2563eb; --zh-bg:#f0f6ff; --zh-border:#2563eb;
+  --code-bg:#0f172a; --code-ink:#e2e8f0; --ink:#1f2937;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0; background:#faf6f1; color:var(--ink);
+  font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  font-size:18px; line-height:1.75;
+}
+#toc{
+  position:fixed; top:0; left:0; width:300px; height:100vh;
+  overflow-y:auto; background:#fff; border-right:1px solid #e5e7eb;
+  padding:20px 16px; transition:transform .25s ease; z-index:100;
+}
+#toc h2{font-size:16px; color:var(--accent); margin:0 0 12px;}
+#toc a{
+  display:block; color:var(--ink); text-decoration:none;
+  padding:4px 8px; border-radius:6px; font-size:14px;
+}
+#toc a.l2{font-weight:700; margin-top:8px;}
+#toc a.l3{padding-left:24px; font-size:13.5px; color:#4b5563;}
+#toc a.l4{padding-left:40px; font-size:13px; color:#6b7280;}
+#toc a:hover{background:var(--zh-bg);}
+main{
+  margin-left:300px; max-width:900px; padding:32px 40px 80px;
+}
+#menu-btn{
+  position:fixed; top:14px; left:316px; z-index:200;
+  background:var(--accent); color:#fff; border:none; border-radius:8px;
+  padding:8px 12px; cursor:pointer; font-size:16px;
+}
+body.toc-hidden #toc{transform:translateX(-300px);}
+body.toc-hidden #menu-btn{left:14px;}
+h1{font-size:30px; border-bottom:3px solid var(--accent); padding-bottom:10px;}
+h2{font-size:24px; margin-top:40px; color:#111827; scroll-margin-top:20px;}
+h3{font-size:20px; margin-top:28px; color:#1f2937; scroll-margin-top:20px;}
+h4{font-size:17px; margin-top:20px; color:#374151;}
+h1 .zh,h2 .zh,h3 .zh,h4 .zh{display:block; font-size:.8em; color:var(--accent); font-weight:600; margin-top:4px;}
+p.en{margin:14px 0 4px;}
+p.zh{
+  background:var(--zh-bg); border-left:4px solid var(--zh-border);
+  border-radius:0 8px 8px 0; padding:10px 16px; margin:0 0 14px;
+}
+li{margin:6px 0;}
+li .zh{
+  display:block; background:var(--zh-bg); border-left:4px solid var(--zh-border);
+  border-radius:0 8px 8px 0; padding:6px 12px; margin-top:4px;
+}
+li .en{display:block;}
+.callout{
+  background:#fffbeb; border:1px solid #f59e0b; border-radius:8px;
+  padding:14px 18px; margin:18px 0;
+}
+.callout p.zh{background:#fef3c7; border-color:#f59e0b;}
+pre{
+  background:var(--code-bg); color:var(--code-ink); border-radius:8px;
+  padding:16px; overflow-x:auto; font-size:13.5px; line-height:1.6;
+  font-family:"SF Mono",Menlo,Consolas,monospace;
+}
+code{font-family:"SF Mono",Menlo,Consolas,monospace;}
+p code,li code{
+  background:#fce7f3; color:#be185d; padding:1px 6px; border-radius:4px;
+  font-size:.9em;
+}
+figure{margin:22px 0; text-align:center;}
+figure img{max-width:100%; border:1px solid #e5e7eb; border-radius:8px;}
+figcaption{font-size:13px; color:#6b7280; margin-top:8px;}
+figcaption .zh{display:block; color:var(--accent);}
+table{border-collapse:collapse; width:100%; margin:16px 0; font-size:14px;}
+th,td{border:1px solid #d1d5db; padding:8px 12px; text-align:left; vertical-align:top;}
+th{background:#f1f5f9;}
+td .zh{display:block; background:var(--zh-bg); padding:4px 8px; margin-top:4px; border-radius:4px;}
+.pagemark{
+  text-align:center; color:#9ca3af; font-size:12px; letter-spacing:2px;
+  margin:28px 0 8px;
+}
+.pager{
+  display:flex; justify-content:space-between; gap:10px; margin-top:60px;
+  border-top:1px solid #e5e7eb; padding-top:20px;
+}
+.pager a{
+  flex:1; text-align:center; padding:12px; border-radius:8px;
+  background:#fff; border:1px solid #d1d5db; text-decoration:none; color:var(--ink);
+}
+.pager a:hover{background:var(--accent); color:#fff;}
+.pager a.disabled{opacity:.4; pointer-events:none;}
+@media(max-width:900px){
+  #toc{transform:translateX(-300px); box-shadow:2px 0 12px rgba(0,0,0,.15);}
+  body.toc-open #toc{transform:translateX(0);}
+  main{margin-left:0; padding:24px 18px 60px;}
+  #menu-btn{left:14px;}
+}
+</style>
+</head>
+<body>
+<button id="menu-btn">☰ 目录</button>
+<nav id="toc">
+<h2>监控与可观测性模式</h2><a class="l2" href="#s1">Monitoring and Observability Basics</a>
+<a class="l2" href="#s2">Logging</a>
+<a class="l2" href="#s3">Metrics</a>
+<a class="l2" href="#s4">Basic Request Monitoring</a>
+<a class="l2" href="#s5">Advanced Request Monitoring</a>
+<a class="l2" href="#s6">Alerting</a>
+<a class="l3" href="#s6-1">Basic alerting</a>
+<a class="l3" href="#s6-2">Alerting on anomolies</a>
+<a class="l2" href="#s7">Tracing</a>
+<a class="l2" href="#s8">Aggregating Information</a>
+<a class="l2" href="#summary">Summary</a>
+</nav>
+<main>
+<h1><span class="en">Monitoring and Observability Patterns</span><span class="zh">监控与可观测性模式</span></h1>
+<div class="pagemark">— PDF 第 177 页 —</div>
+<p class="en">One of the core differences between client applications and distributed systems is that generally distributed systems implement services. Services are always on, always available for users around the world in all time zones and ways of working. Because of the 24/7 nature of these systems, monitoring and observability become critical to building reliable systems. To deliver reliability, you must notice a problem before the customer notices a problem; and to solve any problems you find, you need to be able to understand how your system is operating. This chapter focuses on best practices for such monitoring and observability.</p>
+<p class="zh">客户端应用与分布式系统之间的一个核心区别在于：分布式系统通常实现的是服务（service）。服务永远在线，对全球所有时区、各种工作方式的用户始终可用。由于这些系统 7×24 小时不间断运行，监控（monitoring）与可观测性（observability）对于构建可靠系统变得至关重要。要交付可靠性，你必须在客户察觉问题之前先察觉问题；而要解决发现的任何问题，你又必须能够理解系统是如何运行的。本章聚焦于这类监控与可观测性的最佳实践。</p>
+<h2 id="s1"><span class="en">Monitoring and Observability Basics</span><span class="zh">监控与可观测性基础</span></h2>
+<p class="en">Before we get into the details of implementing monitoring and observability, it is useful to ground ourselves in the core set of concepts that make up any monitoring and observability solution.</p>
+<p class="zh">在深入实现监控与可观测性的细节之前，有必要先打下基础，弄清构成任何监控与可观测性方案的那一组核心概念。</p>
+<p class="en">In any system, there are four key concepts which make up our solutions:</p>
+<p class="zh">在任何系统中，构成我们方案的有四个关键概念：</p>
+<ul>
+<li><span class="en">Logging</span><span class="zh">日志（Logging）</span></li>
+<li><span class="en">Metrics</span><span class="zh">指标（Metrics）</span></li>
+<li><span class="en">Alerting</span><span class="zh">告警（Alerting）</span></li>
+<li><span class="en">Tracing</span><span class="zh">链路追踪（Tracing）</span></li>
+</ul>
+<p class="en">We’ll step through each of these in a little more detail.</p>
+<p class="zh">下面我们对每一个都稍作展开。</p>
+<p class="en">It’s highly likely that anyone who has built even the smallest system has implemented logging, even if they don’t realize that they have. The simplest version of logging is the humble printf statement. Of course, there are many more sophisticated ways to do logging, but ultimately they all serve the same purpose as that print statement.</p>
+<p class="zh">任何哪怕只构建过最小系统的人，都极有可能已经实现过日志，只是自己没意识到而已。最简单的日志形式，就是朴素的 printf 语句。当然，日志的做法有远为复杂的形式，但归根结底，它们都与那条 print 语句服务于同一个目的。</p>
+<div class="pagemark">— PDF 第 178 页 —</div>
+<p class="en">Namely, they show us that a particular place in our code has executed, and they record data associated with that place in the code. Logging records data that helps us understand specific executions of our code.</p>
+<p class="zh">也就是说，它们告诉我们代码中某个特定位置被执行过，并记录与代码中该位置相关联的数据。日志记录的数据，帮助我们理解代码的一次次具体执行。</p>
+<p class="en">The contrast to logging are metrics or monitoring. While logging is associated with a specific execution of our source code, a metric is generally related to aggregate data across multiple requests. Examples of metrics could be the number of times this particular function has been called in the last minute, or the average length of time spent in that function across all of these calls. While logging provides us a perspective to understand a specific execution of our service, metrics provide us a global perspective of how our service is executing in general.</p>
+<p class="zh">与日志相对的是指标（metrics）或监控。日志与源代码的某一次具体执行相关联，而指标通常与跨多个请求的聚合数据相关。指标的例子可以是：这个特定函数在过去一分钟内被调用的次数，或者这所有调用在该函数中花费的平均时长。日志为我们提供理解服务某一次具体执行的视角，而指标则为我们提供服务整体运行情况的全局视角。</p>
+<p class="en">The purpose of logging and metrics are to help us understand our systems when we are looking at them, or when we know that there is a problem. If we spent all of our time staring at graphs of metrics and logging interfaces, that might be all we need; but of course, in real life we spend much of our time in other environments. Consequently, we need alerting to detect problems and notify us that we need to interrupt our lives and go look at the logging or metrics. Effectively, alerts are rules that are applied to either logs or metrics which trigger an event. Generally, this event triggers a notification which is intended to draw our attention to a problem (or potential problem) in our systems. Crafting high-quality alerts is a key part of building a reliable system.</p>
+<p class="zh">日志与指标的目的，是在我们主动查看系统、或已知出问题时帮助我们理解系统。如果我们把所有时间都用来盯着指标图表和日志界面看，那也许就够了；但现实中我们大部分时间都在别的环境里。因此，我们需要告警（alerting）来检测问题、并通知我们该打断手头的事去查看日志或指标了。实际上，告警就是施加于日志或指标之上、用于触发某个事件的规则。通常，这个事件会触发一条通知，意在把我们的注意力引向系统中某个问题（或潜在问题）。精心设计高质量告警，是构建可靠系统的关键一环。</p>
+<p class="en">The final component in our system relates to the distributed part of our distributed system. One of the hardest problems in building out a distributed system is understanding how all of the pieces work together, or even harder, understanding why they may fail in certain circumstances. From a naive point of view, every individual request to a microservice is unique and individual. But the truth is that from the broader perspective of the application, there is often a larger request, which is being serviced by a chain of calls through all of the microservices. Tracing is the act of rebuilding this context so that instead of seeing individual, unique requests at each microservice, we can understand that all of these individual pieces are part of a broader user request. This global perspective, in turn, enables us to understand (for example) why a particular user’s request is running slowly or failing to work at all. Tracing takes all of the pieces of a distributed system and reconstructs the user’s perspective.</p>
+<p class="zh">我们系统的最后一个组成部分，与分布式系统的“分布式”部分有关。构建分布式系统最难的问题之一，就是理解所有组件如何协同工作；更难的是，理解它们为何在某些情况下会失败。从粗浅的角度看，发往某个微服务的每一个请求都是独特、孤立的。但真相是：从应用更宏观的视角看，往往存在一个更大的请求，它由贯穿所有微服务的一条调用链共同处理。链路追踪（tracing）就是重建这一上下文的行为——使我们不再在每个微服务处看到一个个孤立、独特的请求，而是能理解所有这些零散部分都属于某个更宏观的用户请求。这种全局视角进而让我们能够理解（例如）为何某个特定用户的请求运行缓慢、或干脆失败。链路追踪把分布式系统的所有碎片拼合起来，重建出用户的视角。</p>
+<p class="en">In the coming sections, we’ll dive deeper into each of these components and see how you can use them to build a reliable system.</p>
+<p class="zh">在接下来的各节中，我们将更深入地逐一探讨这些组成部分，并看你如何用它们构建可靠系统。</p>
+<div class="pagemark">— PDF 第 179 页 —</div>
+<h2 id="s2"><span class="en">Logging</span><span class="zh">日志（Logging）</span></h2>
+<p class="en">Once you figure out how to log information, one of the first things that you notice in a distributed system is just how much information gets logged. The volume of logs, or “log spam” can often be a significant problem in terms of understanding a problem, or even just the raw cost of storing and searching all of those logs.</p>
+<p class="zh">一旦你弄明白如何记录信息，在分布式系统中最先注意到的事情之一就是：被记录下来的信息量实在太大。日志的体量——或者说“日志刷屏（log spam）”——无论对于理解问题，还是仅仅就存储和检索所有这些日志的原始成本而言，都常常是个大问题。</p>
+<p class="en">The truth is that the value of logging is very contextual. When you are debugging a specific problem in a specific component, then verbose, detailed logging can be critical to identifying the problem. On the other hand, during standard execution, where everything is working correctly, most of the logging is just wasted noise, except those logs which trigger alerts because of system errors.</p>
+<p class="zh">事实是，日志的价值高度依赖具体情境。当你在某个组件里调试某个特定问题时，冗长、详尽的日志对于定位问题可能至关重要。而另一方面，在一切正常运转的常规执行期间，大多数日志只是无谓的噪音——除了那些因系统错误而触发告警的日志。</p>
+<p class="en">Consequently, only the simplest distributed systems use logging like basic printing. Nearly every system uses some sort of logging library. These logging libraries provide important capabilities that make it much easier to deal with lots and lots of logs. The most basic capability provided by such libraries is basic timestamping. Oftentimes we are trying to understand what happened and in what sequence; and without a shared notion of time in every log line, it is difficult to know (for example) the amount of time that passed between different logs. In addition to timestamp, most logging libraries enable the addition of other types of context to the logs. In any multithreaded system, many requests may be processed in parallel, and thus many different identical logs may be issued. To differentiate between these logs and understand how they relate to a specific request, context like the thread identifier, user ID, or request ID help differentiate between otherwise identical logs on the same server and filter to the context of a specific request. The final, and often most valuable, service provided by logging libraries is leveled logging. Leveled logs allow you to express the type of logs being emitted. The specific number of different levels often vary by library, but in general they include:</p>
+<p class="zh">因此，只有最简单的分布式系统才像基本打印那样记日志。几乎每个系统都会使用某种日志库。这些日志库提供了重要能力，让你处理海量日志时轻松得多。这类库提供的最基础能力是基本的时间戳。我们常常想弄清发生了什么、按什么顺序发生；如果每一行日志里没有一个共享的时间概念，就很难知道（例如）两条日志之间隔了多久。除时间戳外，大多数日志库还允许给日志添加其他类型的上下文。在任何多线程系统中，可能并行处理许多请求，因而会发出许多条一模一样的日志。要区分这些日志、并理解它们与某个特定请求的关系，像线程标识符、用户 ID、请求 ID 这样的上下文，有助于区分同一服务器上原本完全相同的日志，并把它们过滤到某个特定请求的上下文里。日志库提供的最后一项、也往往是最有价值的服务，是分级日志（leveled logging）。分级日志让你能够表达所发出日志的类型。不同级别的确切数目常因库而异，但一般都包括：</p>
+<ul>
+<li><span class="en">Debug. Verbose logs, generally only useful when doing detailed debugging.</span><span class="zh">调试（Debug）：详细日志，通常只在做深入调试时有用。</span></li>
+<li><span class="en">Info. Often useful but not exceptional messages tied to the operation of the service.</span><span class="zh">信息（Info）：与服务运行相关、常常有用但并不异常的消息。</span></li>
+<li><span class="en">Warning. Something that is concerning, but not necessarily fatal to the entire application.</span><span class="zh">警告（Warning）：令人担忧、但对整个应用未必致命的情况。</span></li>
+<li><span class="en">Error. Something very bad has happened, and someone should take a look as soon as possible.</span><span class="zh">错误（Error）：出了很严重的问题，应当有人尽快查看。</span></li>
+<li><span class="en">Fatal. Something unrecoverable has happened, and the application will terminate after writing this log.</span><span class="zh">致命（Fatal）：发生了不可恢复的错误，应用在写出这条日志后将终止。</span></li>
+</ul>
+<div class="pagemark">— PDF 第 180 页 —</div>
+<p class="en">Leveled logging enables you to filter only to certain types of messages, and it allows you to leave detailed logging in your code, for when it is needed, without filling up your log streams with many, many spammy log messages. Generally, your log level for an application is set to Info or Warning depending on your logging style. Debug messages are reserved for conditional activation to debug specific problems.</p>
+<p class="zh">分级日志让你能够只过滤出特定类型的消息，也让你可以把详细日志留在代码里以备不时之需，而不必让日志流被大量刷屏消息塞满。一般而言，应用的日志级别会根据你的日志风格设为 Info 或 Warning。Debug 级消息则保留下来，用于在调试特定问题时按需条件启用。</p>
+<p class="en">In addition to the request context, a valuable context for the logging library is the location of the log call itself. Typically, logging systems understand which class or component contains the log. This enables conditionally logging where you dynamically activate detailed debug logging for specific classes or other components on running servers. Conditional logging enables you to respond to a reported incident or a problem seen by a specific user without requiring the storage or latency of detailed logging for every request. Some care should be used when performing conditional logging, as it can significantly increase the latency of end-user requests. Nothing is worse than causing a worse incident or outage in the process of investigating an outage.</p>
+<p class="zh">除请求上下文外，日志库另一项有价值的上下文是日志调用自身的位置。通常，日志系统知道这条日志位于哪个类或组件中。这就支持条件日志：你可以在运行中的服务器上，为特定类或其他组件动态启用详细的调试日志。条件日志让你能够响应某个上报的事故、或某个特定用户遇到的问题，而无需为每个请求都付出详细日志的存储与延迟代价。使用条件日志时应多加小心，因为它可能显著增加终端用户请求的延迟。没有什么比“在排查一次故障的过程中又引发更严重的事故或中断”更糟的了。</p>
+<p class="en">Of course, to make logging useful, you must have a clear sense of what the purpose of logging is in the first place. Ultimately, logging provides insight into the operation of your service or application. One common joke is that the way to know what to log is to remember what you were missing when you initially debugged the problem. That is, logging is often a retrospective exercise “I wish I had logged….” It goes without saying that the most useful things to log are exceptional or erroneous situations. Every error or exception should probably be logged unless you are completely confident in the error-handling code (and sometimes even then). Beyond errors, often the most interesting things to log are the things that are weird. For example, some requests are just slow. You can stare at metrics (see “Metrics”) showing that your 99th-percentile requests take a ridiculous amount of time, but without logs indicating which parts of request handling are exceptionally slow, it is hard to take action. On the other hand, just logging the play by play (“function foo was called”) is rarely going to be that useful, and it is definitely going to spam your logs. When logging, try to imagine the hardest problem you might need to debug in that particular part of the code, and write down in the log whatever you would need to successfully figure it out.</p>
+<p class="zh">当然，要让日志有用，你首先必须清楚日志的目的究竟是什么。归根结底，日志提供的是对你的服务或应用运行情况的洞察。有一个广为流传的玩笑说：想知道该记什么日志，办法就是回想当初你调试那个问题时缺了什么。也就是说，记日志往往是一种事后行为——“真希望当时我把……记下来就好了”。不言而喻，最值得记录的是异常或出错的情形。每一个错误或异常大概都应当被记录，除非你对自己的错误处理代码完全有信心（而即便如此有时也该记）。除错误之外，最值得记录的往往是那些“古怪”的事情。例如，有些请求就是慢。你可以盯着指标（见“指标”一节），看到你的第 99 百分位请求慢得离谱；但若没有日志指出请求处理的哪些环节异常缓慢，就很难采取行动。另一方面，只是事无巨细地记录流水账（“调用了 foo 函数”）几乎不会有什么用，而且肯定会刷屏。记日志时，试着想象你在该段代码里可能需要调试的最难问题，然后把成功解决它所需要的一切都写进日志。</p>
+<h2 id="s3"><span class="en">Metrics</span><span class="zh">指标（Metrics）</span></h2>
+<p class="en">In contrast to logging, with its focus on individual executions, monitoring metrics are designed to collect statistics over time which characterize the general execution of your services. The focus of this metrics section will be the Prometheus monitoring application, which has become the de facto industry standard. Other monitoring solutions offer similar capabilities.</p>
+<p class="zh">与聚焦于单次执行的日志不同，监控指标旨在随时间收集统计量，用以刻画服务的总体运行情况。本节指标部分将聚焦于 Prometheus 这个监控应用——它已成为事实上的行业标准。其他监控方案也提供类似能力。</p>
+<p class="en">Monitoring data is generally recorded over time; from this view you can see both the instantaneous state of your application and also how that state is changing over time.</p>
+<p class="zh">监控数据通常是随时间记录的；从这个视角，你既能看到应用的瞬时状态，也能看到该状态随时间如何变化。</p>
+<div class="pagemark">— PDF 第 181 页 —</div>
+<p class="en">When monitoring your application there are three basic types of data that are interesting to record:</p>
+<p class="zh">监控应用时，有三种基本类型的数据值得记录：</p>
+<ul>
+<li><span class="en">Histograms</span><span class="zh">直方图（Histograms）</span></li>
+<li><span class="en">Counts</span><span class="zh">计数（Counts）</span></li>
+<li><span class="en">Values</span><span class="zh">瞬时值（Values）</span></li>
+</ul>
+<p class="en">Histograms represent a distribution of values over some interval. Histograms enable you to understand both the average and the extreme experiences of your users. For example, a histogram of latency can show you the best 10% average and worst 10% latency that your users experienced. Such information is useful to give you an “at-a-glance” sense of how your application is performing.</p>
+<p class="zh">直方图表示某个区间上值的分布。直方图让你既能了解用户的平均体验，也能了解极端体验。例如，延迟直方图可以向你展示用户所经历的最好 10% 平均延迟与最差 10% 延迟。这类信息有助于你“一眼”把握应用的表现。</p>
+<p class="en">Counts are monotonically increasing values that keep track of some value that can only increase. One of the most common examples of a count is the total number of requests served by your service. This number can clearly only increase over time, as there are more and more requests. Counts are also often transformed into rates, which are the first-order derivative of the count and represent the rate of change of that count over time. Given a count that tracks the total number of requests, the rate could give you the number of requests per second. Counts are inherently integral (whole numbers) in nature.</p>
+<p class="zh">计数是单调递增的值，用来跟踪某个只会增加的量。计数最常见的例子之一，是你的服务已服务的请求总数。这个数字显然只会随时间增加，因为请求越来越多。计数也常被转换成速率（rate），速率是计数的一阶导数，表示该计数随时间的变化率。给定一个跟踪请求总数的计数，速率可以给出每秒的请求数。计数本质上是整数（自然数）。</p>
+<p class="en">Finally, there are values; these are numbers which can take on any value and can both increase and decrease over time. Common examples of values include CPU and memory usage for a service. Clearly, the amount of CPU and memory use can vary over time and increase or decrease based on the operation of the service. Values are most useful when viewed over time because they can indicate the overall behavior of the system. Steadily increasing memory usage can indicate a memory leak. Periodically spikey CPU can indicate some background process which is unnecessarily expensive.</p>
+<p class="zh">最后是瞬时值（value）；它们是可以取任意值、且随时间既可增也可减的数字。常见的例子包括一个服务的 CPU 与内存使用量。显然，CPU 与内存使用量会随时间变化，并随服务的运行而增减。瞬时值在随时间观察时最有用，因为它们能指示系统的整体行为。持续上升的内存使用可能预示内存泄漏；周期性尖峰的 CPU 可能预示某个后台进程开销过大。</p>
+<p class="en">It should be clear at this point that the main value of monitoring data is the perspective that it gives over time. Indeed, most monitoring is referred to as a time series representing exactly these values over time. Dedicated databases for this time series data have been developed to efficiently store and query this data. The Prometheus system comes with a simple time-series database, but most people will integrate Prometheus with a dedicated time series database. Often, a good option is to integrate Prometheus monitoring with a cloud-based monitoring as a service. At this point, most cloud-based monitoring services, for example Azure Monitor, support the ingestion of Prometheus metrics.</p>
+<p class="zh">至此应当很清楚：监控数据的主要价值，在于它随时间给出的视角。事实上，大多数监控被称为时间序列，表示的正是这些值随时间的变化。人们已为这类时间序列数据开发了专用数据库，以高效存储和查询。Prometheus 系统自带一个简单的时序数据库，但大多数人会把 Prometheus 与专用时序数据库集成。一个常见的好选择，是把 Prometheus 监控与基于云的“监控即服务”集成。如今，大多数云端监控服务（例如 Azure Monitor）都支持接入 Prometheus 指标。</p>
+<div class="pagemark">— PDF 第 182 页 —</div>
+<p class="en">When it comes to ingesting metrics, Prometheus is a pull-based or scraping metrics system. Periodically the Prometheus application sends requests out to your application for the current state of all of the metrics. These metrics are stored into the time-series database for later query and recording. Pull-based monitoring works well for applications that are always running, but how can you record metrics for batch and other transient jobs that may not be around long enough to be scraped? For such jobs, you need to implement push-based metrics instead. Fortunately, Prometheus has a sister project, the Prometheus push gateway, which implements exactly this pattern. When you run the push gateway, it runs a dedicated server that Prometheus can scrape. Your applications can send or “push” metrics into this gateway so that they are recorded even if your application is no longer running. Combining pull-based monitoring for your long-running applications and push-based metrics for transient jobs allows you to have a complete perspective on the operation of your application.</p>
+<p class="zh">在指标采集方面，Prometheus 是一个基于拉取（pull）或称抓取（scraping）的指标系统。Prometheus 会周期性地向你的应用发送请求，获取所有指标的当前状态。这些指标被存入时序数据库，以供日后查询与记录。基于拉取的监控对于始终运行的应用很适用；但对于批处理和其他转瞬即逝、可能存活时间短到来不及被抓取的作业，你又该如何记录指标呢？对这类作业，你需要改用基于推送（push）的指标。幸运的是，Prometheus 有一个姊妹项目——Prometheus push gateway（推送网关），它恰好实现了这一模式。运行 push gateway 时，它会启动一个专用服务器供 Prometheus 抓取。你的应用可以把指标发送（即“推送”）到这个网关，这样即便你的应用已经停止运行，指标也会被记录下来。对长期运行的应用采用基于拉取的监控、对瞬态作业采用基于推送的指标，二者结合，就能让你对应用的运行有完整的视角。</p>
+<h2 id="s4"><span class="en">Basic Request Monitoring</span><span class="zh">基本请求监控</span></h2>
+<p class="en">One of the first types of monitoring that most people add is for the number of requests served by your application. This is a basic statistic that demonstrates how many people (or other services) are using your service over time. The number of requests is an example of a count metric. The number of requests cannot decrease since there is no such thing as a negative request.</p>
+<p class="zh">大多数人最先添加的监控类型之一，是应用所服务的请求数量。这是一个基础统计量，用以展示随时间推移有多少人（或其他服务）在使用你的服务。请求数量是计数指标的一个例子。请求数不可能减少，因为不存在“负的请求”这种东西。</p>
+<p class="en">However, the total number of requests is actually not that interesting, what is more interesting is the rate of change of the total number of requests. Rate of change is a secondary metric defined as the difference between the number of requests at time t and the number of requests at time t + 1. To make this concrete, the rate of requests per minute is the total number of requests right now, minus the total number of requests one minute ago. To turn this into a graph, the rate is calculated for each previous minute moving backward and producing a rate at one-minute intervals. Of course, in this example, one minute is arbitrary; you can do equivalent calculations for whatever time interval that you want, from a millisecond to a day (or more).</p>
+<p class="zh">不过，请求总数本身其实没那么有意思；更有意思的是请求总数的变化率。变化率是一个二级指标，定义为时刻 t 的请求数与时刻 t+1 的请求数之差。具体来说，每分钟请求速率就是此刻的请求总数减去一分钟前的请求总数。要把它画成图，就从现在往前对每一分钟计算速率，从而按一分钟间隔产生一系列速率值。当然，本例中的一分钟是任意取的；你可以对任意时间间隔做同样的计算，从一毫秒到一天（甚至更长）都行。</p>
+<p class="en">Thinking about calculating the rate of requests for a millisecond demonstrates one of the challenges with rate metrics. If your server serves fewer than 1,000 requests per second, calculating the rate of requests at millisecond granularity will lead to a very spikey metric, which oscillates between zero and one (and possibly more if there is a brief surge of requests). Rates are variable and highly dependent on external factors. Consequently, it is often more useful to use the average of the rate of requests per time interval, rather than just the raw value. Averaging the rate over time smooths the peaks and valleys and gives you a more realistic picture of how your service is being accessed.</p>
+<p class="zh">想一想以毫秒为粒度计算请求速率，就能看出速率指标的一个挑战。如果你的服务器每秒服务不到 1000 个请求，那么以毫秒粒度计算请求速率，会得到一个极不稳定的指标，它在 0 和 1 之间振荡（若出现短暂的请求洪峰，还可能更大）。速率是多变的，且高度依赖外部因素。因此，比起直接使用原始值，按时间间隔对请求速率取平均往往更有用。对速率随时间取平均，可以削平波峰与波谷，让你对服务被访问的情况有更真实的认识。</p>
+<p class="en">The total number of requests is a good metric to start with, but to truly understand the operation of your system, it is useful to look at more details associated with each request. One of the most common features of a request is the HTTP response code which it returned to the users. If you are not already familiar with HTTP response codes, they are a part of the HTTP protocol that indicates how the server responded to the request. Some of the most common are 200 (OK), 404 (Not found), and 500 (Internal Server Error), but there are many more response codes for different situations. With Prometheus metrics, values can have labels which add detail to the metric. Using this capability, we can view the response code as a label associated with the request count. Using this label, we can query for the total number of requests which were served successfully (code==200) or the total number of requests which resulted in errors (code==500); we can also calculate the rate of each of these types of requests using the methods described previously. Subdividing the total request count by the response code gives us a much richer view into the operation of our application. We can also group error codes together and view how many requests were errors (codes starting with 5xx) and how many requests were successful (codes starting with 2xx).</p>
+<p class="zh">请求总数是个不错的入门指标，但要真正理解系统的运行，还需要查看与每个请求相关的更多细节。请求最常见的特征之一，是它返回给用户的 HTTP 响应码。如果你还不熟悉 HTTP 响应码，它是 HTTP 协议的一部分，用以表明服务器如何响应请求。最常见的有 200（OK）、404（Not found）和 500（Internal Server Error），但针对不同情形还有更多响应码。在 Prometheus 指标中，值可以带有标签（label），为指标附加细节。利用这一能力，我们可以把响应码视作与请求计数相关联的一个标签。借助该标签，我们可以查询成功服务的请求总数（code==200），或导致错误的请求总数（code==500）；也可以用前面描述的方法计算各类请求的速率。按响应码细分请求总数，能让我们对应用运行有丰富得多的认识。我们还可以把错误码归到一起，查看有多少请求出错（以 5xx 开头的码）、有多少请求成功（以 2xx 开头的码）。</p>
+<div class="pagemark">— PDF 第 183 页 —</div>
+<p class="en">In addition to the response code for a server request, the next most important characteristic of the request is the latency of the request, or how much time it took to process. It might be tempting to think that latency could be a label on the request count as well, but this doesn’t work. Labels need to be a limited set of discrete values, while latency is a value that can take on many different arbitrary values. Request latency is a separate metric, and it is generally modeled as a histogram. Using the histogram metric for request latency, you can understand the average experience of the user as well as the experience of users who have the slowest requests. As with request count, the request latency can also be labeled using the response code. That way, not only can you see the average experience of any request, but you can also calculate the average latency of an error, of a not found request, or any other HTTP response code.</p>
+<p class="zh">除服务器请求的响应码之外，请求下一个最重要的特征是请求延迟，即处理它花了多少时间。你可能会觉得延迟也能当作请求计数上的一个标签，但这行不通。标签必须是有限的一组离散值，而延迟是一个可取无数任意值的量。请求延迟是一个独立指标，通常被建模为直方图。用请求延迟的直方图指标，你既能了解用户的平均体验，也能了解那些请求最慢的用户的体验。与请求计数一样，请求延迟也可以用响应码打标签。这样一来，你不仅能看到任意请求的平均体验，还能计算一次错误、一次未找到、或任何其他 HTTP 响应码的平均延迟。</p>
+<h2 id="s5"><span class="en">Advanced Request Monitoring</span><span class="zh">高级请求监控</span></h2>
+<p class="en">Though total request count, the rate of requests, and latency are the most common and most generally useful metrics for monitoring requests to your server or service, there are other more specialized metrics, which can be quite useful to have a deep understanding of how your service is performing. A good example of this might be the request and response sizes in bytes for your service. Request size is useful because you can use it to correlate to slow requests (larger requests may take longer to parse and process) and also to look at it over time to detect patterns like increasing requests or response sizes over time. Like latency, request and response size are examples of histogram metrics.</p>
+<p class="zh">尽管请求总数、请求速率和延迟是监控发往服务器或服务的请求时最常见、最通用的指标，但还有其他更专门的指标，对于深入理解服务表现相当有用。一个很好的例子是服务的请求与响应大小（以字节计）。请求大小之所以有用，是因为你可以用它与慢请求做关联（较大的请求可能需要更长时间解析和处理），也可以随时间观察它，以发现诸如请求或响应大小随时间不断增大之类的模式。与延迟一样，请求与响应大小也是直方图指标的例子。</p>
+<p class="en">Sometimes useful metrics are recorded by adding detail to how you calculate and report metrics in your application. For example, it is sometimes useful to understand the amount of time a request has spent in a queue, versus how much time was spent processing a request. This sort of information is especially useful when you are debugging why your service is slow in processing requests. Simply seeing that latency is high will show you that there is a problem and that users are likely unhappy, but having metrics for queue time and processing time will help you understand whether the problem is that you need to scale out (queue time is too long) or if you need to optimize your code (processing time is too long). To get these metrics, you actually need to add additional metrics to your code. In this case, you would add two new histogram metrics, one measuring the time from when a request is received to when processing starts, and one measuring the time from when processing starts to when the request is completed. This system now has three histogram metrics measuring latency: total latency, queue latency, and processing latency. Metrics are cheap to add, and the additional insight that they provide is often invaluable in debugging your service. Of course, as with anything, it is very possible to overdo things, and if you are monitoring the latency of each line of code (or even each function), you’re probably taking things a little too far.</p>
+<p class="zh">有时，有用的指标是通过细化你在应用中计算和上报指标的方式而记录下来的。例如，理解一个请求在队列中等待了多久、与之相对实际处理花了多久，有时会很有用。这类信息在你调试“服务为何处理请求缓慢”时尤其有用。仅仅看到延迟偏高，只能告诉你出了问题、用户很可能不满意；而有了队列时间与处理时间的指标，才能帮你判断：问题究竟是需要扩容（队列时间过长），还是需要优化代码（处理时间过长）。要得到这些指标，你实际上需要在代码里额外添加指标。在本例中，你会新增两个直方图指标：一个度量从收到请求到开始处理的时间，另一个度量从开始处理到请求完成的时间。这样，系统就有了三个度量延迟的直方图指标：总延迟、队列延迟和处理延迟。添加指标成本很低，而它们带来的额外洞察在调试服务时往往无价。当然，凡事都可能做过头：如果你连每一行代码（甚至每个函数）的延迟都监控，那大概就有点过火了。</p>
+<div class="pagemark">— PDF 第 184 页 —</div>
+<p class="en">Another advanced metric for requests might be to break them down by geography or customer. This monitoring can give you business insights that can help you build better products, or possibly identify abusive requests coming from specific users or locations. If you are willing to only look at coarse-grained geography (e.g., country), then it is possible to view geography as another label that you can apply to the request count metric; but more often, this sort of data needs to be obtained by querying across logs instead of looking at metrics directly. For example, in any large system there are far too many customers to use a customer ID as a label for the request count metric. Instead, the system logs the customer ID whenever a request is processed.</p>
+<p class="zh">另一个针对请求的高级指标，可能是按地理位置或客户来细分请求。这种监控能给你业务洞察，帮你打造更好的产品，或识别来自特定用户或位置的滥用请求。如果你只愿意看粗粒度的地理信息（例如国家），那么可以把地理位置视作请求计数指标上的又一个标签；但更多时候，这类数据需要通过跨日志查询来获得，而不是直接看指标。例如，在任何大型系统中，客户都太多了，没法把客户 ID 当作请求计数指标的标签。取而代之的做法是：系统在每次处理请求时记下客户 ID。</p>
+<p class="en">This example demonstrates the interplay between logging and monitoring. Monitoring and metrics can provide aggregate data that is quick to query. For detailed information, logging and log search is an essential technique that provides slower, but more rich, access to data. In this case, because the business analysis can likely stand extra latency in processing, obtaining customer usage information from log search can meet the business requirements.</p>
+<p class="zh">这个例子展示了日志与监控之间的相互配合。监控与指标能提供查询迅速的聚合数据；而对于详细信息，日志与日志搜索是一项必不可少的技术——它访问数据较慢，但信息更丰富。在本例中，由于业务分析大概可以容忍处理上的额外延迟，从日志搜索中获取客户使用信息便能满足业务需求。</p>
+<h2 id="s6"><span class="en">Alerting</span><span class="zh">告警（Alerting）</span></h2>
+<p class="en">So far we’ve discussed all of the different ways to record information from your application’s logs and metrics. This data can be critical for understanding why your system isn’t behaving correctly during an outage or other incident. But how can you figure out something is happening in the first place?</p>
+<p class="zh">到目前为止，我们讨论了从应用的日志和指标中记录信息的各种方式。这些数据对于理解系统在中断或其他事故期间为何行为异常至关重要。但首先，你如何能发现“出了事”呢？</p>
+<p class="en">Obviously, the first way we find out that there is a problem in our system is when a customer or user complains. But waiting for such customer reported incidents, or CRIs, is a bad experience for both the user and the person receiving the alert. Nothing hurts customer confidence like being told that they were the first one to notice a problem. At this point with our systems, every user expects that we will notice (and fix) problems in our services before the user notices that anything is amiss.</p>
+<p class="zh">显然，我们发现系统出问题的第一种方式，是客户或用户来投诉。但等待这类客户上报事故（customer reported incident，CRI），对用户和接收告警的人来说都是糟糕的体验。没有什么比被告知“你是第一个发现问题的人”更伤害客户信心了。如今，每个用户都期待：我们会在用户察觉异常之前就发现（并修复）服务中的问题。</p>
+<p class="en">Thus, the best way to find out about a problem is via alerting. Alerting is the practice of establishing conditions under which the team responsible for a service is notified, typically through a pager alert, that there is a problem with the system.</p>
+<p class="zh">因此，发现问题的最佳方式是通过告警。告警就是建立这样一套条件：当系统出问题时，负责该服务的团队会被通知——通常是通过寻呼告警（pager alert）。</p>
+<div class="pagemark">— PDF 第 185 页 —</div>
+<h3 id="s6-1"><span class="en">Basic alerting</span><span class="zh">基本告警</span></h3>
+<p class="en">The most basic form of alerting is based on metric queries and static thresholds. For example, you might choose to alert if the latency at the 90th percentile in your system is greater than half a second. You might also chose to alert if the number of HTTP 500 errors reported by your system is greater than 1% of all requests. Given these rules, it’s easy to see that if either occurred it would be a good idea to let the engineers know; but how do you go about determining the right alerts for your system?</p>
+<p class="zh">最基本的告警形式基于指标查询和静态阈值。例如，你可以设定：当系统第 90 百分位延迟大于半秒时告警。你也可以设定：当系统上报的 HTTP 500 错误数超过所有请求的 1% 时告警。有了这些规则，不难看出：只要其中任一情况发生，就该让工程师知道；但你又该如何为系统确定合适的告警呢？</p>
+<p class="en">The most basic way to think about writing alerts is that they define the service level objective (SLO) for your application. If you don’t alert, you won’t notice and so your alert thresholds define the difference between nominal and exceptional operation. Every application is different, but it is good to write down what the goals are for a “normal” user experience of your service and right alerts that fire if those goals aren’t being achieved. Another consideration is the experience of your on-call engineers. Firing alerts constantly is a recipe for burnout and people quitting. Similarly, firing alerts that are false alarms (“crying wolf”) will cause your on-call engineers to stop responding. Therefore, you need to balance the goals of your service with the needs of your on-call engineers to determine the right alerts. The development of alerts is an ongoing activity throughout the lifespan of your service. As you add more capabilities and, thus, more monitoring, you should also be adding more alerting; as you get more experience with the system, you can tune the alerts to be tighter or looser depending on the needs of your users or your on-call engineers.</p>
+<p class="zh">理解编写告警最基本的方式是：告警定义了应用的服务等级目标（SLO）。如果你不告警，就不会察觉，因此你的告警阈值定义了“正常运行”与“异常运行”之间的界限。每个应用都不同，但最好把你服务“正常”用户体验的目标写下来，并写出在这些目标未达成时触发的告警。另一个要考虑的因素是值班工程师的体验。不停地触发告警，必然导致倦怠乃至人员离职。同样，触发大量误报（“狼来了”）会让值班工程师干脆不再响应。因此，你需要在服务目标与值班工程师的需求之间取得平衡，以确定合适的告警。告警的建立是贯穿服务整个生命周期的持续活动：随着你增加更多能力、从而增加更多监控，也应当增加更多告警；随着你对系统更有经验，可以根据用户或值班工程师的需要，把告警调得更紧或更松。</p>
+<h3 id="s6-2"><span class="en">Alerting on anomolies</span><span class="zh">异常告警</span></h3>
+<p class="en">Basic alerting is great for many use cases, but sometimes it is insufficient. A great example of this is an error that causes a 100% outage for a small (1%) subset of your users. From a static alerting perspective, your system is functioning within bounds, but for those poor users in that subset your service is completely down. Static alerting assumes that all metrics are uniform across all users and service calls. However, this isn’t always the case. Anomoly detection is a form of AI that can identify anmolies: for example, customer A is 100% down while customer B is working perfectly. Though alerting on anomolies is an advanced topic, it is often the only way to find a balance between alerting when there is a problem and firing lots of false alarms. As your system gets larger and more complex, anomoly detection alerting will become a critical requirement.</p>
+<p class="zh">基本告警在许多场景下都很好用，但有时并不够。一个绝佳的例子是：某个错误导致你一小部分用户（1%）100% 中断。从静态告警的角度看，你的系统运行在正常范围内；但对那一小撮可怜的用户而言，你的服务完全不可用。静态告警假定所有指标在所有用户和服务调用之间都是均匀的。然而情况并非总是如此。异常检测（anomaly detection）是一种 AI 形式，能够识别异常：例如客户 A 100% 宕机，而客户 B 一切正常。尽管基于异常的告警是个高级话题，但它往往是在“出问题时告警”与“触发大量误报”之间取得平衡的唯一途径。随着系统变得更大、更复杂，异常检测告警将成为一项关键需求。</p>
+<p class="en">Monitoring and logging provides visibility into your application. Alerting tells you when you should be paying attention. Importantly, not every metric requires an alert; some are useful only for debugging and visualization. However, the performance of your application will be defined by the quality of your alerts. Invest in alerting with the same energy you bring to designing customer-facing features.</p>
+<p class="zh">监控与日志为你的应用提供可见性；告警则告诉你何时该集中注意力。重要的是，并非每个指标都需要告警；有些指标只在调试和可视化时有用。然而，应用的表现将由你告警的质量所决定。请像设计面向客户的功能那样，投入同样的精力去建设告警。</p>
+<div class="pagemark">— PDF 第 186 页 —</div>
+<h2 id="s7"><span class="en">Tracing</span><span class="zh">链路追踪（Tracing）</span></h2>
+<p class="en">As we have seen in the preceding chapters, most modern applications involve requests that span multiple machines and processes. From the techniques above, you can learn how to monitor all of these components individually. But unfortunately, this service-by-service view shows you all of the different requests flowing through your system at the same time, but it doesn’t do a good job showing you the path of a single request through all the microservices in your system. Request tracing correlates all of the service metrics together and gives you that end-to-end perspective.</p>
+<p class="zh">正如前面几章所见，大多数现代应用的请求都会跨越多台机器和多个进程。用上面这些技术，你可以学会如何分别监控所有这些组件。但遗憾的是，这种逐个服务的视图虽然能让你看到同时流经系统的各种请求，却不能很好地展示单个请求穿过系统中所有微服务的路径。请求追踪把所有服务的指标关联到一起，为你提供那种端到端的视角。</p>
+<p class="en">The easiest way to achieve tracing is to create a unique correlation ID for every request as it enters your system. Effectively, this correlation ID is a number that can be used to group together logs, metrics, and other information across your application. The correlation ID can be anything you want as long as it uniquely identifies each request. The simplest correlation ID would be a large random number; a better one would be a hash function applied to unique characteristics of the original request like its RESTful path and source IP address.</p>
+<p class="zh">实现追踪最简单的方式，是在每个请求进入系统时为它创建一个唯一的关联 ID（correlation ID）。实际上，这个关联 ID 是一个数字，可用来把整个应用中的日志、指标和其他信息归组到一起。关联 ID 可以是任何你想要的形式，只要它能唯一标识每个请求即可。最简单的关联 ID 是一个大随机数；更好的做法是对原始请求的唯一特征（如 RESTful 路径和源 IP 地址）做哈希。</p>
+<p class="en">Once you have a correlation ID, whenever you emit a log or a metric, you emit the correlation ID. For example, in a logging system, in addition to the timestamp and the log level, you would also log the request correlation ID. To enable you to log that ID within all components in your system, you need to pass it along with the API calls you make throughout your system.</p>
+<p class="zh">一旦有了关联 ID，每当你发出一条日志或一个指标时，就一并发出该关联 ID。例如，在日志系统中，除时间戳和日志级别外，你还要记下请求的关联 ID。为了让你能在系统的所有组件中都记录这个 ID，你需要在贯穿系统的 API 调用中把它传递下去。</p>
+<p class="en">Assuming that you are making API requests using the HTTP protocol, you can embed your correlation ID in an application-specific header, for example, x-my-apps-correlation-id, and modify your code to read from that header and populate a request context object with that ID. Once you have correlation IDs populated throughout your logging and metrics, you can group that information back together to visualize the path of a single request through your entire system.</p>
+<p class="zh">假定你使用 HTTP 协议发起 API 请求，你可以把关联 ID 嵌入一个应用自定义的 HTTP 头，例如 x-my-apps-correlation-id，并修改代码从该头部读取、把这个 ID 填进请求上下文对象。一旦关联 ID 遍布你的日志和指标，你就可以把这些信息重新归组到一起，从而可视化单个请求穿过整个系统的路径。</p>
+<p class="en">If this sounds like a lot of work to implement and get right, you’re right, it is. Fortunately, the OpenTelemetry project has taken care of much of the heavy lifting for you. OpenTelemetry has SDKs for all popular languages that make it easy to integrate request tracing into your application. It has a vendor-agnostic philosophy that allows it to integrate with numerous backends for metrics and logging. Additionally, numerous visualization and debugging tools have also integrated with OpenTelemetry to provide rich introspection capabilities. In nearly all cases, integrating with a community-driven open source project like OpenTelemetry for request tracing is a better idea than building your own.</p>
+<p class="zh">如果这听起来像是一大堆要实现、还要做对的工作，那你没说错，确实如此。幸运的是，OpenTelemetry 项目已经替你承担了大部分苦活累活。OpenTelemetry 为所有主流语言提供 SDK，让你能轻松把请求追踪集成进应用。它秉持厂商中立的理念，可与众多指标和日志后端集成。此外，大量可视化与调试工具也已接入 OpenTelemetry，提供丰富的内省能力。几乎在所有情况下，对于请求追踪，接入 OpenTelemetry 这样由社区驱动的开源项目，都比自己造一套更好。</p>
+<div class="pagemark">— PDF 第 187 页 —</div>
+<h2 id="s8"><span class="en">Aggregating Information</span><span class="zh">信息聚合</span></h2>
+<p class="en">Once you start monitoring, you will discover that monitoring can generate a tremendous amount of information. Efficiently maintaining necessary information as well as being able to quickly sift through it to find the right information for your current issue becomes an important challenge. Aggregation enables you to group information together so that it is easier to understand or more efficient to store.</p>
+<p class="zh">一旦开始监控，你就会发现监控能产生海量信息。高效地维护必要信息、并能快速从中筛出与当前问题相关的正确信息，成了一项重要挑战。聚合让你把信息归组到一起，从而既更易于理解，又更高效地存储。</p>
+<p class="en">The first form of aggregation that most people begin with is querying logs across multiple processes. In “Tracing” on page 168 we discussed how OpenTelemetry provides a request-oriented view of your data, but that’s not the only aggregation you might want to perform. If you have a component that has been replicated for scale, you may want to search for instances of a specific error or failure across all of the replicas.</p>
+<p class="zh">大多数人最先采用的聚合形式，是跨多个进程查询日志。在第 168 页的“链路追踪”一节中，我们讨论了 OpenTelemetry 如何为你的数据提供面向请求的视图；但这并非你唯一想做的聚合。如果你有一个为扩容而被复制多份的组件，你可能想跨所有副本搜索某个特定错误或失败的实例。</p>
+<p class="en">Fortunately, there are numerous tools that make it easier to group logs across multiple containers in Kubernetes. One of the easiest to use is a tool like ktail, which extends the traditional kubectl log interface to combine logs across multiple pods. More sophisticated tools ingest logs into a search index like Elasticsearch, which makes it possible to run arbitrary queries over your logs, just like you would with web search.</p>
+<p class="zh">幸运的是，有许多工具能让你在 Kubernetes 中更轻松地跨多个容器归组日志。最易用的工具之一是 ktail 这类工具，它扩展了传统的 kubectl log 接口，把多个 pod 的日志合并到一起。更成熟的工具则把日志接入 Elasticsearch 这样的搜索索引，使你能够像用网页搜索一样对日志运行任意查询。</p>
+<p class="en">Setting and maintaining a log index is complicated and error-prone, but fortunately, at this point all public clouds and many startups offer log ingestion and search as a service. Similar services are also available for time series metrics. Whether you are building in the public cloud or your own infrastructure, using a service for something as critical as your logs is the right choice more often than not.</p>
+<p class="zh">搭建和维护一个日志索引既复杂又容易出错；但幸运的是，如今所有公有云和许多初创公司都把日志接入与搜索作为一项服务提供。时序指标也有类似的服务可用。无论你是在公有云上还是在自己的基础设施上构建，把日志这样关键的东西交给一项服务，往往是正确的选择。</p>
+<p class="en">In addition to storing your logs and metrics in systems designed for efficient storage and querying, sometimes it is necessary to reduce the information being stored. This can be referred to as downsampling or aggregation. The simplest form of downsampling for metrics is to just store the metric less often. For example, if you are recording the metric every second, after a week you might reduce that to once per minute. Even this simple change reduces the space necessary by 60 times. Of course, simply dropping the sample rate can cause you to lose information. Another option would be to use the average value over those sixty seconds instead of an arbitrary instantaneous value. This simple kind of downsampling can be used for logs. The simplest approach is to keep only a certain class of logs, such as errors, while dropping less important information. You can also just keep a fraction of the logs, though this can be very lossy in terms of information. Finally, with more effort, you can develop application-specific aggregations that maintain the information that is relevant to your application while compressing the data used to store it.</p>
+<p class="zh">除了把日志和指标存进为高效存储与查询而设计的系统之外，有时还需要缩减所存储的信息量。这可以称为降采样（downsampling）或聚合。对指标而言，最简单的降采样形式就是降低存储频率。例如，如果你原来每秒记录一次指标，一周后可以把它降到每分钟一次。即使这样一个简单改动，也能把所需空间减少 60 倍。当然，单纯降低采样率可能导致信息丢失。另一个选择是用这六十秒内的平均值，而不是某个任意的瞬时值。这种简单的降采样也可用于日志。最简单的做法是只保留某一类日志（例如错误），而丢弃较不重要的信息。你也可以只保留一小部分日志，不过这在信息上可能损失很大。最后，花更多功夫，你可以开发应用专属的聚合，在压缩存储数据的同时保留与应用相关的信息。</p>
+<div class="pagemark">— PDF 第 188 页 —</div>
+<p class="en">Though downsampling is often a good solution, if you want to reduce costs while maintaining full data fidelity, perhaps for compliance or security, you can instead change the accessibility of the data. Uploading logs to cloud-based “cold” storage can significantly reduce the costs of storing the data, while making it slower and harder to query information from those logs. This can often be a good solution when data needs to be retained for long periods of time, but is infrequently used. Some logging as a service solutions will implement this sort of data tiering for you automatically.</p>
+<p class="zh">尽管降采样常常是个好办法，但如果你想在保持完整数据保真度的同时降低成本（或许是出于合规或安全考虑），可以改为改变数据的可访问性。把日志上传到云端“冷”存储，可以显著降低存储成本，但同时也会让从这些日志中查询信息变得更慢、更难。当数据需要长期保留、却很少被使用时，这往往是个好办法。有些“日志即服务”方案会自动为你实现这种数据分层。</p>
+<h2 id="summary"><span class="en">Summary</span><span class="zh">小结</span></h2>
+<p class="en">Monitoring is a critical part of any distributed system. Though it doesn’t contribute to making the system operate correctly, when the system is not operating correctly, it is the key component which enables us to understand what is failing and how to correct it. Learning how to correctly monitor and observe your systems is critical to ensuring that you can rapidly restore reliable operation in the face of a problem or outage.</p>
+<p class="zh">监控是任何分布式系统的关键组成。虽然它并不直接让系统正确运转，但当系统不能正确运转时，它正是让我们能够理解“哪里出了故障、如何修复”的关键一环。学会正确地监控和观测系统，对于确保你在遇到问题或中断时能迅速恢复可靠运行至关重要。</p>
+
+<div class="pager"><a href="chapter-13.html">← 上一章</a><a href="index.html">返回目录</a><a href="chapter-15.html">下一章 →</a></div>
+</main>
+<script>
+const btn=document.getElementById('menu-btn');
+const body=document.body;
+btn.addEventListener('click',()=>{
+  if(window.innerWidth<=900){body.classList.toggle('toc-open');}
+  else{body.classList.toggle('toc-hidden');}
+});
+// close drawer on link click (narrow screens)
+document.querySelectorAll('#toc a').forEach(a=>{
+  a.addEventListener('click',()=>{if(window.innerWidth<=900){body.classList.remove('toc-open');}});
+});
+</script>
+</body>
+</html>

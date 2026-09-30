@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>8 · Memory Management | 第 8 章 · 记忆管理</title>
+<style>
+:root{
+  --accent:#2563eb; --zh-bg:#f0f6ff; --zh-border:#2563eb;
+  --code-bg:#0f172a; --code-ink:#e2e8f0; --ink:#1f2937;
+}
+*{box-sizing:border-box;}
+body{margin:0; background:#faf6f1; color:var(--ink);
+  font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  font-size:18px; line-height:1.8;}
+nav#toc{position:fixed; top:0; left:0; width:300px; height:100vh; overflow-y:auto;
+  background:#fff; border-right:1px solid #e5e7eb; padding:60px 14px 20px;
+  transition:transform .25s ease; z-index:100; font-size:14px;}
+body.toc-closed nav#toc{transform:translateX(-300px);}
+nav#toc h2{font-size:16px; color:var(--accent); margin:6px 8px 14px;}
+nav#toc a{display:block; color:#374151; text-decoration:none; padding:4px 8px;
+  border-radius:6px; line-height:1.4;}
+nav#toc a:hover{background:var(--zh-bg); color:var(--accent);}
+nav#toc a.l1{font-weight:700; margin-top:10px; color:#111827;}
+nav#toc a.l2{font-weight:600;}
+nav#toc a.l3{padding-left:28px; color:#6b7280;}
+main{margin-left:300px; max-width:900px; padding:64px 40px 80px; transition:margin .25s ease;}
+body.toc-closed main{margin-left:0;}
+.menu-btn{position:fixed; top:14px; left:14px; z-index:200; border:none; background:var(--accent);
+  color:#fff; width:40px; height:40px; border-radius:8px; font-size:18px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; box-shadow:0 1px 4px rgba(0,0,0,.2);}
+h1{font-size:28px; color:#111827; border-bottom:3px solid var(--accent); padding-bottom:10px;
+  margin-top:10px; scroll-margin-top:20px;}
+h2{font-size:23px; color:#111827; margin-top:38px; border-left:5px solid var(--accent);
+  padding-left:12px; scroll-margin-top:20px;}
+h3{font-size:19px; color:#1f2937; margin-top:28px; scroll-margin-top:20px;}
+h4{font-size:17px; color:#374151; margin-top:22px;}
+.hzh{display:block; font-size:.82em; color:var(--accent); font-weight:600; margin-top:2px;}
+p.en{margin:14px 0;}
+p.zh{background:var(--zh-bg); border-left:4px solid var(--zh-border);
+  border-radius:0 8px 8px 0; padding:10px 16px; margin:10px 0; color:#1e3a8a;}
+li .zh, li span.zh{display:block; background:var(--zh-bg); border-left:4px solid var(--zh-border);
+  border-radius:0 8px 8px 0; padding:6px 12px; margin:4px 0; color:#1e3a8a; font-size:.96em;}
+li{margin:6px 0;}
+pre{background:var(--code-bg); color:var(--code-ink); padding:14px 16px; border-radius:8px;
+  overflow-x:auto; font-family:"SF Mono",Menlo,Consolas,monospace; font-size:13.5px; line-height:1.5;}
+code{font-family:"SF Mono",Menlo,Consolas,monospace;}
+p code, li code{background:#fce7f3; color:#be185d; padding:1px 5px; border-radius:4px; font-size:.9em;}
+figure{margin:20px 0; text-align:center;}
+figure img{max-width:100%; border:1px solid #e5e7eb; border-radius:8px;}
+figcaption{font-size:13px; color:#6b7280; margin-top:6px;}
+figcaption .zh{display:block; color:var(--accent);}
+table{border-collapse:collapse; width:100%; margin:16px 0; font-size:14px;}
+th,td{border:1px solid #d1d5db; padding:8px 10px; text-align:left; vertical-align:top;}
+th{background:#f1f5f9;}
+.pb{text-align:center; color:#9ca3af; font-size:12px; letter-spacing:2px; margin:26px 0;}
+.note{background:#fffbeb; border:1px dashed #d97706; color:#92400e; padding:10px 16px;
+  border-radius:8px; margin:16px 0; font-size:15px;}
+.pager{display:flex; justify-content:space-between; gap:10px; margin-top:60px;}
+.pager a{flex:1; text-align:center; padding:12px; border:1px solid #d1d5db; border-radius:8px;
+  text-decoration:none; color:#374151; background:#fff;}
+.pager a:hover{background:var(--accent); color:#fff;}
+.pager a.disabled{opacity:.4; pointer-events:none;}
+@media (max-width:900px){
+  nav#toc{box-shadow:2px 0 12px rgba(0,0,0,.2);}
+  main{margin-left:0 !important; padding:60px 18px 60px;}
+}
+</style></head>
+<body>
+<button class="menu-btn" id="menuBtn">☰</button>
+<nav id="toc"><h2>目录</h2><a class="l2" href="javascript:;">8  Memory Management / 记忆管理</a><a class="l3" href="#use-cases">实际应用与用例</a><a class="l3" href="#hands-on-adk">ADK 中的内存管理</a><a class="l3" href="#hands-on-langchain">LangChain/LangGraph 中的内存管理</a><a class="l3" href="#at-a-glance">一览</a><a class="l3" href="#takeaways">要点回顾</a><a class="l3" href="#conclusion">小结</a><a class="l3" href="#bibliography">参考文献</a></nav>
+<main>
+<div class="chap-label" style="color:#9ca3af;font-size:13px;letter-spacing:1px;">Chapter 8</div>
+<h1><span class="hen">8 · Memory Management</span><span class="hzh">第 8 章 · 记忆管理</span></h1>
+<p class="en">Effective memory management is crucial for intelligent agents to retain information. Agents require different types of memory, much like humans, to operate efficiently. This chapter delves into memory management, specifically addressing the immediate (short-term) and persistent (long-term) memory requirements of agents.</p>
+<p class="zh">高效的内存管理（memory management）对于智能体保留信息至关重要。和人类一样，智能体需要不同类型的记忆才能高效运转。本章深入探讨内存管理，具体讨论智能体的即时（短期）记忆与持久（长期）记忆需求。</p>
+<p class="en">In agent systems, memory refers to an agent’s ability to retain and utilize information from past interactions, observations, and learning experiences. This capability allows agents to make informed decisions, maintain conversational context, and improve over time. Agent memory is generally categorized into two main types:</p>
+<p class="zh">在智能体系统中，记忆指的是智能体从过去的交互、观察和学习经历中保留并利用信息的能力。这种能力让智能体能够做出有依据的决策、维持对话上下文，并随时间不断改进。智能体的记忆一般分为两大类：</p>
+<ul>
+<li><span class="en">Short-Term Memory (Contextual Memory): Similar to working memory, this holds information currently being processed or recently accessed. For agents using large language models (LLMs), short-term memory primarily exists within the context window. This window contains recent messages, agent replies, tool usage results, and agent reflections from the current interaction, all of which inform the LLM’s subsequent responses and actions. The context window has a limited capacity, restricting the amount of recent information an agent can directly access. Efficient short-term memory management involves keeping the most relevant information within this limited space, possibly through techniques like summarizing older conversation segments or emphasizing key details. The advent of models with ‘long context’ windows simply expands the size of this short-term memory, allowing more information to be held within a single interaction. However, this context is still ephemeral and is lost once the session</span><span class="zh">短期记忆（Short-Term Memory，又称上下文记忆）：类似于工作记忆，它保存当前正在处理或最近访问过的信息。对于使用大语言模型（LLM）的智能体而言，短期记忆主要存在于上下文窗口（context window）内。这个窗口包含当前交互中的近期消息、智能体回复、工具调用结果以及智能体反思，它们共同影响 LLM 后续的响应与行动。上下文窗口容量有限，限制了智能体可直接访问的近期信息量。高效的短期记忆管理，意味着在这个有限空间内保留最相关的信息，例如通过总结较旧的对话片段或突出关键细节来实现。具备“长上下文”窗口的模型，只是扩大了这份短期记忆的容量，让单次交互能容纳更多信息。然而，这种上下文仍然是短暂的，一旦会话结束便会丢失</span></li>
+</ul>
+<div class="pb">— 原书第 148 页 —</div>
+<p class="en">concludes, and it can be costly and inefficient to process every time. Consequently, agents require separate memory types to achieve true persistence, recall information from past interactions, and build a lasting knowledge base.</p>
+<p class="zh">（承接上条）而且每次都处理全部历史既昂贵又低效。因此，智能体需要独立的记忆类型来实现真正的持久化、从过往交互中召回信息，并构建长久的知识库。</p>
+<ul>
+<li><span class="en">Long-Term Memory (Persistent Memory): This acts as a repository for information agents need to retain across various interactions, tasks, or extended periods, akin to long-term knowledge bases. Data is typically stored outside the agent’s immediate processing environment, often in databases, knowledge graphs, or vector databases. In vector databases, information is converted into numerical vectors and stored, enabling agents to retrieve data based on semantic similarity rather than exact keyword matches, a process known as semantic search. When an agent needs information from long-term memory, it queries the external storage, retrieves relevant data, and integrates it into the short-term context for immediate use, thus combining prior knowledge with the current interaction.</span><span class="zh">长期记忆（Long-Term Memory，又称持久记忆）：它充当一个仓库，存放智能体需要跨多次交互、跨任务或跨较长时间保留的信息，类似于长期知识库。数据通常存储在智能体即时处理环境之外，往往放在数据库、知识图谱或向量数据库中。在向量数据库里，信息被转换成数值向量后存储，使智能体能基于语义相似度而非精确关键词匹配来检索数据——这一过程称为语义搜索（semantic search）。当智能体需要长期记忆中的信息时，它查询外部存储、取回相关数据，并把它整合进短期上下文以供即时使用，从而把先验知识与当前交互结合起来。</span></li>
+</ul>
+<h3 id="use-cases"><span class="hen">Practical Applications and Use Cases</span><span class="hzh">实际应用与用例</span></h3>
+<p class="en">Memory management is vital for agents to track information and perform intelligently over time. This is essential for agents to surpass basic question-answering capabilities. Applications include:</p>
+<p class="zh">内存管理对于智能体跟踪信息、随时间表现出智能行为至关重要。它是智能体超越基础问答能力的关键。应用包括：</p>
+<ul>
+<li><span class="en">Chatbots and Conversational AI: Maintaining conversation flow relies on short-term memory. Chatbots require remembering prior user inputs to provide coherent responses. Long-term memory enables chatbots to recall user preferences, past issues, or prior discussions, offering personalized and continuous interactions.</span><span class="zh">聊天机器人与对话式 AI：维持对话流转依赖短期记忆。聊天机器人需要记住用户先前的输入才能给出连贯回复。长期记忆则让聊天机器人能够回忆用户偏好、过去的问题或先前的讨论，从而提供个性化、连续的交互。</span></li>
+<li><span class="en">Task-Oriented Agents: Agents managing multi-step tasks need short-term memory to track previous steps, current progress, and overall goals. This information might reside in the task’s context or temporary storage. Long-term memory is crucial for accessing specific user-related data not in the immediate context.</span><span class="zh">面向任务的智能体：管理多步任务的智能体需要短期记忆来跟踪先前步骤、当前进度和总体目标。这些信息可能存在于任务上下文或临时存储中。长期记忆则对访问不在即时上下文内的、与用户相关的特定数据至关重要。</span></li>
+<li><span class="en">Personalized Experiences: Agents offering tailored interactions utilize long-term memory to store and retrieve user preferences, past behaviors, and personal information. This allows agents to adapt their responses and suggestions.</span><span class="zh">个性化体验：提供定制化交互的智能体利用长期记忆存储并检索用户偏好、过往行为和个人信息，从而调整自己的回复与建议。</span></li>
+<li><span class="en">Learning and Improvement: Agents can refine their performance by learning from past interactions. Successful strategies, mistakes, and new</span><span class="zh">学习与改进：智能体可以从过往交互中学习来优化表现。成功的策略、错误和新</span></li>
+</ul>
+<div class="pb">— 原书第 149 页 —</div>
+<ul>
+<li><span class="en">information are stored in long-term memory, facilitating future adaptations. Reinforcement learning agents store learned strategies or knowledge in this way.</span><span class="zh">信息都会存入长期记忆，以便未来做出调整。强化学习智能体就是以这种方式存储学到的策略或知识。</span></li>
+<li><span class="en">Information Retrieval (RAG): Agents designed for answering questions access a knowledge base, their long-term memory, often implemented within Retrieval Augmented Generation (RAG). The agent retrieves relevant documents or data to inform its responses.</span><span class="zh">信息检索（RAG）：为回答问题而设计的智能体会访问知识库——也就是它们的长期记忆——这通常在检索增强生成（RAG）框架内实现。智能体检索相关文档或数据来支撑自己的回答。</span></li>
+<li><span class="en">Autonomous Systems: Robots or self-driving cars require memory for maps, routes, object locations, and learned behaviors. This involves short-term memory for immediate surroundings and long-term memory for general environmental knowledge.</span><span class="zh">自主系统：机器人或自动驾驶汽车需要记忆来保存地图、路线、物体位置和习得行为。这包括用于即时周遭环境的短期记忆，以及用于一般性环境知识的长期记忆。</span></li>
+</ul>
+<p class="en">Memory enables agents to maintain history, learn, personalize interactions, and manage complex, time-dependent problems.</p>
+<p class="zh">记忆使智能体能够保留历史、学习、个性化交互，并处理复杂的、随时间变化的问题。</p>
+<h3 id="hands-on-adk"><span class="hen">Hands-On Code: Memory Management in Google Agent Developer Kit (ADK)</span><span class="hzh">动手代码：Google 智能体开发套件（ADK）中的内存管理</span></h3>
+<p class="en">The Google Agent Developer Kit (ADK) offers a structured method for managing context and memory, including components for practical application. A solid grasp of ADK’s Session, State, and Memory is vital for building agents that need to retain information.</p>
+<p class="zh">Google 智能体开发套件（ADK）提供了一种管理上下文与记忆的结构化方法，并附带可实际使用的组件。扎实理解 ADK 的 Session（会话）、State（状态）和 Memory（记忆），对于构建需要保留信息的智能体至关重要。</p>
+<p class="en">Just as in human interactions, agents require the ability to recall previous exchanges to conduct coherent and natural conversations. ADK simplifies context management through three core concepts and their associated services.</p>
+<p class="zh">正如人类交流一样，智能体需要回忆先前对话才能进行连贯自然的交谈。ADK 通过三个核心概念及其配套服务来简化上下文管理。</p>
+<p class="en">Every interaction with an agent can be considered a unique conversation thread. Agents might need to access data from earlier interactions. ADK structures this as follows:</p>
+<p class="zh">与智能体的每一次交互都可视为一条独立的对话线程。智能体可能需要访问更早交互中的数据。ADK 把这组织为以下三层：</p>
+<ul>
+<li><span class="en">Session: An individual chat thread that logs messages and actions (Events) for that specific interaction, also storing temporary data (State) relevant to that conversation.</span><span class="zh">Session（会话）：一条独立的聊天线程，记录该次交互的消息与动作（事件 Event），同时存储与该对话相关的临时数据（State）。</span></li>
+<li><span class="en">State (session.state): Data stored within a Session, containing information relevant only to the current, active chat thread.</span><span class="zh">State（状态，即 session.state）：存储在 Session 内的数据，只包含与当前活跃聊天线程相关的信息。</span></li>
+<li><span class="en">Memory: A searchable repository of information sourced from various past chats or external sources, serving as a resource for data retrieval beyond the immediate conversation.</span><span class="zh">Memory（记忆）：一个可搜索的信息仓库，信息来自历次聊天或外部来源，作为超出当前对话范围的数据检索资源。</span></li>
+</ul>
+<div class="pb">— 原书第 150 页 —</div>
+<p class="en">ADK provides dedicated services for managing critical components essential for building complex, stateful, and context-aware agents. The SessionService manages chat threads (Session objects) by handling their initiation, recording, and termination, while the MemoryService oversees the storage and retrieval of long-term knowledge (Memory).</p>
+<p class="zh">ADK 提供专门的服务来管理这些关键组件——它们对于构建复杂、有状态、具备上下文感知能力的智能体不可或缺。SessionService 管理聊天线程（Session 对象），负责其创建、记录与终止；MemoryService 则负责长期知识（Memory）的存储与检索。</p>
+<p class="en">Both the SessionService and MemoryService offer various configuration options, allowing users to choose storage methods based on application needs. In-memory options are available for testing purposes, though data will not persist across restarts. For persistent storage and scalability, ADK also supports database and cloud-based services.</p>
+<p class="zh">SessionService 和 MemoryService 都提供多种配置选项，让用户可以根据应用需求选择存储方式。内存型选项可用于测试，但数据在重启后不保留。为了持久存储与可扩展性，ADK 还支持数据库和云服务。</p>
+<h4><span class="hen">Session: Keeping Track of Each Chat</span><span class="hzh">Session：跟踪每一次聊天</span></h4>
+<p class="en">A Session object in ADK is designed to track and manage individual chat threads. Upon initiation of a conversation with an agent, the SessionService generates a Session object, represented as ‘google.adk.sessions.Session’. This object encapsulates all data relevant to a specific conversation thread, including unique identifiers (id, app_name, user_id), a chronological record of events as Event objects, a storage area for session-specific temporary data known as state, and a timestamp indicating the last update (last_update_time). Developers typically interact with Session objects indirectly through the SessionService. The SessionService is responsible for managing the lifecycle of conversation sessions, which includes initiating new sessions, resuming previous sessions, recording session activity (including state updates), identifying active sessions, and managing the removal of session data. The ADK provides several SessionService implementations with varying storage mechanisms for session history and temporary data, such as the InMemorySessionService, which is suitable for testing but does not provide data persistence across application restarts.</p>
+<p class="zh">ADK 中的 Session 对象专为跟踪和管理单条聊天线程而设计。当与智能体开启一段对话时，SessionService 会生成一个 Session 对象，形如 google.adk.sessions.Session。该对象封装了与某条对话线程相关的全部数据，包括唯一标识符（id、app_name、user_id）、以 Event 对象按时间顺序记录的事件、用于存放会话专属临时数据（即 state）的区域，以及指示最后更新时间的时间戳（last_update_time）。开发者通常通过 SessionService 间接与 Session 对象交互。SessionService 负责管理对话会话的生命周期，包括：开启新会话、恢复先前会话、记录会话活动（含状态更新）、识别活跃会话，以及管理会话数据的删除。ADK 提供多种 SessionService 实现，它们在会话历史与临时数据的存储机制上各有不同；例如 InMemorySessionService 适合测试，但不提供应用重启后的数据持久化。</p>
+<pre><code class="language-python"># Example: Using InMemorySessionService
+# This is suitable for local development and testing where data
+# persistence across application restarts are not required.
+from google.adk.sessions import InMemorySessionService
+session_service = InMemorySessionService()</code></pre>
+<div class="pb">— 原书第 151 页 —</div>
+<p class="en">Then there’s DatabaseSessionService if you want reliable saving to a database you manage.</p>
+<p class="zh">如果你想把数据可靠地保存到自己管理的数据库，可以用 DatabaseSessionService。</p>
+<pre><code class="language-python"># Example: Using DatabaseSessionService
+# This is suitable for production or development requiring persistent storage.
+# You need to configure a database URL (e.g., for SQLite, PostgreSQL, etc.).
+# Requires: pip install google-adk[sqlalchemy] and a database driver (e.g., psycopg2 for PostgreSQL)
+from google.adk.sessions import DatabaseSessionService
+# Example using a local SQLite file:
+db_url = "sqlite:///./my_agent_data.db"
+session_service = DatabaseSessionService(db_url=db_url)</code></pre>
+<p class="en">Besides, there’s VertexAiSessionService which uses Vertex AI infrastructure for scalable production on Google Cloud.</p>
+<p class="zh">此外还有 VertexAiSessionService，它利用 Vertex AI 基础设施在 Google Cloud 上实现可扩展的生产部署。</p>
+<pre><code class="language-python"># Example: Using VertexAiSessionService
+# This is suitable for scalable production on Google Cloud Platform, leveraging
+# Vertex AI infrastructure for session management.
+# Requires: pip install google-adk[vertexai] and GCP setup/authentication
+from google.adk.sessions import VertexAiSessionService
+PROJECT_ID = "your-gcp-project-id"  # Replace with your GCP project ID
+LOCATION = "us-central1"  # Replace with your desired GCP location
+# The app_name used with this service should correspond to the Reasoning Engine ID or name
+REASONING_ENGINE_APP_NAME = "projects/your-gcp-project-id/locations/us-central1/reasoningEngines/your-engine-id"  # Replace with your Reasoning Engine resource name
+session_service = VertexAiSessionService(project=PROJECT_ID, location=LOCATION)
+# When using this service, pass REASONING_ENGINE_APP_NAME to service methods:
+#    session_service.create_session(app_name=REASONING_ENGINE_APP_NAME, ...)
+#    session_service.get_session(app_name=REASONING_ENGINE_APP_NAME, ...)
+#    session_service.append_event(session, event, app_name=REASONING_ENGINE_APP_NAME)
+#    session_service.delete_session(app_name=REASONING_ENGINE_APP_NAME, ...)</code></pre>
+<div class="pb">— 原书第 152 页 —</div>
+<p class="en">Choosing an appropriate SessionService is crucial as it determines how the agent’s interaction history and temporary data are stored and their persistence.</p>
+<p class="zh">选择合适的 SessionService 至关重要，因为它决定了智能体的交互历史和临时数据如何存储、以及是否持久化。</p>
+<p class="en">Each message exchange involves a cyclical process: A message is received, the Runner retrieves or establishes a Session using the SessionService, the agent processes the message using the Session’s context (state and historical interactions), the agent generates a response and may update the state, the Runner encapsulates this as an Event, and the session_service.append_event method records the new event and updates the state in storage. The Session then awaits the next message. Ideally, the delete_session method is employed to terminate the session when the interaction concludes. This process illustrates how the SessionService maintains continuity by managing the Session-specific history and temporary data.</p>
+<p class="zh">每一次消息交换都涉及一个循环过程：收到消息 → Runner 通过 SessionService 取回或建立一个 Session → 智能体利用 Session 的上下文（状态与历史交互）处理消息 → 智能体生成回复并可能更新状态 → Runner 把这一切封装成一个 Event → session_service.append_event 方法记录新事件并更新存储中的状态。随后 Session 等待下一条消息。理想情况下，当交互结束时应调用 delete_session 方法终止会话。这个过程展示了 SessionService 如何通过管理会话专属的历史与临时数据来维持连续性。</p>
+<h4><span class="hen">State: The Session’s Scratchpad</span><span class="hzh">State：会话的草稿本</span></h4>
+<p class="en">In the ADK, each Session, representing a chat thread, includes a state component akin to an agent’s temporary working memory for the duration of that specific conversation. While session.events logs the entire chat history, session.state stores and updates dynamic data points relevant to the active chat.</p>
+<p class="zh">在 ADK 中，每个代表一条聊天线程的 Session 都包含一个 state 组件，相当于智能体在该次对话期间的临时工作记忆。session.events 记录完整聊天历史，而 session.state 则存储并更新与活跃聊天相关的动态数据点。</p>
+<p class="en">Fundamentally, session.state operates as a dictionary, storing data as key-value pairs. Its core function is to enable the agent to retain and manage details essential for coherent dialogue, such as user preferences, task progress, incremental data collection, or conditional flags influencing subsequent agent actions.</p>
+<p class="zh">从根本上说，session.state 像一个字典，以键值对形式存储数据。它的核心作用是让智能体保留并管理连贯对话所需的关键细节，例如用户偏好、任务进度、增量收集的数据，或影响后续行动的条件标志。</p>
+<p class="en">The state’s structure comprises string keys paired with values of serializable Python types, including strings, numbers, booleans, lists, and dictionaries containing these basic types. State is dynamic, evolving throughout the conversation. The permanence of these changes depends on the configured SessionService.</p>
+<p class="zh">state 的结构由字符串键搭配可序列化 Python 类型的值组成，包括字符串、数字、布尔值、列表，以及由这些基本类型构成的字典。state 是动态的，在整个对话过程中不断演变；这些变更是否持久，则取决于所配置的 SessionService。</p>
+<p class="en">State organization can be achieved using key prefixes to define data scope and persistence. Keys without prefixes are session-specific.</p>
+<p class="zh">可以通过键前缀来组织 state，以界定数据的作用域与持久性。不带前缀的键是会话专属的。</p>
+<ul>
+<li><span class="en">The user: prefix associates data with a user ID across all sessions.</span><span class="zh">user: 前缀把数据与某个用户 ID 跨所有会话关联起来。</span></li>
+<li><span class="en">The app: prefix designates data shared among all users of the application.</span><span class="zh">app: 前缀指定应用内所有用户共享的数据。</span></li>
+<li><span class="en">The temp: prefix indicates data valid only for the current processing turn and is not persistently stored.</span><span class="zh">temp: 前缀表示数据仅在当前处理轮次有效，不做持久存储。</span></li>
+</ul>
+<p class="en">The agent accesses all state data through a single session.state dictionary. The SessionService handles data retrieval, merging, and persistence. State should</p>
+<p class="zh">智能体通过同一个 session.state 字典访问所有状态数据。SessionService 负责数据的检索、合并与持久化。状态应当</p>
+<div class="pb">— 原书第 153 页 —</div>
+<p class="en">be updated upon adding an Event to the session history via session_service.append_event(). This ensures accurate tracking, proper saving in persistent services, and safe handling of state changes.</p>
+<p class="zh">在通过 session_service.append_event() 向会话历史添加 Event 时一并更新。这样才能确保准确跟踪、在持久化服务中正确保存，并安全地处理状态变更。</p>
+<p class="en">1. The Simple Way: Using output_key (for Agent Text Replies): This is the easiest method if you just want to save your agent’s final text response directly into the state. When you set up your LlmAgent, just tell it the output_key you want to use. The Runner sees this and automatically creates the necessary actions to save the response to the state when it appends the event. Let’s look at a code example demonstrating state update via output_key.</p>
+<p class="zh">1. 简单方式：使用 output_key（适用于智能体文本回复）。如果你只是想把智能体的最终文本回复直接存进 state，这是最简单的办法。配置 LlmAgent 时，只需告诉它你想用的 output_key。Runner 看到后，会在追加事件时自动创建必要动作，把回复存入 state。下面是一个通过 output_key 更新状态的代码示例。</p>
+<pre><code class="language-python"># Import necessary classes from the Google Agent Developer Kit (ADK)
+from google.adk.agents import LlmAgent
+from google.adk.sessions import InMemorySessionService, Session
+from google.adk.runners import Runner
+from google.genai.types import Content, Part
+
+# Define an LlmAgent with an output_key.
+greeting_agent = LlmAgent(
+    name="Greeter",
+    model="gemini-2.0-flash",
+    instruction="Generate a short, friendly greeting.",
+    output_key="last_greeting"
+)
+
+# --- Setup Runner and Session ---
+app_name, user_id, session_id = "state_app", "user1", "session1"
+session_service = InMemorySessionService()
+runner = Runner(
+    agent=greeting_agent,
+    app_name=app_name,
+    session_service=session_service
+)
+session = session_service.create_session(
+    app_name=app_name,
+    user_id=user_id,
+    session_id=session_id
+)
+print(f"Initial state: {session.state}")
+
+# --- Run the Agent ---
+user_message = Content(parts=[Part(text="Hello")])
+print("\n--- Running the agent ---")
+for event in runner.run(
+    user_id=user_id,
+    session_id=session_id,
+    new_message=user_message
+):</code></pre>
+<div class="pb">— 原书第 154 页 —</div>
+<pre><code class="language-python">    if event.is_final_response():
+        print("Agent responded.")
+
+# --- Check Updated State ---
+# Correctly check the state *after* the runner has finished processing all events.
+updated_session = session_service.get_session(app_name, user_id, session_id)
+print(f"\nState after agent run: {updated_session.state}")</code></pre>
+<p class="en">Behind the scenes, the Runner sees your output_key and automatically creates the necessary actions with a state_delta when it calls append_event.</p>
+<p class="zh">在幕后，Runner 看到你的 output_key 后，会在调用 append_event 时自动创建带 state_delta 的必要动作。</p>
+<p class="en">2. The Standard Way: Using EventActions.state_delta (for More Complicated Updates): For times when you need to do more complex things—like updating several keys at once, saving things that aren’t just text, targeting specific scopes like user: or app:, or making updates that aren’t tied to the agent’s final text reply—you’ll manually build a dictionary of your state changes (the state_delta) and include it within the EventActions of the Event you’re appending. Let’s look at one example:</p>
+<p class="zh">2. 标准方式：使用 EventActions.state_delta（适用于更复杂的更新）。当你需要做更复杂的事情时——比如一次性更新多个键、保存非文本内容、针对 user: 或 app: 等特定作用域、或做与智能体最终文本回复无关的更新——你就要手动构造一个状态变更字典（即 state_delta），并把它放进你所追加 Event 的 EventActions 里。看一个例子：</p>
+<pre><code class="language-python">import time
+from google.adk.tools.tool_context import ToolContext
+from google.adk.sessions import InMemorySessionService
+
+# --- Define the Recommended Tool-Based Approach ---
+def log_user_login(tool_context: ToolContext) -&gt; dict:
+    """
+    Updates the session state upon a user login event.
+    This tool encapsulates all state changes related to a user login.
+    Args:
+        tool_context: Automatically provided by ADK, gives access to session state.
+    Returns:
+        A dictionary confirming the action was successful.
+    """
+    # Access the state directly through the provided context.
+    state = tool_context.state
+    # Get current values or defaults, then update the state.
+    # This is much cleaner and co-locates the logic.
+    login_count = state.get("user:login_count", 0) + 1
+    state["user:login_count"] = login_count
+    state["task_status"] = "active"
+    state["user:last_login_ts"] = time.time()
+    state["temp:validation_needed"] = True
+    print("State updated from within the `log_user_login` tool.")</code></pre>
+<div class="pb">— 原书第 155 页 —</div>
+<pre><code class="language-python">    return {
+        "status": "success",
+        "message": f"User login tracked. Total logins: {login_count}."
+    }
+
+# --- Demonstration of Usage ---
+# In a real application, an LLM Agent would decide to call this tool.
+# Here, we simulate a direct call for demonstration purposes.
+
+# 1. Setup
+session_service = InMemorySessionService()
+app_name, user_id, session_id = "state_app_tool", "user3", "session3"
+session = session_service.create_session(
+    app_name=app_name,
+    user_id=user_id,
+    session_id=session_id,
+    state={"user:login_count": 0, "task_status": "idle"}
+)
+print(f"Initial state: {session.state}")
+
+# 2. Simulate a tool call (in a real app, the ADK Runner does this)
+# We create a ToolContext manually just for this standalone example.
+from google.adk.tools.tool_context import InvocationContext
+mock_context = ToolContext(
+    invocation_context=InvocationContext(
+        app_name=app_name, user_id=user_id, session_id=session_id,
+        session=session, session_service=session_service
+    )
+)
+
+# 3. Execute the tool
+log_user_login(mock_context)
+
+# 4. Check the updated state
+updated_session = session_service.get_session(app_name, user_id, session_id)
+print(f"State after tool execution: {updated_session.state}")
+# Expected output will show the same state change as the "Before" case,
+# but the code organization is significantly cleaner and more robust.</code></pre>
+<p class="en">This code demonstrates a tool-based approach for managing user session state in an application. It defines a function log_user_login, which acts as a tool. This tool is responsible for updating the session state when a user logs in. The function takes a ToolContext object, provided by the ADK, to access and modify the session’s state dictionary. Inside the tool, it increments a</p>
+<p class="zh">这段代码演示了一种用工具来管理应用中用户会话状态的方法。它定义了一个函数 log_user_login 充当工具，负责在用户登录时更新会话状态。该函数接收一个由 ADK 提供的 ToolContext 对象，用以访问和修改会话的 state 字典。在工具内部，它递增一个</p>
+<div class="pb">— 原书第 156 页 —</div>
+<p class="en">user:login_count, sets the task_status to “active”, records the user:last_login_ts (timestamp), and adds a temporary flag temp:validation_needed.</p>
+<p class="zh">user:login_count，把 task_status 设为 “active”，记录 user:last_login_ts（时间戳），并添加一个临时标志 temp:validation_needed。</p>
+<p class="en">The demonstration part of the code simulates how this tool would be used. It sets up an in-memory session service and creates an initial session with some predefined state. A ToolContext is then manually created to mimic the environment in which the ADK Runner would execute the tool. The log_user_login function is called with this mock context. Finally, the code retrieves the session again to show that the state has been updated by the tool’s execution. The goal is to show how encapsulating state changes within tools makes the code cleaner and more organized compared to directly manipulating state outside of tools.</p>
+<p class="zh">代码的演示部分模拟了这个工具的使用方式：先搭建一个内存型会话服务，并用一些预定义状态创建初始会话；然后手动构造一个 ToolContext，模拟 ADK Runner 执行工具时的环境；用这个 mock 上下文调用 log_user_login 函数；最后再次取回会话，展示状态已被工具执行更新。其目的是说明：把状态变更封装在工具内部，相比在工具之外直接操作状态，代码更干净、更有条理。</p>
+<p class="en">Note that direct modification of the ‘session.state’ dictionary after retrieving a session is strongly discouraged as it bypasses the standard event processing mechanism. Such direct changes will not be recorded in the session’s event history, may not be persisted by the selected ‘SessionService’, could lead to concurrency issues, and will not update essential metadata such as timestamps. The recommended methods for updating the session state are using the ‘output_key’ parameter on an ‘LlmAgent’ (specifically for the agent’s final text responses) or including state changes within ‘EventActions.state_delta’ when appending an event via ‘session_service.append_event()’. The ‘session.state’ should primarily be used for reading existing data.</p>
+<p class="zh">注意：强烈不建议在取回会话后直接修改 session.state 字典，因为那样会绕过标准的事件处理机制。这种直接改动不会被记入会话的事件历史，可能不会被所选 SessionService 持久化，还可能导致并发问题，也不会更新时间戳等关键元数据。推荐的更新会话状态方式是：在 LlmAgent 上使用 output_key 参数（专用于智能体的最终文本回复），或在通过 session_service.append_event() 追加事件时把状态变更放进 EventActions.state_delta 中。session.state 主要应用于读取已有数据。</p>
+<p class="en">To recap, when designing your state, keep it simple, use basic data types, give your keys clear names and use prefixes correctly, avoid deep nesting, and always update state using the append_event process.</p>
+<p class="zh">总结一下：设计 state 时，保持简单、使用基本数据类型、给键起清晰的名字并正确使用前缀、避免深层嵌套，并始终通过 append_event 流程更新状态。</p>
+<h4><span class="hen">Memory: Long-Term Knowledge with MemoryService</span><span class="hzh">Memory：用 MemoryService 管理长期知识</span></h4>
+<p class="en">In agent systems, the Session component maintains a record of the current chat history (events) and temporary data (state) specific to a single conversation. However, for agents to retain information across multiple interactions or access external data, long-term knowledge management is necessary. This is facilitated by the MemoryService.</p>
+<p class="zh">在智能体系统中，Session 组件记录单段对话的当前聊天历史（events）和临时数据（state）。然而，要让智能体跨多次交互保留信息或访问外部数据，就需要长期知识管理，这正是由 MemoryService 提供的。</p>
+<pre><code class="language-python"># Example: Using InMemoryMemoryService
+# This is suitable for local development and testing where data
+# persistence across application restarts is not required.
+# Memory content is lost when the app stops.
+from google.adk.memory import InMemoryMemoryService
+memory_service = InMemoryMemoryService()</code></pre>
+<div class="pb">— 原书第 157 页 —</div>
+<p class="en">Session and State can be conceptualized as short-term memory for a single chat session, whereas the Long-Term Knowledge managed by the MemoryService functions as a persistent and searchable repository. This repository may contain information from multiple past interactions or external sources. The MemoryService, as defined by the BaseMemoryService interface, establishes a standard for managing this searchable, long-term knowledge. Its primary functions include adding information, which involves extracting content from a session and storing it using the add_session_to_memory method, and retrieving information, which allows an agent to query the store and receive relevant data using the search_memory method.</p>
+<p class="zh">可以把 Session 和 State 理解为单次聊天会话的短期记忆，而 MemoryService 管理的长期知识则充当一个持久、可搜索的仓库。这个仓库可能包含来自多次过往交互或外部来源的信息。BaseMemoryService 接口定义的 MemoryService 为管理这种可搜索的长期知识确立了标准。它的主要功能包括：添加信息——从会话中提取内容并用 add_session_to_memory 方法存储；以及检索信息——让智能体用 search_memory 方法查询仓库并取回相关数据。</p>
+<p class="en">The ADK offers several implementations for creating this long-term knowledge store. The InMemoryMemoryService provides a temporary storage solution suitable for testing purposes, but data is not preserved across application restarts. For production environments, the VertexAiRagMemoryService is typically utilized. This service leverages Google Cloud’s Retrieval Augmented Generation (RAG) service, enabling scalable, persistent, and semantic search capabilities (also refer to Chap. 14 on RAG).</p>
+<p class="zh">ADK 提供了多种实现来创建这个长期知识仓库。InMemoryMemoryService 提供适合测试的临时存储，但数据在应用重启后不保留。生产环境通常使用 VertexAiRagMemoryService。该服务利用 Google Cloud 的检索增强生成（RAG）服务，提供可扩展、持久化的语义检索能力（另见第 14 章关于 RAG 的内容）。</p>
+<pre><code class="language-python"># Example: Using VertexAiRagMemoryService
+# This is suitable for scalable production on GCP, leveraging
+# Vertex AI RAG (Retrieval Augmented Generation) for persistent,
+# searchable memory.
+# Requires: pip install google-adk[vertexai], GCP setup/authentication, and a Vertex AI RAG Corpus.
+from google.adk.memory import VertexAiRagMemoryService
+# The resource name of your Vertex AI RAG Corpus
+RAG_CORPUS_RESOURCE_NAME = "projects/your-gcp-project-id/locations/us-central1/ragCorpora/your-corpus-id"  # Replace with your Corpus resource name
+# Optional configuration for retrieval behavior
+SIMILARITY_TOP_K = 5  # Number of top results to retrieve
+VECTOR_DISTANCE_THRESHOLD = 0.7  # Threshold for vector similarity
+memory_service = VertexAiRagMemoryService(
+    rag_corpus=RAG_CORPUS_RESOURCE_NAME,
+    similarity_top_k=SIMILARITY_TOP_K,
+    vector_distance_threshold=VECTOR_DISTANCE_THRESHOLD
+)
+# When using this service, methods like add_session_to_memory
+# and search_memory will interact with the specified Vertex AI RAG Corpus.</code></pre>
+<div class="pb">— 原书第 158 页 —</div>
+<h3 id="hands-on-langchain"><span class="hen">Hands-On Code: Memory Management in LangChain and LangGraph</span><span class="hzh">动手代码：LangChain 与 LangGraph 中的内存管理</span></h3>
+<p class="en">In LangChain and LangGraph, Memory is a critical component for creating intelligent and natural-feeling conversational applications. It allows an AI agent to remember information from past interactions, learn from feedback, and adapt to user preferences. LangChain’s memory feature provides the foundation for this by referencing a stored history to enrich current prompts and then recording the latest exchange for future use. As agents handle more complex tasks, this capability becomes essential for both efficiency and user satisfaction.</p>
+<p class="zh">在 LangChain 和 LangGraph 中，Memory 是构建智能、自然的对话式应用的关键组件。它让 AI 智能体能够记住过往交互的信息、从反馈中学习、并适应用户偏好。LangChain 的 memory 功能为此提供了基础：引用已存储的历史来丰富当前提示词，再把最新一轮交流记录下来供将来使用。当智能体处理更复杂的任务时，这种能力对效率和用户满意度都至关重要。</p>
+<ul>
+<li><span class="en">Short-Term Memory: This is thread-scoped, meaning it tracks the ongoing conversation within a single session or thread. It provides immediate context, but a full history can challenge an LLM’s context window, potentially leading to errors or poor performance. LangGraph manages short-term memory as part of the agent’s state, which persists via a checkpointer, allowing a thread to be resumed at any time.</span><span class="zh">短期记忆：它是线程作用域的，即跟踪单个会话或线程内正在进行的对话。它提供即时上下文，但完整历史可能撑爆 LLM 的上下文窗口，导致错误或表现不佳。LangGraph 把短期记忆作为智能体状态的一部分来管理，状态通过 checkpointer 持久化，从而可随时恢复某个线程。</span></li>
+<li><span class="en">Long-Term Memory: This stores user-specific or application-level data across sessions and is shared between conversational threads. It is saved in custom “namespaces” and can be recalled at any time in any thread. LangGraph provides stores to save and recall long-term memories, enabling agents to retain knowledge indefinitely.</span><span class="zh">长期记忆：它跨会话存储用户专属或应用级数据，并在对话线程之间共享。它保存在自定义“命名空间”（namespace）中，可在任意线程的任意时刻被召回。LangGraph 提供存储器（store）来保存和召回长期记忆，使智能体能够无限期地保留知识。</span></li>
+</ul>
+<p class="en">LangChain provides several tools for managing conversation history, ranging from manual control to automated integration within chains.</p>
+<p class="zh">LangChain 提供了若干管理对话历史的工具，从手动控制到在链中自动集成都有。</p>
+<p class="en">ChatMessageHistory: Manual Memory Management. For direct and simple control over a conversation’s history outside of a formal chain, the ChatMessageHistory class is ideal. It allows for the manual tracking of dialogue exchanges.</p>
+<p class="zh">ChatMessageHistory：手动式记忆管理。如果想在正式的链之外直接、简单地控制对话历史，ChatMessageHistory 类再合适不过。它允许手动跟踪对话往来。</p>
+<pre><code class="language-python">from langchain.memory import ChatMessageHistory
+# Initialize the history object
+history = ChatMessageHistory()
+# Add user and AI messages
+history.add_user_message("I'm heading to New York next week.")
+history.add_ai_message("Great! It's a fantastic city.")
+# Access the list of messages
+print(history.messages)</code></pre>
+<div class="pb">— 原书第 159 页 —</div>
+<p class="en">ConversationBufferMemory: Automated Memory for Chains. For integrating memory directly into chains, ConversationBufferMemory is a common choice. It holds a buffer of the conversation and makes it available to your prompt. Its behavior can be customized with two key parameters: memory_key: A string that specifies the variable name in your prompt that will hold the chat history. It defaults to “history”.</p>
+<p class="zh">ConversationBufferMemory：为链自动提供记忆。要把记忆直接集成进链，ConversationBufferMemory 是常见选择。它持有一个对话缓冲区，并把它提供给你的提示词。其行为可用两个关键参数定制：memory_key——一个字符串，指定提示词中存放聊天历史的变量名，默认为 “history”。</p>
+<ul>
+<li><span class="en">return_messages: A boolean that dictates the format of the history.</span><span class="zh">return_messages：一个布尔值，决定历史的格式。</span></li>
+</ul>
+<ul>
+<li><span class="en">If False (the default), it returns a single formatted string, which is ideal for standard LLMs.</span><span class="zh">若为 False（默认），它返回一条格式化字符串，适合标准 LLM。</span></li>
+<li><span class="en">If True, it returns a list of message objects, which is the recommended format for Chat Models.</span><span class="zh">若为 True，它返回消息对象列表，这是聊天模型推荐的格式。</span></li>
+</ul>
+<pre><code class="language-python">from langchain.memory import ConversationBufferMemory
+# Initialize memory
+memory = ConversationBufferMemory()
+# Save a conversation turn
+memory.save_context({"input": "What's the weather like?"}, {"output": "It's sunny today."})
+# Load the memory as a string
+print(memory.load_memory_variables({}))</code></pre>
+<p class="en">Integrating this memory into an LLMChain allows the model to access the conversation’s history and provide contextually relevant responses.</p>
+<p class="zh">把这份记忆集成进 LLMChain，模型就能访问对话历史并给出与上下文相关的回复。</p>
+<pre><code class="language-python">from langchain_openai import OpenAI
+from langchain.chains import LLMChain
+from langchain.prompts import PromptTemplate
+from langchain.memory import ConversationBufferMemory
+
+# 1. Define LLM and Prompt
+llm = OpenAI(temperature=0)
+template = """You are a helpful travel agent.
+Previous conversation:
+{history}
+New question: {question}
+Response:"""
+prompt = PromptTemplate.from_template(template)
+
+# 2. Configure Memory
+# The memory_key "history" matches the variable in the prompt
+memory = ConversationBufferMemory(memory_key="history")
+
+# 3. Build the Chain
+conversation = LLMChain(llm=llm, prompt=prompt, memory=memory)</code></pre>
+<div class="pb">— 原书第 160 页 —</div>
+<pre><code class="language-python"># 4. Run the Conversation
+response = conversation.predict(question="I want to book a flight.")
+print(response)
+response = conversation.predict(question="My name is Sam, by the way.")
+print(response)
+response = conversation.predict(question="What was my name again?")
+print(response)</code></pre>
+<p class="en">For improved effectiveness with chat models, it is recommended to use a structured list of message objects by setting ‘return_messages = True’.</p>
+<p class="zh">为了更好地配合聊天模型，建议设置 return_messages = True，使用结构化的消息对象列表。</p>
+<pre><code class="language-python">from langchain_openai import ChatOpenAI
+from langchain.chains import LLMChain
+from langchain.memory import ConversationBufferMemory
+from langchain_core.prompts import (
+    ChatPromptTemplate,
+    MessagesPlaceholder,
+    SystemMessagePromptTemplate,
+    HumanMessagePromptTemplate,
+)
+
+# 1. Define Chat Model and Prompt
+llm = ChatOpenAI()
+prompt = ChatPromptTemplate(
+    messages=[
+        SystemMessagePromptTemplate.from_template("You are a friendly assistant."),
+        MessagesPlaceholder(variable_name="chat_history"),
+        HumanMessagePromptTemplate.from_template("{question}")
+    ]
+)
+
+# 2. Configure Memory
+# return_messages=True is essential for chat models
+memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+
+# 3. Build the Chain
+conversation = LLMChain(llm=llm, prompt=prompt, memory=memory)
+
+# 4. Run the Conversation
+response = conversation.predict(question="Hi, I'm Jane.")
+print(response)
+response = conversation.predict(question="Do you remember my name?")
+print(response)</code></pre>
+<div class="pb">— 原书第 161 页 —</div>
+<p class="en">Types of Long-Term Memory. Long-term memory allows systems to retain information across different conversations, providing a deeper level of context and personalization. It can be broken down into three types analogous to human memory: Semantic Memory: Remembering Facts: This involves retaining specific facts and concepts, such as user preferences or domain knowledge. It is used to ground an agent’s responses, leading to more personalized and relevant interactions. This information can be managed as a continuously updated user “profile” (a JSON document) or as a “collection” of individual factual documents.</p>
+<p class="zh">长期记忆的类型。长期记忆让系统能跨不同对话保留信息，提供更深层的上下文与个性化。它可类比人类记忆分为三类：语义记忆（Semantic Memory，记住事实）：涉及保留特定事实与概念，如用户偏好或领域知识。它用于为智能体的回复提供依据，带来更个性化、更相关的交互。这些信息可作为持续更新的用户“档案”（一份 JSON 文档）来管理，也可作为单篇事实文档的“集合”来管理。</p>
+<ul>
+<li><span class="en">Episodic Memory: Remembering Experiences: This involves recalling past events or actions. For AI agents, episodic memory is often used to remember how to accomplish a task. In practice, it’s frequently implemented through few-shot example prompting, where an agent learns from past successful interaction sequences to perform tasks correctly.</span><span class="zh">情景记忆（Episodic Memory，记住经历）：涉及回忆过去的事件或行动。对 AI 智能体而言，情景记忆常用来记住如何完成某项任务。实践中，它常通过少样本示例提示（few-shot example prompting）实现——智能体从过去成功的交互序列中学习，从而正确完成任务。</span></li>
+<li><span class="en">Procedural Memory: Remembering Rules: This is the memory of how to perform tasks—the agent’s core instructions and behaviors, often contained in its system prompt. It’s common for agents to modify their own prompts to adapt and improve. An effective technique is “Reflection,” where an agent is prompted with its current instructions and recent interactions, then asked to refine its own instructions.</span><span class="zh">程序记忆（Procedural Memory，记住规则）：这是关于如何执行任务的记忆——即智能体的核心指令与行为，通常包含在它的系统提示词中。智能体修改自己的提示词以适应和改进，是很常见的做法。一种有效技巧是“反思”（Reflection）：把智能体当前的指令和近期交互作为提示喂给它，再请它精修自己的指令。</span></li>
+</ul>
+<p class="en">Below is pseudo-code demonstrating how an agent might use reflection to update its procedural memory stored in a LangGraph BaseStore.</p>
+<p class="zh">下面是一段伪代码，演示智能体如何用反思来更新存储在 LangGraph BaseStore 中的程序记忆。</p>
+<pre><code class="language-python"># Node that updates the agent's instructions
+def update_instructions(state: State, store: BaseStore):
+    namespace = ("instructions",)
+    # Get the current instructions from the store
+    current_instructions = store.search(namespace)[0]
+    # Create a prompt to ask the LLM to reflect on the conversation
+    # and generate new, improved instructions
+    prompt = prompt_template.format(
+        instructions=current_instructions.value["instructions"],
+        conversation=state["messages"]
+    )
+    # Get the new instructions from the LLM
+    output = llm.invoke(prompt)
+    new_instructions = output['new_instructions']
+    # Save the updated instructions back to the store
+    store.put(("agent_instructions",), "agent_a", {"instructions": new_instructions})</code></pre>
+<div class="pb">— 原书第 162 页 —</div>
+<pre><code class="language-python"># Node that uses the instructions to generate a response
+def call_model(state: State, store: BaseStore):
+    namespace = ("agent_instructions", )
+    # Retrieve the latest instructions from the store
+    instructions = store.get(namespace, key="agent_a")[0]
+    # Use the retrieved instructions to format the prompt
+    prompt = prompt_template.format(instructions=instructions.value["instructions"])
+    # ... application logic continues</code></pre>
+<p class="en">LangGraph stores long-term memories as JSON documents in a store. Each memory is organized under a custom namespace (like a folder) and a distinct key (like a filename). This hierarchical structure allows for easy organization and retrieval of information. The following code demonstrates how to use InMemoryStore to put, get, and search for memories.</p>
+<p class="zh">LangGraph 把长期记忆以 JSON 文档形式存储在一个 store 中。每条记忆都归属于一个自定义命名空间（像文件夹）和一个独特的键（像文件名）。这种层级结构便于组织和检索信息。下面的代码演示如何用 InMemoryStore 来写入、读取和搜索记忆。</p>
+<pre><code class="language-python">from langgraph.store.memory import InMemoryStore
+
+# A placeholder for a real embedding function
+def embed(texts: list[str]) -&gt; list[list[float]]:
+    # In a real application, use a proper embedding model
+    return [[1.0, 2.0] for _ in texts]
+
+# Initialize an in-memory store. For production, use a database-backed store.
+store = InMemoryStore(index={"embed": embed, "dims": 2})
+
+# Define a namespace for a specific user and application context
+user_id = "my-user"
+application_context = "chitchat"
+namespace = (user_id, application_context)
+
+# 1. Put a memory into the store
+store.put(
+    namespace,
+    "a-memory",  # The key for this memory
+    {
+        "rules": [
+            "User likes short, direct language",
+            "User only speaks English &amp; python",
+        ],
+        "my-key": "my-value",
+    },
+)
+
+# 2. Get the memory by its namespace and key
+item = store.get(namespace, "a-memory")
+print("Retrieved Item:", item)
+
+# 3. Search for memories within the namespace, filtering by content</code></pre>
+<div class="pb">— 原书第 163 页 —</div>
+<pre><code class="language-python"># and sorting by vector similarity to the query.
+items = store.search(
+    namespace,
+    filter={"my-key": "my-value"},
+    query="language preferences"
+)
+print("Search Results:", items)</code></pre>
+<h4><span class="hen">Vertex Memory Bank</span><span class="hzh">Vertex Memory Bank</span></h4>
+<p class="en">Memory Bank, a managed service in the Vertex AI Agent Engine, provides agents with persistent, long-term memory. The service uses Gemini models to asynchronously analyze conversation histories to extract key facts and user preferences.</p>
+<p class="zh">Memory Bank 是 Vertex AI Agent Engine 中的一项托管服务，为智能体提供持久的长期记忆。该服务使用 Gemini 模型异步分析对话历史，提取关键事实与用户偏好。</p>
+<p class="en">This information is stored persistently, organized by a defined scope like user ID, and intelligently updated to consolidate new data and resolve contradictions. Upon starting a new session, the agent retrieves relevant memories through either a full data recall or a similarity search using embeddings. This process allows an agent to maintain continuity across sessions and personalize responses based on recalled information.</p>
+<p class="zh">这些信息被持久存储，按用户 ID 等既定作用域组织，并被智能地更新以整合新数据、消除矛盾。开启新会话时，智能体通过全量数据召回或基于向量嵌入的相似度检索来获取相关记忆。这个过程让智能体能够跨会话保持连续性，并基于召回的信息个性化回复。</p>
+<p class="en">The agent’s runner interacts with the VertexAiMemoryBankService, which is initialized first. This service handles the automatic storage of memories generated during the agent’s conversations. Each memory is tagged with a unique USER_ID and APP_NAME, ensuring accurate retrieval in the future.</p>
+<p class="zh">智能体的 runner 与 VertexAiMemoryBankService 交互，后者需先初始化。该服务负责自动存储智能体对话过程中产生的记忆。每条记忆都打上唯一的 USER_ID 和 APP_NAME 标签，以确保未来能被准确检索。</p>
+<pre><code class="language-python">from google.adk.memory import VertexAiMemoryBankService
+agent_engine_id = agent_engine.api_resource.name.split("/")[-1]
+memory_service = VertexAiMemoryBankService(
+    project="PROJECT_ID",
+    location="LOCATION",
+    agent_engine_id=agent_engine_id
+)
+session = await session_service.get_session(
+    app_name=app_name,
+    user_id="USER_ID",
+    session_id=session.id
+)
+await memory_service.add_session_to_memory(session)</code></pre>
+<div class="pb">— 原书第 164 页 —</div>
+<p class="en">Memory Bank offers seamless integration with the Google ADK, providing an immediate out-of-the-box experience. For users of other agent frameworks, such as LangGraph and CrewAI, Memory Bank also offers support through direct API calls. Online code examples demonstrating these integrations are readily available for interested readers.</p>
+<p class="zh">Memory Bank 与 Google ADK 无缝集成，开箱即用。对于 LangGraph、CrewAI 等其他智能体框架的用户，Memory Bank 也支持通过直接 API 调用来使用。演示这些集成的在线代码示例对感兴趣的读者唾手可得。</p>
+<h3 id="at-a-glance"><span class="hen">At a Glance</span><span class="hzh">一览</span></h3>
+<figure><img src="data:image/jpeg;base64,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RQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAVz/j3H/CCa1n/AJ9H/lW7LLHDGZJnVEUZZmOAPqawfHTBvAesspyDZuQRznigCH4b/wDJPNF/69x/M109cv8ADggfDvRSTjFsP5mukhminiEkEiyI3RlOQfxoAkooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKTNZPiTxBp3hvSmvtUm8uPO1FXl5G9FHc1xEMvjbxufNgf/hHNEk5VgMzyr6+v8vxoA9Jknhi/wBbKif7zAUscscgzG6uPVSDXntv8ItExu1C+1G9lPLO8+3P5D+tE/wm02JhLo2ralp068qyy7gD+h/WgD0XPTtmlrzB9d8X+CJV/wCEmhGs6KCF+3wLiRB6sP8AH869C0nU7PWNNhv9OnWa3mGVYfyI7H2oAu0UUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFAEN5bQ3lnNbXKB4ZkKOp7gjBr5m1TVNf8KXeq+Gft0rWeWhaGX51KHoRnpkYPFfT1eMfHjQcNZa9CnX/R5yB9Sh/mPyoA4PT9a8QeIBpfhiG9kS0JWCOGH5ARnktjrxk819N6dZQadp1vZWyBYbeMRoAOwGK8V+BWgfaNVutcnTKWo8mHP99h8x/Bf/Qq9zoAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKiuZ4ra2lnncJFEhd3PQADJNS1xHxcvntPAtxBCcSX0qWy8f3jk/oKAMPwvYy+PfE0nirWY86TauY9NtX5U4P3yO/wDU/SvUgMdKoaDpsWkaFZafAuEt4VQe5xyfxOTWhQAUUUUAMlijmieKVFkjcFWRhkMD2IryxYn+GvjWJIyx8M6zJt2k/wDHtL7f56fSvVq5X4l6YmqeAtTiKBpIYvPjPcMnPH4ZH40AdSOlLWD4I1F9V8GaVeyMTJJbqH92Hyk/pW9QAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRSUALRSZHrRketAC1j+K9GTX/DN9pjgZniIjJ/hccqfzArXyPWjI9aAMPwZoa+HfCtjpuFEsabpiv8AFIeWP58fQVu0mR60ZHrQAtFJketGR60ALRSZpaACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigArzr4zow0HSrjGUh1KNm+mDXotc/460Zte8H6hYRqGmaPfCP9teR/LH40Ab6ncoI6EZpa5P4ba+uu+EbUyP/AKZaAW9yh+8rLwCfqMH866ygAooooAKyfFUyW/hPVpZPuraS5/75Na1effFnVW/siDw3YfPqWsSLEqDqseeSfYnj8/SgDR+FSNH8OdJDHlkZh9C5rsKp6RYR6XpFpYRfctoVjB9cDFXKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAp6tqFvpWlXV/dsVgtozI5HXA7D3rznTT488ZW/8Aa1tqkWhWEpJtoVj3sy/3jx+v6VtfGJmX4b3+0kZeIHB6jeK6vR0WLRbGNFCqtugAHYbRQBw3/CKePf8Aodx/4Dj/AAo/4RTx7/0O4/8AAcf4V6NRQB5z/wAIp49/6Hcf+A4/wo/4RTx7/wBDuP8AwHH+FejUUAec/wDCKePf+h3H/gOP8KP+EU8e/wDQ7j/wHH+FejUUAec/8Ip49/6Hcf8AgOP8KP8AhFPHv/Q7j/wHH+FejUUAebTeH/iLYxNc2viqK+ljG4W8sIAk9s4rovAnigeKNGeeWH7Pe28hhuoOfkcemex/xrpq868Bfu/iN40hjAWL7QjbR0zzk0AejUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUhOBQAtJXPeJvGWi+Go8alcgzt9y3i+eR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+iiigAooooAKSlooA8/8FXdzN8R/GMMtxLJDHNHsR3JC9RwO1egV5z4F/wCSm+Nf+u0f9a9GoASvO9H/AOS7a7/14R/ySvRK870f/kuuu/8AXhH/ACSgD0WiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigCK4ghureSC5iSWGRdro4yGHoRXm9/4S1nwheyar4FkMtqx3T6TKxZW9dnv+v16V1fjrX5vDXhW51S2hjmliZFCSEgHcwHb61uWkxuLOGYrtMkauRnpkZoA4mDxnp3ijwdq6Q7rbUIrOXzrKX/AFiEKc49R/k4q/8AC3/knGj5/wCeTf8AobVB4z+H9h4iL3lo5sNW2kC5iyA/GMOB1GOM9fr0rZ8H6PLoHhWx0u4lWWW3QhnTOCSSeM/WgDbooooAKKKKACiiigBD0rzrwL/yUvxr/wBdk/rXotedeBP+Sl+Nf+u6f1oA9GooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACkpaSgDzrQB/xfHxH3/0KPn0+5Xo1ebaHIkfxx8RGRlUfYk5ZgP7leh/arf/AJ7xf99igCauAuf+S62f/YIb/wBCNdz9qt/+e8X/AH2K4K5niPxztGEqbRpLDO4Y+8aAPQ6Kh+1W/wDz3i/77FH2q3/57xf99igCaioftVv/AM94v++xR9qt/wDnvF/32KAJqKh+1W//AD3i/wC+xR9qt/8AnvH/AN9igDz/AMC/8lO8a/8AXaP+tejV5r4GmiX4l+M2MqBTKmCWGD1r0T7Vb/8APeL/AL7FAEted6P/AMl113j/AJcI/wCSV3/2q3/57xf99ivPtFdX+OmuFHDKbCPkHPZKAPR6KKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKAOG+Mf/JN7/8A66Rf+hiuu0r/AJBNn/1wT/0EVhfEjSZtZ8C6laWwZpgglRV6sUIbH44pngXxTp+ueG7RkuI47qGNY7iF3AZGAweD2OM5oA6uioftVv8A894v++xR9qt/+e8X/fYoAmoqH7Vb/wDPeL/vsUfarf8A57xf99igCaioftVv/wA94v8AvsUfarf/AJ7xf99igCaioftVv/z3i/77FH2q3/57xf8AfYoAlPSvOvAv/JTPGv8A12T+tdvqGsadp1nJdXl7BDDGMszOP09TXEfCsS6lf+IfErwNDDqd1+4Dd0XPP6gfUGgD0aiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKAOR134eeHtd1aTUr2GcXMoAcxTFA2BgHH4Vn/wDCpfC39y8/8CTXfUUAcD/wqXwt/cvP/Ak0n/CpPCu7Pl3mf+vk139RXU8draTXExIjhQu5AzwBk0AcN/wqXwt/zzvP/Ak0f8Kl8Lf3Lz/wJNddoWr2mu6RBqVgXNvNnbvXaeCQePwqFvEFgvidNAJk+3vB54Gz5dv19eKAOX/4VL4W/wCed5/4Emj/AIVL4W/uXn/gSa73NFAHBf8ACpfC39y8/wDAk0f8Kl8Lf3Lz/wACTXe5ooA4EfCPwqCSI7zJ/wCnk0v/AAqXwr/zzvP/AAJNd9RQBwP/AAqXwt/cvP8AwJNbPhrwRonhm9mu9MjmE8qeWzSyl/lznA/IV0tFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAVyGsfDjwzq9895PZNDcSHLtbyGPcfUgcZrr6jmmjt4HmndY4o1LO7HAUDqTQBwv8AwqXwt/cvf/Ak0f8ACpfC39y9/wDAk1Z/4WRpMgkksdP1a+tYzhrm3sy0fvzXR6Frmna/p4vdKuVnhJweMFT6EHkGgDk/+FS+Fv7l7/4Emj/hUvhb+5e/+BJrvqq6jf2umWE17fTLDbQrud26AUAcX/wqXwt/cvf/AAJNH/CpfC39y9/8CTXdQypNBHLG25JFDKfUEZFPzQBwX/CpfC39y9/8CTR/wqXwt/cvf/Ak131IxCqWYgAckntQBw0Hwp8JxTpI9rPPtOdktwxU/UV20EEVtAkFvGsUUahURBgKB0AFV9L1O01azW806dZ7ZmKrIvQkHBx+NXKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigArP1/8A5F3Uv+vWX/0A1oVDdwLdWc1u/CTRsjfQjFAHJ/Cb/km+lfR//Q2rOuc/8L5teP8AmEtj8zVLwpr0vgrTT4d8Q6ZfKbR38i6t7dpY5kJJGCO/NXvDMV/4h8e3PiqaxmsbCO0+y2iXK7Xk55YjsOv6UAYNt4k1rX728kTxZa6JeQTvHBpUsKgHaeNzN1z0rpNd8U6zo3hbSVu4bK313UZBD+8lHkxHu5PpjHGe/euc1VzczXVr4w8D3Goal5jCG706AhZVP3fnBz+JzSt4O1seAdGe6skvrzTbp7j+zp237oW/5ZZ7kAdKAJ28Sal4alt7y58W2HiCzllWO6t12LJFu43R7TyB71qatqXiTVPHt34c0bUYbK0W0Sc3JhDvGD/d9ckj6CsNLa11i8tbTQfh6llJ5im5uNStNscSd8c8n/OK6jTrSeP4x6ncfZ5Vtm0yNEl2EISCvAPSgDrNMiu4NMt4tQuRc3SIBLMqbQ7dzjtVuiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACvP8A4vXM39h6bpkTmNNTvo4JWBxlOpH54/KvQK5nx54cfxJ4ea3tnEd7byCe1c8AOvQH69KAOgtLaCztIra1iWKCJQqIowABXnluTovxnvbSwCx22paf9oliUfKJFz82PXg/nVy1+If2a08nXdD1W21SMbXhitS6yN6ow4waPCmkajqviK/8V67aGymuIfs9lasctFF6t7n+poA0fh9rd9rvg8ahqMiNcmWVdyIFGFOBxXFa3quteIPgzdahcXcAKzulwvkgeYgcBQPQ55q34V1DW/C2lz+Gn8NX1zeieQ288ajyHDHgl+wqLTdG1WX4Hajp32KX7e00h8koQzYkBOAfocUAaGr6v4p0PQvDdvaXNnd31/P5IzBtQqVGwHnjHc1JeXfifwdf2F5rGsR6tpl7cLBcKYBGYGboUx2rI8S6zeXem+Dr2z0q5ivbe/8ALS0ul8tnZVAxz2PY1papdap48u9P0uLQ77TbK2ulnvZ7xNmNv8C+v1oA6Dw5rd/f+MvEmnXUiNbafJGsChACAwycnvVCPV9a1TV/GGlQXcEP2ARi1d4AwUFctn144rPkudS8JePtcvZdEvtQstW8t4ZLKPeVZRjaR2qXwVb6tN4l8WXWp6bLYy3qxtGjnK8qcDd0JAxnHegCX4NRagvgyGS5uopLNt32eFItrR/Md2W75r0GuC+E811beHv7Ev8ATLyzubAnc80ZCSbmJ+U9672gAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKAEpaKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKAEpaKKACiiigDA8SeHTrl/o1wLryf7NuvtBXZu38dPat6looAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooA//Z" alt="figure"/><figcaption><span class="en">Fig 8.1 Memory Management pattern: short-term context lives in the session/state within the LLM context window, while long-term knowledge is persisted in an external store and retrieved on demand.</span><span class="zh">图 8.1  内存管理模式：短期上下文存在于会话/状态与 LLM 上下文窗口内，长期知识则持久化在外部存储中、按需检索。</span></figcaption></figure>
+<p class="en">What. Agentic systems need to remember information from past interactions to perform complex tasks and provide coherent experiences. Without a memory mechanism, agents are stateless, unable to maintain conversational context, learn from experience, or personalize responses for users. This fundamentally limits them to simple, one-shot interactions, failing to handle multi-step processes or evolving user needs. The core problem is how to effectively manage both the immediate, temporary information of a single conversation and the vast, persistent knowledge gathered over time.</p>
+<p class="zh">是什么。智能体系统需要记住过往交互的信息，才能执行复杂任务并提供连贯体验。没有记忆机制，智能体就是无状态的：无法维持对话上下文、无法从经验中学习、无法为用户个性化回复。这从根本上把它们限制在简单的一次性交互里，无法处理多步流程或不断变化的用户需求。核心问题是：如何同时管好单次对话中即时、临时的信息，以及随时间积累的海量持久知识。</p>
+<p class="en">Why. The standardized solution is to implement a dual-component memory system that distinguishes between short-term and long-term storage. Short-term, contextual memory holds recent interaction data within the LLM’s context window to maintain conversational flow. For information that must persist, long-term memory solutions use external databases, often vector stores, for efficient, semantic retrieval. Agentic frameworks like the Google ADK provide specific components to manage this, such as Session for the conversation thread and State for its temporary data. A dedicated MemoryService is used to interface with the long-term knowledge base, allowing the agent to retrieve and incorporate relevant past information into its current context.</p>
+<p class="zh">为什么。标准化解法是实现一个区分短期与长期存储的双组件记忆系统。短期上下文记忆把近期交互数据保存在 LLM 上下文窗口内，以维持对话流转；对于必须持久的信息，长期记忆方案使用外部数据库（常为向量库）进行高效的语义检索。Google ADK 等智能体框架提供专门组件来管理这一切——比如代表对话线程的 Session 和存放临时数据的 State；再用专门的 MemoryService 对接长期知识库，让智能体把相关的过往信息取回并融入当前上下文。</p>
+<p class="en">Rule of Thumb. Use this pattern when an agent needs to do more than answer a single question. It is essential for agents that must maintain context throughout a conversation, track progress in multi-step tasks, or personalize interactions by recalling user preferences and history. Implement memory management whenever the agent is expected to learn or adapt based on past successes, failures, or newly acquired information.</p>
+<p class="zh">经验法则。当智能体需要做的不止是回答单个问题时，就用本模式。对于那些必须在整段对话中维持上下文、在多步任务中跟踪进度、或通过回忆用户偏好与历史来个性化交互的智能体，它不可或缺。只要期望智能体基于过去的成功、失败或新获得的信息进行学习或适应，就应实现内存管理。</p>
+<div class="pb">— 原书第 165 页 —</div>
+<h3 id="takeaways"><span class="hen">Key Takeaways</span><span class="hzh">要点回顾</span></h3>
+<p class="en">To quickly recap the main points about memory management:</p>
+<p class="zh">快速回顾关于内存管理的要点：</p>
+<ul>
+<li><span class="en">Memory is super important for agents to keep track of things, learn, and personalize interactions.</span><span class="zh">记忆对智能体跟踪事物、学习和个性化交互都极为重要。</span></li>
+<li><span class="en">Conversational AI relies on both short-term memory for immediate context within a single chat and long-term memory for persistent knowledge across multiple sessions.</span><span class="zh">对话式 AI 既依赖短期记忆提供单次聊天内的即时上下文，也依赖长期记忆提供跨多次会话的持久知识。</span></li>
+<li><span class="en">Short-term memory (the immediate stuff) is temporary, often limited by the LLM’s context window or how the framework passes context.</span><span class="zh">短期记忆（即时的那部分）是临时的，常受限于 LLM 的上下文窗口或框架传递上下文的方式。</span></li>
+<li><span class="en">Long-term memory (the stuff that sticks around) saves info across different chats using outside storage like vector databases and is accessed by searching.</span><span class="zh">长期记忆（长久保留的那部分）用向量数据库等外部存储跨不同聊天保存信息，通过搜索来访问。</span></li>
+<li><span class="en">Frameworks like ADK have specific parts like Session (the chat thread), State (temporary chat data), and MemoryService (the searchable long-term knowledge) to manage memory.</span><span class="zh">ADK 等框架有专门部件来管理记忆：Session（聊天线程）、State（聊天临时数据）和 MemoryService（可搜索的长期知识）。</span></li>
+<li><span class="en">ADK’s SessionService handles the whole life of a chat session, including its history (events) and temporary data (state).</span><span class="zh">ADK 的 SessionService 负责聊天会话的整个生命周期，包括其历史（events）和临时数据（state）。</span></li>
+<li><span class="en">ADK’s session.state is a dictionary for temporary chat data. Prefixes (user:, app:, temp:) tell you where the data belongs and if it sticks around.</span><span class="zh">ADK 的 session.state 是一个存放聊天临时数据的字典。前缀（user:、app:、temp:）标明数据归属、以及是否长期保留。</span></li>
+<li><span class="en">In ADK, you should update state by using EventActions.state_delta or output_key when adding events, not by changing the state dictionary directly.</span><span class="zh">在 ADK 中，应在添加事件时通过 EventActions.state_delta 或 output_key 来更新状态，而不是直接改动 state 字典。</span></li>
+</ul>
+<div class="pb">— 原书第 166 页 —</div>
+<ul>
+<li><span class="en">ADK’s MemoryService is for putting info into long-term storage and letting agents search it, often using tools.</span><span class="zh">ADK 的 MemoryService 用于把信息放入长期存储，并让智能体搜索它——通常借助工具。</span></li>
+<li><span class="en">LangChain offers practical tools like ConversationBufferMemory to automatically inject the history of a single conversation into a prompt, enabling an agent to recall immediate context.</span><span class="zh">LangChain 提供 ConversationBufferMemory 等实用工具，自动把单次对话的历史注入提示词，使智能体能够回忆即时上下文。</span></li>
+<li><span class="en">LangGraph enables advanced, long-term memory by using a store to save and retrieve semantic facts, episodic experiences, or even updatable procedural rules across different user sessions.</span><span class="zh">LangGraph 通过一个 store 实现高级长期记忆，能跨不同用户会话保存和检索语义事实、情景经历，甚至可更新的程序规则。</span></li>
+<li><span class="en">Memory Bank is a managed service that provides agents with persistent, long-term memory by automatically extracting, storing, and recalling user-specific information to enable personalized, continuous conversations across frameworks like Google’s ADK, LangGraph, and CrewAI.</span><span class="zh">Memory Bank 是一项托管服务，通过自动提取、存储和召回用户专属信息，为智能体提供持久长期记忆，从而在 Google ADK、LangGraph、CrewAI 等框架上实现个性化、连续的对话。</span></li>
+</ul>
+<h3 id="conclusion"><span class="hen">Conclusion</span><span class="hzh">小结</span></h3>
+<p class="en">This chapter dove into the very important job of memory management for agent systems, showing the difference between the short-lived context and the knowledge that sticks around for a long time. We talked about how these types of memory are set up and where you see them used in building smarter agents that can remember things. We took a detailed look at how Google ADK gives you specific pieces like Session, State, and MemoryService to handle this. Now that we’ve covered how agents can remember things, both short-term and long-term, we can move on to how they can learn and adapt. The next pattern “Learning and Adaptation” is about an agent changing how it thinks, acts, or what it knows, all based on new experiences or data.</p>
+<p class="zh">本章深入探讨了智能体系统中极为重要的内存管理工作，厘清了短暂上下文与长久保留知识之间的区别。我们讨论了这两类记忆如何搭建、以及在构建更聪明、能记事的智能体时用在何处；还详细看了 Google ADK 如何用 Session、State、MemoryService 等专门部件来处理这些。既然已经讲清智能体如何记忆（短期与长期），接下来就可以讲它们如何学习与适应了。下一个模式“学习与适应”，讲的是智能体如何基于新经验或新数据，改变自己的思考方式、行动方式或所知内容。</p>
+<h3 id="bibliography"><span class="hen">Bibliography</span><span class="hzh">参考文献</span></h3>
+<p class="en">ADK Memory, https://google.github.io/adk-docs/sessions/memory/</p>
+<p class="zh">ADK Memory：https://google.github.io/adk-docs/sessions/memory/</p>
+<p class="en">LangGraph Memory, https://langchain-ai.github.io/langgraph/concepts/memory/</p>
+<p class="zh">LangGraph Memory：https://langchain-ai.github.io/langgraph/concepts/memory/</p>
+<p class="en">Vertex AI Agent Engine Memory Bank, https://cloud.google.com/blog/products/ai-machine-learning/vertex-ai-memory-bank-in-public-preview</p>
+<p class="zh">Vertex AI Agent Engine Memory Bank：https://cloud.google.com/blog/products/ai-machine-learning/vertex-ai-memory-bank-in-public-preview</p>
+
+<nav class="pager">
+<a href="chapter-07.html">← 第 7 章 多智能体协作</a>
+<a href="index.html">返回目录</a>
+<a href="chapter-09.html">第 9 章 学习与适应 →</a>
+</nav>
+</main>
+<script>
+function toggleToc(){document.body.classList.toggle('toc-closed');}
+document.addEventListener('DOMContentLoaded',function(){
+  var btn=document.getElementById('menuBtn');
+  if(btn){btn.addEventListener('click',toggleToc);}
+  // 窄屏默认收起目录为抽屉；宽屏默认展开
+  if(window.innerWidth<=900){document.body.classList.add('toc-closed');}
+  document.querySelectorAll('#toc a').forEach(function(a){
+    a.addEventListener('click',function(){
+      if(window.innerWidth<=900){document.body.classList.add('toc-closed');}
+    });
+  });
+});
+</script>
+</body></html>

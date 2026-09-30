@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>重要的分布式系统概念 - Important Distributed System Concepts</title>
+<style>
+:root{
+  --accent:#2563eb; --zh-bg:#f0f6ff; --zh-border:#2563eb;
+  --code-bg:#0f172a; --code-ink:#e2e8f0; --ink:#1f2937;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0; background:#faf6f1; color:var(--ink);
+  font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  font-size:18px; line-height:1.75;
+}
+#toc{
+  position:fixed; top:0; left:0; width:300px; height:100vh;
+  overflow-y:auto; background:#fff; border-right:1px solid #e5e7eb;
+  padding:20px 16px; transition:transform .25s ease; z-index:100;
+}
+#toc h2{font-size:16px; color:var(--accent); margin:0 0 12px;}
+#toc a{
+  display:block; color:var(--ink); text-decoration:none;
+  padding:4px 8px; border-radius:6px; font-size:14px;
+}
+#toc a.l2{font-weight:700; margin-top:8px;}
+#toc a.l3{padding-left:24px; font-size:13.5px; color:#4b5563;}
+#toc a.l4{padding-left:40px; font-size:13px; color:#6b7280;}
+#toc a:hover{background:var(--zh-bg);}
+main{
+  margin-left:300px; max-width:900px; padding:32px 40px 80px;
+}
+#menu-btn{
+  position:fixed; top:14px; left:316px; z-index:200;
+  background:var(--accent); color:#fff; border:none; border-radius:8px;
+  padding:8px 12px; cursor:pointer; font-size:16px;
+}
+body.toc-hidden #toc{transform:translateX(-300px);}
+body.toc-hidden #menu-btn{left:14px;}
+h1{font-size:30px; border-bottom:3px solid var(--accent); padding-bottom:10px;}
+h2{font-size:24px; margin-top:40px; color:#111827; scroll-margin-top:20px;}
+h3{font-size:20px; margin-top:28px; color:#1f2937; scroll-margin-top:20px;}
+h4{font-size:17px; margin-top:20px; color:#374151;}
+h1 .zh,h2 .zh,h3 .zh,h4 .zh{display:block; font-size:.8em; color:var(--accent); font-weight:600; margin-top:4px;}
+p.en{margin:14px 0 4px;}
+p.zh{
+  background:var(--zh-bg); border-left:4px solid var(--zh-border);
+  border-radius:0 8px 8px 0; padding:10px 16px; margin:0 0 14px;
+}
+li{margin:6px 0;}
+li .zh{
+  display:block; background:var(--zh-bg); border-left:4px solid var(--zh-border);
+  border-radius:0 8px 8px 0; padding:6px 12px; margin-top:4px;
+}
+li .en{display:block;}
+.callout{
+  background:#fffbeb; border:1px solid #f59e0b; border-radius:8px;
+  padding:14px 18px; margin:18px 0;
+}
+.callout p.zh{background:#fef3c7; border-color:#f59e0b;}
+pre{
+  background:var(--code-bg); color:var(--code-ink); border-radius:8px;
+  padding:16px; overflow-x:auto; font-size:13.5px; line-height:1.6;
+  font-family:"SF Mono",Menlo,Consolas,monospace;
+}
+code{font-family:"SF Mono",Menlo,Consolas,monospace;}
+p code,li code{
+  background:#fce7f3; color:#be185d; padding:1px 6px; border-radius:4px;
+  font-size:.9em;
+}
+figure{margin:22px 0; text-align:center;}
+figure img{max-width:100%; border:1px solid #e5e7eb; border-radius:8px;}
+figcaption{font-size:13px; color:#6b7280; margin-top:8px;}
+figcaption .zh{display:block; color:var(--accent);}
+table{border-collapse:collapse; width:100%; margin:16px 0; font-size:14px;}
+th,td{border:1px solid #d1d5db; padding:8px 12px; text-align:left; vertical-align:top;}
+th{background:#f1f5f9;}
+td .zh{display:block; background:var(--zh-bg); padding:4px 8px; margin-top:4px; border-radius:4px;}
+.pagemark{
+  text-align:center; color:#9ca3af; font-size:12px; letter-spacing:2px;
+  margin:28px 0 8px;
+}
+.pager{
+  display:flex; justify-content:space-between; gap:10px; margin-top:60px;
+  border-top:1px solid #e5e7eb; padding-top:20px;
+}
+.pager a{
+  flex:1; text-align:center; padding:12px; border-radius:8px;
+  background:#fff; border:1px solid #d1d5db; text-decoration:none; color:var(--ink);
+}
+.pager a:hover{background:var(--accent); color:#fff;}
+.pager a.disabled{opacity:.4; pointer-events:none;}
+@media(max-width:900px){
+  #toc{transform:translateX(-300px); box-shadow:2px 0 12px rgba(0,0,0,.15);}
+  body.toc-open #toc{transform:translateX(0);}
+  main{margin-left:0; padding:24px 18px 60px;}
+  #menu-btn{left:14px;}
+}
+</style>
+</head>
+<body>
+<button id="menu-btn">☰ 目录</button>
+<nav id="toc">
+<h2>重要的分布式系统概念</h2><a class="l2" href="#apis">APIs and RPCs</a>
+<a class="l2" href="#latency">Latency</a>
+<a class="l2" href="#reliability">Reliability</a>
+<a class="l2" href="#percentiles">Percentiles</a>
+<a class="l2" href="#idempotency">Idempotency</a>
+<a class="l2" href="#delivery">Delivery Semantics</a>
+<a class="l2" href="#relational">Relational Integrity</a>
+<a class="l2" href="#consistency">Data Consistency</a>
+<a class="l2" href="#orchestration">Orchestration and Kubernetes</a>
+<a class="l2" href="#health">Health Checks</a>
+<a class="l2" href="#summary">Summary</a>
+</nav>
+<main>
+<h1><span class="en">Important Distributed System Concepts</span><span class="zh">重要的分布式系统概念</span></h1>
+<div class="pagemark">— PDF 第 27 页 —</div>
+<p class="en">Before we get too deep into the design of distributed systems, it is valuable to ground ourselves in some key concepts that underpin the development of these distributed systems. If you are already experienced in distributed systems or systems design in general, some of these ideas may be familiar to you, and you may want to skip ahead, but hopefully at the completion of this chapter, you will have a core foundation for the patterns and designs presented throughout the rest of the book.</p>
+<p class="zh">在我们过于深入分布式系统设计之前，有必要先夯实一些支撑分布式系统开发的关键概念。如果你在分布式系统或系统设计方面已有经验，其中一些想法对你来说可能并不陌生，你或许想直接跳过；但希望在学完本章后，你能为本书其余章节所呈现的模式与设计打下核心基础。</p>
+<h2 id="apis"><span class="en">APIs and RPCs</span><span class="zh">API 与远程过程调用（RPC）</span></h2>
+<p class="en">Application programming interfaces, or APIs, form the core of any distributed system. You may have seen APIs in the context of programming language libraries or calls to operating system APIs. In distributed systems the idea is similar, but the API calls take place over the network between remote services. These calls are referred to as “RPCs” or “remote procedure calls.” RPCs rely on an underlying network transport, commonly, though not exclusively, the HTTP protocol and the JSON object format. Numerous other more structured protocols have existed over the years, from CORBA to gRPC as well as database-specific protocols. Though such systems provide capabilities beyond HTTP + JSON (also referred to as REST or RESTful), these continue to be the most popular because of their wide support, simplicity, and ease of integration with web-based frontends.</p>
+<p class="zh">应用程序编程接口（API）构成了任何分布式系统的核心。你可能在编程语言库的语境中见过 API，或在调用操作系统 API 时见过它。在分布式系统中，思路类似，但 API 调用发生在网络上、位于远程服务之间。这类调用被称为“RPC”或“远程过程调用（remote procedure call）”。RPC 依赖底层网络传输，通常（但并非唯一）使用 HTTP 协议与 JSON 对象格式。多年来还存在许多其他更结构化的协议，从 CORBA 到 gRPC，以及数据库专用协议。尽管这类系统提供了超越 HTTP + JSON（也称为 REST 或 RESTful）的能力，但 HTTP + JSON 因其广泛支持、简单易用，以及与 Web 前端易于集成，始终是最流行的选择。</p>
+<p class="en">APIs can be synchronous or asynchronous. Synchronous APIs return only after the request has been fully processed, while asynchronous APIs accept the request and return an operation ID for a background process that can be monitored via subsequent status requests. Synchronous APIs are the easiest to implement, but long-running operations are a bad match for HTTP or other network protocols because of timeouts and other limitations. Thus, if the length of your operation is measured in minutes, it is better off being modeled as an asynchronous operation.</p>
+<p class="zh">API 可以是同步的，也可以是异步的。同步 API 只有在请求被完全处理后才返回；而异步 API 接受请求后，会返回一个后台进程的操作 ID，后续可通过状态查询来监控该进程。同步 API 最容易实现，但长时间运行的操作与 HTTP 或其他网络协议并不匹配，因为存在超时与其他限制。因此，如果你的操作时长以分钟计，最好把它建模为异步操作。</p>
+<div class="pagemark">— PDF 第 28 页 —</div>
+<p class="en">APIs are generally not very useful without clients that can call those APIs. Having every developer hand-roll HTTP calls to your API is a recipe for unhappy developers and badly designed systems. In smaller systems, which may only be required to support individual languages, it is possible to handwrite these client libraries. But larger systems rely on IDLs, or interface description languages, such as OpenAPI, which can describe your API’s structure in such a way that clients can be automatically generated for nearly any programming language.</p>
+<p class="zh">如果没有能调用这些 API 的客户端，API 本身通常用处不大。让每位开发者手写 HTTP 调用来访问你的 API，必然导致开发者怨声载道、系统设计糟糕。在较小的系统中（可能只需支持个别语言），手写这些客户端库是可行的；但更大的系统则依赖 IDL（接口描述语言），例如 OpenAPI，它能以这样一种方式描述你的 API 结构：几乎可以为任意编程语言自动生成客户端。</p>
+<p class="en">Beyond the structure of your API, the core functionality of an API is described in terms of its SLO, its service level objectives, which describe how the API performs in terms of latency and reliability. Having formal SLOs for latency, reliability, and throughput (requests per second) enables clients to successfully develop distributed systems.</p>
+<p class="zh">除了 API 的结构之外，API 的核心功能还要用其 SLO（服务水平目标，service level objective）来描述，SLO 刻画了 API 在延迟与可靠性方面的表现。为延迟、可靠性与吞吐量（每秒请求数）制定正式的 SLO，才能让客户端成功地开发分布式系统。</p>
+<h2 id="latency"><span class="en">Latency</span><span class="zh">延迟</span></h2>
+<p class="en">One of the most important measures of your system’s performance is the time that it takes to do something. This measure is commonly referred to as latency. Generally speaking, latency is measured in milliseconds, though depending on your system, it could be measured in microseconds (very fast) or seconds (very slow). When measuring latency, it is important to ensure that it is actually representative of end-user experience (see “Percentiles” on page 11) and that it is attributable, meaning you understand where the latency is coming from. Without proper attribution, you may understand that your system is slow, but you will have little idea about how to make it better.</p>
+<p class="zh">衡量系统性能最重要的指标之一，就是它完成某件事所花费的时间。这个度量通常称为延迟（latency）。一般来说，延迟以毫秒计；但根据系统不同，也可能以微秒（非常快）或秒（非常慢）计。在测量延迟时，重要的是确保它真正代表最终用户的体验（参见第 11 页“百分位”），并且可归因——也就是说，你知道延迟来自何处。没有恰当的归因，你或许能知道系统慢，却几乎无从下手去优化它。</p>
+<h2 id="reliability"><span class="en">Reliability</span><span class="zh">可靠性</span></h2>
+<p class="en">In addition to latency, reliability is obviously a key metric for any distributed system. At its simplest, reliability is just the fraction of successful requests relative to the total number of requests. But as with all things engineering, in the real world, the devil is in the details. Consider requests that are based on the HTTP(S) protocol. Using this protocol, you could measure the number of requests failed (i.e., requests that didn’t actually complete the HTTP protocol). However, for any reasonable web service, this number rapidly trends to zero. The reason for this is that HTTP itself has rich error semantics in the form of the HTTP response code. Thus, nearly every HTTP request succeeds at the protocol level, but often the response code indicates an error. From this, it is clear that our measure of reliability should not be at the HTTP protocol level, but rather at the HTTP response code level. However, HTTP defines a large number of response codes. Which should we treat as errors? It’s fairly obvious that the 50x series of codes are true errors. Most of them represent either internal server errors (500) or network transmission errors (e.g., 502). Similarly it is fairly clear that the 20x series codes are successful requests. Unfortunately, in between 20x and 50x is</p>
+<p class="zh">除了延迟之外，可靠性显然也是任何分布式系统的关键指标。最简单地说，可靠性就是成功请求数占总请求数的比例。但正如工程领域的一切那样，现实中魔鬼藏在细节里。以基于 HTTP(S) 协议的请求为例。用这个协议，你可以度量失败的请求数（即那些实际上没有完成 HTTP 协议的请求）。然而，对任何像样的 Web 服务来说，这个数字都会迅速趋近于零。原因在于，HTTP 本身以 HTTP 响应码的形式提供了丰富的错误语义。于是，几乎每个 HTTP 请求在协议层面都成功了，但响应码却常常表示出错。由此可见，我们对可靠性的度量不应停留在 HTTP 协议层面，而应落在 HTTP 响应码层面。然而，HTTP 定义了大量响应码。哪些应当算作错误？很显然，50x 系列的码是真正的错误：它们大多表示服务器内部错误（500）或网络传输错误（例如 502）。同样，20x 系列的码显然表示请求成功。不幸的是，在 20x 与 50x 之间，还存在</p>
+<div class="pagemark">— PDF 第 29 页 —</div>
+<p class="en">a gray area. Typically we can consider the 30x (mostly redirects) status codes to be “successful,” though an excessive number of redirects can be an error in some conditions. Most of the uncertainty lies in the 40x collection of errors. The 40x collection of status codes are the land of ambiguity. Is that 404 (not found) an indication that a client simply made a mistake? Or is your service somehow misconfigured to look for files in the wrong location? Similarly, it may seem obvious that 403 (unauthorized) represents a “client error,” but what if your authorization service is having an outage?</p>
+<p class="zh">一片灰色地带。通常我们可以把 30x（主要是重定向）状态码视为“成功”，尽管在某些情况下过多的重定向也可能是错误。最大的不确定性在于 40x 这一类错误码。40x 状态码是一片模糊之地。那个 404（未找到）到底是客户端单纯搞错了？还是你的服务被错误配置、到错误的位置去找文件？同样，403（未授权）看起来显然是“客户端错误”，但如果是你的授权服务本身宕机了呢？</p>
+<p class="en">Ultimately, though the examples above are drawn from the HTTP protocol, the important takeaway is that measuring reliability is both critical and complicated. In practice, treating 404 (not found) as a client error can mask true reliability problems and prevent you from alerting when there is a customer-facing outage in your system. At the same time, a spike in 404 errors can also be from a single misconfigured client, causing noise and false alerts, which will plague your on-call engineers. In this gray area, proper monitoring will be application dependent. Further AI-based operations and anomaly detection become critical in differentiating between true problems and false alerts.</p>
+<p class="zh">归根结底，尽管上面的例子取自 HTTP 协议，但重要的结论是：度量可靠性既关键又复杂。在实践中，把 404（未找到）当作客户端错误，可能掩盖真正的可靠性问题，让你在系统出现面向客户的宕机时无法告警。与此同时，404 错误的激增也可能来自单个配置错误的客户端，造成噪声与误报，从而困扰你的值班工程师。在这片灰色地带，恰当的监控将取决于具体应用。进一步地，基于 AI 的运维与异常检测，对于区分真正的问题与误报变得至关重要。</p>
+<h2 id="percentiles"><span class="en">Percentiles</span><span class="zh">百分位</span></h2>
+<p class="en">Throughout this book there are discussions of percentiles. The 99th percentile latency, for example. Percentiles are key to understanding distributed systems because distributed systems are inherently about serving large numbers of users and large numbers of requests. Of course, in serving lots of users, we want to understand the operation of our services. By default it is easy to use the average as the way in which we measure user experience. It makes sense. We want to understand the experience of the average user, so it makes sense to look at the average experience of our various metrics. Unfortunately, averages are often really distorted in considering the experience of a system. There are several reasons for this, but the two largest have to do with the calculation of the average as well as the ways in which individual metrics (e.g., request latency) come together in an end-to-end user experience. When you consider the arithmetic average, it is heavily skewed by either large or small outliers. Consider measuring latency, a relatively small number of users with very fast latency will distort the average latency of your system and make you believe that your “average” performance is much better than it actually is.</p>
+<p class="zh">本书中多处会讨论百分位（percentile），例如第 99 百分位延迟。百分位是理解分布式系统的关键，因为分布式系统本质上就是服务于大量用户、大量请求的系统。当然，在服务大量用户时，我们希望了解服务的运行状况。默认情况下，人们很容易用平均值来度量用户体验。这看起来很合理：我们想理解普通用户的体验，所以去看各项指标的平均体验似乎顺理成章。不幸的是，在刻画系统体验时，平均值往往被严重扭曲。造成这种情况的原因有好几个，但最主要的两个，既与平均值的计算方式有关，也与单项指标（例如请求延迟）如何在端到端用户体验中组合在一起有关。当你考虑算术平均值时，它会被极大或极小的离群值严重带偏。以测量延迟为例：相对较少的一批延迟极快的用户，就会扭曲你系统的平均延迟，让你误以为自己的“平均”性能比实际好得多。</p>
+<p class="en">The other reason that the average is problematic is that it considers individual requests separately; however, most user experiences are the combination of multiple requests which must succeed. The combining of all of these experiences means that almost no one actually has an “average” experience in terms of latency; instead, the probability that every user has at least one exceptionally slow request rapidly approaches 100% as the number of requests in an end-to-end experience increases.</p>
+<p class="zh">平均值的另一个问题在于：它把单个请求分开看待；然而，大多数用户体验是多个必须都成功的请求的组合。把所有这些体验组合起来意味着，几乎没有人真正拥有“平均”延迟体验；相反，随着一次端到端体验中请求数量的增加，每个用户至少遇到一次异常缓慢请求的概率会迅速趋近于 100%。</p>
+<div class="pagemark">— PDF 第 30 页 —</div>
+<p class="en">For both of these reasons, to truly understand the behavior of your system, it is far more useful to consider the 90th or 99th percentile of your user experience. These percentiles represent the place in the distribution of latency where 90% or 99% of your users experience lower latency. For example, if your 99th percentile latency is one second, then 99% of your users have latency less than one second. This gives you a much better sense for the operation of your service, but importantly, even the 99th percentile suffers from the problems of multiple requests in a single end-to-end experience. Taken together, the 99th percentile latency of a single request rapidly becomes the 90th (or even 50th) percentile of an end-to-end experience with enough requests in that experience. Because of this, it is always worth understanding exactly which experiences you are measuring.</p>
+<p class="zh">由于这两方面原因，要真正理解系统行为，考虑用户体验的第 90 或第 99 百分位要有用得多。这些百分位代表延迟分布中的那个位置：90% 或 99% 的用户所经历的延迟都低于它。例如，如果你的第 99 百分位延迟是一秒，那么 99% 的用户延迟都低于一秒。这让你对服务运行状况有了好得多的把握。但重要的是，即便是第 99 百分位，也存在单次端到端体验中多个请求所带来的问题。综合来看，当一次端到端体验中包含足够多的请求时，单个请求的第 99 百分位延迟，会迅速变成整个端到端体验的第 90（甚至第 50）百分位。正因如此，始终值得弄清楚你到底在度量哪一种体验。</p>
+<h2 id="idempotency"><span class="en">Idempotency</span><span class="zh">幂等性</span></h2>
+<p class="en">Designing distributed systems is, in many ways, the study of, and anticipation of, how systems can fail. Of course, we don’t want our systems to fail, and thus, in order to compensate for when the underlying systems do fail, we introduce ideas that make it easier for us to restore our services. The first of these is the idea of idempotency. Idempotency is the notion that whether an action is performed a single time or many times, the result is identical. An example of an idempotent operation is the statement X = 5. No matter how many times you execute that operation, the result is the same. X always is equal to 5. Compare that with the statement X = X + 1. This operation is not idempotent. Each time it’s executed, the value of X increments by one. It is clear that the eventual value of X is dependent on the number of times that instruction is executed. If you are familiar with the ideas of infrastructure as code and declarative configuration, idempotency maps directly to declarative versus imperative configuration.</p>
+<p class="zh">在很多方面，设计分布式系统就是研究并预判系统会如何失败。当然，我们不希望系统失败；因此，为了在底层系统确实失败时进行补偿，我们引入了一些让服务更容易恢复的思路。第一个就是幂等性（idempotency）。幂等性指的是：无论一个动作被执行一次还是多次，结果都完全相同。幂等操作的一个例子是语句 X = 5。无论你执行这个操作多少次，结果都一样，X 永远等于 5。与之相对的是语句 X = X + 1：这个操作不是幂等的，每执行一次，X 的值就加一。显然，X 的最终值取决于这条指令被执行了多少次。如果你熟悉基础设施即代码与声明式配置的概念，幂等性恰好对应于声明式配置与命令式配置之分。</p>
+<p class="en">Idempotency is an important concept for distributed systems because it makes error and failure handling significantly easier. If we know that an operation is idempotent, in the face of failures, we can simply repeat it until it succeeds. No matter how many times it takes to get a successful outcome, we know that that outcome will always be the same. Idempotent operations make designing reliable systems easier.</p>
+<p class="zh">幂等性是分布式系统的一个重要概念，因为它让错误与故障处理变得容易得多。如果我们知道一个操作是幂等的，那么在遇到失败时，我们只需不断重试，直到它成功。无论需要多少次才能得到成功结果，我们都知道那个结果始终相同。幂等操作让可靠系统的设计变得更容易。</p>
+<h2 id="delivery"><span class="en">Delivery Semantics</span><span class="zh">投递语义</span></h2>
+<p class="en">Though idempotency allows us to ignore the number of times a particular request has been made, sometimes it is necessary to actually control the number of times a particular request has been made in the presence of error conditions.</p>
+<p class="zh">尽管幂等性让我们可以不去关心某个请求被发起了多少次，但在出现错误情况时，有时确实有必要去控制某个请求被发起的次数。</p>
+<p class="en">Generally, delivery of a message (or the success of a request) is divided into two categories. The first is “at least once” delivery. As its name suggests, at least once ensures that a message or a request will be delivered at least once to the recipient. The</p>
+<p class="zh">一般而言，消息的投递（或请求的成功）分为两类。第一类是“至少一次”（at least once）投递。顾名思义，至少一次保证一条消息或请求至少会被投递给接收方一次。其中</p>
+<div class="pagemark">— PDF 第 31 页 —</div>
+<p class="en">“at least” part is the important part, because with at least once delivery there are no guarantees about how many times a message will be received.</p>
+<p class="zh">“至少”二字才是重点，因为在“至少一次”投递下，消息被接收多少次并没有保证。</p>
+<p class="en">In contrast to “at least once” delivery, the alternative is “at most once” delivery, which ensures that a message can never be delivered more than once. As with at least once, the important part of this is the “at most” phrase, because with at most once delivery it is perfectly acceptable for a message to never be delivered. A good example of where you might want at most once delivery is the charging of a credit card. Clearly multiple identical charges to the same card are not allowable; “at most once” delivery assumes that in the presence of failure (e.g., the absence of payment) someone will try again.</p>
+<p class="zh">与“至少一次”投递相对的另一种选择是“至多一次”（at most once）投递，它保证一条消息绝不会被投递超过一次。与“至少一次”一样，这里的重点是“至多”二字，因为在“至多一次”投递下，消息一次都不被投递是完全可以接受的。一个适合采用“至多一次”投递的好例子是信用卡扣款。显然，对同一张卡重复扣多笔相同金额是不允许的；“至多一次”投递假定：在出现失败（例如扣款未成功）时，会有人再次尝试。</p>
+<p class="en">You may notice that “exactly once” delivery is missing from the options described. This is because, in practice, exactly once delivery is exceptionally hard to achieve. You are far better designing systems which can handle either at most or at least once delivery.</p>
+<p class="zh">你可能注意到，上述选项中缺少了“恰好一次”（exactly once）投递。这是因为在实践中，“恰好一次”投递极难实现。你最好去设计能够处理“至多一次”或“至少一次”投递的系统。</p>
+<h2 id="relational"><span class="en">Relational Integrity</span><span class="zh">关系完整性</span></h2>
+<p class="en">The reason that message delivery semantics become so important is that they ultimately affect the data that is the core of our application. If the data is your bank account, the integrity (e.g., reliability) of that data is clearly a very important concern. Ensuring the reliability of a single data entry (e.g., the balance in your bank account) is important, but relational integrity is an equally important concern for distributed systems. Relational integrity refers to the integrity or accuracy of data stored in multiple different rows or stores within a system. For example, your bank balance might be stored as a pair of (user-id, balance), and your address might be stored in a different store as (user-id, address). The integrity of that data refers to whether there are strong guarantees that for every user-id in the balances table, there is a corresponding entry in the addresses table. If the code in your application relies on there being consistency between various data stores, then your code relies on strong relational integrity. If instead your code can handle cases in which data in multiple stores may not be fully in sync, your code does not rely on relational integrity. The reason that this becomes important is that maintaining relational integrity requires carefully synchronizing changes to multiple data stores. This synchronization has significant performance and reliability implications. In particular, it requires distributed transactions across multiple different data stores, which requires distributed locks that make your system more complicated and less parallel. Relational integrity can generally be seen as the distinction between SQL and NoSQL data stores. Traditional databases and SQL go to great pains to ensure relational consistency between various tables, including transactions and rollback semantics. NoSQL data stores like Azure’s CosmosDB and the open source Cassandra database favor more relaxed relational semantics, where everything is a key/value store and consistency is a problem for application code. In general, relational consistency can be seen as a trade-off between</p>
+<p class="zh">消息投递语义之所以如此重要，是因为它最终会影响作为我们应用核心的数据。如果数据就是你的银行账户，那么该数据的完整性（即可靠性）显然是至关重要的关切。保证单个数据项（例如你银行账户里的余额）的可靠性固然重要，但关系完整性（relational integrity）对分布式系统同样重要。关系完整性指的是：存储在系统中多个不同行或不同存储中的数据，其完整或准确程度。例如，你的银行余额可能以 (user-id, balance) 这样的键值对存储，而你的地址则可能在另一个存储中以 (user-id, address) 存储。这种数据的完整性指的是：能否强保证余额表中的每个 user-id，在地址表中都有对应的条目。如果你的应用代码依赖于各个数据存储之间保持一致，那么你的代码就依赖强关系完整性；反之，如果你的代码能够处理多个存储中的数据可能并未完全同步的情况，那么你的代码就不依赖关系完整性。这件事之所以重要，是因为维护关系完整性需要对多个数据存储的变更进行仔细同步。这种同步会带来显著的性能与可靠性影响。特别是，它需要跨多个不同数据存储的分布式事务，而这又需要分布式锁，使你的系统更复杂、并行度更低。关系完整性通常可以看作 SQL 与 NoSQL 数据存储之间的分野。传统数据库与 SQL 不遗余力地确保各表之间的关系一致性，包括事务与回滚语义；而像 Azure CosmosDB 与开源 Cassandra 这类 NoSQL 数据存储，则倾向于更宽松的关系语义——一切都是键/值存储，一致性成了应用代码要面对的问题。总体而言，关系一致性可以看作是在</p>
+<div class="pagemark">— PDF 第 32 页 —</div>
+<p class="en">performance and code complexity. If you don’t need performance, the consistency offered by a traditional SQL database can make your code much easier, while looser approaches facilitate increased parallelism and corresponding performance.</p>
+<p class="zh">性能与代码复杂度之间做出的取舍。如果你不需要极致性能，传统 SQL 数据库提供的一致性可以让你的代码简单得多；而更宽松的做法则有助于提升并行度，并相应提升性能。</p>
+<h2 id="consistency"><span class="en">Data Consistency</span><span class="zh">数据一致性</span></h2>
+<p class="en">Beyond relational consistency, there is another related, important dimension of consistency to consider, and that is data consistency. In any distributed system, data is replicated to ensure the availability of data in the face of errors. This data replication has performance implications, and it is important to decide whether your data requires strong or eventual consistency.</p>
+<p class="zh">除关系一致性之外，一致性还有另一个相关而重要的维度需要考虑，那就是数据一致性。在任何分布式系统中，数据都会被复制，以确保在出错时数据仍然可用。这种数据复制会带来性能影响，因此必须决定你的数据需要强一致性还是最终一致性。</p>
+<p class="en">Clearly, consistency, the notion that the data written is the same in all locations, is a critically important part of data storage. But how quickly must that data be the same? That is what we are considering when we talk about data consistency. In a strongly consistent system, the data is guaranteed to be present everywhere before the writing of the data is considered to be “complete.” In an eventually consistent system, the data is guaranteed to be the same everywhere “eventually,” where eventually can actually mean a long-ish time.</p>
+<p class="zh">显然，一致性（即写入的数据在所有位置都相同这一概念）是数据存储中至关重要的一部分。但数据必须多快变得相同？这正是我们谈论数据一致性时所考虑的问题。在强一致性系统中，数据在被认为“写入完成”之前，就保证已出现在所有位置；而在最终一致性系统中，数据保证“最终”在所有位置都相同——这里的“最终”实际上可能意味着相当长的一段时间。</p>
+<p class="en">To make this a little more concrete, consider a system which replicates its data to all of the data centers it maintains in the world. In a strongly consistent system, a user requests a write of some data item, and that data is immediately written to all of the different data centers. Until all of these data centers successfully acknowledge that the write has completed, the user request to write is not considered successful. At first blush, this seems like the right approach—until the data is everywhere, the user should not be told that their request is successful. Unfortunately, the result of this is significantly decreased performance. As the number of data centers grows, the number of required writes also grows, up until a point where every request is basically guaranteed to hit a data center which is running slowly or even failing. Thus, while strong consistency ensures data reliability, it significantly reduces write throughput.</p>
+<p class="zh">为了让这一点更具体一点，设想一个把数据复制到它在全球所维护的所有数据中心的系统。在强一致性系统中，用户请求写入某个数据项，该数据会被立即写入所有不同的数据中心。在所有这些数据中心都成功确认写入完成之前，用户的写入请求都不被认为成功。乍一看这似乎是正确的做法——数据没到所有地方之前，就不该告诉用户请求成功了。不幸的是，这样做的结果是性能显著下降。随着数据中心数量增长，所需写入的次数也增长，直到某个临界点：每个请求基本上都必然会撞上一个运行缓慢、甚至正在故障的数据中心。因此，强一致性虽然保证了数据可靠性，却显著降低了写入吞吐量。</p>
+<p class="en">In the previous example, an eventually consistent system might return as soon as a single data center has acknowledged the write. Replication to all of the data centers is performed by an asynchronous background process, and the user doesn’t have to wait around for it to complete. The system says “I got this,” and the user trusts the system to eventually make the data consistent. Waiting only for a single write makes the system both more reliable and more performant. You are significantly less likely to hit a slow or failing data center with a single write.</p>
+<p class="zh">在上面的例子中，最终一致性系统可能在单个数据中心确认写入后就立即返回。向所有数据中心的复制由一个异步后台进程完成，用户不必干等它完成。系统说“这事我接下了”，用户则信任系统最终会让数据一致。只等一次写入，让系统既更可靠又更高性能——因为只写一次，你撞上缓慢或故障数据中心的概率要小得多。</p>
+<p class="en">Unfortunately, in many use cases eventual consistency gives the impression to the end user that the system is less reliable. The reason for this is the “read your own writes” problem. Distributed systems replicate themselves across multiple data centers for reliability and performance. Most of the time, a single user’s requests will all go to the</p>
+<p class="zh">不幸的是，在许多用例中，最终一致性会让最终用户觉得系统没那么可靠。原因在于“读取自己的写入”（read your own writes）问题。分布式系统为了可靠性与性能，会跨多个数据中心复制自身。大多数时候，单个用户的请求都会被路由到</p>
+<div class="pagemark">— PDF 第 33 页 —</div>
+<p class="en">same data center, but occasionally, under load, failures, or other specific network conditions, different requests from the same user will go to different data centers. In an eventually consistent system, this means that after a user writes something to the system, a subsequent read that is load balanced to a different data center may not see the recent write. This can be quite distressing to a user. Imagine if you ordered something on a retail website, clicked on “view my orders,” and couldn’t see your order in the returned list. It’s highly likely that you would never order from that site again.</p>
+<p class="zh">同一个数据中心；但偶尔，在负载、故障或其他特定网络条件下，同一用户的不同请求会被路由到不同的数据中心。在最终一致性系统中，这意味着用户向系统写入某内容之后，随后一次被负载均衡到另一个数据中心的读取，可能看不到最近的写入。这会让用户非常苦恼。想象一下：你在某个零售网站下了单，点“查看我的订单”，返回的列表里却看不到你的订单。你很可能再也不会从那个网站下单了。</p>
+<p class="en">Because of these complications, the choice between strong consistency and eventual consistency is never a very clean one. It depends on the use case as well as the performance requirements of the system. Be careful when deciding which approach to take with your system, though. The decision to use strong or eventual consistency will permeate your system design and your application’s code. Once written, it is very hard to change the storage model that is used by a distributed system, and the implications of the decision often take years to show up.</p>
+<p class="zh">由于这些复杂之处，在强一致性与最终一致性之间的选择从来都不是干净利落的。它取决于用例以及系统的性能要求。不过，在为你的系统决定采用哪种方案时务必谨慎：采用强一致性还是最终一致性的决策，将渗透到你的系统设计与应用代码之中。一旦写定，要改变分布式系统所使用的存储模型非常困难，而这个决策的影响往往要数年才会显现。</p>
+<p class="en">The trade-offs above between consistency, availability, and partition tolerance is known as the CAP theorem, and it states that you can build a system with two of the three attributes, e.g., a system that is consistent and available but not partition tolerant, but you can’t build a system with all three. It’s worth noting that the CAP theorem is not a draconian rule. You may not be able to build a system that guarantees all three, but it is possible to build a system where each are reasonable for your application. For some applications, 99% availability is sufficient, and thus, you can use that trade-off to ensure the consistency and partition tolerance you need as well. Effectively, the CAP theorem says that whenever you are optimizing one of the system characteristics, you are inherently trading off against other goals.</p>
+<p class="zh">上面这些在一致性、可用性与分区容忍性之间的取舍，被称为 CAP 定理。它指出：你可以构建一个具备三属性中任意两个的系统（例如一个既一致又可用、但不具备分区容忍性的系统），但你无法构建三者兼备的系统。值得注意的是，CAP 定理并不是一条严苛的铁律。你也许无法构建一个同时保证三者的系统，但完全可以构建一个让这三者对你的应用而言都还算合理的系统。对某些应用来说，99% 的可用性就足够了，于是你可以利用这种取舍，来同时保证你所需要的一致性与分区容忍性。实际上，CAP 定理想说的是：每当你在优化系统的某一特性时，你本质上就是在与其他目标做权衡。</p>
+<h2 id="orchestration"><span class="en">Orchestration and Kubernetes</span><span class="zh">编排与 Kubernetes</span></h2>
+<p class="en">Distributed systems defined today are not deployed in a vacuum or using only code written by the system’s developers. Instead, the ubiquity of distributed systems today has meant that shared infrastructure has been built to support the deployment and operation of distributed systems. This infrastructure is commonly referred to as an orchestrator, because it orchestrates the operation of the distributed system without implementing the details of the systems logic. The most common orchestrator is the open source Kubernetes system for orchestrating deployments of containerized applications. The orchestrator is responsible for taking the desired state of the application (e.g., I want three replicas of my frontend and five replicas of my backend) and ensuring that the real state of the system matches the desired state that has been declared.</p>
+<p class="zh">如今所定义的分布式系统，并非部署在真空中，也并非只靠系统开发者自己写的代码来运行。相反，当今分布式系统的无处不在，意味着人们已经构建了共享基础设施来支持分布式系统的部署与运维。这种基础设施通常被称为编排器（orchestrator），因为它编排分布式系统的运行，而不实现系统逻辑的细节。最常见的编排器是开源的 Kubernetes，用于编排容器化应用的部署。编排器负责接收应用的期望状态（例如：我想要前端三个副本、后端五个副本），并确保系统的真实状态与所声明的期望状态一致。</p>
+<div class="pagemark">— PDF 第 34 页 —</div>
+<h2 id="health"><span class="en">Health Checks</span><span class="zh">健康检查</span></h2>
+<p class="en">To achieve successful orchestration, the orchestration system needs to understand the health of the pieces that make up the distributed system. Health is used to understand when an application is ready to be added to a load balancer, when an application is unhealthy and needs to be restarted, or when a rollout should be halted because the health of the application is impacted. While there are some basic aspects of health (e.g., is the program running) that the orchestrator can observe from outside the system, true understanding of your application requires that you implement health checks that are specific to your application. When providing health information to the orchestrator, there are two different notions of application health. The first is the simplest to understand, in that it simply represents whether or not your application is alive. Applications which are no longer responding to a liveness check should be terminated. And if a rollout is causing a significant degradation in the number of alive applications, that rollout should be halted. The second notion of health is readiness. Readiness indicates that an application is ready to be used. At first blush, readiness and liveness would seem to be the same thing, but in many circumstances an application can be alive but not ready. The easiest example to understand is when an application has just started up and is initializing its state, perhaps by downloading and caching large files over the network. Such an application is alive, it is doing useful work and should not be terminated, but it is not ready until it has successfully downloaded and made ready to serve all of the files in its cache. By properly implementing both liveness and readiness checks, you can ensure that your distributed systems interact well with the orchestrator on which they run.</p>
+<p class="zh">要实现成功的编排，编排系统需要了解构成分布式系统的各个部件的健康状况。健康状况被用于判断：应用何时可以加入负载均衡器，应用何时不健康、需要重启，或者当应用健康受到影响时，某次发布应当被中止。尽管编排器可以从系统外部观察到健康的一些基本方面（例如程序是否在运行），但要真正理解你的应用，就需要你实现针对自身应用的健康检查。在向编排器提供健康信息时，应用健康有两种不同的概念。第一种最容易理解：它只表示你的应用是否存活（alive）。不再响应存活检查的应用应当被终止；如果一次发布导致存活应用数量显著下降，那次发布就应当被中止。第二种健康概念是就绪（readiness）。就绪表示应用已经可以被使用了。乍一看，就绪与存活似乎是一回事，但在许多情况下，一个应用可以存活却未就绪。最容易理解的例子是：应用刚启动、正在初始化状态，比如正在通过网络下载并缓存大文件。这样的应用是存活的——它在做有用的工作、不应被终止——但在它成功下载并准备好缓存中所有文件对外提供服务之前，它并未就绪。通过正确实现存活检查与就绪检查，你可以确保自己的分布式系统与其所运行的编排器良好协作。</p>
+<h2 id="summary"><span class="en">Summary</span><span class="zh">小结</span></h2>
+<p class="en">This chapter has described a number of key concepts that are foundational to the design and understanding of distributed systems. These concepts form the basis for both understanding the requirements and describing the characteristics of the systems that we build. Before going further into the book, make sure that they all feel intuitive and familiar to you.</p>
+<p class="zh">本章描述了若干对分布式系统设计与理解至关重要的基础概念。这些概念既构成理解需求的基础，也构成描述我们所构建系统之特性的基础。在继续阅读本书之前，请确保这些概念对你来说都直观而熟悉。</p>
+
+<div class="pager"><a href="chapter-01.html">← 上一章</a><a href="index.html">返回目录</a><a href="chapter-03.html">下一章 →</a></div>
+</main>
+<script>
+const btn=document.getElementById('menu-btn');
+const body=document.body;
+btn.addEventListener('click',()=>{
+  if(window.innerWidth<=900){body.classList.toggle('toc-open');}
+  else{body.classList.toggle('toc-hidden');}
+});
+// close drawer on link click (narrow screens)
+document.querySelectorAll('#toc a').forEach(a=>{
+  a.addEventListener('click',()=>{if(window.innerWidth<=900){body.classList.remove('toc-open');}});
+});
+</script>
+</body>
+</html>
