@@ -108,9 +108,41 @@ figcaption .zh{display:block; color:#1e3a8a; margin-top:2px;}
   body.toc-open #toc{transform:translateX(0);}
   main{margin-left:0; padding:60px 18px 80px;}
 }
+/* ===== 中英对照显示控制：中文段落默认隐藏，点英文段落可展开 ===== */
+p.zh{display:none;}
+p.zh.zh-keep{display:block;}            /* 没有对应英文段落的译文，保持常显 */
+html.lang-both p.zh{display:block;}     /* 中英对照：全部显示 */
+html.lang-zh p.zh{display:block;}       /* 仅中文 */
+html.lang-zh p.en{display:none;}
+p.en.en-paired{cursor:pointer;}
+p.en.en-paired:hover{background:#e8f0fe; border-radius:4px; box-shadow:0 0 0 6px #e8f0fe;}
+#langbtn{
+  position:fixed; right:18px; bottom:18px; z-index:200;
+  display:inline-flex; align-items:center; gap:6px;
+  background:#fff; border:1px solid var(--line); border-radius:999px;
+  padding:9px 16px; color:var(--ink); font-family:inherit; font-size:14px;
+  line-height:1; white-space:nowrap; cursor:pointer;
+  box-shadow:0 2px 8px rgba(15,23,42,.14);
+  transition:background .15s ease,color .15s ease,border-color .15s ease;
+}
+#langbtn:hover{background:var(--zh-bg); color:var(--accent); border-color:var(--accent);}
+#langbtn .ic{font-size:15px; line-height:1;}
+@media (max-width:900px){
+  #langbtn{right:12px; bottom:12px; padding:8px 13px; font-size:13px; z-index:80;}
+}
 </style>
+<script>
+/* 首帧前恢复上次的语言显示模式，避免中文段落闪现（localStorage 不可用时静默跳过） */
+(function(){try{
+  var m=localStorage.getItem('seag-lang-mode');
+  if(m==='zh'||m==='both'){document.documentElement.classList.add('lang-'+m);}
+}catch(e){}})();
+</script>
 </head>
-<body><button id="menubtn" title="目录">☰</button><nav id="toc">
+<body><button id="menubtn" title="目录">☰</button>
+<button id="langbtn" type="button" data-mode="en"
+  title="切换语言显示（仅英文 / 仅中文 / 中英对照）" aria-label="切换语言显示"
+  ><span class="ic">&#127760;</span><span id="langbtn-txt">仅英文</span></button><nav id="toc">
 <h2>Contents · 目录</h2>
 <div class="brand">Software Engineering at Google<small>软件开发的工程之道 · 中英对照</small></div>
 <ol>
@@ -631,6 +663,94 @@ figcaption .zh{display:block; color:#1e3a8a; margin-top:2px;}
   });
   apply();
   mq.addEventListener('change',apply);
+})();
+</script>
+<script>
+/* 中英对照控制：
+   1) 中文段落（p.zh）默认隐藏，点英文段落（p.en）显示 / 隐藏对应译文；
+   2) 右下角悬浮按钮一键在「仅英文 / 仅中文 / 中英对照」之间循环（记入 localStorage）。 */
+(function(){
+  var KEY='seag-lang-mode';
+  var ORDER=['en','zh','both'];
+  var MODES={
+    en:{cls:'',label:'仅英文',next:'仅中文'},
+    zh:{cls:'lang-zh',label:'仅中文',next:'中英对照'},
+    both:{cls:'lang-both',label:'中英对照',next:'仅英文'}
+  };
+  var root=document.documentElement;
+  var main=document.querySelector('main');
+  var btn=document.getElementById('langbtn');
+  var btnTxt=document.getElementById('langbtn-txt');
+
+  /* 同一父节点内紧邻的 p.en / p.zh 视为一对 */
+  function pairOf(en){
+    var n=en.nextElementSibling;
+    return (n&&n.tagName==='P'&&n.classList.contains('zh'))?n:null;
+  }
+  function visible(el){
+    if(el.style.display){return el.style.display!=='none';}
+    return window.getComputedStyle(el).display!=='none';
+  }
+
+  if(main){
+    var ens=main.querySelectorAll('p.en'), i;
+    for(i=0;i<ens.length;i++){
+      if(pairOf(ens[i])){
+        ens[i].classList.add('en-paired');
+        ens[i].title='点击显示 / 隐藏中文';
+      }
+    }
+    var zhs=main.querySelectorAll('p.zh');
+    for(i=0;i<zhs.length;i++){
+      var prev=zhs[i].previousElementSibling;
+      if(!(prev&&prev.tagName==='P'&&prev.classList.contains('en'))){
+        zhs[i].classList.add('zh-keep');   /* 没有对应英文段落：常显，避免丢内容 */
+      }
+    }
+    main.addEventListener('click',function(e){
+      var t=e.target;
+      if(t&&t.closest&&t.closest('a')){return;}                              /* 正文链接照常跳转 */
+      if(window.getSelection&&String(window.getSelection()).length){return;}  /* 划词时不误触 */
+      var el=t;
+      while(el&&el!==main){
+        if(el.tagName==='P'&&el.classList.contains('en')){break;}
+        el=el.parentNode;
+      }
+      if(!el||el===main){return;}
+      var zh=pairOf(el);
+      if(zh){zh.style.display=visible(zh)?'none':'block';}
+    });
+  }
+
+  function setMode(name,remember){
+    var m=MODES[name]||MODES.en;
+    root.classList.remove('lang-zh');
+    root.classList.remove('lang-both');
+    if(m.cls){root.classList.add(m.cls);}
+    if(main){                                  /* 换模式时清掉单段的手动状态，重新同步 */
+      var all=main.querySelectorAll('p.en, p.zh');
+      for(var i=0;i<all.length;i++){all[i].style.display='';}
+    }
+    if(btnTxt){btnTxt.textContent=m.label;}
+    if(btn){
+      btn.setAttribute('data-mode',name);
+      btn.title='当前：'+m.label+'，点击切换为「'+m.next+'」';
+      btn.setAttribute('aria-label',btn.title);
+    }
+    if(remember){try{localStorage.setItem(KEY,name);}catch(e){}}
+  }
+
+  var cur='en';
+  try{var v=localStorage.getItem(KEY); if(v==='zh'||v==='both'){cur=v;}}catch(e){}
+  setMode(cur,false);
+
+  if(btn){
+    btn.addEventListener('click',function(){
+      var i=ORDER.indexOf(btn.getAttribute('data-mode')||'en');
+      if(i<0){i=0;}
+      setMode(ORDER[(i+1)%ORDER.length],true);
+    });
+  }
 })();
 </script>
 </body>
