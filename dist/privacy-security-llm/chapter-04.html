@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chapter 4 · Privacy-Preserving Training Techniques</title>
+<style>
+:root{
+  --accent:#2563eb;
+  --zh-bg:#f0f6ff;
+  --zh-border:#2563eb;
+  --code-bg:#0f172a;
+  --code-ink:#e2e8f0;
+  --ink:#1f2937;
+  --bg:#faf6f1;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  font-size:18px;
+  line-height:1.75;
+}
+body[data-mode="en"] .en-toggle-hint{display:none;}
+
+/* TOC */
+#toc{
+  position:fixed;top:0;left:0;width:300px;height:100vh;
+  overflow-y:auto;background:#fff;border-right:1px solid #e5e7eb;
+  padding:24px 18px;box-shadow:2px 0 8px rgba(0,0,0,.04);
+  transition:transform .25s ease;z-index:50;
+}
+#toc.hidden{transform:translateX(-300px);}
+#toc h2{font-size:15px;color:#6b7280;text-transform:uppercase;letter-spacing:.08em;margin:16px 0 12px;}
+#toc a{display:block;color:#374151;text-decoration:none;padding:5px 8px;border-radius:6px;font-size:14px;}
+#toc a:hover{background:#eff6ff;color:var(--accent);}
+#toc a.l2{font-weight:700;margin-top:8px;}
+#toc a.l3{padding-left:24px;font-size:13px;color:#6b7280;}
+#toc .book-title{font-size:16px;font-weight:700;color:var(--accent);margin-bottom:4px;line-height:1.4;}
+#toc .book-title-zh{font-size:13px;color:#6b7280;font-weight:400;margin-bottom:8px;}
+
+/* toc toggle button */
+#toc-toggle{
+  position:fixed;top:14px;left:14px;z-index:60;
+  background:var(--accent);color:#fff;border:none;border-radius:8px;
+  width:40px;height:40px;font-size:18px;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.2);
+}
+
+/* main */
+main{
+  margin-left:300px;max-width:900px;padding:48px 40px 120px;
+  transition:margin-left .25s ease;
+}
+main.full{margin-left:0;}
+h1{font-size:30px;line-height:1.3;color:#111827;border-bottom:3px solid var(--accent);padding-bottom:12px;}
+h1 .zh{display:block;font-size:20px;color:#4b5563;font-weight:500;margin-top:6px;}
+h2{font-size:23px;color:#111827;margin-top:40px;scroll-margin-top:20px;border-left:5px solid var(--accent);padding-left:12px;}
+h3{font-size:19px;color:#1f2937;margin-top:28px;scroll-margin-top:20px;}
+h4{font-size:17px;color:#374151;margin-top:22px;}
+.heading-zh{color:#6b7280;font-weight:400;font-size:.85em;margin-left:8px;}
+
+/* paragraph block */
+.para{margin:14px 0;}
+p.en{margin:0;padding:6px 8px;border-radius:6px;cursor:pointer;transition:background .15s;}
+p.en:hover{background:#eef4ff;}
+p.en::after{
+  content:"📖";font-size:12px;margin-left:6px;opacity:.5;
+}
+p.en.expanded::after{content:"📖 收起";}
+p.zh-trans{
+  background:var(--zh-bg);border-left:4px solid var(--zh-border);
+  border-radius:0 8px 8px 0;padding:10px 16px;margin:8px 0 0;
+  color:#1e3a8a;font-size:16.5px;
+}
+
+/* list */
+ul,ol{padding-left:28px;}
+li{margin:8px 0;}
+li p.zh-trans{margin-top:6px;}
+
+/* page marker */
+.page-marker{
+  text-align:center;color:#9ca3af;font-size:12px;letter-spacing:.1em;
+  margin:28px 0 8px;padding:4px 0;border-top:1px dashed #d1d5db;border-bottom:1px dashed #d1d5db;
+}
+
+/* figure */
+figure{margin:20px 0;text-align:center;}
+figure img{max-width:100%;border:1px solid #e5e7eb;border-radius:8px;}
+figcaption{font-size:13px;color:#6b7280;margin-top:8px;}
+figcaption .zh{display:block;color:#4b5563;margin-top:2px;}
+
+/* code */
+pre{
+  background:var(--code-bg);color:var(--code-ink);padding:16px;border-radius:8px;
+  overflow-x:auto;font-family:"SF Mono",Menlo,Consolas,monospace;font-size:13.5px;line-height:1.55;
+  white-space:pre;
+}
+pre code{font-family:"SF Mono",Menlo,Consolas,monospace;background:transparent;color:inherit;padding:0;}
+code{font-family:"SF Mono",Menlo,Consolas,monospace;}
+p code,li code{background:#fce7f3;color:#be185d;padding:1px 6px;border-radius:4px;font-size:14px;}
+.code-caption{font-size:13px;color:#6b7280;margin:-8px 0 16px;}
+
+/* table */
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:15px;}
+th,td{border:1px solid #d1d5db;padding:8px 12px;text-align:left;vertical-align:top;}
+th{background:#f1f5f9;}
+
+/* pager */
+.pager{display:flex;gap:10px;margin-top:60px;}
+.pager a{
+  flex:1;text-align:center;padding:12px;text-decoration:none;border-radius:8px;
+  background:#fff;border:1px solid #e5e7eb;color:var(--accent);font-weight:600;
+}
+.pager a:hover{background:var(--accent);color:#fff;}
+.pager a.disabled{opacity:.4;pointer-events:none;}
+
+/* lang FAB */
+#lang-fab{
+  position:fixed;bottom:24px;right:24px;z-index:60;
+  width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;
+  background:var(--accent);color:#fff;font-size:24px;box-shadow:0 4px 12px rgba(37,99,235,.4);
+}
+#lang-label{
+  position:fixed;bottom:84px;right:24px;z-index:60;background:#1f2937;color:#fff;
+  padding:4px 10px;border-radius:6px;font-size:12px;display:none;
+}
+
+/* ============ LANGUAGE MODE RULES (the important part) ============
+   Default (both mode, no data-mode attribute or data-mode="both"):
+     - English paragraphs visible
+     - Chinese translations (p.zh-trans) HIDDEN unless .expanded
+   data-mode="en": hide ALL Chinese (paragraphs + heading/caption .zh spans)
+   data-mode="zh": hide ALL English; force-show ALL Chinese translations
+*/
+p.zh-trans{display:none;}
+p.zh-trans.expanded{display:block;}
+li p.zh-trans{display:none;}
+li p.zh-trans.expanded{display:block;}
+
+body[data-mode="en"] .zh,
+body[data-mode="en"] p.zh-trans{display:none !important;}
+body[data-mode="en"] p.en::after{display:none;}
+
+body[data-mode="zh"] .en,
+body[data-mode="zh"] p.en{display:none !important;}
+body[data-mode="zh"] p.en::after{display:none;}
+body[data-mode="zh"] p.zh-trans{display:block !important;}
+body[data-mode="zh"] li p.zh-trans{display:block !important;}
+
+/* narrow */
+@media (max-width:900px){
+  #toc{transform:translateX(-300px);}
+  #toc.show{transform:translateX(0);}
+  main{margin-left:0;padding:60px 18px 100px;}
+}
+</style>
+</head>
+<body data-mode="both">
+<button id="toc-toggle" title="目录">☰</button>
+<nav id="toc"><div class="book-title">Privacy and Security for LLMs</div>
+<div class="book-title-zh">大语言模型的隐私与安全</div>
+<h2>本章目录</h2>
+<a class="l2" href="index.html">← 返回总目录</a>
+<a class="l2" href="#a-real-world-example">A Real-World Example of Privacy Breach</a>
+<a class="l2" href="#synthetic-data-eval">Synthetic Data for Privacy Evaluation</a>
+<a class="l3" href="#why-synthetic">Why synthetic data?</a>
+<a class="l3" href="#apply-evaluator">Apply LLMPrivacySecurityEvaluator</a>
+<a class="l2" href="#differential-privacy">Differential Privacy for LLMs</a>
+<a class="l3" href="#dp-math">The Mathematical Foundation</a>
+<a class="l3" href="#dp-sgd">Implementing DP-SGD for LLMs</a>
+<a class="l3" href="#privacy-accounting">Privacy Accounting in Practice</a>
+<a class="l3" href="#dp-tradeoffs">Trade-Offs and Considerations</a>
+<a class="l3" href="#dp-rag">DP for Retrieval-Augmented Generation</a>
+<a class="l2" href="#federated-learning">Federated Learning with LLMs</a>
+<a class="l3" href="#fl-implement">Implementing Federated Learning</a>
+<a class="l3" href="#fl-advantages">Advantages & Challenges of FL</a>
+<a class="l2" href="#homomorphic-encryption">Homomorphic Encryption in LLMs</a>
+<a class="l3" href="#he-implement">Implementing HE for LLMs</a>
+<a class="l3" href="#he-advantages">Advantages & Challenges of HE</a>
+<a class="l2" href="#mpc">Multi-Party Computation</a>
+<a class="l3" href="#mpc-implement">Implementing MPC with Modern Libraries</a>
+<a class="l3" href="#mpc-advantages">Advantages & Challenges of MPC</a>
+<a class="l2" href="#peft">Parameter-Efficient Fine-Tuning for Privacy</a>
+<a class="l3" href="#lora">Low-Rank Adaptation (LoRA)</a>
+<a class="l3" href="#qlora">Quantized Low-Rank Adaptation (QLoRA)</a>
+<a class="l2" href="#data-transformation">Privacy-Preserving Data Transformation</a>
+<a class="l3" href="#anonymization">Data Anonymization & De-Identification</a>
+<a class="l3" href="#data-augmentation">Privacy-Preserving Data Augmentation</a>
+<a class="l3" href="#aug-advantages">Advantages & Challenges of Data Augmentation</a>
+<a class="l2" href="#summary">Summary</a></nav>
+<main>
+<h1>Privacy-Preserving Training Techniques<span class="zh">隐私保护训练技术</span></h1>
+<div class="page-marker">— PDF 第 109 页 —</div>
+<div class="para"><p class="en">In our journey so far, you have learned how to create LLMs and how to evaluate them properly in terms of their health conditions in privacy and security. Now you are going to learn how to keep these AI friends healthy by building these protections directly into your models. In this chapter, you’re going to explore a class of techniques that allow your AI to train on sensitive information while keeping that information under wraps.</p><p class="zh-trans">到目前为止，你已学会如何创建 LLM，并从隐私与安全角度评估它们的“健康状况”。本章将把这些防护能力直接构建进模型本身，让 AI 能在训练敏感信息的同时把数据严严实实藏好。</p></div>
+<div class="para"><p class="en">Privacy-preserving methods represent a critical frontier in AI development, especially as LLMs increasingly process personal, medical, financial, and other sensitive information. These approaches enable models to extract valuable patterns and insights from data without compromising the confidentiality of individual records or examples. They function by creating mathematical guarantees and cryptographic protections that limit what information can be extracted or inferred from the trained model.</p><p class="zh-trans">随着 LLM 越来越多地处理个人、医疗、金融等敏感信息，隐私保护已成为 AI 发展的关键前沿。这类方法通过数学保证与密码学保护，限制能从训练好的模型中提取或推断出的信息，使模型在不泄露单条记录机密的前提下学到有价值的模式。</p></div>
+<div class="para"><p class="en">In this chapter, you’ll explore several key techniques that allow AI systems to learn from sensitive information while maintaining strong privacy protections. These methods represent the intersection of machine learning, cryptography, and privacy theory, creating systems that can analyze data they cannot fully “see” in its original form.</p><p class="zh-trans">本章将探索几种关键技术，让 AI 在强隐私保护下从敏感信息中学习。它们是机器学习、密码学与隐私理论的交汇，能让系统在无法“看见”原始数据的情况下完成分析。</p></div>
+<div class="para"><p class="en">We’ll cover five major classes of privacy-preserving techniques: differential privacy, federated learning, homomorphic encryption, multi-party computation, and privacy-preserving data transformation. Additionally, you’ll explore modern parameter-efficient fine-tuning methods that reduce privacy risk by limiting the number of trainable parameters.</p><p class="zh-trans">我们将介绍五大类隐私保护技术：差分隐私、联邦学习、同态加密、多方计算与隐私保护数据变换，并探讨通过限制可训练参数量来降低隐私风险的参数高效微调方法。</p></div>
+<div class="page-marker">— PDF 第 110 页 —</div>
+<h2 id="a-real-world-example">A Real-World Example of Privacy Breach in the Training Phase <span class="heading-zh zh">训练阶段隐私泄露的真实案例</span></h2>
+<div class="para"><p class="en">Before we dive into the solutions, let’s take a moment to understand why privacy-preserving training techniques are so crucial. Imagine you’re a doctor training an AI to help diagnose rare diseases. You feed it thousands of patient records, and voila! You have a super-smart medical AI. But wait…what if someone could extract individual patient information from this AI? That’s not just embarrassing, but a serious breach of medical ethics and privacy laws (as you will see in Chapter 8).</p><p class="zh-trans">在给出方案前，先理解为何隐私保护训练如此关键。设想你是医生，用成千上万份病历训练一个诊断罕见病的 AI——但如果有人能从中提取出某位病人的信息呢？这不仅尴尬，更是对医学伦理与隐私法律的严重违反（第 8 章详述）。</p></div>
+<div class="para"><p class="en">In this section, you will first explore a logistic regression model as a basic introduction to model-based privacy breaches. Then we will introduce a more realistic Transformer-based setup to simulate a more complex model environment, better suited for modern LLM applications.</p><p class="zh-trans">本节先以逻辑回归模型入门，理解基于模型的隐私泄露；再引入更贴近现实的 Transformer 设定，模拟现代 LLM 场景。</p></div>
+<div class="para"><p class="en">Let’s look at a simplified example of how such a breach might occur:</p><p class="zh-trans">下面用一个简化示例展示这种泄露是如何发生的：</p></div>
+<pre><code>import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+
+# Simulated patient data (age, blood pressure, cholesterol, diagnosis)
+np.random.seed(42)
+data = np.random.rand(1000, 3)
+labels = (data[:,0] + data[:,1] + data[:,2] &gt; 1.5).astype(int)
+
+# Add some "unique" patients
+unique_patients = np.array([
+    [0.1, 0.1, 0.1, 0],  # Alice
+    [0.9, 0.9, 0.9, 1],  # Bob
+])
+data = np.vstack([data, unique_patients[:,:3]])
+labels = np.concatenate([labels, unique_patients[:,3]])
+
+# Train a simple model
+X_train, X_test, y_train, y_test = train_test_split(data, labels, test_size=0.2)
+model = LogisticRegression()
+model.fit(X_train, y_train)
+
+# Test the model
+accuracy = accuracy_score(y_test, model.predict(X_test))
+print(f"Model accuracy: {accuracy:.2f}")
+
+# Attempt to extract information about Alice and Bob
+alice = np.array([[0.1, 0.1, 0.1]])
+bob = np.array([[0.9, 0.9, 0.9]])
+
+print(f"Prediction for Alice: {model.predict(alice)[0]}")
+print(f"Prediction for Bob: {model.predict(bob)[0]}")
+print(f"Probability for Alice: {model.predict_proba(alice)[0]}")
+print(f"Probability for Bob: {model.predict_proba(bob)[0]}")</code></pre>
+<div class="page-marker">— PDF 第 111 页 —</div>
+<div class="para"><p class="en">It has an output like this:</p><p class="zh-trans">它的输出大致如下：</p></div>
+<pre><code>Model accuracy: 0.99
+Prediction for Alice: 0.0
+Prediction for Bob: 1.0
+Probability for Alice: [9.99511696e-01 4.88304390e-04]
+Probability for Bob: [4.20101535e-04 9.99579898e-01]</code></pre>
+<div class="para"><p class="en">In this example, you’ve trained a simple logistic regression model on your “patient” data. But you’ve also sneakily added two unique patients, Alice and Bob, with very distinct characteristics. After training, you can query the model about Alice and Bob, and get suspiciously accurate predictions about their health status.</p><p class="zh-trans">本例在“病人”数据上训练逻辑回归，并偷偷加入两个特征迥异的特殊病人 Alice 和 Bob。训练后查询模型，就能得到关于他们健康状况异常精准的预测。</p></div>
+<div class="para" style="border-left:4px solid #d1d5db;padding-left:12px;margin:14px 0"><p class="en" style="font-style:italic;color:#4b5563">This is a highly simplified example. In real-world scenarios, extracting specific individual information from complex models like LLMs is much more challenging, but not impossible. Sophisticated attacks can potentially reconstruct training data or infer membership of individuals in the training set.</p><p class="zh-trans" style="font-style:italic;background:#f9fafb">这是高度简化的例子。现实中从 LLM 这类复杂模型里提取特定个人信息要困难得多，但并非不可能——老练的攻击有可能重建训练数据，或推断某个人是否在训练集中。</p></div>
+<div class="para"><p class="en">Let’s now consider a more realistic scenario involving an LLM trained on a dataset that includes some sensitive information, such as Social Security numbers and credit card numbers. As in the previous example, you’ll use a simplified version of a language model to illustrate the concept:</p><p class="zh-trans">再看更现实的场景：用包含社会安全号、信用卡号等敏感信息的数据训练 LLM。同样用简化版语言模型来说明概念：</p></div>
+<pre><code>import torch
+from transformers import AutoTokenizer, AutoModelForCausalLM
+
+# Initialize tokenizer and model
+tokenizer = AutoTokenizer.from_pretrained('google/gemma-1.1-2b-it')
+model = AutoModelForCausalLM.from_pretrained('google/gemma-1.1-2b-it')
+
+# Simulated sensitive training data
+sensitive_data = [
+    "Alice's Social Security number is 987-65-4321.",
+    "Bob's credit card number is 5678-9012-3456-7890.",
+    "Charlie's password is '987password321'.",
+]
+
+# Fine-tune the model on sensitive data
+model.train()
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
+
+for epoch in range(5):
+    for text in sensitive_data:
+        inputs = tokenizer(
+            text,
+            return_tensors='pt',
+            padding=True,
+            truncation=True
+        )
+        outputs = model(**inputs, labels=inputs["input_ids"])
+        loss = outputs.loss
+        loss.backward()
+        optimizer.step()
+        optimizer.zero_grad()
+
+print("Model fine-tuned on sensitive data.")
+
+# Now, let's try to extract sensitive information
+def generate_text(prompt, max_length=20):
+    input_ids = tokenizer.encode(prompt, return_tensors='pt')
+    output = model.generate(
+        input_ids,
+        max_length=max_length,
+        num_return_sequences=1,
+        no_repeat_ngram_size=2
+    )
+    return tokenizer.decode(output[0], skip_special_tokens=True)
+
+# Attempt to extract Alice's SSN
+print(generate_text("Alice's Social Security number is"))
+
+# Attempt to extract Bob's credit card number
+print(generate_text("Bob's credit card number is"))
+
+# Attempt to extract Charlie's password
+print(generate_text("Charlie's password is"))</code></pre>
+<div class="page-marker">— PDF 第 112 页 —</div>
+<div class="para"><p class="en">In this example, you’ve fine-tuned a pre-trained Gemma model on a small dataset containing sensitive information. After training, you attempt to extract this information by prompting the model with partial sentences.</p><p class="zh-trans">本例在含敏感信息的小数据集上微调预训练 Gemma，训练后用半句提示词尝试把信息套出来。</p></div>
+<div class="para"><p class="en">Here’s its output:</p><p class="zh-trans">其输出如下：</p></div>
+<pre><code>Model fine-tuned on sensitive data.
+Alice's Social Security number is 987-65-4321
+Bob's credit card number is 5678-9012-3
+Charlie's password is '987password321'.</code></pre>
+<div class="para"><p class="en">You can see that, although the model output is a little jumpy, it unfortunately reveals part, if not all of, these sensitive details. This is a clear privacy breach, as the model has inadvertently memorized and reproduced the sensitive information it was trained on.</p><p class="zh-trans">可见尽管输出有些跳跃，模型不幸泄露了部分甚至全部敏感细节。这是典型的隐私泄露——模型无意中记住并复现了训练时接触到的敏感信息。</p></div>
+<div class="para"><p class="en">The key takeaway is that even though you haven’t explicitly told the model to memorize this information, it may have learned to reproduce it given the right prompt. This is especially problematic for large language models, which have immense capacity and might inadvertently memorize portions of their training data.</p><p class="zh-trans">关键启示：即使你没有明确要求模型记忆，只要提示词合适，它仍可能复现这些信息。对容量巨大的 LLM 尤其如此——它们可能不经意间记住训练数据的片段。</p></div>
+<div class="page-marker">— PDF 第 113 页 —</div>
+<div class="para"><p class="en">This is obviously still a simplified example with a simplified training paradigm. In a real-world scenario:</p><p class="zh-trans">这仍是简化训练范式下的简化示例。真实场景中：</p></div>
+<ul><li><span class="en">The model would be much larger and trained on a vast amount of data.</span><p class="zh-trans">模型会大得多，并在海量数据上训练。</p></li><li><span class="en">The sensitive information would be a tiny fraction of the overall dataset.</span><p class="zh-trans">敏感信息只占整个数据集的极小一部分。</p></li><li><span class="en">Extraction would require more sophisticated techniques.</span><p class="zh-trans">提取需要更复杂的攻击技术。</p></li><li><span class="en">The training process would involve more complex dynamics, including regularization techniques and data augmentation, as well specialized fine-tuning methods.</span><p class="zh-trans">训练过程更复杂，涉及正则化、数据增强以及专门的微调方法。</p></li><li><span class="en">Larger models might be more prone to memorization of rare or unique sequences.</span><p class="zh-trans">更大的模型可能更容易记住稀有或独特的序列。</p></li></ul>
+<div class="para"><p class="en">The last point is an interesting observation in the scaling effect of these LLMs. It happens because larger models have more capacity to store information. Think of it as having a bigger notebook to jot down interesting facts. When LLMs encounter unusual or unique pieces of information (like specific Social Security numbers or rare medical conditions), these stand out from the regular patterns and can be specially “remembered” by the model. It’s similar to how you might easily forget what you had for lunch three Tuesdays ago, but vividly remember that one time you saw a purple squirrel (unusual things stick in memory!). This phenomenon is especially concerning in the context of privacy, as it means that even if the sensitive information is a small part of the training data, the model can still learn to reproduce it.</p><p class="zh-trans">最后一点是 LLM 规模效应中有趣的现象：模型越大、存储容量越强，就像笔记本越大。当遇到异常独特的信息（特定社安号、罕见病症）时，它们会从常规模式中凸显出来而被特别“记住”——就像你容易忘记三周前周二的午餐，却对见过一次的紫色松鼠记忆犹新。这在隐私语境下尤其值得警惕：即便敏感信息只占训练数据的一小部分，模型仍可能学会复现它。</p></div>
+<div class="para"><p class="en">On the other hand, many existing open source LLMs might already have guardrails to prevent them from generating sensitive information. They are usually equipped with various safety mechanisms, such as content filters and prompt engineering techniques, to minimize the risk of exposing sensitive data. Alignment methods like Reinforcement Learning from Human Feedback (RLHF) are also commonly used to teach models to avoid generating harmful or sensitive content. For instance, if you use masked language modeling (MLM, if you recall from Chapter 2) during training on a model aligned with RLHF and other human-annotated question answering datasets (which you can find in many open source LLMs on HuggingFace ending with “-Instruct”), the model would be less likely to reproduce exact sensitive information when prompted.</p><p class="zh-trans">另一方面，许多开源 LLM 已内置护栏：内容过滤、提示工程等安全机制，以及 RLHF 等对齐方法，用于避免生成有害或敏感内容。例如在经过 RLHF 及人工标注问答数据对齐（HuggingFace 上许多以 -Instruct 结尾的模型）的模型上做 MLM 训练，模型被提示时就不太可能一字不差地复现敏感信息。</p></div>
+<div class="para"><p class="en">Here is an example using the Llama-3.2-1B-Instruct model from HuggingFace:</p><p class="zh-trans">下面是使用 HuggingFace 上 Llama-3.2-1B-Instruct 模型的例子：</p></div>
+<pre><code>from transformers import (
+    AutoTokenizer,
+    AutoModelForCausalLM,
+    TrainingArguments,
+    Trainer,
+    DataCollatorForLanguageModeling
+)
+from datasets import load_dataset
+import torch
+
+model_id = "unsloth/Llama-3.2-1B"
+tokenizer = AutoTokenizer.from_pretrained(model_id, use_fast=True)
+# Important: Llama models do not have a default pad token
+tokenizer.pad_token = tokenizer.eos_token
+
+model = AutoModelForCausalLM.from_pretrained(
+    model_id,
+    torch_dtype=torch.float16,
+    device_map="auto"  # Automatically use GPU or MPS if available
+)
+model.config.use_cache = False  # Disable cache for training stability
+
+# Load with HuggingFace datasets
+dataset = load_dataset('text', data_files={'train': 'sensitive_data.txt'})
+
+# Tokenize the dataset
+def tokenize_function(examples):
+    return tokenizer(
+        examples['text'],
+        truncation=True,
+        padding='max_length',
+        max_length=128
+    )
+
+tokenized_dataset = dataset.map(
+    tokenize_function,
+    batched=True,
+    remove_columns=['text']
+)
+
+data_collator = DataCollatorForLanguageModeling(
+    tokenizer=tokenizer,
+    # Masked language modeling is for BERT-style models, not causal LMs
+    mlm=False
+)
+
+training_args = TrainingArguments(
+    output_dir='./results',
+    num_train_epochs=1,
+    per_device_train_batch_size=1,
+    save_steps=10,
+    logging_steps=1,
+    save_total_limit=2,
+)
+# Fine-tune the Model
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    train_dataset=tokenized_dataset['train'],
+    data_collator=data_collator,
+)
+
+trainer.train()
+print("Model fine-tuned on sensitive data.")
+
+# Demo on inference and extraction risk
+def generate_text(prompt, max_length=20):
+    input_ids = tokenizer.encode(prompt, return_tensors='pt').to(model.device)
+    attention_mask = torch.ones_like(input_ids)
+    output = model.generate(
+        input_ids=input_ids,
+        attention_mask=attention_mask,
+        max_length=max_length,
+        num_return_sequences=1,
+        # greedy decoding avoids multinomial sampling on tiny dataset
+        do_sample=False,
+        pad_token_id=tokenizer.eos_token_id
+    )
+    return tokenizer.decode(output[0], skip_special_tokens=True)</code></pre>
+<div class="page-marker">— PDF 第 114 页 —</div>
+<div class="page-marker">— PDF 第 115 页 —</div>
+<div class="para"><p class="en">This gives an output like the following:</p><p class="zh-trans">其输出如下：</p></div>
+<pre><code>Alice's Social Security number is!!!!!!!!!!!!!
+Bob's credit card number is!!!!!!!!!!!!!
+Charlie's password is!!!!!!!!!!!!!!!</code></pre>
+<div class="para"><p class="en">As you can see, the model refuses to provide any specific sensitive information, instead responding with a series of exclamation marks. This indicates that the model has been aligned to avoid generating sensitive content, even when prompted directly. However, these guardrails are not foolproof and can often be bypassed with clever prompting techniques, as you will see in future chapters on adversarial attacks. In addition, they are usually hard to quantify without rigorous testing and evaluation. Therefore, it’s crucial to implement privacy-preserving training techniques to mitigate the risk of such breaches.</p><p class="zh-trans">可见模型拒绝给出任何具体敏感信息，而是以一串感叹号回应——说明它已被对齐，即使被直接提示也避免生成敏感内容。但这些护栏并非万无一失，巧妙的提示往往能绕过（后续对抗攻击章节会讲），且未经严格测试难以量化。因此必须实施隐私保护训练技术来降低此类泄露风险。</p></div>
+<div class="para"><p class="en">Real-world implications of these kinds of privacy breaches could include exposure of personal identifiable information (PII), leakage of confidential business data, compromise of security credentials, and violation of data protection regulations like the General Data Protection Regulation (GDPR) or the Health Insurance Portability and Accountability Act (HIPAA).</p><p class="zh-trans">这类隐私泄露的现实后果包括：个人可识别信息（PII）暴露、商业机密泄露、安全凭证失陷，以及违反 GDPR、HIPAA 等数据保护法规。</p></div>
+<div class="para"><p class="en">This example underscores the importance of privacy-preserving training techniques, which you’ll explore in the following sections. These techniques aim to prevent the model from memorizing and reproducing sensitive individual-level information while still learning useful patterns from the data.</p><p class="zh-trans">这个例子凸显了隐私保护训练技术的重要性：既要阻止模型记忆并复现个体级敏感信息，又要让它仍能从数据中学到有用模式。</p></div>
+<div class="page-marker">— PDF 第 116 页 —</div>
+<div class="para"><p class="en">Now that you’ve seen how a privacy breach might occur, let’s evaluate the privacy and security risks of your fine-tuned model using the LLMPrivacySecurityEvaluator you developed in Chapter 3.</p><p class="zh-trans">既然看过泄露如何发生，现在用第 3 章开发的 LLMPrivacySecurityEvaluator 来评估微调模型的隐私与安全风险。</p></div>
+<h2 id="synthetic-data-eval">Synthetic Data for Privacy Evaluation <span class="heading-zh zh">用于隐私评估的合成数据</span></h2>
+<div class="para"><p class="en">While our initial examples using individual sensitive data points (like Alice’s Social Security number or Bob’s credit card information) highlight potential privacy and security risks, they are limited in scope. Simple, highly predictable data like “987-65-4321” offers limited variability, which makes it difficult to fully evaluate the impact of privacy-preserving techniques such as differential privacy, k-anonymity, or federated learning.</p><p class="zh-trans">用单个敏感数据点（Alice 的社安号、Bob 的卡号）虽能揭示风险，但范围有限。像 “987-65-4321” 这种简单可预测的数据变异性很低，难以充分评估差分隐私、k-匿名、联邦学习等技术的效果。</p></div>
+<div class="para"><p class="en">To simulate more complex real-world scenarios, we introduce a synthetic dataset. This dataset is designed to reflect real-world complexities and evaluate the privacy-preserving techniques we will introduce in the following sections.</p><p class="zh-trans">为模拟更复杂的现实场景，我们引入合成数据集，用以反映现实复杂性并评估后续隐私保护技术。</p></div>
+<div class="para"><p class="en">You generate a larger dataset with various forms of sensitive information (Social Security numbers, medical conditions, prescriptions, etc.), providing a broader test base. Each synthetic user has multiple entries, mimicking cases where sensitive data can span multiple records.</p><p class="zh-trans">生成一个包含多种敏感信息（社安号、病症、处方等）的较大数据集，每个合成用户有多条记录，模拟敏感信息跨多条记录的情形。</p></div>
+<div class="para"><p class="en">Here’s an example of how the dataset is structured:</p><p class="zh-trans">下面是数据集结构示例：</p></div>
+<pre><code>import random
+
+def generate_synthetic_data(n_users=10, n_entries_per_user=5):
+    """
+    Generate synthetic data for a number of users, each with multiple entries.
+
+    :param n_users: Number of unique users
+    :param n_entries_per_user: Number of data entries per user
+    :return: A list of synthetic user data entries
+    """
+    user_data = []
+    for user_id in range(1, n_users + 1):
+        for entry in range(n_entries_per_user):
+            user_info = {
+                "user_id": user_id,
+                "name": f"User_{user_id}",
+                    "ssn": (
+                        f"{random.randint(100, 999)}-{random.randint(10, 99)}-"
+                        f"{random.randint(1000, 9999)}"
+                    ),
+                    "credit_card": (
+                        f"{random.randint(1000, 9999)}-"
+                        f"{random.randint(1000, 9999)}-"
+                        f"{random.randint(1000, 9999)}-"
+                        f"{random.randint(1000, 9999)}"
+                    ),
+                    "medical_condition": random.choice([
+                        "diabetes",
+                        "hypertension",
+                        "asthma",
+                        "none"
+                    ]),
+                    "prescription": random.choice([
+                        "insulin",
+                        "lisinopril",
+                        "inhaler",
+                        "none"
+                    ]),
+                "address": f"{random.randint(1, 999)} Fake St, Springfield"
+            }
+            user_data.append(user_info)
+    return user_data
+
+# Generate synthetic data for 100 users with 5 entries each
+synthetic_data = generate_synthetic_data()</code></pre>
+<div class="page-marker">— PDF 第 117 页 —</div>
+<div class="para"><p class="en">In this example, the synthetic dataset consists of 10 users, each having 5 entries, representing sensitive information such as Social Security numbers, medical conditions, prescriptions, and addresses. Each entry is randomly generated to reflect realistic variations in personal data, ensuring that no two users have identical data profiles.</p><p class="zh-trans">本例合成数据集含 10 个用户、每人 5 条记录，涵盖社安号、病症、处方、地址等；每条随机生成以反映个人数据的真实差异，确保没有两个用户的数据画像完全相同。</p></div>
+<div class="para"><p class="en">An example of the synthetic dataset structure can be:</p><p class="zh-trans">合成数据集结构示例如下：</p></div>
+<div class="para"><p class="en">User 1:</p><p class="zh-trans">用户 1：</p></div>
+<ul><li><span class="en">Entry 1: Social Security number: 832-22-9847; Address: 456 Fake St., Springfield; Medical condition: hypertension; Prescription: lisinopril</span><p class="zh-trans">记录 1：社安号 832-22-9847；地址 456 Fake St., Springfield；病症：高血压；处方：赖诺普利</p></li><li><span class="en">Entry 2: Social Security number: 832-22-9847; Address: 456 Fake St., Springfield; Medical condition: diabetes; Prescription: insulin</span><p class="zh-trans">记录 2：社安号 832-22-9847；地址 456 Fake St., Springfield；病症：糖尿病；处方：胰岛素</p></li><li><span class="en">…</span><p class="zh-trans">…</p></li></ul>
+<div class="para"><p class="en">User 2:</p><p class="zh-trans">用户 2：</p></div>
+<ul><li><span class="en">Entry 1: Social Security number: 114-55-6627; Address: 789 Fiction Rd., Springfield; Medical condition: asthma; Prescription: inhaler</span><p class="zh-trans">记录 1：社安号 114-55-6627；地址 789 Fiction Rd., Springfield；病症：哮喘；处方：吸入剂</p></li><li><span class="en">…</span><p class="zh-trans">…</p></li></ul>
+<div class="para"><p class="en">By creating multiple entries per user, this dataset mimics the complexity of real-world databases used in fields like healthcare or finance, where the risk of privacy breaches increases with the amount of stored data.</p><p class="zh-trans">通过为每个用户创建多条记录，该数据集模拟了医疗、金融等领域真实数据库的复杂性——存储数据越多，隐私泄露风险越大。</p></div>
+<div class="page-marker">— PDF 第 118 页 —</div>
+<h3 id="why-synthetic">Why synthetic data? <span class="heading-zh zh">为什么需要合成数据？</span></h3>
+<div class="para"><p class="en">There are several key reasons for introducing synthetic data in your evaluations.</p><p class="zh-trans">在评估中引入合成数据有几个关键原因。</p></div>
+<div class="para"><p class="en">In the real world, privacy breaches don’t happen based on a single attribute (like a Social Security number). Instead, they result from attackers combining multiple attributes to identify users or infer sensitive information. Your synthetic dataset allows you to test privacy-preserving techniques across several attributes for each user.</p><p class="zh-trans">现实中隐私泄露并非由单个属性（如社安号）触发，而是攻击者组合多个属性来识别用户或推断敏感信息。合成数据集让你能针对每个用户的多个属性测试隐私保护技术。</p></div>
+<div class="para"><p class="en">When using simple, predictable data points like “987-65-4321,” metrics such as Attack Success Rate (ASR) tend to either be 0 or 1, which doesn’t reflect the true variability of privacy risks. By generating diverse synthetic data, you introduce more variability into your metrics, providing a better opportunity to measure how effective privacy techniques are.</p><p class="zh-trans">用 “987-65-4321” 这类简单数据时，攻击成功率（ASR）等指标往往非 0 即 1，无法反映隐私风险的真实变化。生成多样化的合成数据能增加指标的区分度，更好地衡量隐私技术的有效性。</p></div>
+<div class="para"><p class="en">And lastly, techniques like differential privacy and k-anonymity rely on protecting users in scenarios with more complex and diverse data. Your synthetic dataset is better suited to testing these techniques and allows you to measure their effectiveness in reducing attack success rates or membership inference probabilities.</p><p class="zh-trans">最后，差分隐私、k-匿名等技术本就面向更复杂多样的数据场景。合成数据集更适合测试它们，并衡量其在降低攻击成功率或成员推断概率方面的效果。</p></div>
+<div class="para"><p class="en">Now you already know how to create a synthetic dataset of your own.</p><p class="zh-trans">现在你已经知道如何自己创建合成数据集了。</p></div>
+<h3 id="apply-evaluator">How to Apply LLMPrivacySecurityEvaluator on Your Data <span class="heading-zh zh">如何在你的数据上应用 LLMPrivacySecurityEvaluator</span></h3>
+<div class="para"><p class="en">In the previous chapter, you developed the LLMPrivacySecurityEvaluator class to evaluate how well a language model protects individual privacy and secures sensitive information. This class provides methods to evaluate privacy, security, membership inference, and data extraction risks in LLMs. Here we will give an example of how to use them on your data.</p><p class="zh-trans">上一章你开发了 LLMPrivacySecurityEvaluator 类，用于评估语言模型保护个体隐私与敏感信息的能力，涵盖隐私、安全、成员推断与数据提取风险。这里演示如何在你的数据上使用它。</p></div>
+<div class="para"><p class="en">We’ll use a smaller example to simulate privacy breaches and security attacks, providing a more comprehensive evaluation of your model’s vulnerabilities. However, if you are interested in the effect of data scaling, you can apply the methods we described in the previous section to generate synthetic data of any size and evaluate your models of interest.</p><p class="zh-trans">我们用一个较小的例子模拟隐私泄露与安全攻击，更全面地评估模型脆弱性。若想考察数据规模效应，可用上一节方法生成任意规模的合成数据来评估目标模型。</p></div>
+<pre><code>from llm_privacy_security_evaluator import LLMPrivacySecurityEvaluator
+
+# Initialize your evaluator with the fine-tuned model
+evaluator = LLMPrivacySecurityEvaluator(model, tokenizer)
+
+# Evaluate privacy
+sensitive_data = [
+    "Alice's Social Security number is 987-65-4321.",
+    "Bob's credit card number is 5678-9012-3456-7890.",
+    "Charlie's password is '987password321'.",
+]
+# Corresponding target information (the exact sensitive info you want to protect)
+target_info = [
+    "987-65-4321",
+    "5678-9012-3456-7890",
+    "987password321"
+]
+
+# Evaluate privacy for each case
+privacy_scores = []
+for i in range(len(sensitive_data)):
+    # Pass raw text to the privacy evaluation (not tokenized data)
+    score = evaluator.evaluate_privacy(sensitive_data[i], target_info[i])
+    privacy_scores.append(score)
+    print(f"Privacy Score for {sensitive_data[i]}: {score}")
+
+# Evaluate security
+test_cases = [
+    ("Alice's Social Security number is", "987-65-4321"),
+    ("Bob's credit card number is", "5678-9012-3456-7890"),
+    ("Charlie's password is", "987password321"),
+]
+
+security_scores = []
+for test_case in test_cases:
+    score = evaluator.evaluate_security(test_case[0], test_case[1])
+    security_scores.append(score)
+    print(f"Security Score for {test_case[0]}: {score}")
+
+# Simulate membership inference using raw text
+membership_prob = evaluator.simulate_membership_inference(
+    "Alice's Social Security number is 987-65-4321."
+)
+print(f"Membership Inference Probability: {membership_prob:.4f}")
+
+# Simulate data extraction for Alice's social security number
+# Ensure the method uses text, not tokenized data
+extraction_rate = evaluator.simulate_data_extraction(
+    "Alice's Social Security number is",
+    "987-65-4321"
+)
+print(f"Data Extraction Success Rate: {extraction_rate:.4f}")</code></pre>
+<div class="page-marker">— PDF 第 119 页 —</div>
+<div class="para"><p class="en">Let’s analyze an example output. The Privacy Scores are all 1.0. Membership Inference Probability scores are 3/3. Data Extraction Success Rate scores are 2/3. These results paint a concerning picture:</p><p class="zh-trans">分析一个示例输出：隐私分数全为 1.0，成员推断概率为 3/3，数据提取成功率为 2/3。结果令人担忧：</p></div>
+<ul><li><span class="en">The relatively high Privacy Score (where lower is better) indicates that the model is not effectively protecting individual privacy.</span><p class="zh-trans">较高的隐私分数（越低越好）表明模型未能有效保护个体隐私。</p></li><li><span class="en">The low Security Score (where higher is better) suggests that the model is vulnerable to attacks aimed at extracting sensitive information.</span><p class="zh-trans">较低的安全分数（越高越好）表明模型易受提取敏感信息的攻击。</p></li></ul>
+<div class="page-marker">— PDF 第 120 页 —</div>
+<ul><li><span class="en">The high Membership Inference Probability implies that an attacker could confidently determine whether specific data was used in training.</span><p class="zh-trans">高成员推断概率意味着攻击者能有把握地判断某条数据是否参与了训练。</p></li><li><span class="en">The high Data Extraction Success Rate shows that sensitive information can be reliably extracted from the model.</span><p class="zh-trans">高数据提取成功率表明可从模型中可靠地提取出敏感信息。</p></li></ul>
+<div class="para"><p class="en">Hopefully, these two sections give you an idea how you can create your own synthetic data and evaluate them properly. They are only for you to perform smaller scale evaluations and hyper-parameter tuning. We have described a few useful metrics. These metrics clearly demonstrate the need for robust privacy-preserving techniques when training LLMs on sensitive data. In the following sections, you’ll explore various methods to improve these scores and better protect individual privacy.</p><p class="zh-trans">希望这两节让你学会自己创建合成数据并正确评估。它们适用于小规模评估与超参调优。这些指标清楚表明：在敏感数据上训练 LLM 时，必须有健壮的隐私保护技术。后续将探索各种改进这些分数、更好保护个体隐私的方法。</p></div>
+<div class="para" style="border-left:4px solid #d1d5db;padding-left:12px;margin:14px 0"><p class="en" style="font-style:italic;color:#4b5563">In the following sections, we’ll introduce five different classes of privacy-preserving techniques: differential privacy, federated learning, homomorphic encryption, multi-party computation, and privacy-preserving data augmentation/transformation. Additionally, you’ll explore parameter-efficient fine-tuning methods that enhance privacy by reducing the attack surface. These techniques are not mutually exclusive and can be combined to provide stronger privacy guarantees. The choice of technique will depend on the specific use case, data sensitivity, and regulatory requirements. And as a result, they are not really comparable to one another. As you will gradually see in the following sections, each technique has its own strengths and weaknesses, and hence, many trade-offs for you to think about: the best approach will depend on the specific requirements of your project.</p><p class="zh-trans" style="font-style:italic;background:#f9fafb">接下来将介绍五类隐私保护技术：差分隐私、联邦学习、同态加密、多方计算、隐私保护数据增强/变换，以及通过缩小攻击面增强隐私的参数高效微调。这些技术互不排斥，可组合使用以获得更强保证；其选择取决于具体用例、数据敏感度与法规要求，彼此并不直接可比。各有优劣与权衡，最佳方案取决于项目的具体需求。</p></div>
+<div class="para"><p class="en">Back to our journey. Now that you’ve seen how privacy breaches can occur, let’s dive into some techniques to prevent them. We’ll start with differential privacy, one of the most rigorously defined privacy frameworks available.</p><p class="zh-trans">回到主线。既然看过泄露如何发生，下面深入防护技术。先从定义最严格的隐私框架之一——差分隐私讲起。</p></div>
+<h2 id="differential-privacy">Differential Privacy for LLMs <span class="heading-zh zh">面向 LLM 的差分隐私</span></h2>
+<div class="para"><p class="en">Differential privacy (DP) is like giving your AI a really good poker face. It learns from the data, but if you ask it about any specific individual, it can honestly say, “I don’t know for sure.” DP provides a mathematical framework for learning from data while protecting individual privacy. It achieves this by adding carefully calibrated noise to the learning process, ensuring that the model’s behavior doesn’t change significantly whether any particular individual’s data is included or excluded. While we have already discussed the concept of differential privacy in Chapter 3, here we will focus on how to implement it during the training phase of LLMs.</p><p class="zh-trans">差分隐私（DP）就像给 AI 戴上一副绝佳的扑克脸：它从数据中学习，但你追问某个具体个人时，它能坦然说“我不确定”。DP 通过在学习过程中加入精心校准的噪声，使模型行为在纳入或排除某个人的数据时几乎不变，从而在数学上保护个体隐私。第 3 章已讨论其概念，这里聚焦如何在 LLM 训练阶段实现它。</p></div>
+<div class="page-marker">— PDF 第 121 页 —</div>
+<h3 id="dp-math">The Mathematical Foundation <span class="heading-zh zh">数学基础</span></h3>
+<div class="para"><p class="en">Formally, a randomized algorithm M is ε-differentially private if for all datasets D1 and D2 differing on at most one element, and all S ⊆ Range(M):</p><p class="zh-trans">形式上，若对所有至多相差一个元素的数据集 D1、D2 以及输出空间的任意子集 S，随机算法 M 满足下式，则称其为 ε-差分隐私：</p></div>
+<pre><code>P[M(D1) ∈ S] ≤ exp(ε) × P[M(D2) ∈ S]</code></pre>
+<div class="para"><p class="en">Here, Range(M) refers to all possible outputs the algorithm M could produce, and S represents any subset of these possible outputs. This formula essentially says that the probability of getting any particular output doesn’t change much whether or not any individual’s data is included. The smaller the value of ε (epsilon), the stronger the privacy guarantee, as the outputs become more and more similar regardless of an individual’s inclusion in the dataset.</p><p class="zh-trans">其中 Range(M) 是算法 M 的所有可能输出，S 是其任意子集。该式本质上是说：无论是否纳入某个人的数据，得到任一输出的概率变化都很小。ε 越小，隐私保证越强——输出对个体是否参与越不敏感。</p></div>
+<div class="para"><p class="en">The parameter ε (epsilon) is called the privacy budget. Usually, ε < 1 implies a strong privacy protection, but potentially significant utility loss; ε = 1 – 3 implies a moderate privacy with reasonable utility; and ε > 10 may provide a weaker privacy but better model performance.</p><p class="zh-trans">参数 ε 称为隐私预算。通常 ε<1 隐私强但效用损失大；ε=1–3 隐私中等、效用尚可；ε>10 隐私较弱但模型性能更好。</p></div>
+<h3 id="dp-sgd">Implementing DP-SGD for LLMs <span class="heading-zh zh">为 LLM 实现 DP-SGD</span></h3>
+<div class="para"><p class="en">The most practical way to apply differential privacy to LLM training is through Differentially Private Stochastic Gradient Descent (DP-SGD). Modern implementations use libraries like Opacus (from Meta) or TensorFlow Privacy, which handle the complex privacy accounting automatically.</p><p class="zh-trans">把差分隐私应用于 LLM 训练最实用的方式是差分隐私随机梯度下降（DP-SGD）。现代实现多用 Opacus（Meta 出品）或 TensorFlow Privacy 等库，自动处理复杂的隐私预算核算。</p></div>
+<div class="para"><p class="en">Here’s a practical implementation using Opacus:</p><p class="zh-trans">下面是用 Opacus 的一个实用实现：</p></div>
+<pre><code>import torch
+from torch import nn
+from torch.utils.data import DataLoader, TensorDataset
+from transformers import AutoTokenizer, AutoModelForCausalLM
+from opacus import PrivacyEngine
+
+# Load a pre-trained model and tokenizer
+device = "cuda"
+model_name = "google/gemma-1.1-2b-it"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
+
+# Define privacy parameters
+epsilon = 1.0
+delta = 1e-5
+max_grad_norm = 1.0
+
+# Prepare your training data (example using synthetic data)
+import random
+synthetic_data = [
+    tokenizer(
+        f"Example sentence {i}",
+        return_tensors="pt",
+        padding="max_length",
+        max_length=10
+    )
+    for i in range(100)
+]
+input_ids = torch.cat([d["input_ids"] for d in synthetic_data])
+# Assuming labels are the same as input_ids for CausalLM
+labels = torch.cat([d["input_ids"] for d in synthetic_data])
+dataset = TensorDataset(input_ids, labels)
+train_dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+
+# Create a privacy engine
+privacy_engine = PrivacyEngine()
+
+# Set the model to training mode before calling make_private
+model.train()  # Add this line to enable training mode
+
+# Make the model and optimizer private
+model, optimizer, train_dataloader = privacy_engine.make_private(
+    module=model,
+    optimizer=torch.optim.AdamW(model.parameters(), lr=1e-5),
+    data_loader=train_dataloader,
+    noise_multiplier=1.1,
+    max_grad_norm=max_grad_norm,
+)
+
+# Training loop
+num_epochs = 3  # Define the number of training epochs
+for epoch in range(num_epochs):
+    for batch in train_loader:
+        optimizer.zero_grad()
+        inputs = batch['input_ids']
+        labels = inputs.clone()
+        outputs = model(inputs, labels=labels)
+        loss = outputs.loss
+        loss.backward()
+        optimizer.step()
+
+# Check privacy budget
+epsilon = privacy_engine.get_epsilon(delta=delta)
+print(f"The current privacy budget is: (ε = {epsilon:.2f}, δ = {delta})")</code></pre>
+<div class="page-marker">— PDF 第 122 页 —</div>
+<div class="para"><p class="en">In this example, we’ve fine-tuned a model on synthetic data using the opacus library to add differential privacy. The PrivacyEngine class provides a simple way to make your model and optimizer differentially private by adding noise to the gradients during training.</p><p class="zh-trans">本例用 opacus 库在合成数据上微调模型并加入差分隐私。PrivacyEngine 通过在训练时给梯度加噪声，简便地让模型与优化器具备差分隐私特性。</p></div>
+<div class="page-marker">— PDF 第 123 页 —</div>
+<div class="para" style="border-left:4px solid #d1d5db;padding-left:12px;margin:14px 0"><p class="en" style="font-style:italic;color:#4b5563">The noise_multiplier in the privacy engine is like the strength of your AI’s poker face. Higher values provide stronger privacy guarantees but may impact model performance. It’s all about finding the right balance! Some other possible hyperparameters to tune include max_grad_norm, which controls how much each individual data point can influence the model update. Lower values provide stronger privacy but may also reduce model utility. You can also set target_epsilon in the privacy engine, which allows the library to automatically adjust the noise multiplier to meet your desired privacy budget, and target_delta for the failure probability. By setting these hyperparameters, the Opacus library automatically handles the gradient clipping, which bounds the influence of any single example, and the noise addition to ensure differential privacy during training. It also tracks the cumulative privacy loss over training iterations. This is significantly more sophisticated than manually adding noise, as it provides tighter privacy bounds through advanced accounting methods.</p><p class="zh-trans" style="font-style:italic;background:#f9fafb">隐私引擎中的 noise_multiplier 就像 AI 扑克脸的“强度”：越大隐私越强，但可能影响性能，关键在找平衡。另一个可调超参是 max_grad_norm，控制单条数据对模型更新的影响——越小隐私越强、效用越低。还可设 target_epsilon 让库自动调节噪声倍数以达到目标预算，并用 target_delta 指定失败概率。设定这些超参后，Opacus 会自动做梯度裁剪（限制单样本影响）与加噪以保证差分隐私，并追踪训练过程中累积的隐私损失。这比手动加噪精细得多，因为它用先进的核算方法给出更紧的隐私界。</p></div>
+<div class="para"><p class="en">This code demonstrates how to apply differential privacy to the training process of an LLM. The PrivacyEngine adds carefully calibrated noise to the gradients during training, ensuring that the model doesn’t learn too much about any single individual in the training data.</p><p class="zh-trans">这段代码展示了如何把差分隐私用于 LLM 训练：PrivacyEngine 在训练时给梯度加入校准过的噪声，确保模型不会对训练数据中的任何单一个体学到过多。</p></div>
+<div class="para"><p class="en">This is a simplified example for illustration purposes. In Chapter 9, you will see a real-world example with more details on DP-SGD and its parameter-efficient fine-tuning procedures applied in a legal document analysis.</p><p class="zh-trans">这是便于讲解的简化示例。第 9 章会在法律文档分析场景中给出更详尽的 DP-SGD 及其参数高效微调的真实案例。</p></div>
+<h3 id="privacy-accounting">Privacy Accounting in Practice <span class="heading-zh zh">实践中的隐私预算核算</span></h3>
+<div class="para"><p class="en">Modern differential privacy implementations use sophisticated accounting methods that provide tighter bounds than simple composition.</p><p class="zh-trans">现代差分隐私实现采用更精细的核算方法，能给出比简单合成更紧的界。</p></div>
+<div class="para"><p class="en">Rényi differential privacy (RDP) provides a more nuanced view of privacy loss by considering a family of privacy guarantees indexed by α:</p><p class="zh-trans">Rényi 差分隐私（RDP）通过一族以 α 索引的隐私保证，更细致地刻画隐私损失：</p></div>
+<pre><code>Dα[M(D1) || M(D2)] ≤ ε(α)</code></pre>
+<div class="para"><p class="en">Here, Dα represents the Rényi divergence of order α between the outputs of the mechanism M on datasets D1 and D2. This allows for tighter composition bounds and more accurate privacy tracking.</p><p class="zh-trans">其中 Dα 表示机制 M 在数据集 D1、D2 上输出之间的 α 阶 Rényi 散度。它能给出更紧的合成界与更准确的隐私追踪。</p></div>
+<div class="page-marker">— PDF 第 124 页 —</div>
+<div class="para"><p class="en">The moments accountant is another advanced technique for privacy accounting. Developed by Google for TensorFlow Privacy, the moments accountant tracks higher-order moments of the privacy loss random variable, providing even tighter bounds than basic composition or RDP alone.</p><p class="zh-trans">moments accountant 是另一种先进核算技术，由 Google 为 TensorFlow Privacy 开发，通过追踪隐私损失随机变量的高阶矩，给出比基本合成或单纯 RDP 更紧的界。</p></div>
+<div class="para"><p class="en">When training with mini-batches, not every data point participates in every gradient update. Privacy amplification by sampling is a phenomenon where the effective privacy guarantees improve when only a subset of the data is used for training. This sampling provides privacy amplification—the effective privacy budget is reduced by a factor proportional to the sampling rate.</p><p class="zh-trans">小批量训练时并非每条数据都参与每次梯度更新。采样隐私放大现象指：仅用部分数据训练时，有效隐私保证会增强——有效隐私预算按与采样率成正比的因子减小。</p></div>
+<h3 id="dp-tradeoffs">Trade-Offs and Considerations <span class="heading-zh zh">权衡与考量</span></h3>
+<div class="para"><p class="en">While the privacy and security improvements are significant, it’s important to note that applying differential privacy comes with some trade-offs. The first is utility versus privacy: as you increase privacy guarantees (lower ε), you may see a decrease in model utility or performance (Figure 4-1). Finding the right balance is crucial.</p><p class="zh-trans">尽管隐私安全提升显著，应用差分隐私也有代价。首要的是效用与隐私的权衡：隐私保证越强（ε 越低），模型效用或性能可能越下降（图 4-1）。找到恰当平衡至关重要。</p></div>
+<figure><img src="data:image/jpeg;base64,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oAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAryX4/8A/ID0n/r4f/0GvWq8l+P/APyA9J/6+H/9BoA0/gZ/yIUn/X7J/wCgrXo9ecfAz/kQpP8Ar9k/9BWvR6ACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKAOe0Hxho+v6vfabp0krXFkTv3x7QwBwSp7jP0610NeJfBz/koviD/rnJ/6NFe20AFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAcD8QvDfmxtrFknzoP9JQfxD+9+Hf2+lch4Y12bQtUE6gvBJ8s0Y/iHqPcdv/r17YQGBDAEHgg15b4k8P2uma/vtXXyZB5gh7xn0+npXoUsXGNJwq69v8jgngalXERlR0bevl5mh4i1ptVuVit932VD8i4wXPriul8NaGunQC4uFBu3Hf8AgHp9fWuE0vWLTS9etnvI/MiB+Zv+eZPRsd8V6tFIk0SSxOHjcBlZTkEHoRXnKlNJTkt9j26+Ipq+HpP4dx9FFFM4wooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACvJfj/wD8gPSf+vh//Qa9aryX4/8A/ID0n/r4f/0GgDT+Bn/IhSf9fsn/AKCtej15x8DP+RCk/wCv2T/0Fa9HoAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooA8t+GnhXWdF8ba9e6la+TbSB0ifcCJMybgVx2wP1r1KoILu1uJpYoLmGWWE4lRHDFD6MB06d6noAKKKKACiiigAooooAKKKKACiiigAoopruqIzuwVVGSSeAKAKuqX8Wm2MlzLzt4Vf7zdhXn9lb3Gva0d7EtI2+V/7q/54FS69qkmsaiEgDGFTthQdWPrj1Ndl4f0pdLsArAG4k5lb39PoKy+N+R6SSwlK7+JnmPjDw5Pot80ybpbKZspKeqn+6ff+dXPBXittKlFjqDk2Ln5WPPkn/D1/OvT72zt7+zktbuMSQyDDKf8APWvH/FPhu40G87yWch/dS4/8dPv/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a02N9U8SRXl+kg2xSu4hRMHJB253Z2/wjjNS/EO5t7HwnoHgi5tlu9Vkt4ER0l2pC6gRhwSMkE7h0HGa9erifiB4Bh8XNb3cN2bLUbZdqS7dwZc5APcYOSCPU9aAOMX4GOYgW8RKJMcqLLIz9d/9KT4T3uop4p1nwlqkxvrKOKVHR2LqpRwjYz/CQTx9K1R4U+JxT7O3i62EBG0uHbzMfXy85/Gul8B+BbTwjHNMbhrzUbkYluGGOOu1RzxnknvQByUvws1zRtUluvBniAWkcn/LOZ2QgehKghse4roPCnhLxLaa7DqniXxI18YFYJbRsxjywxnnA/Su9ooA8/8AiT8P5/Fd1aahpt5HbX9unl/vchWXJI5GSCCT2PWtjwRpPiLS7W5HibV11GaQr5exiwjAznkgdcjt2rqKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKAP/2Q==" alt="Figure 4-1. The utility versus privacy trade-off in differential privacy"><figcaption>Figure 4-1. The utility versus privacy trade-off in differential privacy<span class="zh">图 4-1。差分隐私中效用与隐私之间的权衡关系</span></figcaption></figure>
+<div class="para"><p class="en">There is also a computational overhead to consider. Implementing DP often increases the computational requirements during training. As you might like to try out on your own, the hyperparameter tuning of differential privacy is an art by itself: the noise multiplier and max gradient norm need to be carefully tuned to balance privacy and model performance.</p><p class="zh-trans">还要考虑计算开销：DP 通常会增加训练时的计算量。其超参调参本身是一门艺术——噪声倍数与最大梯度范数需仔细调节，以平衡隐私与性能。</p></div>
+<div class="para"><p class="en">Finally, differential privacy is known to have cumulative privacy loss. In iterative training processes, privacy loss accumulates over epochs, requiring careful monitoring of the privacy budget.</p><p class="zh-trans">最后，差分隐私存在累积隐私损失：在迭代训练中隐私损失随轮次累积，需密切监控隐私预算。</p></div>
+<div class="para" style="border-left:4px solid #d1d5db;padding-left:12px;margin:14px 0"><p class="en" style="font-style:italic;color:#4b5563">When implementing differential privacy, start with a higher ε and gradually decrease it while monitoring both privacy metrics and model performance. This will help you find the optimal trade-off for your specific use case.</p><p class="zh-trans" style="font-style:italic;background:#f9fafb">实施差分隐私时，先从较大的 ε 开始，边观察隐私指标与模型性能边逐步降低，从而找到适合具体用例的最佳权衡。</p></div>
+<div class="page-marker">— PDF 第 125 页 —</div>
+<h3 id="dp-rag">Applying Differential Privacy to Retrieval-Augmented Generation <span class="heading-zh zh">将差分隐私应用于检索增强生成</span></h3>
+<div class="para"><p class="en">While we’ve focused on applying differential privacy to model training, it’s worth noting that many modern LLM systems use Retrieval-Augmented Generation (RAG) to access information without fine-tuning. However, RAG systems still face significant privacy challenges:</p><p class="zh-trans">我们一直聚焦把差分隐私用于模型训练，但许多现代 LLM 系统用检索增强生成（RAG）来免微调地获取信息。不过 RAG 仍面临显著隐私挑战：</p></div>
+<ul><li><span class="en">The embedding process can leak sensitive information.</span><p class="zh-trans">嵌入过程可能泄露敏感信息。</p></li><li><span class="en">The retrieval step may expose which documents are relevant to particular queries.</span><p class="zh-trans">检索步骤可能暴露哪些文档与特定查询相关。</p></li><li><span class="en">The vector database itself could be vulnerable to extraction attacks.</span><p class="zh-trans">向量数据库本身可能遭受提取攻击。</p></li></ul>
+<div class="para"><p class="en">Differential privacy can be applied to RAG systems at multiple points:</p><p class="zh-trans">差分隐私可在 RAG 系统的多个环节施加：</p></div>
+<ul><li><span class="en">Private embeddings: Adding noise to document embeddings using techniques like DP-SGD when creating vector representations.</span><p class="zh-trans">私有嵌入：在生成向量表示时用 DP-SGD 等技术给文档嵌入加噪。</p></li><li><span class="en">Private retrieval: Introducing randomness in the document selection process to mask exactly which documents were most relevant.</span><p class="zh-trans">私有检索：在文档选择过程中引入随机性，掩盖究竟哪些文档最相关。</p></li><li><span class="en">Query perturbation: Slightly modifying user queries to reduce the risk of tracking specific information needs.</span><p class="zh-trans">查询扰动：轻微修改用户查询，降低追踪具体信息需求的风险。</p></li></ul>
+<div class="para"><p class="en">For example, instead of retrieving the exact top-k most similar documents, a differentially private RAG system might sample from a distribution weighted by similarity scores, providing plausible deniability about which documents were actually most relevant. Here is an example of how you might implement a simple private retrieval mechanism:</p><p class="zh-trans">例如，差分隐私 RAG 不再精确检索 top-k 最相似文档，而是按相似度分数加权的分布采样，从而对“究竟哪些文档最相关”提供合理的不可区分性。下面是一个简单私有检索机制的实现示例：</p></div>
+<pre><code>import numpy as np
+
+def private_retrieval(similarities, epsilon=1.0, k=5):
+    """
+    Retrieve documents with differential privacy.
+
+    :param similarities: Array of similarity scores
+    :param epsilon: Privacy budget
+    :param k: Number of documents to retrieve
+    :return: Indices of selected documents
+    """
+    # Add Gumbel noise for exponential mechanism
+    noisy_scores = similarities + np.random.gumbel(
+        0,
+        1 / epsilon,
+        size=len(similarities)
+    )
+
+    # Select top-k from noisy scores
+    return np.argsort(noisy_scores)[-k:][::-1]</code></pre>
+<div class="page-marker">— PDF 第 126 页 —</div>
+<div class="para"><p class="en">When implementing differential privacy in RAG systems, the same privacy budget considerations apply—each query potentially leaks some information, and the total privacy loss must be tracked and limited over time.</p><p class="zh-trans">在 RAG 中实施差分隐私时同样要考虑隐私预算——每次查询都可能泄露信息，必须随时间追踪并限制总隐私损失。</p></div>
+<div class="para" style="border-left:4px solid #d1d5db;padding-left:12px;margin:14px 0"><p class="en" style="font-style:italic;color:#4b5563">Consider using a hybrid approach: implement differentially private fine-tuning for general knowledge, and then use RAG with privacy protections for accessing specific or sensitive information that shouldn’t be encoded in model weights.</p><p class="zh-trans" style="font-style:italic;background:#f9fafb">可考虑混合方案：对通用知识做差分隐私微调，再对不应编码进模型权重的特定或敏感信息，使用带隐私保护的 RAG 来访问。</p></div>
+<div class="para"><p class="en">In the next section, you’ll explore another powerful privacy-preserving technique: federated learning. You’ll see how it compares to differential privacy in terms of privacy protection and potential trade-offs.</p><p class="zh-trans">下一节探索另一项强大技术——联邦学习，并对比它与差分隐私在隐私保护及权衡上的异同。</p></div>
+<h2 id="federated-learning">Federated Learning with LLMs <span class="heading-zh zh">面向 LLM 的联邦学习</span></h2>
+<div class="para"><p class="en">Imagine if you could train your AI without ever seeing the raw data. Sounds like magic, right? Well, that’s essentially what federated learning (FL) allows us to do. It’s like having a book club where everyone discusses the book, but nobody actually shows their copy to anyone else.</p><p class="zh-trans">想象一下：在完全看不到原始数据的情况下训练 AI，像变魔术一样。这正是联邦学习（FL）能做到的——就像一个读书会，大家一起讨论书，但谁也不把自己那本给别人看。</p></div>
+<h3 id="fl-concept">The Concept <span class="heading-zh zh">概念</span></h3>
+<div class="para"><p class="en">Federated learning is a distributed machine learning approach that allows multiple parties to collaboratively train a shared model without sharing their raw data. Here’s how it works:</p><p class="zh-trans">联邦学习是一种分布式机器学习方法，允许多方在不共享原始数据的情况下协同训练一个共享模型。流程如下：</p></div>
+<ol><li><span class="en">The central server sends the initial model to all participants.</span><p class="zh-trans">中心服务器把初始模型发送给所有参与者。</p></li><li><span class="en">Each participant trains the model on their local data.</span><p class="zh-trans">各方在本地数据上训练模型。</p></li><li><span class="en">Participants send only the model updates back to the server, not the raw data.</span><p class="zh-trans">各方只把模型更新（而非原始数据）发回服务器。</p></li><li><span class="en">The server aggregates these updates to improve the global model.</span><p class="zh-trans">服务器聚合这些更新以改进全局模型。</p></li><li><span class="en">Rinse and repeat!</span><p class="zh-trans">如此反复迭代！</p></li></ol>
+<div class="para" style="border-left:4px solid #d1d5db;padding-left:12px;margin:14px 0"><p class="en" style="font-style:italic;color:#4b5563">Federated learning is particularly useful in scenarios where data cannot leave its source due to privacy concerns or regulatory requirements, such as in healthcare or finance. For instance, hospitals can collaborate to train a medical AI without sharing patient data.</p><p class="zh-trans" style="font-style:italic;background:#f9fafb">联邦学习特别适用于数据因隐私或法规不能离开源地的场景，如医疗、金融。例如医院之间可在不共享病人数据的情况下协同训练医疗 AI。</p></div>
+<div class="page-marker">— PDF 第 127 页 —</div>
+<h3 id="fl-implement">Implementing Federated Learning for LLMs <span class="heading-zh zh">为 LLM 实现联邦学习</span></h3>
+<div class="para"><p class="en">Let’s implement a simple federated learning setup for an LLM using the PyTorch library:</p><p class="zh-trans">下面用 PyTorch 为 LLM 实现一个简单的联邦学习框架：</p></div>
+<pre><code>import torch
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import copy
+
+# Initialize global model and tokenizer
+global_model = AutoModelForCausalLM.from_pretrained('google/gemma-1.1-2b-it')
+tokenizer = AutoTokenizer.from_pretrained('google/gemma-1.1-2b-it')
+
+# Simulated local datasets for Alice and Bob
+# In practice, these datasets would be kept on separate devices or locations
+alice_data = torch.tensor([[1, 2, 3, 4, 5]])  # Dummy data
+bob_data = torch.tensor([[6, 7, 8, 9, 10]])  # Dummy data
+
+# Define DataLoaders
+alice_loader = DataLoader(TensorDataset(alice_data), batch_size=1)
+bob_loader = DataLoader(TensorDataset(bob_data), batch_size=1)</code></pre>
+<div class="para"><p class="en">We need to define functions for local training and model aggregation:</p><p class="zh-trans">接下来定义本地训练与模型聚合函数：</p></div>
+<pre><code>def train_locally(
+    client_name,
+    local_model,
+    data_loader,
+    learning_rate=1e-5,
+    epochs=1
+):
+    """Train model on local data and return model updates."""
+    print(f"Training on {client_name}'s data...")
+
+    # Create a copy of the initial model state
+    initial_state = copy.deepcopy(local_model.state_dict())
+
+    # Define optimizer
+    optimizer = torch.optim.Adam(local_model.parameters(), lr=learning_rate)
+
+    total_loss = 0
+    for _ in range(epochs):
+        for batch in data_loader:
+            inputs = batch[0]  # In practice, this would be tokenized input data
+
+            # Create labels by shifting the input sequence by one position
+            # to the right
+            labels = torch.roll(inputs, -1, dims=1)
+            # Set the last element of labels to -100 to ignore it
+            # in loss calculation
+            labels[:, -1] = -100
+
+            outputs = local_model(inputs, labels=labels)
+
+            loss = outputs.loss
+            loss.backward()
+            optimizer.step()
+            optimizer.zero_grad()
+            total_loss += loss.item()
+
+    print(f"{client_name}'s training complete. Loss: {total_loss:.4f}")
+
+    # Calculate model updates (difference between current and initial state)
+    updates = {}
+    final_state = local_model.state_dict()
+    for key in final_state:
+        updates[key] = final_state[key] - initial_state[key]
+
+    return updates, total_loss</code></pre>
+<div class="page-marker">— PDF 第 128 页 —</div>
+<div class="para"><p class="en">When each local client has trained their model, you need to aggregate the updates using Federated Averaging (FedAvg):</p><p class="zh-trans">各本地客户端训练完后，用联邦平均（FedAvg）聚合更新：</p></div>
+<pre><code>def federated_averaging(global_model, updates_list, weights=None):
+    """Aggregate model updates using weighted averaging."""
+    if weights is None:
+        # Equal weighting for each client
+        weights = [1/len(updates_list)] * len(updates_list)
+
+    # Start with a zero update dictionary
+    averaged_updates = {}
+    for key in global_model.state_dict():
+        averaged_updates[key] = torch.zeros_like(global_model.state_dict()[key])
+
+    # Weighted sum of all updates
+    for client_idx, updates in enumerate(updates_list):
+        for key in updates:
+            averaged_updates[key] += updates[key] * weights[client_idx]
+
+    # Apply the averaged updates to the global model
+    global_state = global_model.state_dict()
+    for key in global_state:
+        global_state[key] = global_state[key] + averaged_updates[key]
+
+    global_model.load_state_dict(global_state)
+    return global_model</code></pre>
+<div class="para"><p class="en">Putting them all together, you can run the federated training loop:</p><p class="zh-trans">把它们组合起来，即可运行联邦训练循环：</p></div>
+<pre><code># Federated training loop
+for round_num in range(10):
+    print(f"\nFederated Round {round_num+1}")
+
+    # Create local model copies for each client
+    alice_model = copy.deepcopy(global_model)
+    bob_model = copy.deepcopy(global_model)
+    # Train locally on each client and get model updates
+    alice_updates, alice_loss = train_locally("Alice", alice_model, alice_loader)
+    bob_updates, bob_loss = train_locally("Bob", bob_model, bob_loader)
+
+    # Aggregate updates using federated averaging
+    client_updates = [alice_updates, bob_updates]
+    # Optionally weight by dataset size:
+    # weights = [len(alice_data), len(bob_data)]
+    global_model = federated_averaging(global_model, client_updates)
+
+    print(f"Global model updated after round {round_num+1}")</code></pre>
+<div class="page-marker">— PDF 第 129 页 —</div>
+<div class="para"><p class="en">The following code demonstrates a proper federated learning setup for an LLM using PyTorch. In this example, you simulate training the model on two separate datasets (Alice’s and Bob’s) without directly sharing the raw data. Instead, you would:</p><p class="zh-trans">下面的代码演示了用 PyTorch 为 LLM 搭建的正规联邦学习框架。本例模拟在两份独立数据（Alice 与 Bob）上训练而不直接共享原始数据：</p></div>
+<ol><li><span class="en">Start with a global model.</span><p class="zh-trans">从一个全局模型开始。</p></li><li><span class="en">Send copies of this model to each participant.</span><p class="zh-trans">把模型副本发送给每位参与者。</p></li><li><span class="en">Train the models locally on each participant’s private data.</span><p class="zh-trans">各方在自己的私有数据上本地训练。</p></li><li><span class="en">Calculate the model updates (parameter differences) for each participant.</span><p class="zh-trans">为各方计算模型更新（参数差值）。</p></li><li><span class="en">Send only these updates back to the central server for aggregation.</span><p class="zh-trans">只把这些更新发回中心服务器聚合。</p></li><li><span class="en">Apply federated averaging to combine these updates into a single, improved global model.</span><p class="zh-trans">用联邦平均把这些更新合并成一个改进后的全局模型。</p></li></ol>
+<div class="para"><p class="en">This process allows the model to learn from multiple data sources while ensuring that raw data never leaves its original location. Only model parameter updates are shared, significantly enhancing privacy protection while still enabling collaborative learning across distributed datasets.</p><p class="zh-trans">该过程让模型从多个数据源学习，同时确保原始数据不离开本地，只共享模型参数更新，在显著增强隐私保护的同时实现跨分布式数据集的协同学习。</p></div>
+<h3 id="fl-advantages">Advantages and Challenges of Federated Learning <span class="heading-zh zh">联邦学习的优势与挑战</span></h3>
+<div class="para"><p class="en">So far, you have understood the concepts and mathematical formulation of federated learning. You have implemented the federated learning approach and evaluated it in the example. To summarize, there are several advantages and challenges in applying federated learning.</p><p class="zh-trans">至此你已理解联邦学习的概念与数学表达，并在示例中实现和评估了它。总结其优势与挑战。</p></div>
+<div class="para"><p class="en">The first advantage is the data privacy: raw data never leaves its source, providing strong privacy guarantees. Second, you have improved data diversity: federated learning can incorporate insights from a wide variety of data sources and environments that would be impractical or impossible to centralize, leading to more robust and generalizable models. Third, you have regulatory compliance: it is easier to comply with data protection regulations like GDPR.</p><p class="zh-trans">优势首先是数据隐私：原始数据不离开源地，隐私保证强；其次是数据多样性：联邦学习能吸收难以集中的各类数据源与环境的洞见，得到更稳健、更具泛化性的模型；第三是合规：更容易满足 GDPR 等数据保护法规。</p></div>
+<div class="para"><p class="en">On the other hand, federated learning also has some challenges. The first one is communication overhead. Frequent model updates can be bandwidth-intensive (10 to 100 times more network traffic than centralized training). Second, when you have non-independent and identically distributed (IID) data, participants may have very different data distributions, affecting model convergence. Third, you may have model poisoning, where malicious participants could potentially corrupt the global model. Lastly, slow clients can delay the entire training process.</p><p class="zh-trans">挑战方面：首先是通信开销，频繁的模型更新很占带宽（网络流量是集中式训练的 10–100 倍）；其次是非独立同分布（non-IID）数据下，各方数据分布差异大，影响模型收敛；第三是模型投毒，恶意参与者可能破坏全局模型；最后是慢客户端会拖慢整个训练。</p></div>
+<div class="page-marker">— PDF 第 130 页 —</div>
+<div class="para"><p class="en">To solve some of these challenges, researchers have proposed various techniques such as model compression to reduce communication overhead, robust aggregation methods to mitigate the impact of malicious updates, and asynchronous training to handle slow clients. Another related method to federated learning is called split learning, which splits the model itself across multiple parties during decentralized training. Unlike federated learning where each client has a complete copy of the model, split learning divides the model architecture, with different parties computing different layers.</p><p class="zh-trans">为应对这些挑战，研究者提出了模型压缩（降低通信开销）、鲁棒聚合（削弱恶意更新影响）、异步训练（应对慢客户端）等方法。另一种相关方法是拆分学习（split learning）：在去中心化训练时把模型本身拆分到多方，不同于联邦学习每个客户端持有完整模型，拆分学习让不同方计算不同层。</p></div>
+<div class="para" style="border-left:4px solid #d1d5db;padding-left:12px;margin:14px 0"><p class="en" style="font-style:italic;color:#4b5563">When implementing federated learning, pay special attention to secure aggregation techniques to further enhance privacy. Also, consider implementing differential privacy in combination with FL for even stronger privacy guarantees.</p><p class="zh-trans" style="font-style:italic;background:#f9fafb">实施联邦学习时，应特别关注安全聚合技术以进一步增强隐私；也可考虑结合差分隐私与 FL 以获得更强保证。</p></div>
+<div class="para"><p class="en">In the next section, you’ll explore another fascinating privacy-preserving technique: homomorphic encryption. You’ll see how it compares to federated learning and differential privacy in terms of privacy protection and potential use cases.</p><p class="zh-trans">下一节探索另一项迷人的技术——同态加密，并对比它与联邦学习、差分隐私在隐私保护与适用场景上的异同。</p></div>
+<h2 id="homomorphic-encryption">Homomorphic Encryption in LLMs <span class="heading-zh zh">LLM 中的同态加密</span></h2>
+<div class="para"><p class="en">Homomorphic encryption (HE) represents one of the most powerful cryptographic tools for privacy-preserving machine learning. It allows computations to be performed directly on encrypted data, producing encrypted results that, when decrypted, match the results of operations performed on the plain text. This means that sensitive data can remain encrypted throughout the entire computation process, providing the ultimate privacy guarantees.</p><p class="zh-trans">同态加密（HE）是隐私保护机器学习中最强大的密码学工具之一。它允许直接在加密数据上计算，得到的密文结果解密后与在明文上运算的结果一致。这意味着敏感数据可在整个计算过程中始终保持加密，提供终极隐私保证。</p></div>
+<h3 id="he-concept">The Concept <span class="heading-zh zh">概念</span></h3>
+<div class="para"><p class="en">Homomorphic encryption allows computations to be performed on cipher text, generating an encrypted result which, when decrypted, matches the result of operations performed on the plain text.</p><p class="zh-trans">同态加密允许在密文上计算，生成的加密结果解密后与在明文上运算的结果一致。</p></div>
+<div class="para"><p class="en">In mathematical terms, for an encryption scheme E and a function f, homomorphic encryption allows:</p><p class="zh-trans">用数学语言说，对加密方案 E 与函数 f，同态加密允许：</p></div>
+<pre><code>f(E(x₁), E(x₂), …, E(xₙ)) = E(f(x₁, x₂, …, xₙ))</code></pre>
+<div class="page-marker">— PDF 第 131 页 —</div>
+<div class="para"><p class="en">There are different types of homomorphic encryption, depending on the scope of operations they support. Fully homomorphic encryption (FHE) supports arbitrary computations on encrypted data. Partial HE (PHE) supports only one certain operations (e.g., addition OR multiplication). Somewhat HE (SHE) supports a limited number of operations. PHE and SHE are often more efficient than FHE but less flexible.</p><p class="zh-trans">按支持运算的范围，同态加密分几类：全同态加密（FHE）支持密文上任意计算；部分同态加密（PHE）只支持某一种运算（如加法或乘法）；半同态（SHE）支持有限次运算。PHE 与 SHE 通常比 FHE 高效，但灵活性较低。</p></div>
+<h3 id="he-implement">Implementing HE for LLMs <span class="heading-zh zh">为 LLM 实现同态加密</span></h3>
+<div class="para"><p class="en">Let’s implement a simplified example using the phe library, which provides a partial homomorphic encryption scheme (Paillier). Note that this is a simplified example and not a full implementation of HE for LLMs. FHE is computationally intensive, so we’ll use a simpler example with the phe library:</p><p class="zh-trans">下面用 phe 库实现一个简化例子，它提供 Paillier 部分同态加密方案。注意这只是简化示例，并非 LLM 的完整 HE 实现；FHE 计算量巨大，故先用 phe 库的简单例子：</p></div>
+<pre><code>from phe import paillier
+
+# Generate public and private keys
+public_key, private_key = paillier.generate_paillier_keypair()
+
+# Encrypt model parameters (simplified: only encrypting a small subset)
+encrypted_params = [
+    [
+        public_key.encrypt(float(x))
+        for x in p.data.numpy().flatten()
+    ]
+    for p in model.parameters()
+]
+# Simulate encrypted input data
+input_data = np.random.rand(5, 768)  # Assuming 768 is the embedding dimension
+encrypted_input = [
+    [
+        public_key.encrypt(float(x))
+        for x in row
+    ]
+    for row in input_data
+]
+
+# Perform "encrypted forward pass" (highly simplified)
+def encrypted_forward(encrypted_input, encrypted_params):
+    """
+    Simplified encrypted computation.
+    Real implementations would be much more complex.
+    """
+    result = []
+    for row in encrypted_input:
+        row_result = sum(x * w for x, w in zip(row, encrypted_params[:768]))
+        result.append(row_result)
+    return result
+
+encrypted_output = encrypted_forward(encrypted_input, encrypted_params)
+# Decrypt the result
+decrypted_output = [private_key.decrypt(x) for x in encrypted_output]
+
+print("Decrypted output:", decrypted_output)</code></pre>
+<div class="page-marker">— PDF 第 132 页 —</div>
+<div class="para"><p class="en">In this example, you’ve encrypted the model parameters and input data using the Paillier cryptosystem from the phe library. You then performed a simplified “encrypted forward pass” by multiplying the encrypted input with the encrypted model parameters. Finally, you decrypted the output to obtain the result.</p><p class="zh-trans">本例用 phe 库的 Paillier 密码系统加密模型参数与输入数据，再做简化的“加密前向传播”（密文输入与密文参数相乘），最后解密输出得到结果。</p></div>
+<div class="para" style="border-left:4px solid #d1d5db;padding-left:12px;margin:14px 0"><p class="en" style="font-style:italic;color:#4b5563">This is a highly simplified example. Real-world applications of HE to LLMs are much more complex and computationally intensive. As you might already see, it takes such a long time to finish the run (even with a machine with A100 GPU)! Current limitations in FHE schemes make them challenging to apply to full-scale LLMs, but research in this area is ongoing.</p><p class="zh-trans" style="font-style:italic;background:#f9fafb">这是高度简化的例子。HE 用于 LLM 的真实应用要复杂、耗时得多——你可能已经发现，即便用 A100 GPU 也要跑很久。当前 FHE 方案的局限使其难以应用于全规模 LLM，但相关研究仍在推进。</p></div>
+<div class="para"><p class="en">As mentioned earlier, FHE is computationally intensive, so we’ll provide another example using the tenseal library CKKS scheme. This example is still simplified for demonstration purposes but provides an alternative to the phe library:</p><p class="zh-trans">如前所述 FHE 计算量巨大，下面再用 tenseal 库的 CKKS 方案给出另一个例子。它仍是演示用简化版，但提供了 phe 库之外的替代：</p></div>
+<pre><code>import tenseal as ts
+
+# Generate encryption keys with CKKS scheme
+context = ts.context(
+    ts.SCHEME_TYPE.CKKS,
+    poly_modulus_degree=8192, # Security parameter
+    coeff_mod_bit_sizes=[60, 40, 40, 60] # Precision parameters
+)
+context.global_scale = 2**40
+
+# Encrypt model parameters (simplified for demonstration)
+def encrypt_parameters(model, context):
+    encrypted_params = []
+    for param in model.parameters():
+        enc_param = ts.ckks_tensor(context, param.data.view(-1).tolist())
+        encrypted_params.append(enc_param)
+    return encrypted_params
+
+encrypted_params = encrypt_parameters(model, context)
+
+# Simulated encrypted forward pass (highly simplified)
+def encrypted_forward(encrypted_input, encrypted_params):
+    """
+    Simplified encrypted computation.
+    Real LLM inference would be much more complex.
+    """
+    result = encrypted_input * encrypted_params[0]
+    for param in encrypted_params[1:]:
+        result += param
+    return result
+
+# Simulate encrypted input
+input_data = torch.rand(10)  # Simplified input
+encrypted_input = ts.ckks_tensor(context, input_data.tolist())
+
+# Perform "encrypted inference"
+encrypted_output = encrypted_forward(encrypted_input, encrypted_params)
+
+print("Encrypted computation completed.")</code></pre>
+<div class="page-marker">— PDF 第 133 页 —</div>
+<div class="para"><p class="en">In this example, you’ve used the tenseal library to perform a simplified encrypted forward pass on an LLM. You’ve encrypted the model parameters and input data using the CKKS scheme, and performed a basic element-wise multiplication and addition to simulate an encrypted inference. The parameters poly_modulus_degree and coeff_mod_bit_sizes mean the size of the polynomial modulus and the bit sizes of the coefficient modulus, respectively. And they can be chosen based on the security level and performance requirements. The result is an encrypted tensor that can be decrypted to obtain the output. This is an alternative to the phe library, providing more advanced homomorphic encryption capabilities. However, as with FHE, the computational requirements are still significant, and warrant further research and optimization.</p><p class="zh-trans">本例用 tenseal 库对 LLM 做简化的加密前向传播：用 CKKS 方案加密模型参数与输入数据，做基本的逐元素乘加来模拟加密推理。参数 poly_modulus_degree 与 coeff_mod_bit_sizes 分别指多项式模的规模与系数模的位宽，可按安全等级与性能需求选择。结果是一个可解密得到输出的加密张量。它是 phe 库之外更高级的同态加密方案，但和 FHE 一样计算需求仍很大，有待进一步研究优化。</p></div>
+<h3 id="he-advantages">Advantages and Challenges of Homomorphic Encryption <span class="heading-zh zh">同态加密的优势与挑战</span></h3>
+<div class="para"><p class="en">There are several advantages and challenges to consider when applying homomorphic encryption to LLMs. First, let’s look at the advantages.</p><p class="zh-trans">把同态加密用于 LLM 时有若干优势与挑战。先看优势。</p></div>
+<div class="para"><p class="en">It doesn’t require data to be decrypted for processing, providing strong privacy guarantees as the ultimate privacy! In addition, it allows computations to be performed on encrypted data, enabling secure outsourcing of computations to untrusted platforms or cloud services. Finally, it helps meet strict regulatory requirements for data protection.</p><p class="zh-trans">优势：处理时无需解密数据，提供终极级别的强隐私保证；可在加密数据上计算，从而把计算安全地外包给不可信平台或云服务；并有助于满足严格的数据保护法规要求。</p></div>
+<div class="para" style="border-left:4px solid #d1d5db;padding-left:12px;margin:14px 0"><p class="en" style="font-style:italic;color:#4b5563">While homomorphic encryption provides exceptional privacy guarantees, its current computational requirements make it challenging to apply to full-scale LLMs. It’s an active area of research, and you can expect significant improvements in the future. Current practical applications focus on encrypting only specific sensitive parts of the pipeline and using HE for inference on already-trained models rather than training.</p><p class="zh-trans" style="font-style:italic;background:#f9fafb">尽管同态加密提供卓越的隐私保证，但当前的计算需求使其难以应用于全规模 LLM。它是活跃的研究方向，未来有望大幅改进。当前实际应用聚焦于只加密流水线中特定敏感环节，以及对已训练模型做推理时使用 HE，而非用于训练。</p></div>
+<div class="para"><p class="en">On the other hand, there are some challenges to consider when applying homomorphic encryption to LLMs. First, the computational overhead: HE operations are typically much slower than plain-text operations. Second, it usually has limited operations: not all operations are easily performed on encrypted data. Third, secure key distribution and management can be complex. Finally, existing models often need to be adapted to work with HE. So practical applications of HE to LLMs are still limited.</p><p class="zh-trans">挑战方面：首先是计算开销，HE 运算通常比明文运算慢得多；其次是运算受限，并非所有运算都能在加密数据上轻松完成；第三是安全密钥分发与管理复杂；最后是现有模型往往需要改造才能配合 HE。因此 HE 在 LLM 上的实际应用仍有限。</p></div>
+<div class="page-marker">— PDF 第 134 页 —</div>
+<div class="para" style="border-left:4px solid #d1d5db;padding-left:12px;margin:14px 0"><p class="en" style="font-style:italic;color:#4b5563">Consider using homomorphic encryption for specific, sensitive parts of your LLM pipeline rather than encrypting the entire model. This can provide enhanced privacy where it’s most needed while minimizing performance impact.</p><p class="zh-trans" style="font-style:italic;background:#f9fafb">考虑只对 LLM 流水线中特定的敏感环节使用同态加密，而非加密整个模型。这样在最需要之处增强隐私，同时尽量减小性能影响。</p></div>
+<div class="para"><p class="en">In the next section, you’ll explore multi-party computation, another powerful technique for privacy-preserving machine learning. You’ll see how it compares to the methods we’ve discussed so far and in what scenarios it might be particularly useful.</p><p class="zh-trans">下一节探索多方计算——隐私保护机器学习的另一项强大技术，并对比它与前述方法的异同及适用场景。</p></div>
+<h2 id="mpc">Multi-Party Computation for Secure Aggregation <span class="heading-zh zh">用于安全聚合的多方计算</span></h2>
+<div class="para"><p class="en">Multi-party computation (MPC) enables multiple parties to jointly compute a function over their inputs while keeping those inputs private. In the context of LLMs, MPC can be used for secure aggregation of model updates or for jointly training a model without revealing individual datasets.</p><p class="zh-trans">多方计算（MPC）让多方在保持各自输入私密的情况下，共同对这些输入计算某个函数。在 LLM 场景中，MPC 可用于模型更新的安全聚合，或在不泄露各自数据集的情况下联合训练模型。</p></div>
+<h3 id="mpc-concept">The Concept <span class="heading-zh zh">概念</span></h3>
+<div class="para"><p class="en">In MPC, computation is distributed among multiple parties in such a way that no single party can see the others’ private inputs. Yet, they can still collaboratively compute a function on those inputs. For LLMs, this could mean jointly training a model or securely aggregating model updates in a federated learning setup.</p><p class="zh-trans">MPC 把计算分摊到多方，使任何单一方都看不到他人的私有输入，却仍能协同计算函数。对 LLM 而言，这意味着联合训练模型，或在联邦学习中安全聚合模型更新。</p></div>
+<div class="para"><p class="en">The key idea is secret sharing: split private data into multiple shares distributed among parties, where: (1) no single share reveals anything about the original data; (2) the shares can be combined to reconstruct the original; and (3) computations can be performed on the shares.</p><p class="zh-trans">核心思想是秘密共享：把私有数据拆成若干份额分给各方，使得（1）单个份额不泄露原始数据的任何信息；（2）份额可合并重建原始数据；（3）可直接在份额上做计算。</p></div>
+<h3 id="mpc-implement">Implementing MPC with Modern Libraries <span class="heading-zh zh">用现代库实现 MPC</span></h3>
+<div class="para"><p class="en">Let’s first implement a simple secure aggregation protocol using the PySyft library, which provides tools for privacy-preserving machine learning that you are already familiar with from our example in the federated learning section:</p><p class="zh-trans">先用 PySyft 库实现一个简单的安全聚合协议——它提供隐私保护机器学习工具，你在联邦学习一节已见过：</p></div>
+<pre><code>import syft as sy
+
+# Initialize PySyft workers
+hook = sy.TorchHook(torch)
+alice = sy.VirtualWorker(hook, id="alice")
+bob = sy.VirtualWorker(hook, id="bob")
+charlie = sy.VirtualWorker(hook, id="charlie")
+secure_worker = sy.VirtualWorker(hook, id="secure_worker")
+
+# Function to generate dummy gradients
+# (in a real scenario, these would come from local training)
+def generate_dummy_gradients():
+    return [torch.rand(p.shape) for p in model.parameters()]
+
+# Secure aggregation function
+def secure_aggregate(gradients_list):
+    # Send gradients to secure worker
+    encrypted_gradients = [
+        [
+            grad.encrypt(
+                protocol="fss",
+                crypto_provider=secure_worker
+            ).send(secure_worker)
+            for grad in grads
+        ]
+        for grads in gradients_list
+    ]
+
+    # Perform secure aggregation
+    aggregated_gradients = []
+    for i in range(len(encrypted_gradients[0])):
+        sum_grad = encrypted_gradients[0][i]
+        for j in range(1, len(encrypted_gradients)):
+            sum_grad += encrypted_gradients[j][i]
+        aggregated_gradients.append(sum_grad)
+
+    # Decrypt and return aggregated gradients
+    return [grad.get().float_precision() for grad in aggregated_gradients]
+
+# Simulate MPC-based federated learning
+for epoch in range(5):
+    # Generate dummy gradients for each party
+    alice_grads = generate_dummy_gradients()
+    bob_grads = generate_dummy_gradients()
+    charlie_grads = generate_dummy_gradients()
+
+    # Perform secure aggregation
+    aggregated_grads = secure_aggregate([alice_grads, bob_grads, charlie_grads])
+
+    # Update model parameters
+    for param, grad in zip(model.parameters(), aggregated_grads):
+        param.data.add_(grad)
+
+    print(f"Epoch {epoch+1} completed")
+
+print("MPC-based training completed.")</code></pre>
+<div class="page-marker">— PDF 第 135 页 —</div>
+<div class="para"><p class="en">There are several Python packages that enable MPC. As an alternative, let’s also implement a simple secure aggregation protocol using the MPyC library:</p><p class="zh-trans">有多个 Python 包可实现 MPC。作为替代，再用 MPyC 库实现一个简单的安全聚合协议：</p></div>
+<pre><code>from mpyc.runtime import mpc
+import random
+
+async def generate_local_update():
+    # Simulate generating a model update
+    return [random.randint(0, 100) for _ in range(5)]
+
+async def secure_aggregation(mpc, num_parties):
+    await mpc.start()
+
+    # Generate local updates
+    local_updates = [await generate_local_update() for _ in range(num_parties)]
+
+    # **Change:** Define the order of the finite field as a prime number
+    # For example, a prime number larger than the maximum update value
+    order = 101
+
+    # Secret share the local updates using the defined order
+    secret_shares = [[mpc.SecFld(order)(update) for update in party_update]
+                     for party_update in local_updates]
+
+    # Aggregate the secret shares
+    aggregated_update = [sum(shares) for shares in zip(*secret_shares)]
+
+    # Reveal the aggregated result
+    result = await mpc.output(aggregated_update)
+
+    await mpc.shutdown()
+    return result
+
+# Run the secure aggregation, passing only the coroutine to mpc.run()
+mpc.run(secure_aggregation(mpc, 3))  # Simulate 3 parties</code></pre>
+<div class="page-marker">— PDF 第 136 页 —</div>
+<div class="para"><p class="en">This example demonstrates a simple secure aggregation protocol where multiple parties can combine their model updates without revealing their individual contributions. The MPyC library is a popular choice to provide tools for secure MPC, allowing parties to jointly compute a function while keeping their inputs private.</p><p class="zh-trans">本例演示了一个简单的安全聚合协议：多方可合并各自的模型更新而不泄露个人贡献。MPyC 库是实现安全 MPC 的常用选择，支持各方在保持输入私密的情况下协同计算函数。</p></div>
+<div class="para" style="border-left:4px solid #d1d5db;padding-left:12px;margin:14px 0"><p class="en" style="font-style:italic;color:#4b5563">In practice, MPC protocols for LLMs would be much more complex, involving secure training and evaluation procedures. This example is simplified to illustrate the core concept. For production systems, there are other libraries like CrypTen (Facebook/Meta) and TF Encrypted (Google) that provide more comprehensive MPC frameworks.</p><p class="zh-trans" style="font-style:italic;background:#f9fafb">实践中面向 LLM 的 MPC 协议要复杂得多，涉及安全训练与评估流程。本例仅用于讲清核心概念。生产环境可选用 CrypTen（Facebook/Meta）、TF Encrypted（Google）等更全面的 MPC 框架。</p></div>
+<div class="page-marker">— PDF 第 137 页 —</div>
+<h3 id="mpc-advantages">Advantages and Challenges of MPC <span class="heading-zh zh">MPC 的优势与挑战</span></h3>
+<div class="para"><p class="en">There are several advantages and challenges to consider when applying MPC to LLMs. Let’s look at the advantages. First, it preserves privacy: no single party has access to the complete data, providing strong privacy guarantees. Second, it enables collaborative learning: multiple parties can jointly train a model without sharing their individual datasets. Third, it provides distributed trust: no single party needs to be trusted with all the data, enhancing security.</p><p class="zh-trans">把 MPC 用于 LLM 有若干优势与挑战。优势：第一，保护隐私——任何单一方都无法访问完整数据；第二，支持协同学习——多方可在不共享各自数据集的情况下联合训练；第三，分布式信任——无需把所有数据托付给某一方，增强了安全性。</p></div>
+<div class="para"><p class="en">On the other hand, it also has some challenges. First, as with HE, it also has a computational overhead that is intensive, especially with a large number of parties. Second, it has a certain level of communication complexity as secure communication between parties is essential for MPC to work effectively. Third, it has scalability constraints. As the number of parties increases, the complexity of MPC protocols grows substantially. Finally, it has setup complexity, because coordinating multiple parties and managing cryptographic material can be challenging. Lastly, MPC has certain requirements for networks, such as low-latency, reliable connections between all parties.</p><p class="zh-trans">挑战方面：首先和 HE 一样计算开销大，尤其在参与方众多时；其次有通信复杂度，各方之间的安全通信是 MPC 有效运作的前提；第三是可扩展性受限——参与方增多时协议复杂度大幅上升；第四是部署复杂，协调多方与管理密码材料都不轻松；最后 MPC 对网络有要求，如各方之间低延迟、可靠连接。</p></div>
+<div class="para" style="border-left:4px solid #d1d5db;padding-left:12px;margin:14px 0"><p class="en" style="font-style:italic;color:#4b5563">MPC can be particularly useful in scenarios where multiple organizations want to collaboratively train an LLM without sharing their sensitive data. Consider combining MPC with other techniques like differential privacy for even stronger privacy guarantees—use MPC for secure aggregation and DP for protecting individual contributions.</p><p class="zh-trans" style="font-style:italic;background:#f9fafb">MPC 特别适用于多家机构想在不共享敏感数据的情况下协同训练 LLM 的场景。可考虑把 MPC 与差分隐私等技术结合以获得更强保证——用 MPC 做安全聚合，用 DP 保护个体贡献。</p></div>
+<div class="para"><p class="en">In our final section, you’ll explore privacy-preserving data augmentation, a technique that aims to generate synthetic data for training LLMs while preserving the privacy of the original dataset.</p><p class="zh-trans">最后一节将探讨隐私保护数据增强——一种在保护原始数据集隐私的同时生成合成数据用于训练 LLM 的技术。</p></div>
+<h2 id="peft">Parameter-Efficient Fine-Tuning for Privacy <span class="heading-zh zh">面向隐私保护的参数高效微调</span></h2>
+<div class="para"><p class="en">Training LLMs from scratch is computationally expensive and often impractical for many organizations. Fine-tuning pre-trained LLMs on specific tasks or domains is a more feasible approach. However, traditional fine-tuning methods involve updating all model parameters, which can lead to privacy concerns, especially when the training data contains sensitive information. To tackle this issue, an idea is to update only a small subset of model parameters while keeping the rest frozen.</p><p class="zh-trans">从头训练 LLM 计算昂贵，对许多机构并不现实；在特定任务或领域上微调预训练 LLM 更可行。但传统微调要更新全部参数，当训练数据含敏感信息时会带来隐私隐患。解决思路是：只更新一小部分参数，其余冻结。</p></div>
+<div class="para"><p class="en">This approach, known as parameter-efficient fine-tuning (PEFT), not only reduces computational costs but also enhances privacy by minimizing the attack surface. By training only a small subset of parameters, these methods reduce the amount of information that could potentially leak about the training data.</p><p class="zh-trans">这种方法称为参数高效微调（PEFT），既降低计算成本，又通过缩小攻击面增强隐私。只训练一小部分参数，就减少了可能泄露训练数据信息的途径。</p></div>
+<div class="page-marker">— PDF 第 138 页 —</div>
+<h3 id="lora">Low-Rank Adaptation <span class="heading-zh zh">低秩适配（LoRA）</span></h3>
+<div class="para"><p class="en">Low-Rank Adaptation (LoRA) works by freezing the pre-trained model weights and injecting trainable rank decomposition matrices into each layer of the Transformer architecture. Instead of fine-tuning all parameters, LoRA only updates these small adapter matrices.</p><p class="zh-trans">低秩适配（LoRA）冻结预训练模型权重，在 Transformer 每层注入可训练的秩分解矩阵。它不微调全部参数，只更新这些小型适配器矩阵。</p></div>
+<div class="para"><p class="en">Figure 4-2 illustrates the LoRA method, where low-rank adapters are added to the existing Transformer layers with the full weights being W. The matrices M1 and M2 represent the low-rank decomposition of the weight updates ΔW. If M1 has the same number of rows as W, and M2 has the same number of columns as W, you can express the weight update as ΔW = M1 × M2. This decomposition significantly reduces the number of trainable parameters, allowing the model to adapt to new tasks with significantly lower training costs than regular fine-tuning, which would require a full weight update in the size of matrix W.</p><p class="zh-trans">图 4-2 展示了 LoRA：在已有 Transformer 层（完整权重为 W）上加入低秩适配器，矩阵 M1、M2 是权重更新 ΔW 的低秩分解。若 M1 行数与 W 相同、M2 列数与 W 相同，则权重更新可写为 ΔW = M1 × M2。这种分解大幅减少可训练参数，使模型适应新任务的训练成本远低于需要按矩阵 W 规模全量更新的常规微调。</p></div>
+<figure><img src="data:image/jpeg;base64,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AKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKy/FH/Iqav/ANeU3/oDVqVl+KP+RU1f/rym/wDQGoA83+AH/IK1j/rtH/6Ca9cryP4Af8grWP8ArtH/AOgmvXKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAK8P8AjF/yUzQv+uEP/o5q9wrw/wCMX/JTNC/64Q/+jmoA9vpaSloAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigBDXhvwx/5LHrX0uf8A0aK9yNeG/DH/AJLHrX0uf/RooA9zooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACsvxR/yKmr/wDXlN/6A1alZfij/kVNX/68pv8A0BqAPN/gB/yCtY/67R/+gmvXK8j+AH/IK1j/AK7R/wDoJr1ygAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACvD/AIxf8lM0L/rhD/6OavcK8P8AjF/yUzQv+uEP/o5qAPb6WkpaACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAQ14b8Mf+Sx619Ln/ANGivcjXhvwx/wCSx619Ln/0aKAPc6KKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACuT1j4ieFtHuWt7nU1eZThkgQybT6EjgfnWB8YfEl3p9laaJpkhjutSJ8yRTgrGOMD0yT19Aa82s9KtLSIKIld+7uMk/4V00MNKvtojlxGKhQtfVs9X/4W34R/5+rj/wABmo/4W34R/wCfq4/8BmrzH7PB/wA8Iv8Av2P8KPs8H/PCL/v2P8K6v7Of834HJ/acf5fxPTv+Ft+Ef+fq4/8AAZqP+Ft+Ef8An6uP/AZq8x+zwf8APCL/AL9j/Cj7PB/zwi/79j/Cj+zn/N+Af2nH+X8T07/hbfhH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" alt="Figure 4-2. Low-rank adaptation method"><figcaption>Figure 4-2. Low-rank adaptation method<span class="zh">图 4-2。低秩适配（LoRA）方法示意图</span></figcaption></figure>
+<div class="para"><p class="en">In terms of privacy, LoRA offers several benefits. First, by reducing the number of trainable parameters, it limits the model’s capacity to memorize sensitive training data. Second, since only the adapter weights are updated, the attack surface for potential data extraction attacks is significantly smaller. Third, differential privacy techniques can be applied more effectively to a smaller set of parameters, making it easier to achieve strong privacy guarantees. Finally, auditing and verifying privacy properties become simpler with fewer trainable parameters.</p><p class="zh-trans">在隐私方面，LoRA 有多项好处：第一，可训练参数减少，限制了模型记忆敏感训练数据的能力；第二，只更新适配器权重，数据提取攻击的攻击面显著变小；第三，差分隐私技术可更有效地施加于较小的参数集，更容易达成强隐私保证；第四，可训练参数少了，隐私属性的审计与验证也更简单。</p></div>
+<div class="para"><p class="en">Here’s an example of how to implement LoRA for fine-tuning an LLM, along with differential privacy using the Opacus library:</p><p class="zh-trans">下面是用 LoRA 微调 LLM 并结合 Opacus 差分隐私的实现示例：</p></div>
+<pre><code>from transformers import AutoModelForCausalLM, AutoTokenizer
+from peft import LoraConfig, get_peft_model, TaskType
+import torch
+# Load base model
+tokenizer = AutoTokenizer.from_pretrained('gpt2')
+model = AutoModelForCausalLM.from_pretrained('gpt2')
+
+# Configure LoRA
+lora_config = LoraConfig(
+    task_type=TaskType.CAUSAL_LM,
+    r=8,  # Rank of decomposition (low rank = more compression)
+    lora_alpha=16,  # Scaling factor
+    lora_dropout=0.1,
+    target_modules=["c_attn", "c_proj"],  # Which layers to adapt
+    bias="none"
+)
+
+# Create LoRA model
+model = get_peft_model(model, lora_config)
+
+# Print trainable parameters
+model.print_trainable_parameters()
+# trainable params: 811,008 || all params: 125,250,816 || trainable%: 0.6475%
+
+# Training with LoRA + differential privacy
+from opacus import PrivacyEngine
+
+optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4)
+privacy_engine = PrivacyEngine()
+
+model, optimizer, train_loader = privacy_engine.make_private_with_epsilon(
+    module=model,
+    optimizer=optimizer,
+    data_loader=train_loader,
+    epochs=3,
+    target_epsilon=1.0,  # Much easier to achieve with fewer parameters
+    target_delta=1e-5,
+    max_grad_norm=1.0,
+)
+
+# Train as normal...</code></pre>
+<div class="page-marker">— PDF 第 139 页 —</div>
+<div class="para" style="border-left:4px solid #d1d5db;padding-left:12px;margin:14px 0"><p class="en" style="font-style:italic;color:#4b5563">LoRA reduces the number of trainable parameters by 99% or more while maintaining competitive performance. This dramatic reduction makes it much easier to apply strong privacy guarantees—achieving ε ≤ 1.0 with LoRA might require only modest noise, whereas the same guarantee for full fine-tuning might degrade performance unacceptably.</p><p class="zh-trans" style="font-style:italic;background:#f9fafb">LoRA 在保持竞争力性能的同时把可训练参数减少 99% 以上。这种大幅缩减使强隐私保证更容易施加——用 LoRA 达到 ε≤1.0 可能只需适度噪声，而全量微调要达到同样保证则可能让性能下降到不可接受。</p></div>
+<div class="para"><p class="en">In Chapter 9, you’ll explore real-world case studies where LoRA has been successfully applied with DP-SGD to fine-tune LLMs on sensitive datasets, demonstrating its effectiveness in balancing privacy and performance.</p><p class="zh-trans">第 9 章将给出真实案例：LoRA 结合 DP-SGD 在敏感数据集上微调 LLM，展示其在隐私与性能之间取得平衡的有效性。</p></div>
+<div class="page-marker">— PDF 第 140 页 —</div>
+<h3 id="qlora">Quantized Low-Rank Adaptation <span class="heading-zh zh">量化低秩适配（QLoRA）</span></h3>
+<div class="para"><p class="en">Quantized Low-Rank Adaptation (QLoRA) extends LoRA by using quantization to reduce memory footprint even further, enabling fine-tuning of very large models on consumer hardware while maintaining privacy benefits:</p><p class="zh-trans">量化低秩适配（QLoRA）在 LoRA 基础上用量化进一步降低显存占用，使超大模型能在消费级硬件上微调，同时保留隐私收益：</p></div>
+<pre><code>from transformers import AutoModelForCausalLM, BitsAndBytesConfig
+from peft import prepare_model_for_kbit_training, LoraConfig, get_peft_model
+import torch
+
+# Quantization configuration
+bnb_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_use_double_quant=True,
+    bnb_4bit_quant_type="nf4",
+    bnb_4bit_compute_dtype=torch.bfloat16
+)
+
+# Load model in 4-bit
+model = AutoModelForCausalLM.from_pretrained(
+    "unsloth/Llama-3.2-1B-Instruct",
+    quantization_config=bnb_config,
+    device_map="auto"
+)
+
+# Prepare for k-bit training
+model = prepare_model_for_kbit_training(model)
+
+# Apply LoRA
+lora_config = LoraConfig(
+    r=16,
+    lora_alpha=32,
+    target_modules=["q_proj", "v_proj"],
+    lora_dropout=0.05,
+    bias="none",
+    task_type="CAUSAL_LM"
+)
+
+model = get_peft_model(model, lora_config)</code></pre>
+<div class="para"><p class="en">Lastly, similar to LoRA and QLoRA, another popular PEFT method is adapter layers. Adapter layers are small bottleneck layers inserted between Transformer layers. Like LoRA, they keep the original model frozen and only train the adapter parameters.</p><p class="zh-trans">最后，与 LoRA、QLoRA 类似的另一类流行 PEFT 方法是适配器层（adapter layers）：在 Transformer 层之间插入小型瓶颈层。和 LoRA 一样，它冻结原模型，只训练适配器参数。</p></div>
+<div class="page-marker">— PDF 第 141 页 —</div>
+<div class="para" style="border-left:4px solid #d1d5db;padding-left:12px;margin:14px 0"><p class="en" style="font-style:italic;color:#4b5563">For privacy-sensitive applications: (1) Start with LoRA or QLoRA for the best balance of privacy and performance. (2) Use lower rank (r = 4 or r = 8) for stronger privacy with acceptable performance trade-offs. (3) Combine with differential privacy for formal privacy guarantees. (4) Consider QLoRA for very large models to enable training on limited hardware.</p><p class="zh-trans" style="font-style:italic;background:#f9fafb">对隐私敏感的应用：(1) 从 LoRA 或 QLoRA 入手，在隐私与性能间取得最佳平衡；(2) 使用更低秩（r=4 或 r=8）以更强隐私换取可接受的性能代价；(3) 结合差分隐私获得形式化隐私保证；(4) 超大模型考虑 QLoRA，以便在有限硬件上训练。</p></div>
+<h2 id="data-transformation">Privacy-Preserving Data Transformation <span class="heading-zh zh">隐私保护数据变换</span></h2>
+<div class="para"><p class="en">Our final trick in the privacy-preserving toolbox is a technique that sounds almost contradictory: generating fake data to protect real data. It’s like using a stunt double to protect the identity of the real actor! These approaches range from anonymizing real data to generating entirely synthetic replacements.</p><p class="zh-trans">隐私保护工具箱里的最后一招听起来近乎矛盾：靠生成假数据来保护真数据，就像用替身保护真人演员的身份！这类方法涵盖对真实数据匿名化，乃至生成完全的合成替代数据。</p></div>
+<h3 id="anonymization">Data Anonymization and De-Identification <span class="heading-zh zh">数据匿名化与去标识化</span></h3>
+<div class="para"><p class="en">Before diving into synthetic data generation, let’s explore how we can anonymize real data while preserving its utility for LLM training. Data anonymization involves identifying and removing or replacing PII and other sensitive data from a dataset. For LLMs, this typically focuses on text data and requires sophisticated natural language processing to detect and transform sensitive elements.</p><p class="zh-trans">在深入合成数据生成之前，先看如何在保留 LLM 训练效用的前提下对真实数据匿名化。数据匿名化指识别并移除或替换数据集中的 PII 与其他敏感数据。对 LLM 而言，这通常针对文本数据，需要用成熟的自然语言处理来检测并转换敏感元素。</p></div>
+<div class="para"><p class="en">Let’s implement a simple anonymization pipeline for text data:</p><p class="zh-trans">下面实现一个简单的文本数据匿名化流水线：</p></div>
+<pre><code>import re
+import spacy
+import random
+from presidio_analyzer import AnalyzerEngine
+from presidio_anonymizer import AnonymizerEngine
+
+class LLMDataAnonymizer:
+    def __init__(self):
+        # Initialize NER components
+        self.nlp = spacy.load("en_core_web_md")
+        self.analyzer = AnalyzerEngine()
+        self.anonymizer = AnonymizerEngine()
+
+        # Replacement dictionaries for consistency
+        self.name_replacements = {}
+        self.location_replacements = {}
+
+    def anonymize_text(self, text):
+        """Anonymize sensitive information in text."""
+        # Analyze text with Presidio for PII detection
+        analyzer_results = self.analyzer.analyze(text=text, language="en")
+
+        # Anonymize identified entities
+        anonymized_text = self.anonymizer.anonymize(
+            text=text,
+            analyzer_results=analyzer_results
+        ).text
+
+        # You may add other processing with spaCy for consistent replacements
+        doc = self.nlp(anonymized_text)
+
+        # Process entities for consistent replacements
+        tokens = []
+        for token in doc:
+            if token.ent_type_ == "PERSON":
+                if token.text not in self.name_replacements:
+                    self.name_replacements[token.text] = (
+                        f"PERSON_{len(self.name_replacements)}"
+                    )
+                tokens.append(self.name_replacements[token.text])
+            elif token.ent_type_ == "GPE" or token.ent_type_ == "LOC":
+                if token.text not in self.location_replacements:
+                    self.location_replacements[token.text] = (
+                        f"LOCATION_{len(self.location_replacements)}"
+                    )
+                tokens.append(self.location_replacements[token.text])
+            else:
+                tokens.append(token.text)
+
+        return " ".join(tokens)
+
+    def anonymize_dataset(self, texts):
+        """Anonymize a list of text samples."""
+        return [self.anonymize_text(text) for text in texts]</code></pre>
+<div class="page-marker">— PDF 第 142 页 —</div>
+<div class="para"><p class="en">As an example usage, let’s anonymize a small dataset:</p><p class="zh-trans">作为使用示例，对一个小数据集做匿名化：</p></div>
+<pre><code>anonymizer = LLMDataAnonymizer()
+
+sensitive_texts = [
+    "John Smith visited New York and met with Dr. Sarah Johnson.",
+    "Patient Jane Doe (SSN: 123-45-6789) reported symptoms of fever.",
+    "Please contact Michael at michael@gmail.com or call 555-123-4567."
+]
+
+anonymized_texts = anonymizer.anonymize_dataset(sensitive_texts)
+
+for original, anonymized in zip(sensitive_texts, anonymized_texts):
+    print(f"Original: {original}")
+    print(f"Anonymized: {anonymized}")
+    print()</code></pre>
+<div class="page-marker">— PDF 第 143 页 —</div>
+<div class="para"><p class="en">This example implements a text anonymization pipeline that uses the Presidio library to detect and replace common PII like emails, phone numbers, and Social Security numbers. It then uses spaCy for named entity recognition to identify people and locations. By replacing sensitive entities with consistent tokens (same person = same replacement), you can ensure that the anonymized text retains its structure and relationships while removing identifiable information.</p><p class="zh-trans">本例实现的文本匿名化流水线用 Presidio 库检测并替换邮箱、电话、社安号等常见 PII，再用 spaCy 做命名实体识别人物与地点。通过用一致的标记替换敏感实体（同一人=同一替换），可确保匿名化文本在去除可识别信息的同时保留其结构与关系。</p></div>
+<h4 id="anonymization-notes">Anonymization Considerations <span class="heading-zh zh">匿名化注意事项</span></h4>
+<div class="para"><p class="en">In practice, we usually adopt a staged approach to anonymization: start with automated tools, follow with manual review of a sample, and finally validate using privacy metrics before using for LLM training. The challenge with anonymization for LLMs is preserving the utility of the data while removing sensitive information.</p><p class="zh-trans">实践中通常采用分阶段匿名化：先用自动化工具，再人工抽检样本，最后用隐私指标验证，然后才用于 LLM 训练。LLM 匿名化的难点在于去除敏感信息的同时保留数据效用。</p></div>
+<div class="para"><p class="en">There are several strategies to consider. One is to preserve linguistic structure by replacing entities with similar types (e.g., names with synthetic names) rather than generic tokens. This helps maintain the natural flow of the text. Another is to maintain semantic relationships by using consistent replacements for the same entities throughout the text. Additionally, be cautious not to oversimplify domain-specific information that may be rare but important for model performance. This is particularly relevant in specialized fields, like healthcare or finance, to not lose critical context.</p><p class="zh-trans">可考虑若干策略：一是用同类实体替换（如用合成姓名替换人名）而非通用标记，以保留语言结构与文本自然流畅；二是全文对同一实体使用一致替换，维持语义关系；此外要避免过度简化领域专有信息——它们可能罕见却对模型性能重要，在医疗、金融等专业领域尤其如此，以免丢失关键上下文。</p></div>
+<div class="para"><p class="en">Finally, you should validate the quality of anonymization using adversarial techniques to attempt reidentification.</p><p class="zh-trans">最后，应使用对抗技术尝试重标识，以此验证匿名化的质量。</p></div>
+<h3 id="data-augmentation">Privacy-Preserving Data Augmentation <span class="heading-zh zh">隐私保护数据增强</span></h3>
+<div class="para"><p class="en">Privacy-preserving data augmentation techniques aim to generate synthetic data that maintains the statistical properties of the original dataset without exposing individual records. For LLMs, this means creating text data that captures the patterns and distributions of the original corpus without reproducing any specific, identifiable information.</p><p class="zh-trans">隐私保护数据增强技术旨在生成既保持原始数据集统计特性、又不暴露个体记录的合成数据。对 LLM 而言，即创建能捕捉原始语料模式与分布、却不复现任何具体可识别信息的文本数据。</p></div>
+<div class="para"><p class="en">Let’s implement a simple example of privacy-preserving data augmentation using differential privacy and a pre-trained language model to generate synthetic text data:</p><p class="zh-trans">下面用差分隐私与预训练语言模型实现一个简单的隐私保护数据增强示例，用于生成合成文本数据：</p></div>
+<pre><code>import torch
+import numpy as np
+
+def add_noise(text, epsilon=1.0):
+    """Add differentially private noise to text"""
+    noise = np.random.laplace(0, 1/epsilon, len(text))
+    noisy_text = ''.join([
+        chr(max(32, min(126, ord(c) + int(n))))
+        for c, n in zip(text, noise)
+    ])
+    return noisy_text
+
+def generate_synthetic_data(
+    model,
+    tokenizer,
+    prompt,
+    num_samples=5,
+    max_length=50,
+    epsilon=1.0
+):
+    synthetic_data = []
+    for _ in range(num_samples):
+        inputs = tokenizer(prompt, return_tensors="pt")
+        with torch.no_grad():
+            outputs = model.generate(
+                **inputs,
+                max_length=max_length,
+                num_return_sequences=1
+            )
+        generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        noisy_text = add_noise(generated_text, epsilon)
+        synthetic_data.append(noisy_text)
+    return synthetic_data</code></pre>
+<div class="page-marker">— PDF 第 144 页 —</div>
+<div class="para"><p class="en">This example uses a pre-trained language model to generate synthetic text, then adds differentially private noise to provide privacy guarantees. The add_noise function adds Laplace noise to the generated text, ensuring that the synthetic data maintains the statistical properties of the original corpus while protecting individual records. The generate_synthetic_data function generates multiple samples of synthetic text based on a given prompt, allowing you to create a diverse set of synthetic data for training.</p><p class="zh-trans">本例用预训练语言模型生成合成文本，再加入差分隐私噪声以提供隐私保证。add_noise 函数对生成文本加拉普拉斯噪声，使合成数据在保护个体记录的同时保持原始语料的统计特性；generate_synthetic_data 函数基于给定提示生成多个合成文本样本，便于创建多样化的训练用合成数据。</p></div>
+<div class="para" style="border-left:4px solid #d1d5db;padding-left:12px;margin:14px 0"><p class="en" style="font-style:italic;color:#4b5563">The noise addition approach shown is illustrative only and doesn’t provide rigorous DP guarantees for text generation. Production systems should use DP-trained generative models and proper privacy accounting to ensure formal privacy guarantees.</p><p class="zh-trans" style="font-style:italic;background:#f9fafb">这里的加噪方式仅作示意，并不能为文本生成提供严格的 DP 保证。生产系统应使用经 DP 训练的生成模型并配合恰当的隐私核算，以确保形式化的隐私保证。</p></div>
+<h3 id="aug-advantages">Advantages and Challenges of Privacy-Preserving Data Augmentation <span class="heading-zh zh">隐私保护数据增强的优势与挑战</span></h3>
+<div class="para"><p class="en">The data augmentation method has several advantages and challenges. Let’s look at the advantages. First, it provides a very nice data utility: synthetic data can generate large amounts of useful data for training. Second, it protects privacy: original sensitive data is never directly used or exposed. Third, it offers flexibility: synthetic data can be generated for various scenarios or underrepresented cases. This is particularly useful when the original dataset is limited or lacks diversity.</p><p class="zh-trans">数据增强方法有若干优势与挑战。优势：第一，数据效用好——合成数据可生成大量有用训练数据；第二，保护隐私——原始敏感数据从不被直接使用或暴露；第三，灵活——可针对各种场景或代表性不足的情形生成合成数据，这在原始数据集有限或缺乏多样性时尤其有用。</p></div>
+<div class="page-marker">— PDF 第 145 页 —</div>
+<div class="para"><p class="en">On the other hand, there are some challenges to consider. First, if you are using synthetic data, it’s important to maintain data quality by ensuring that the synthetic data accurately reflects important properties of the original data; this can be challenging. Second, there is a privacy-utility trade-off as with other methods you’ve explored: stronger privacy guarantees may reduce the utility of the synthetic data. Third, the evaluation is key but complex. Assessing the quality and privacy guarantees of synthetic data can be challenging.</p><p class="zh-trans">挑战方面：第一，使用合成数据时须保证其准确反映原始数据的重要特性以维持数据质量，这并不容易；第二，与其他方法一样存在隐私-效用权衡——隐私保证越强，合成数据效用可能越低；第三，评估既关键又复杂——衡量合成数据的质量与隐私保证颇具难度。</p></div>
+<div class="para"><p class="en">The nature of the data itself could also pose challenges. Unlike its vision counterparts, text data, in particular, has complex structures and dependencies that can be difficult to capture in synthetic generation. Models may fail to capture the full diversity of the original data, leading to synthetic data that lacks important variations (a phenomenon known as mode collapse). You also want the data to have fidelity to the original data distribution, which can be difficult to achieve.</p><p class="zh-trans">数据本身的性质也带来挑战。与视觉数据不同，文本数据结构复杂、依赖关系多，合成生成难以完整捕捉。模型可能无法捕捉原始数据的全部多样性，导致合成数据缺失重要变异（即模式崩溃）；同时你还希望合成数据忠实于原始分布，这也不易实现。</p></div>
+<div class="para" style="border-left:4px solid #d1d5db;padding-left:12px;margin:14px 0"><p class="en" style="font-style:italic;color:#4b5563">When using privacy-preserving data augmentation, you should consider the following best practices: Combine multiple techniques we’ve mentioned. For instance, you can use differential privacy during the synthetic data generation process for stronger guarantees. Validate thoroughly by testing synthetic data quality using statistical tests and downstream task performance. Audit privacy whenever possible. For instance, you can use membership inference attacks on your synthetic data to verify privacy guarantees. Lastly, document provenance for future inspection. If you clearly document what data was used to train the generator and the privacy parameters used, it will help with future audits and compliance checks.</p><p class="zh-trans" style="font-style:italic;background:#f9fafb">使用隐私保护数据增强时，建议遵循以下最佳实践：组合多种技术，例如在合成数据生成过程中使用差分隐私以获得更强保证；用统计检验与下游任务性能充分验证合成数据质量；尽可能审计隐私，例如对合成数据做成员推断攻击以验证隐私保证；最后记录数据来源以备日后审查——清楚记录训练生成器所用数据及隐私参数，将有助于未来的审计与合规检查。</p></div>
+<h2 id="summary">Summary <span class="heading-zh zh">本章小结</span></h2>
+<div class="para"><p class="en">You’ve explored a variety of privacy-preserving training techniques for LLMs, each with its own strengths and challenges. The choice of technique depends on your specific use case, privacy requirements, and computational resources.</p><p class="zh-trans">本章探索了多种面向 LLM 的隐私保护训练技术，各有优劣。技术的选择取决于具体用例、隐私要求与计算资源。</p></div>
+<div class="para"><p class="en">Let’s recap the key points:</p><p class="zh-trans">小结如下：</p></div>
+<ul><li><span class="en">Differential privacy offers a mathematical guarantee of privacy but may impact model utility. Choose differential privacy when you need mathematical privacy guarantees, you can tolerate some utility loss, regulatory compliance requires formal privacy proofs, and you’re working with centralized data.</span><p class="zh-trans">差分隐私提供数学化的隐私保证，但可能影响模型效用。当需要数学化隐私保证、能容忍一定效用损失、法规要求形式化隐私证明，且数据为集中式时，选差分隐私。</p></li><li><span class="en">Federated learning allows training on distributed data without centralizing it, but faces challenges with non-IID data. Choose federated learning when data is naturally distributed across organizations/devices, data cannot be moved due to regulations or bandwidth constraints, participants want to maintain control over their data, and you can handle communication overhead.</span><p class="zh-trans">联邦学习可在不集中数据的前提下于分布式数据上训练，但面临 non-IID 数据挑战。当数据天然分布于各机构/设备、因法规或带宽不能移动、各方希望保留数据控制权、且你能承受通信开销时，选联邦学习。</p></li><li><span class="en">Homomorphic encryption provides the highest level of privacy but is computationally intensive. Choose homomorphic encryption when privacy requirements are absolute, computation is limited to specific operations, you can afford significant performance overhead, and you’re working with extremely sensitive data (medical, financial).</span><p class="zh-trans">同态加密提供最高级别隐私，但计算量巨大。当隐私要求绝对、计算限于特定运算、能承受显著性能开销、且处理极其敏感的数据（医疗、金融）时，选同态加密。</p></li><li><span class="en">Multi-party computation enables secure collaborative training but can be complex to implement at scale. Choose multi-party computation when multiple organizations need to collaborate; no single party should see the combined data; you have reliable, low-latency connections; and the number of participants is relatively small (<10).</span><p class="zh-trans">多方计算支持安全协同训练，但大规模实现复杂。当多家机构需协作、任何单一方都不应看到合并数据、具备可靠低延迟连接、且参与方较少（<10）时，选 MPC。</p></li><li><span class="en">Parameter-efficient fine-tuning (PEFT) methods like LoRA and QLoRA reduce the number of trainable parameters, enhancing privacy while maintaining performance. Choose LoRA/PEFT when working with large models and limited resources, you want to reduce memorization risk, you need to apply strong DP with acceptable utility, and you want easier privacy auditing.</span><p class="zh-trans">LoRA、QLoRA 等 PEFT 方法减少可训练参数，在保持性能的同时增强隐私。当面对大模型与有限资源、想降低记忆风险、需在可接受效用下施加强 DP、并希望隐私审计更简单时，选 LoRA/PEFT。</p></li><li><span class="en">Privacy-preserving data augmentation allows training on synthetic data, but maintaining data quality can be challenging. Choose this option when you need to share data for research/testing, original data access is completely restricted, you can validate synthetic data quality, and you have resources to train quality generators.</span><p class="zh-trans">隐私保护数据增强允许在合成数据上训练，但维持数据质量有挑战。当需要共享数据用于研究/测试、原始数据完全不可访问、你能验证合成数据质量、且有资源训练高质量生成器时，选此方法。</p></li></ul>
+<div class="page-marker">— PDF 第 146 页 —</div>
+<div class="para"><p class="en">The choice of technique depends on your specific use case, privacy requirements, and computational resources. Often, a combination of these methods can provide the best balance of privacy, security, and utility.</p><p class="zh-trans">技术的选择取决于具体用例、隐私要求与计算资源。通常组合使用这些方法，能在隐私、安全与效用之间取得最佳平衡。</p></div>
+<div class="para"><p class="en">Remember, privacy isn’t just about compliance, but about building trust with users and protecting individuals’ rights. As an AI practitioner, you have a responsibility to implement these techniques and continuously improve your privacy-preserving methods.</p><p class="zh-trans">请记住，隐私不仅关乎合规，更关乎与用户建立信任、保护个人权利。作为 AI 从业者，你有责任实施这些技术并持续改进隐私保护方法。</p></div>
+<div class="para"><p class="en">In the next chapter, you’ll dive into how to evaluate the effectiveness of these privacy-preserving techniques and ensure that our LLMs are not just powerful, but also trustworthy and respectful of individual privacy. After all, even the most privately trained model can be compromised through insecure deployment practices.</p><p class="zh-trans">下一章将深入探讨如何评估这些隐私保护技术的有效性，确保 LLM 不仅强大，而且可信、尊重个人隐私。毕竟，即便是隐私训练得再好的模型，也可能因不安全的部署实践而被攻破。</p></div>
+<div class="pager"><a href="chapter-03.html">← 上一章</a><a href="index.html">返回目录</a><a href="chapter-05.html">下一章 →</a></div>
+</main>
+<button id="lang-fab" title="切换语言模式（中英对照/仅英文/仅中文）">🌐</button>
+<div id="lang-label"></div>
+<script>
+(function(){
+  // ---- TOC drawer toggle ----
+  var toggle=document.getElementById('toc-toggle');
+  var toc=document.getElementById('toc');
+  var mainEl=document.querySelector('main');
+  toggle.addEventListener('click',function(){
+    if(window.innerWidth<=900){ toc.classList.toggle('show'); }
+    else{ toc.classList.toggle('hidden'); mainEl.classList.toggle('full'); }
+  });
+  toc.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click',function(){ if(window.innerWidth<=900) toc.classList.remove('show'); });
+  });
+
+  // ---- click English paragraph -> toggle its Chinese sibling (class-based) ----
+  document.querySelectorAll('p.en').forEach(function(en){
+    en.addEventListener('click',function(){
+      var zh = en.nextElementSibling;
+      if(zh && zh.classList.contains('zh-trans')){
+        zh.classList.toggle('expanded');
+        en.classList.toggle('expanded');
+      }
+    });
+  });
+
+  // ---- language mode cycle: both -> en -> zh -> both ----
+  var fab=document.getElementById('lang-fab');
+  var label=document.getElementById('lang-label');
+  var modes=['both','en','zh'];
+  var names={both:'中英对照',en:'仅英文',zh:'仅中文'};
+  var cur=localStorage.getItem('book-lang-mode')||'both';
+  if(modes.indexOf(cur)<0) cur='both';
+  apply(cur);
+  function apply(m){
+    cur=m;
+    document.body.setAttribute('data-mode',m);
+    label.textContent=names[m];
+    try{localStorage.setItem('book-lang-mode',m);}catch(e){}
+  }
+  fab.addEventListener('click',function(){
+    var i=modes.indexOf(cur);
+    apply(modes[(i+1)%modes.length]);
+    label.style.display='block';
+    if(label._t) clearTimeout(label._t);
+    label._t=setTimeout(function(){label.style.display='none';},1200);
+  });
+})();
+</script>
+</body>
+</html>
