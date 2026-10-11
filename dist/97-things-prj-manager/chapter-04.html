@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perspective, Completion, and Cycles — 双语阅读</title>
+<style>:root{
+  --accent:#2563eb; --zh-bg:#f0f6ff; --zh-border:#2563eb;
+  --code-bg:#0f172a; --code-ink:#e2e8f0; --ink:#1f2937;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:#faf6f1;color:var(--ink);
+  font:18px/1.7 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+a{color:var(--accent)}
+
+/* ---------- 左侧固定目录 ---------- */
+nav#toc{position:fixed;top:0;left:0;bottom:0;width:300px;overflow-y:auto;
+  background:#fff;border-right:1px solid #e5e7eb;padding:20px 0;
+  transform:translateX(0);transition:transform .25s ease;z-index:20}
+nav#toc.hidden{transform:translateX(-300px)}
+nav#toc h1{font-size:15px;padding:0 20px 8px;color:var(--accent);margin:0}
+nav#toc a{display:block;padding:6px 20px;color:var(--ink);text-decoration:none;
+  font-size:14px;line-height:1.5}
+nav#toc a:hover{background:var(--zh-bg);color:var(--accent)}
+nav#toc a.l1{font-weight:700}
+nav#toc a.l2{font-weight:700}
+nav#toc a.l3{padding-left:40px}
+#tocToggle{position:fixed;top:12px;left:12px;z-index:30;width:40px;height:40px;
+  border:1px solid #e5e7eb;background:#fff;border-radius:8px;font-size:18px;
+  cursor:pointer;color:var(--accent);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+#tocToggle:hover{background:var(--zh-bg)}
+
+/* ---------- 主内容 ---------- */
+main{margin-left:300px;max-width:900px;padding:24px 40px 96px}
+.chapter-head{border-bottom:2px solid var(--accent);padding-bottom:12px;margin-bottom:28px}
+.chapter-head .chap-label{color:var(--accent);font-weight:700;font-size:15px;
+  text-transform:uppercase;letter-spacing:.08em}
+.chapter-head h1{margin:6px 0 4px;font-size:30px}
+.chapter-head .chap-sub{color:#6b7280;margin:0;font-size:18px}
+
+/* ---------- 中英对照段落 ---------- */
+p.en{margin:14px 0;transition:background .15s}
+p.en:hover{background:#eef4ff;border-radius:8px}
+p.zh{display:block;background:var(--zh-bg);border-left:4px solid var(--zh-border);
+  border-radius:0 8px 8px 0;padding:10px 16px;margin:0 0 16px}
+p.zh.show{display:block}
+/* 列表项中文与 p.zh 同规格 */
+li .zh{display:block;background:var(--zh-bg);border-left:4px solid var(--zh-border);
+  border-radius:0 8px 8px 0;padding:8px 14px;margin:6px 0 10px}
+li .zh.show{display:block}
+/* 行内标题的中文对照（紧跟英文之后，灰色小字） */
+.zh-inline{color:#6b7280;font-weight:400;margin-left:8px}
+
+/* ---------- 代码块 ---------- */
+pre{background:var(--code-bg);color:var(--code-ink);border-radius:8px;
+  padding:14px 16px;overflow-x:auto;font:13.5px/1.6 "SF Mono",Menlo,Consolas,monospace}
+code{font-family:"SF Mono",Menlo,Consolas,monospace}
+p code,li code{background:#fde9f3;color:#be185d;border-radius:4px;
+  padding:1px 6px;font-size:.9em}
+
+/* ---------- 表格 ---------- */
+table{border-collapse:collapse;width:100%;margin:14px 0}
+th,td{border:1px solid #d1d5db;padding:8px 12px;text-align:left;font-size:16px}
+th{background:#f1f5f9}
+
+/* ---------- 图片 ---------- */
+figure{margin:20px 0}
+figure img{max-width:100%;height:auto;border:1px solid #e5e7eb;border-radius:8px}
+figcaption{color:#6b7280;font-size:15px;margin-top:8px}
+
+/* ---------- 页码标记 ---------- */
+.page-mark{margin:26px 0 6px;padding-top:8px;border-top:1px dashed #d1d5db;
+  color:#9ca3af;font-size:13px;text-align:right}
+
+/* ---------- 分页按钮 ---------- */
+nav.pager{display:flex;margin-top:44px;border-top:1px solid #e5e7eb;padding-top:18px}
+nav.pager a{flex:1;text-align:center;padding:12px 8px;text-decoration:none;
+  color:var(--ink);border-radius:8px;font-size:16px}
+nav.pager a:hover{background:var(--zh-bg);color:var(--accent)}
+nav.pager a.disabled{opacity:.4;pointer-events:none}
+nav.pager a.center{font-weight:700}
+
+/* ---------- 右下角模式切换按钮 ---------- */
+#modeBtn{position:fixed;right:20px;bottom:20px;z-index:30;width:52px;height:52px;
+  border:none;border-radius:50%;background:var(--accent);color:#fff;font-size:22px;
+  cursor:pointer;box-shadow:0 4px 14px rgba(37,99,235,.35)}
+#modeBtn:hover{filter:brightness(1.08)}
+#modeTip{position:fixed;right:20px;bottom:80px;z-index:30;background:#111827;
+  color:#fff;font-size:13px;padding:6px 10px;border-radius:6px;display:none}
+#modeBtn:hover + #modeTip{display:block}
+
+/* ---------- 显示模式（body[data-mode]） ---------- */
+body[data-mode="en"] .zh{display:none !important}
+body[data-mode="zh"] .en{display:none !important}
+body[data-mode="zh"] .zh{display:block !important}
+
+/* ---------- 锚点 / 窄屏 ---------- */
+h2,h3{scroll-margin-top:20px}
+@media (max-width:900px){
+  nav#toc{transform:translateX(-300px)}
+  nav#toc.show{transform:translateX(0)}
+  main{margin-left:0;padding:64px 18px 96px}
+  body.toc-open{overflow:hidden}
+}
+</style>
+</head>
+<body data-mode="both">
+<nav id="toc"><h1>目录 / Contents</h1>
+<a class="l1" href="index.html">返回总目录</a>
+<a class="l2" href="#tip-31">A Voice from the Other Side<span class="zh-inline">来自另一面的声音</span></a>
+<a class="l2" href="#tip-32">Keep Your Perspective<span class="zh-inline">保持客观视角</span></a>
+<a class="l2" href="#tip-33">How Do You Define "Finished"?<span class="zh-inline">你怎么定义「完成」？</span></a>
+<a class="l2" href="#tip-34">The 60/60 Rule<span class="zh-inline">60/60 法则</span></a>
+<a class="l2" href="#tip-35">We Have Met the Enemy…and He Is Us<span class="zh-inline">我们遇到了敌人——他就是我们自己</span></a>
+<a class="l2" href="#tip-36">Work in Cycles<span class="zh-inline">按周期工作</span></a>
+<a class="l2" href="#tip-37">To Thine Own Self Be True<span class="zh-inline">对你自己诚实</span></a>
+<a class="l2" href="#tip-38">Meetings Don't Write Code<span class="zh-inline">会议写不出代码</span></a>
+<a class="l2" href="#tip-39">Chart a Course for Change<span class="zh-inline">为变革规划航向</span></a>
+<a class="l2" href="#tip-40">IT Program Management: Shared Vision<span class="zh-inline">IT 项目集管理：共享愿景</span></a>
+</nav>
+<button id="tocToggle" title="折叠 / 展开目录">☰</button>
+<main>
+<header class="chapter-head">
+<span class="chap-label">Chapter 4 · Tips 31–40</span>
+<h1>Perspective, Completion, and Cycles</h1>
+<p class="chap-sub">视角、完成与周期</p>
+</header>
+<h2 id="tip-31">A Voice from the Other Side<span class="zh-inline">来自另一面的声音</span></h2>
+<p class="byline"><em>Marty Skomal, MPA · Omaha, Nebraska, U.S.<span class="zh-inline">Marty Skomal（MPA）· 美国内布拉斯加州奥马哈</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">WHILE IT'S GREAT TO HEAR FROM DEVELOPERS and software project managers, you might find it equally advantageous to hear from the guy with the metaphorical purse. I'm the customer.</p>
+<p class="zh">听听开发和软件项目经理怎么说固然好，但听听那个手里攥着钱包的人怎么说，可能同样有价值。我就是客户。</p>
+<p class="en" title="点击显示 / 隐藏中文">Software developers have now infiltrated the realm of nonprofit and government sectors, with promises of low-cost, web-based ways of doing business using fancy technologies that have heretofore been too expensive, too elaborate, and beyond the comfort level of our employees and constituents. Nonprofit and governmental agencies, subsisting on a shoestring and a few paper clips, can be seduced by these automated possibilities, but there is a trap. In an attempt to have it all, you can end up with nothing workable and longing for the days of a shoebox and a pack of 3×5 index cards to house your data.</p>
+<p class="zh">软件开发如今渗透到非营利和政府领域，承诺用炫酷技术提供低成本、基于 Web 的办事方式——这些技术此前太贵、太复杂，超出我们员工和服务对象的舒适区。靠一根鞋带、几枚回形针维持的非营利和政府机构，很容易被这些自动化可能性诱惑，但其中藏着陷阱。想一口吃成胖子，最后可能什么能用的都没得到，只能怀念鞋盒加一盒 3×5 索引卡存数据的日子。</p>
+<p class="en" title="点击显示 / 隐藏中文">For example, my agency decided to move from a paper-based grant application process to an online one. Forms would be submitted directly to the agency and downloaded into our database, avoiding manual data entry errors, lowering cost, and bypassing mailing inconveniences for constituents. We could also view applications online during their preparation process and provide assistance before submission.</p>
+<p class="zh">举个例子，我的机构决定把纸质拨款申请流程改成在线流程。表格直接提交给机构、下载进我们的数据库，避免手工录入错误、降低成本、免去服务对象邮寄的麻烦。我们还能在申请人填写过程中在线查看，在提交前提供帮助。</p>
+<p class="en" title="点击显示 / 隐藏中文">Our software developers were eager to point out how they could automate additional aspects of the grant application process, such as vetting potential organizations against eligibility criteria before allowing them into the system, ensuring that deadlines were met, and forcing expenses and income to balance before allowing the Submit button to activate.</p>
+<p class="zh">我们的软件开发急于指出他们还能把拨款申请流程的更多环节自动化：比如按资格标准审核潜在组织、才允许他们进入系统；确保截止日被遵守；在费用和收入平衡之前，不让"提交"按钮激活。</p>
+<div class="page-mark">— p.88 —</div>
+<p class="en" title="点击显示 / 隐藏中文">Our core needs were simply to import data, verify its accuracy, and communicate back via email that we had received their proposals. However, we were encouraged to program our system so that applications submitted after the deadline would be rejected. By building in rigid requirements, we lost the flexibility to be responsive and service oriented. Plus, once the system blocked an application after the deadline passed, we were totally unable to import it into our database without contacting the developers to perform a special override.</p>
+<p class="zh">我们的核心需求其实只是：导入数据、核对准确性、并通过邮件回复"已收到你们的申请"。然而我们被怂恿把系统编成截止日后提交的申请一律拒收。加上了这些刚性要求后，我们失去了灵活响应、以服务为导向的能力。而且，一旦系统在截止日后拦住某份申请，我们完全无法把它导入数据库——除非联系开发做一次特殊绕过。</p>
+<p class="en" title="点击显示 / 隐藏中文">We should have started with a simpler system and added levels of complexity as we became familiar with its capabilities. Instead, we ended up with part of a nonfunctional spaceship when all we needed was a complete bicycle. We walked away from that system and now use a vendor with a more stable system that has fewer features. We adjusted our internal procedures to fit the system rather than building software from scratch to keep our old procedures intact. We now see our online grants system as a way to receive data and manipulate it in our own database, rather than as a monument to all that is technically possible but not necessarily useful.</p>
+<p class="zh">我们本应从一个更简单的系统起步，随着熟悉其能力再一层层加复杂度。结果呢，我们得到了一艘不能用的宇宙飞船的一部分，而我们真正需要的只是一辆完整的自行车。我们抛弃了那套系统，现在用一家功能更少但更稳定的供应商系统。我们调整了内部流程来适应系统，而不是从头造软件来保留旧流程。如今我们把在线拨款系统看作接收数据、在自己数据库里处理数据的工具，而不是一座"技术上能做、但未必有用"的纪念碑。</p>
+<p class="en" title="点击显示 / 隐藏中文">To avoid leading your not-for-profit clients astray:</p>
+<p class="zh">为避免把你的非营利客户带偏：</p>
+<ul>
+<li><span class="en" title="点击显示 / 隐藏中文">Allow them to plan, build slowly, and test, test, test.</span><div class="zh">允许他们规划、缓慢建设、反复测试。</div></li>
+<li><span class="en" title="点击显示 / 隐藏中文">Resist the temptation to advise them to over-automate simple tasks.</span><div class="zh">忍住劝他们把简单任务过度自动化的冲动。</div></li>
+<li><span class="en" title="点击显示 / 隐藏中文">Be the development team who cares about understanding your user's needs.</span><div class="zh">做一支真正关心理解用户需求的开发团队。</div></li>
+</ul>
+<p class="en" title="点击显示 / 隐藏中文">Please try to understand what your not-for-profit client can successfully implement, before exhausting your entire technology toolbag on an emerging market.</p>
+<p class="zh">在把你整个技术工具箱都倒向一个新兴市场之前，请先搞清楚你的非营利客户到底能成功落地什么。</p>
+<div class="page-mark">— p.89 —</div>
+<h2 id="tip-32">Keep Your Perspective<span class="zh-inline">保持客观视角</span></h2>
+<p class="byline"><em>James Graham, PMP · Ta' l-Ibrag, Malta<span class="zh-inline">James Graham（PMP）· 马耳他</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">WHEN GATHERING BUSINESS REQUIREMENTS FROM USERS, it is common to hear "the system is slow," "the application is unreliable and crashes," "it does everything we don't need and nothing we do need," "the menu structure is cumbersome," and "it takes too many keystrokes to do a simple task."</p>
+<p class="zh">从用户那里收集业务需求时，常听到：「系统太慢」「应用不可靠、老崩溃」「我们不需要的功能它全有，需要的它一个没有」「菜单结构繁琐」「做个简单任务要敲太多键」。</p>
+<p class="en" title="点击显示 / 隐藏中文">Most software project managers empathize with users. We try to make them feel better by suggesting solutions that will appear to remove their pain. I believe that this approach, while well intended, is intrinsically wrong. Further, it reduces the probability of a successful outcome in the subsequent project. Some people say that the point of gathering business requirements is to provide a custom-designed solution, which in turn reduces end-user frustration. I would agree that this is a worthy goal. However, a fatal flaw occurs if the project manager who decides the best solution bases his decision on a heartfelt desire to make the users feel better. In reality, project managers may not have trained themselves to keep an unbiased perspective.</p>
+<p class="zh">大多数软件项目经理会共情用户。我们会提一些看似能消除痛苦的解决方案，让他们好受些。我相信这种做法虽出于善意，本质上却是错的。而且它降低了后续项目成功的概率。有人说，收集业务需求的目的就是提供定制方案，从而减少终端用户的挫败感。我同意这是个有价值的目标。然而，如果决定最佳方案的项目经理，是基于"想让用户好受"的真心愿望来做决策，就会出现致命缺陷。现实中，项目经理可能没训练自己保持无偏见的视角。</p>
+<p class="en" title="点击显示 / 隐藏中文">Perspective means looking for the best solution, not the fix that feels right to the users. Remember, users have a deep understanding of their business area and can make impressive contributions to a project by sharing that knowledge. But how should we use their input? When I worked as a management consultant in London, my experienced colleagues used to mentor me on the importance of objectivity. Their wisdom was based on the truism that most experts like to show how clever they are, when often they should spend more time using their skills to ask the right questions to uncover the root problem. If you don't unmask the real problem, your attempts to remove it will only swat at the symptoms.</p>
+<p class="zh">视角意味着寻找最佳方案，而不是用户感觉对的那个补丁。记住，用户对自己的业务领域有深刻理解，分享这些知识能对项目做出惊人贡献。但我们该怎么使用他们的输入？我在伦敦做管理咨询时，有经验的同事常教导我客观的重要性。他们的智慧基于一个常识：大多数专家喜欢展示自己多聪明，而其实他们更应该把时间用来用自己的技能问出正确问题、挖出根问题。如果你不揭开真正的问题，你消除它的努力只是在拍打症状。</p>
+<div class="page-mark">— p.90 —</div>
+<p class="en" title="点击显示 / 隐藏中文">We all are at risk to succumb to this mistake. Recently, I was asked to design a management development program for a large organization. My immediate impulse was to rush to address its pain points speedily, by suggesting that we look at an existing program I own. I knew I could easily adapt it to cure the issues that were creating so much irritation for my client. Fortunately, my self-restraint kicked in. I spent an hour talking to the senior managers about their real challenges. After I stepped back to listen to the business problem, not merely the end-user complaints that indicated something was amiss, I recommended an entirely different solution. It was more suited to their needs and addressed their core issues.</p>
+<p class="zh">我们都有犯这个错的风险。最近，我被请去为一家大型组织设计管理发展项目。我的第一反应是赶紧解决它的痛点，建议他们看看我手上现有的一个项目。我知道我能轻松改造它，治好那些让客户恼火的问题。幸运的是，我克制住了。我花了一小时和高管聊他们真正的挑战。当我退一步去倾听业务问题，而不只是听终端用户"出问题了"的抱怨后，我推荐了一个完全不同的方案。它更贴合他们的需要，解决的是核心问题。</p>
+<p class="en" title="点击显示 / 隐藏中文">The next time you are confronted by frustrated users, take a deep breath. Allow them to vent their dissatisfaction with the surface symptoms they encounter day-to-day. These irritations are real. Then ask them a series of questions to get to the underlying, root causes of their frustration. Avoid the temptation to make them feel better by providing a quick fix. It is in their best interests for you to make sure you are aiming for the right target before you plan your project solution trajectory.</p>
+<p class="zh">下次面对沮丧的用户，深呼吸。让他们发泄对日常表面症状的不满。这些烦躁是真实的。然后问他们一连串问题，挖到他们挫败的根本原因。忍住用快速修复让他们好受的冲动。在规划项目解决路径之前，确认你瞄准的是正确目标，这才符合他们的最大利益。</p>
+<div class="page-mark">— p.91 —</div>
+<h2 id="tip-33">How Do You Define "Finished"?<span class="zh-inline">你怎么定义「完成」？</span></h2>
+<p class="byline"><em>Brian Sam-Bodden · Scottsdale, Arizona, U.S.<span class="zh-inline">Brian Sam-Bodden · 美国亚利桑那州斯科茨代尔</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">IT IS HARD FOR A SOFTWARE DEVELOPMENT TEAM TO SUCCEED if there isn't a clear definition of what success means. For developers, success entails delivering a product that meets customer expectations. However, to define total project success, we need an accurate, shared definition among the larger project team of what it means to "finish the project.</p>
+<p class="zh">如果对成功意味着什么没有清晰定义，软件开发团队很难成功。对开发而言，成功意味着交付满足客户期望的产品。然而，要定义整体项目成功，我们需要更大的项目团队对"完成项目"意味着什么有准确、共识的定义。</p>
+<p class="en" title="点击显示 / 隐藏中文">To embrace the overall project scope, the core tenet of traditional, iterative software development is "divide and conquer." The project is broken into deliverables, which are then divided into work packages. Those are ultimately broken into activities assigned to a specific person.</p>
+<p class="zh">为了把握整体项目范围，传统迭代式软件开发的核心原则是"分而治之"。项目拆成交付物，交付物拆成工作包，工作包最终拆成指派给具体个人的活动。</p>
+<p class="en" title="点击显示 / 隐藏中文">Using an agile approach with one- to several-week iterations, or work periods, the necessity to consider overall project scope can be masked. Finishing the goals of one iteration can be clearly set out as creating working software that passes unit tests, possibly clears limited integration tests, and allows promised software features to be demo'd to the stakeholders for their approval and feedback.</p>
+<p class="zh">采用敏捷方式、以一到数周为迭代（工作周期）时，考虑整体项目范围的必要性可能被掩盖。完成一个迭代的目标，可以被清晰定义为：创建通过单元测试、可能通过有限集成测试、并能把承诺的软件功能演示给相关方审批反馈的可用软件。</p>
+<p class="en" title="点击显示 / 隐藏中文">The problem is that at the macro level, a project has many other considerations beyond the code and its accompanying tests. Using the traditional waterfall method, testing was relegated to the end of a project and became a flaw in the process. In a more agile approach, developers may erroneously defer or dismiss all the nonprogramming items or activities as not having a place in their view of what a software project entails. Some of these items may be unit and integration testing between a newly created component/feature and the components/features created in prior iterations.</p>
+<p class="zh">问题是，在宏观层面，项目除了代码和配套测试还有许多其他考量。传统瀑布法把测试贬到项目末尾，成了流程缺陷。在更敏捷的方式中，开发可能错误地把所有非编程事项或活动推迟或无视，认为它们在自己理解的软件项目里没有位置。其中一些事项，是新创建的组件/功能与之前迭代创建的组件/功能之间的单元和集成测试。</p>
+<div class="page-mark">— p.92 —</div>
+<p class="en" title="点击显示 / 隐藏中文">These often-overlooked integrations underscore a fundamental problem for development teams. The complexity of software seems to be geometrically proportional to the number of component interconnections. Don't ignore the time needed to craft a demo environment, and do write user-level/acceptance testing scripts and create accompanying documentation. No matter how light your methodology, shippable software requires a certain level of documentation. When these items are not ignored, the macro definition of what it means to be "finished" differs significantly from the accumulated finishing of a set of features within an iteration. And, the delta created from a buildup of those missing items per iteration can alter the way a feature is implemented, tested, and perceived by the customer.</p>
+<p class="zh">这些常被忽视的集成，凸显了开发团队的一个根本问题。软件复杂度似乎与组件互联数量成几何级数关系。不要忽略搭建演示环境所需的时间，一定要写用户级/验收测试脚本、创建配套文档。无论你的方法论多轻量，可发布的软件都需要一定程度的文档。当这些事项不被忽略时，"完成"的宏观定义与一个迭代内一组功能的累积完成之间，差异巨大。而每个迭代积累这些缺失事项所造成的差距，会改变功能被实现、测试以及被客户感知的方式。</p>
+<p class="en" title="点击显示 / 隐藏中文">Let's not overburden our developers with administrative or business issues. The underlying concept we need to spread is that iterations are not just for software developers. They must be coordinated with tasks important to the larger, general software project team members. Business analysts, software project managers, and quality testers must coordinate their crucial activities with those of the developers. The person responsible for this coordination is the software project manager, who must understand and spread the overall definition of what it means to be finished at the macro level so that the non-code-based activities are performed side by side with the weekly iteration work. The project manager must be the arbiter between the development team and the other stakeholders to define what it truly means to be "finished.</p>
+<p class="zh">我们不要用行政或业务问题压垮开发。我们需要传播的底层概念是：迭代不只属于软件开发。它们必须与更广泛的软件项目团队成员的重要任务相协调。业务分析师、软件项目经理、质量测试员必须与开发协调他们的关键活动。负责这种协调的人就是软件项目经理，他必须理解并传播宏观层面"完成"的整体定义，让非代码活动与每周迭代工作并肩进行。项目经理必须在开发团队和其他相关方之间充当仲裁者，定义"完成"到底意味着什么。</p>
+<div class="page-mark">— p.93 —</div>
+<h2 id="tip-34">The 60/60 Rule<span class="zh-inline">60/60 法则</span></h2>
+<p class="byline"><em>David Wood · Fredericksburg, Virginia, U.S.<span class="zh-inline">David Wood · 美国弗吉尼亚州弗雷德里克斯堡</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">WE OFTEN PRETEND that software development is the most important part of the software life cycle. Methodologies abound for development. Books, magazine articles, and blogs focus on development. Development, however, is just not where the money is. Fully 60% of the life cycle costs of software systems come from maintenance, with a relatively measly 40% coming from development. That is an average, of course. The actual cost of maintenance may vary from 40% to 80%, depending on the system type and the environment it is deployed into. During maintenance, 60% of the costs on average relate to user-generated enhancements (changing requirements), 23% to migration activities, and 17% to bug fixes.</p>
+<p class="zh">我们常假装软件开发是软件生命周期中最重要的部分。开发方法论汗牛充栋。书、杂志文章、博客都聚焦开发。然而，开发根本不是钱所在。软件系统生命周期成本中，整整 60% 来自维护，开发只占可怜的 40%。当然这是平均值。实际维护成本随系统类型和部署环境在 40% 到 80% 之间变化。维护期间，平均 60% 的成本与用户提出的增强（需求变更）相关，23% 与迁移活动相关，17% 与修 bug 相关。</p>
+<p class="en" title="点击显示 / 隐藏中文">The 60% of life cycle costs related to maintenance, coupled with the fact that 60% of maintenance activities relate to enhancements, gives us the so-called 60/60 Rule, one of the few proposed "laws" of software maintenance. Migration activities include moving systems to new hardware or software environments. Migration is, of course, a type of changing requirement. Factoring that into our estimates points out an interesting fact: over 80% of maintenance activities relate in some way to changing requirements.</p>
+<p class="zh">生命周期成本的 60% 与维护相关，加上维护活动中 60% 与增强相关，就得出了所谓的 60/60 法则——软件维护中少数被提出的"定律"之一。迁移活动包括把系统搬到新硬件或软件环境。迁移当然也是一种需求变更。把它算进估算，揭示了一个有趣的事实：超过 80% 的维护活动都以某种方式与需求变更相关。</p>
+<p class="en" title="点击显示 / 隐藏中文">Naturally, the ability to change code suggests that one should understand it first. Understanding changes to be made is a major activity during maintenance. Roughly 30% of total maintenance time is spent on understanding an existing software product. The development of understanding applies to all forms of maintenance: changing requirements, migration, and bug fixes.</p>
+<p class="zh">自然，改代码的前提是先理解代码。理解要做的改动是维护中的主要活动。大约 30% 的总维护时间花在理解现有软件产品上。这种"理解"活动适用于所有维护形式：需求变更、迁移和修 bug。</p>
+<div class="page-mark">— p.94 —</div>
+<p class="en" title="点击显示 / 隐藏中文">Understanding is a cost we must pay to maintain code that someone else wrote, or we wrote long enough ago that we no longer have an intimate knowledge of it. During maintenance, understanding code takes the place of new design work found during development for most tasks. The 60/60 Rule should prompt us to rethink the focus of software development, as well as maintenance. The tendency to address development activities may not yield the most impressive gains. Boehm's early assertion in the early 1980s that proper software engineering discipline can reduce defects by up to 75% may be true (although I seriously doubt it), and became the basis for much work toward development methodologies, but so what?</p>
+<p class="zh">理解代码是我们必须付出的代价，无论是维护别人写的代码，还是自己写的、久远到已不再熟悉的代码。在维护中，对大多数任务而言，"理解代码"取代了开发阶段的"新设计"工作。60/60 法则应促使我们重新思考软件开发和维护的重点。专注于开发活动未必带来最可观的收益。Boehm 在 1980 年代初断言，恰当的软件工程规范能把缺陷降低多达 75%——这可能是真的（虽然我深表怀疑），并成了大量开发方法论工作的基础——但那又怎样？</p>
+<p class="en" title="点击显示 / 隐藏中文">A good methodology may reduce bugs (17% of the total maintenance effort), but not address migration, enhancement time, or cost at all. To reduce maintenance costs, we have to address the costs associated with understanding code, adjusting code to new requirements, and/or migrating code to new environments. The 60/60 Rule suggests that we should focus our efforts on creating systems that are maintainable. Our software must be designed to change so systems become flexible in the face of new requirements. Designing such systems is one of the next great challenges in software engineering.</p>
+<p class="zh">好的方法论也许能减少 bug（占维护总工作量的 17%），但完全不触及迁移、增强时间或成本。要降低维护成本，我们必须解决与理解代码、按新需求调整代码、以及/或将代码迁移到新环境相关的成本。60/60 法则表明，我们应把精力集中在创建可维护的系统上。我们的软件必须被设计成"可变化"的，使系统面对新需求时能灵活应对。设计这样的系统，是软件工程下一个重大挑战之一。</p>
+<p class="en" title="点击显示 / 隐藏中文">We know at least part of the answer. The software components need to become less tightly coupled with one another, much the way the components of the World Wide Web are bound together at the last possible moment and in a flexible manner.</p>
+<p class="zh">我们至少知道部分答案。软件组件之间需要降低耦合度，就像万维网的组件那样，在最后一刻才以灵活的方式绑定在一起。</p>
+<div class="page-mark">— p.95 —</div>
+<h2 id="tip-35">We Have Met the Enemy…and He Is Us<span class="zh-inline">我们遇到了敌人——他就是我们自己</span></h2>
+<p class="byline"><em>Barbee Davis, MA, PHR, PMP · Omaha, Nebraska, U.S.<span class="zh-inline">Barbee Davis（MA, PHR, PMP）· 美国内布拉斯加州奥马哈</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">CARTOONIST WALT KELLEY, who inked the long-running comic strip Pogo, is famous for the quote, "We have met the enemy…and he is us." Nowhere is this sentiment more accurate than when describing a software project manager who is new to the software development process. Here's how to avoid having "the enemy" be you:</p>
+<p class="zh">漫画家 Walt Kelley 画长寿连载漫画《Pogo》，留下名言："我们遇到了敌人，他就是我们自己。"这句话用来描述刚接触软件开发过程的软件项目经理，再贴切不过。以下是避免让"敌人"成为你自己的方法：</p>
+<ul>
+<li><span class="en" title="点击显示 / 隐藏中文">As a project manager, you expect your team members to estimate the amount of time it will take them to complete a specific task. It is detrimental to the schedule if they go too far over the budgeted time. One of your tasks on the project is to hold meetings to drive team communication. You need to demonstrate the ability to estimate and deliver the meetings as meticulously as you expect your developers to estimate and deliver their code. When your meetings run long, you are stealing the precious programming time developers count on to meet your project schedule deadlines.</span><div class="zh">作为项目经理，你期望团队成员估算完成特定任务所需的时间。如果他们远超预算时间，对进度是有害的。你在项目上的任务之一是开会推动团队沟通。你需要证明自己能像期望开发估算和交付代码那样，严谨地估算和交付会议。当你的会议拖长时，你就是在偷走开发用来达成项目截止日的宝贵编程时间。</div></li>
+<li><span class="en" title="点击显示 / 隐藏中文">If your project team spoke a foreign language, you would take some lessons and get a translator. Your developers do not speak your language. Buy a book, take a class, make Google your friend, and find a developer who has the gift to explain complex things in a simple way. You cannot bluff your way through this project without learning some of the concepts, terms, and challenges your team faces.</span><div class="zh">如果你的项目团队说一门外语，你会去上课、找翻译。你的开发并不说你的语言。买本书、报个班、跟谷歌做朋友，再找一位有天赋把复杂事情讲简单的开发。不学习团队面对的一些概念、术语和挑战，你不可能靠唬人蒙过这个项目。</div></li>
+<li><span class="en" title="点击显示 / 隐藏中文">Regardless of the perfect methodology you used to build toasters and cars, develop pharmaceuticals, or even construct skyscrapers, it won't work here. Let the trusted members of your team explain about agile methodologies. They aren't new or risky. But they are your best chance at having a working product at the end of your project.</span><div class="zh">无论你过去造烤面包机、汽车、研发药品、甚至建摩天大楼用的方法论多完美，在这里都行不通。让你信任的团队成员给你讲讲敏捷方法论。它们并不新、也不危险。但它们是你在项目结束时拿到可用产品的最大希望。</div></li>
+</ul>
+<div class="page-mark">— p.96 —</div>
+<ul>
+<li><span class="en" title="点击显示 / 隐藏中文">Developers are craftsmen and artists. They work differently than accountants, attorneys, or bank tellers. When they are meeting in pairs and talking animatedly, they are actually working. When they are bouncing a ball against a wall or doodling on a whiteboard, they may be crafting a solution to an architecture problem that can't be solved by staring at a computer screen. Give them space.</span><div class="zh">开发是手艺人、是艺术家。他们和会计、律师、银行柜员的工作方式不同。当他们两两凑在一起热烈讨论时，他们其实在工作。当他们对着墙扔球、在白板上涂鸦时，他们可能正在酝酿一个靠盯着电脑屏幕解决不了的架构问题的方案。给他们空间。</div></li>
+<li><span class="en" title="点击显示 / 隐藏中文">Your team will work odd hours. We've all seen the cashier at the local food emporium switch with her replacement: she opens the register and exchanges the money drawer, and the new cashier is up and running. A programmer can't switch places with a cohort and just pick up where his teammate left off. When your team member is feverishly at work, leave him or her alone. Researchers say it may take an hour or more for the person to regain productivity if interrupted.</span><div class="zh">你的团队会在奇怪的时段工作。我们都见过本地食品超市的收银员交接班：她打开收银机、换钱箱，新收银员立刻上岗。程序员不能和同事换个位置就接着上一个人的活干。当你的团队成员狂热地工作时，别打扰他/她。研究人员说，被打断后一个人可能要一小时甚至更久才能恢复产能。</div></li>
+<li><span class="en" title="点击显示 / 隐藏中文">It is unnecessary to have every person program in exactly the same programming language. Some endeavors are better approached with newer languages that require fewer lines of code to write, test, store on your servers, and maintain. Don't refuse to let your developers use the best tool for the job.</span><div class="zh">没必要让每个人都用同一种编程语言。有些事用更新的语言来做更好——写、测、存服务器、维护所需的代码行更少。不要拒绝让开发使用最适合的工具。</div></li>
+</ul>
+<p class="en" title="点击显示 / 隐藏中文">Open your mind to this new world of software development, and you can be a support for your software development team, not the enemy.</p>
+<p class="zh">对软件开发这个新世界敞开心扉，你就能成为开发团队的支持者，而不是敌人。</p>
+<div class="page-mark">— p.97 —</div>
+<h2 id="tip-36">Work in Cycles<span class="zh-inline">按周期工作</span></h2>
+<p class="byline"><em>James Leigh · Toronto, Ontario, Canada<span class="zh-inline">James Leigh · 加拿大安大略省多伦多</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">OUR BODIES ARE FULL OF NATURAL CYCLES, and our productivity is no different. The human brain cannot focus on any single issue for more than a few hours at a time. Ideal workdays are designed to ensure that the body has time to rest and refocus every 90 to 180 minutes. Productivity has been shown to degrade after about 90–120 minutes of work, requiring the brain to change focus before productivity can increase.</p>
+<p class="zh">我们的身体充满自然周期，生产力也不例外。人脑一次无法专注于任何单一问题超过几小时。理想的工作日设计，应保证身体每 90 到 180 分钟有时间休息和重新聚焦。研究表明，工作约 90–120 分钟后生产力就会下降，需要大脑切换焦点，生产力才能回升。</p>
+<p class="en" title="点击显示 / 隐藏中文">The most effective software projects are created in environments that ensure that developers are mentally productive. However, many things that contribute to developers' productivity are out of the control of their software project manager. You can't ensure that they eat appropriately, or sleep enough hours at night. However, a project manager can help ensure that a developer's productivity does not degrade during the day, by encouraging frequent breaks and providing opportunity for nutrition. The old saying that developers are driven by their stomachs is true.</p>
+<p class="zh">最高效的软件项目，诞生于能确保开发精神上高产的环境。然而，许多影响开发产能的因素并不在软件项目经理的掌控之中。你无法保证他们吃得合适、晚上睡够。但项目经理可以通过鼓励频繁休息、提供补充营养的机会，帮助确保开发的产能在白天不下降。老话讲"开发是被胃驱动的"，这话不假。</p>
+<p class="en" title="点击显示 / 隐藏中文">Studies also show that projects are more successful when broken into iterations. By creating weekly or monthly subprojects—complete with goals, priorities, feedback, and releases—software bugs can be mitigated and developer satisfaction can be increased. Breaking the work into smaller iterations provides opportunities to track progress and acknowledge good results. It also gives everyone on the team the opportunity to reflect, give feedback to one another, and improve communication.</p>
+<p class="zh">研究还表明，项目拆成迭代后更成功。通过创建每周或每月的子项目——带目标、优先级、反馈和发布——软件 bug 可以减少，开发的满意度可以提高。把工作拆成更小的迭代，提供了跟踪进度、表彰好结果的机会。它也让团队每个人有机会反思、互相反馈、改善沟通。</p>
+<div class="page-mark">— p.98 —</div>
+<p class="en" title="点击显示 / 隐藏中文">Every cycle should include a planning stage, an action stage, a completion stage, and a reward stage. Before beginning on any action item, ask yourself or your team these questions: why, when, how, what, and who? Why are we doing this? When is this going to be complete? How are we going to do this? What are we going to accomplish? Who on our team will be responsible for each portion of the item? With proper communication and understanding, the action stage can be effective and productive, contributing to the overall success of the project.</p>
+<p class="zh">每个周期应包括规划阶段、行动阶段、完成阶段和奖励阶段。在开始任何行动项之前，问你自己或团队这些问题：为什么、何时、如何、做什么、谁来做？我们为什么做这个？什么时候完成？我们怎么做？我们要达成什么？团队里谁负责这个事项的哪一部分？有了恰当的沟通和理解，行动阶段就能高效、高产，为项目整体成功做贡献。</p>
+<p class="en" title="点击显示 / 隐藏中文">Once a task or action item is complete, get outside feedback. If one or two members of the team completed the work, get another team member to review it (peer review). If the entire team completed the work, get feedback from other stakeholders (preferably end-users). The final stage of any cycle is the reward stage; this is important for the sustainable health of any team or individual. As a battery must be recharged after use, the brain and body must be rewarded through recognition or acknowledgment of work.</p>
+<p class="zh">一个任务或行动项完成后，要获取外部反馈。如果是一两个团队成员完成的，找另一位团队成员评审（同行评审）。如果是整个团队完成的，从其他相关方（最好是终端用户）那里获取反馈。任何周期的最后阶段是奖励阶段；这对任何团队或个人的可持续健康都很重要。就像电池用完必须充电，大脑和身体也必须通过对工作的认可或肯定得到奖励。</p>
+<p class="en" title="点击显示 / 隐藏中文">As a software project manager, you must guide the team through project cycles, ensuring that every person understands the plan and gets the feedback he or she needs. Furthermore, each individual must follow his or her own daily cycle of planning, doing, completing, and being rewarded. The manager must ensure that all team members get the attention, information, and time they need to keep their productivity at its best. This way, you can ensure that your team is functioning at its full capacity.</p>
+<p class="zh">作为软件项目经理，你必须引导团队走过一个个项目周期，确保每个人都理解计划、得到他/她需要的反馈。此外，每个人都必须遵循自己日常的"规划—执行—完成—被奖励"循环。经理必须确保所有团队成员得到他们保持最佳产能所需的关注、信息和时间。这样，你才能确保团队满负荷运转。</p>
+<div class="page-mark">— p.99 —</div>
+<h2 id="tip-37">To Thine Own Self Be True<span class="zh-inline">对你自己诚实</span></h2>
+<p class="byline"><em>Harry Tucker · Matawan, New Jersey, U.S.<span class="zh-inline">Harry Tucker · 美国新泽西州马塔旺</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">ANY OF US WHO HAVE TRAVELED ON COMMERCIAL AIRCRAFT remember that during the safety demonstration we are told to put our oxygen masks on first, and then to assist an elderly person or child with his or her mask. If we struggle to put the other person's mask on before ours, we may succumb to oxygen deprivation before succeeding, and we all die. By putting ours on quickly, we are empowered to put 100% effort into taking care of others, and everyone lives.</p>
+<p class="zh">坐过民航飞机的人都记得，安全演示时我们被告知：先戴好自己的氧气面罩，再帮老人或孩子戴。如果我们费劲地先帮别人戴、自己后戴，可能在成功之前就因缺氧倒下，结果大家都死。快速戴好自己的面罩，我们才能全力照顾别人，大家都活。</p>
+<p class="en" title="点击显示 / 隐藏中文">I have witnessed many wonderful projects collapse over the years, even though the perfect storm of success was at the feet of those involved. The projects in question had: unlimited market potential; a superior product; an empowered team enabled with phenomenal capability. However, the project manager had lost control of him-/herself and, therefore, could not take care of the team. The opportunity died of oxygen deprivation, so to speak, and the project failed.</p>
+<p class="zh">这些年我目睹许多精彩项目垮掉，尽管成功的完美风暴就摆在参与者脚边。这些项目有：无限的市场潜力、卓越的产品、被赋能、拥有惊人能力的团队。然而，项目经理失去了对自己的控制，因此无法照顾团队。机会可以说死于缺氧，项目失败了。</p>
+<p class="en" title="点击显示 / 隐藏中文">To manage or lead teams (and there are sharp differences), software project managers need to be in complete control of themselves. They must have a strong understanding of their own personal purpose, vision, and mission, as well as personal and professional goals. When a solid personal life structure is in place, the manager's life is empowered. Without such empowerment, the manager is easily swept away by the challenges of living (both inside and outside the office). Then, an otherwise intelligent, talented manager loses focus on the management tasks at hand.</p>
+<p class="zh">要管理或领导团队（这两者有显著区别），软件项目经理需要完全掌控自己。他们必须深刻理解自己个人的目的、愿景和使命，以及个人和职业目标。当稳固的个人生活结构就位时，经理的生活就被赋能。没有这种赋能，经理很容易被生活的挑战（办公室内外）冲走。那时，一个原本聪明、有才干的经理会失去对手头管理任务的专注。</p>
+<div class="page-mark">— p.100 —</div>
+<p class="en" title="点击显示 / 隐藏中文">When that happens, various symptoms start to appear, one cascading upon the next: 1. The manager becomes visibly distracted and starts to feel out of control. 2. Not feeling in control, he/she doesn't feel empowered to stand up and do what is needed to protect the project. 3. The unprotected team starts to experience communication breakdowns. 4. Communication breakdowns lead to slipped (not aligned with the original project baseline) tasks. 5. Slipped tasks, and a manager unable to bring things back under control, lead to team despair. 6. Team morale fails, adding further complexity to a project that is already out of control.</p>
+<p class="zh">当那发生时，各种症状开始出现，一个接一个叠加：1）经理明显分心，开始感到失控。2）感觉失控后，他/她觉得自己没有权力站出来做保护项目所需的事。3）未被保护的团队开始出现沟通断裂。4）沟通断裂导致任务滑期（与原始项目基线不一致）。5）任务滑期加上经理无法把局面拉回控制，导致团队绝望。6）团队士气崩溃，给本已失控的项目再添复杂。</p>
+<p class="en" title="点击显示 / 隐藏中文">I personally take time on a daily, weekly, and semi-annual basis to review where I am in my life. My daily and weekly reviews help me keep on track as far as short-term goals are concerned. My semi-annual retreat (white space planning, as some people call it) provides me with an opportunity to assess my long-term goals, personally and professionally, to make sure I am still on track. While life will always throw curveballs at all of us, having short- and long-term goals helps provide us with targets that help us realign our personal and professional course after the turbulence has passed. With such a plan in hand, we are enabled to focus more on the tasks at hand, including managing our teams, to empower them toward success. The oxygen masks have fallen—who are you helping first?</p>
+<p class="zh">我个人每天、每周、每半年都会抽时间回顾自己的人生位置。每日和每周回顾帮我在短期目标上不跑偏。每半年的静修（有人叫"空白时间规划"）让我有机会评估个人和职业的长期目标，确认自己仍在轨道上。虽然生活总会给我们投曲线球，但有短期和长期目标，就有了靶子，帮助我们在动荡过去后重新校准个人和职业航向。手里有这样一份计划，我们就能更专注于手头的任务——包括管理团队——赋能他们走向成功。氧气面罩掉下来了——你先帮谁？</p>
+<div class="page-mark">— p.101 —</div>
+<h2 id="tip-38">Meetings Don't Write Code<span class="zh-inline">会议写不出代码</span></h2>
+<p class="byline"><em>William J. Mills · Castro Valley, California, U.S.<span class="zh-inline">William J. Mills · 美国加州卡斯特谷</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">TOO OFTEN, people who could be doing something more productive are trapped in meetings—meetings that have wandered off their intended purpose, run over time, or trapped an entire team in the room when a more limited set of people would be just as effective. Only schedule meetings that have a specific purpose, and only include people on the invitation list who need to be there. Here's an obvious list of things to avoid, as software project manager, when you are planning your team meetings:</p>
+<p class="zh">太多时候，本可以做更有产出事情的人被困在会议里——会议偏离了初衷、超时，或者把整个团队困在房间里，而其实一小部分人参加就够了。只安排有具体目的的会议，邀请名单上只放必须在场的人。作为软件项目经理，规划团队会议时，以下是一份明显要避免的清单：</p>
+<ul>
+<li><span class="en" title="点击显示 / 隐藏中文">Chit-chat. If you have participants who use this time to have informal project-related exchanges, remind them to come a few minutes early or plan to spend time together after the meeting. You can't afford for the entire group to wait until they finish chatting.</span><div class="zh">闲聊。如果有参与者利用这个时间进行非正式的项目交流，提醒他们早来几分钟，或会后再聚。你付不起让整个团队等他们聊完的代价。</div></li>
+<li><span class="en" title="点击显示 / 隐藏中文">Not getting in, getting done, and getting out. Plan a clear agenda that is distributed beforehand. If you assemble the entire team, be sure your topics are relevant to everyone.</span><div class="zh">不进来、不办完、不离开。提前规划并分发清晰的议程。如果你召集了整个团队，确保你的议题与每个人相关。</div></li>
+<li><span class="en" title="点击显示 / 隐藏中文">Diving too deep. It is good to bring up risk issues or roadblocks that have arisen. However, this is not the place to hammer out the solutions. Form smaller groups, or designate the appropriate team member, to pursue the issue after the meeting. The minute software engineers start talking about specific implementation details, have them make a note to remain after the main meeting and move on with your scheduled agenda.</span><div class="zh">钻得太深。提出出现的风险问题或障碍是好事。但这里不是敲定方案的地方。组建小组或指定合适的团队成员，会后再跟进这个问题。软件工程师一开始讨论具体实现细节，就让他们记下会后留下，继续按你的议程走。</div></li>
+</ul>
+<div class="page-mark">— p.102 —</div>
+<ul>
+<li><span class="en" title="点击显示 / 隐藏中文">Going off-topic. The current meeting has a specific purpose. Don't lose that focus. There will be things that come up that are important, but not on topic. You may have too many nonessential people there, or you might be missing key stakeholders necessary to solve this issue. Schedule another meeting, or finish the current one and deal with the new issue at the end. Remember to let the folks who don't need to be there get back to work.</span><div class="zh">跑题。当前会议有具体目的。不要失去焦点。会冒出一些重要但不切题的事。你在场的人里可能有太多无关者，或者缺解决这个问题所需的关键相关方。另约一次会，或先结束当前会议、最后再处理新问题。记得让不需要在场的人回去工作。</div></li>
+<li><span class="en" title="点击显示 / 隐藏中文">Going over time. As a project manager, you expect your team members to be able to estimate the amount of time it will take them to complete a specific task. It will be detrimental to the schedule if they go too far over the budgeted time in your meeting.</span><div class="zh">超时。作为项目经理，你期望团队成员能估算完成特定任务所需时间。如果他们在你的会议上远超预算时间，对进度是有害的。</div></li>
+<li><span class="en" title="点击显示 / 隐藏中文">Meeting too often. If you are following an agile methodology, quick daily meetings are necessary. If not, be sure the meetings you hold cover information or collect data that couldn't be assembled in another way.</span><div class="zh">开会太频繁。如果你在遵循敏捷方法论，快速的每日站会是必要的。如果不是，确保你开的会覆盖的信息或收集的数据是用其他方式凑不齐的。</div></li>
+<li><span class="en" title="点击显示 / 隐藏中文">Indulging long-winded participants. As the leader of the meeting, it is your job to use a nonverbal "stop" (hold up the palm of the hand toward the speaker) and smile. Say, "Your point is well taken, but in the interest of time, we are going to need to move on" (or "hear from others," or "come back to this point later if there is time").</span><div class="zh">纵容长篇大论的参与者。作为会议主持，你有责任用非语言的「停止」手势（向发言者摊开手掌）并微笑。说：「你的观点很好，但为了时间，我们得继续了」（或「听听其他人的」，或「有时间再回来讨论这点」）。</div></li>
+</ul>
+<p class="en" title="点击显示 / 隐藏中文">As you are the leader on the project, team members may feel they can't speak up about unproductive meetings. So, evaluate your own practices and see if you can improve them on your own.</p>
+<p class="zh">因为你是项目领导，团队成员可能觉得不便对低效会议直言。所以，请评估你自己的做法，看看能否自行改进。</p>
+<div class="page-mark">— p.103 —</div>
+<h2 id="tip-39">Chart a Course for Change<span class="zh-inline">为变革规划航向</span></h2>
+<p class="byline"><em>Kathy MacDougall · Erie, Colorado, U.S.<span class="zh-inline">Kathy MacDougall · 美国科罗拉多州伊利</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">NEW SOFTWARE CHANGES THE WAY IN WHICH PEOPLE WORK. This may be good for the organization, but the people who work there aren't always ready to embrace change. And let's face it, if people can't be convinced, cajoled, or commanded to use your new software, it's been a big waste of time and money. When requiring people to change the ways in which they work, the carrot method (reward) is much better than the stick (punishment). Even if they're forced to adopt it, if your new software does not provide significant benefits that users can understand and master, they will find every way possible to avoid using it. Proper care must be taken to 1) understand the impact of this change on the people it touches, and 2) put in place change-management plans that help these people embrace the change.</p>
+<p class="zh">新软件会改变人们工作的方式。这对组织可能是好事，但在那里工作的人并不总是准备好拥抱变革。承认吧，如果人们无法被说服、劝诱或命令去用你的新软件，那就是巨大的时间和金钱浪费。要求人们改变工作方式时，胡萝卜（奖励）比大棒（惩罚）有效得多。即使他们被迫采用，如果你的新软件不能提供用户能理解和掌握的显著收益，他们会想尽一切办法避免使用它。必须妥善做到：1）理解这次变革对受影响人群的冲击；2）制定变革管理计划，帮助这些人拥抱变革。</p>
+<p class="en" title="点击显示 / 隐藏中文">Key to understanding the impact of the change is to understand how people currently work and exactly how the new software will change that process. This increases the chances that users will adopt the new system, and also improves the design of your end-product, as it ensures that it will fit user needs. The importance of change management cannot be underestimated and should be a project manager's focus early on in the project. To determine the impact of the change on users, first document all current ("as is") processes that touch the software project. Create process flow diagrams that detail daily tasks as well as data inputs and outputs.</p>
+<p class="zh">理解变革影响的关键，是理解人们当前如何工作、新软件将如何确切地改变这一流程。这既提高用户采用新系统的概率，也改善最终产品的设计，因为它确保产品贴合用户需求。变革管理的重要性不可低估，应是项目经理在项目早期就聚焦的事。要确定变革对用户的影响，先记录下所有与软件项目相关的当前（"现状"）流程。创建流程图，详细画出日常任务以及数据输入输出。</p>
+<div class="page-mark">— p.104 —</div>
+<p class="en" title="点击显示 / 隐藏中文">Next, document how these processes will differ once the new software has been rolled out. Speak frankly with target users of the new software. Discuss how the changes will affect their work. Listen carefully, evaluate the impact and costs of each feature change, and adjust the software design accordingly. Make sure that the changes will be acceptable to target users and their management. Involve managers of the target user community early and often. They will be important champions of change who can make or break the transition to the new system by incentivizing and/or mandating that end-users make the switch. They are invaluable partners to remove obstacles and solve unforeseen issues with the rollout.</p>
+<p class="zh">接下来，记录新软件上线后这些流程会有何不同。与新软件的目标用户坦诚交谈。讨论这些变化将如何影响他们的工作。仔细倾听，评估每个功能变更的影响和成本，相应调整软件设计。确保这些变化对目标用户及其管理层是可接受的。尽早、频繁地让目标用户群体的经理参与进来。他们是重要的变革拥护者，可以通过激励和/或要求终端用户切换，促成或破坏向新系统的过渡。他们是清除障碍、解决部署中意外问题的宝贵伙伴。</p>
+<p class="en" title="点击显示 / 隐藏中文">Create a plan for change. Determine the list of training and team-building activities that will need to happen prior to the project launch, and build these into your project schedule. Enlist help from the management community to create the change management plan. At a minimum, this group must buy into the concepts, implementation and training approach, and timelines wholeheartedly. Listen carefully for objections or warnings about approaches that will not work with their teams.</p>
+<p class="zh">制定变革计划。确定项目上线前需要开展的培训和团队建设活动清单，把它们编进项目进度。争取管理层帮助制定变革管理计划。至少，这群人必须全心认同概念、实施和培训方式、以及时间线。仔细倾听他们对哪些做法在自己团队行不通的反对或警告。</p>
+<p class="en" title="点击显示 / 隐藏中文">In summary, users and their management are interested in keeping their focus squarely on meeting their business objectives. Transitions to new processes, tools, and systems pose a potential threat to these goals. Solid upfront planning helps provide a smooth transition to the new system, paves the way for buy-in and acceptance, and increases the chances of its long-term use.</p>
+<p class="zh">总之，用户及其管理层感兴趣的，是把注意力牢牢放在达成业务目标上。向新流程、工具和系统的过渡，对这些目标构成潜在威胁。扎实的前期规划有助于平滑过渡到新系统，为认同和接受铺路，并提高其长期使用的概率。</p>
+<div class="page-mark">— p.105 —</div>
+<h2 id="tip-40">IT Program Management: Shared Vision<span class="zh-inline">IT 项目集管理：共享愿景</span></h2>
+<p class="byline"><em>David Diaz Castillo, MBA, PMP · Panama City, Panama<span class="zh-inline">David Diaz Castillo（MBA, PMP）· 巴拿马巴拿马城</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">ORGANIZATIONS OFTEN GROUP SEVERAL RELATED individual technology projects into a larger program. The strategy is to complete these projects in a more cost-effective way and to bring strategic benefits to the organization by avoiding overlap or gaps. However, it is vital that the software project manager convey to the project team members the real business objective that their individual project must achieve, as well as how this team aligns to the other projects. Team members must also understand how the achievement of their specific project goals contributes to the success or failure of the overall program objectives.</p>
+<p class="zh">组织常把若干相关的单个技术项目归成一个更大的项目集。这个策略是以更具成本效益的方式完成这些项目，并通过避免重叠或缺口给组织带来战略收益。然而，软件项目经理必须向项目团队成员传达：他们的单个项目必须达成的真实业务目标，以及这个团队如何与其他项目对齐。团队成员还必须理解，自己具体项目目标的达成，如何影响整体项目集目标的成败。</p>
+<p class="en" title="点击显示 / 隐藏中文">Here are some key tasks: Find the connections that expand the importance of this project beyond its mere standalone value. Define the relationships, deliverables, and risks shared among all projects in the program. Keep all the team members in alignment with the final solution that the program is trying to achieve. Understand the business, to propose solutions aligned to the strategic objectives of the program as the inevitable problems appear.</p>
+<p class="zh">以下是一些关键任务：找到那些把本项目重要性扩展到其独立价值之外的联系。定义项目集中所有项目之间共享的关系、交付物和风险。让所有团队成员与项目集要达成的最终方案保持对齐。理解业务，以便在不可避免的问题出现时，提出与项目集战略目标对齐的解决方案。</p>
+<p class="en" title="点击显示 / 隐藏中文">This concept of bundling projects into programs is not very mature in Latin America yet, but we are gaining experience managing programs with a common set of governance policies. Clearly there are rich benefits to be found when each team has a clear vision of the entire program goals, not just its own project work.</p>
+<p class="zh">把项目捆成项目集的概念在拉丁美洲还不太成熟，但我们正在积累用一套共同治理政策管理项目集的经验。显然，当每个团队对整个项目集目标（而不只是自己项目的工作）有清晰愿景时，能发现丰富的收益。</p>
+<div class="page-mark">— p.106 —</div>
+<p class="en" title="点击显示 / 隐藏中文">The most difficult thing is getting the buy-in from vendors, clients, sponsors, and other stakeholders. We need to analyze their interests, requirements, and needs to be sure that there is value for each of them when we group technical projects. Every group must gain more value than if its project was completed in a vacuum. Particularly when customers span many countries, they will all have different ideas of how technology should be created, and unique organizational procedures and processes. Agreement and approval on internationally recognized program management practices is fundamental in order to begin the alignment of all stakeholders to program goals.</p>
+<p class="zh">最困难的是获得供应商、客户、发起人和其他相关方的认同。我们需要分析他们的利益、要求和需要，确保我们把技术项目归组时，对每一方都有价值。每个群体获得的价值，都必须比其项目在真空中独立完成时更大。尤其当客户横跨多国时，他们对技术该怎么造各有想法，还有独特的组织程序和流程。在国际公认的项目集管理实践上达成一致和批准，是让所有相关方对齐项目集目标的基础。</p>
+<p class="en" title="点击显示 / 隐藏中文">To have a successful methodology, we need common, but flexible, documents or templates to use for all projects. When we manage information technology programs, we typically need goods or services from vendors with their own unique methodology and templates, or outputs from other projects being run simultaneously with our own. So, before we begin, all parties have to agree which documents we are going to use. What will our project management methodology be? If individual project teams can't agree on what methodology, procedures, processes, and integrated change control steps will be adopted by all teams, the smooth codevelopment of projects to serve the greater program good will fail. When choosing, the software project manager needs to ask the team which templates and practices are reasonable and useful to help it execute and control its projects efficiently. Once you have a common process and document/template tools, you are in a position to coordinate technical projects into programs. These provide greater value to your customer and your organization than single projects done alone.</p>
+<p class="zh">要有一套成功的方法论，我们需要共同但灵活的文档或模板，供所有项目使用。管理 IT 项目集时，我们通常需要来自有自己独特方法论和模板的供应商的货物或服务，或与我们项目并行运行的其他项目的产出。所以，开始之前，各方必须同意我们要用哪些文档。我们的项目管理方法论是什么？如果各个项目团队不能就所有团队采用什么方法论、程序、流程和集成变更控制步骤达成一致，为项目集更大利益而顺利协同开发项目就会失败。选择时，软件项目经理需要问团队：哪些模板和实践合理、有用，能帮它高效执行和控制项目。一旦你有了共同流程和文档/模板工具，你就能把技术项目协调成项目集。比起单独做单个项目，这给客户和组织提供更大价值。</p>
+<div class="page-mark">— p.107 —</div>
+
+<nav class="pager"><a class="prev" href="chapter-03.html">← 上一章</a><a class="center" href="index.html">返回目录</a><a class="next" href="chapter-05.html">下一章 →</a></nav>
+</main>
+<button id="modeBtn" title="切换显示模式">🌐</button>
+<div id="modeTip">仅英文 / 仅中文 / 中英对照</div>
+<script>
+(function(){
+  var KEY='bilingual-mode';
+  var modes=['en','zh','both'];
+  var labels={'en':'仅英文','zh':'仅中文','both':'中英对照'};
+  var mode=localStorage.getItem(KEY)||'both';
+  var toc=document.getElementById('toc');
+  var modeBtn=document.getElementById('modeBtn');
+
+  function applyMode(){
+    document.body.dataset.mode=mode;
+    modeBtn.textContent=mode==='en'?'🌐':(mode==='zh'?'🌐':'🌐');
+    modeBtn.title='当前：'+labels[mode]+'，点击切换';
+    // 点击展开的中文块在切走再切回时保留展开态（不强制清 .show）
+  }
+  // 点击英文段落：展开/收起其后紧跟的中文块（仅 both 模式下有意义）
+  document.addEventListener('click',function(e){
+    var en=e.target.closest('p.en');
+    if(!en)return;
+    var zh=en.nextElementSibling;
+    if(zh&&zh.classList.contains('zh')){
+      zh.classList.toggle('show');
+    }else{
+      // li 内的情形：.zh 在 li 内部
+      var z=en.parentElement.querySelector(':scope > .zh');
+      if(z)z.classList.toggle('show');
+    }
+  });
+  // 🌐 模式循环
+  modeBtn.addEventListener('click',function(){
+    mode=modes[(modes.indexOf(mode)+1)%modes.length];
+    localStorage.setItem(KEY,mode);
+    applyMode();
+  });
+  // 目录折叠
+  var btn=document.getElementById('tocToggle');
+  btn.addEventListener('click',function(){
+    if(window.matchMedia('(max-width:900px)').matches){
+      toc.classList.toggle('show');
+      document.body.classList.toggle('toc-open');
+    }else{
+      toc.classList.toggle('hidden');
+    }
+  });
+  // 窄屏点击目录链接后自动收起抽屉
+  toc.addEventListener('click',function(e){
+    if(e.target.tagName==='A'&&window.matchMedia('(max-width:900px)').matches){
+      toc.classList.remove('show');
+      document.body.classList.remove('toc-open');
+    }
+  });
+  applyMode();
+})();
+</script>
+</body>
+</html>

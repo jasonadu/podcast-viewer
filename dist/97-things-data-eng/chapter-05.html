@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Things 41–50: Latency, NoSQL, and Metadata — 双语阅读</title>
+<style>:root{
+  --accent:#2563eb; --zh-bg:#f0f6ff; --zh-border:#2563eb;
+  --code-bg:#0f172a; --code-ink:#e2e8f0; --ink:#1f2937;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:#faf6f1;color:var(--ink);
+  font:18px/1.7 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+a{color:var(--accent)}
+
+/* ---------- 左侧固定目录 ---------- */
+nav#toc{position:fixed;top:0;left:0;bottom:0;width:300px;overflow-y:auto;
+  background:#fff;border-right:1px solid #e5e7eb;padding:20px 0;
+  transform:translateX(0);transition:transform .25s ease;z-index:20}
+nav#toc.hidden{transform:translateX(-300px)}
+nav#toc h1{font-size:15px;padding:0 20px 8px;color:var(--accent);margin:0}
+nav#toc a{display:block;padding:6px 20px;color:var(--ink);text-decoration:none;
+  font-size:14px;line-height:1.5}
+nav#toc a:hover{background:var(--zh-bg);color:var(--accent)}
+nav#toc a.l1{font-weight:700}
+nav#toc a.l2{font-weight:700}
+nav#toc a.l3{padding-left:40px}
+#tocToggle{position:fixed;top:12px;left:12px;z-index:30;width:40px;height:40px;
+  border:1px solid #e5e7eb;background:#fff;border-radius:8px;font-size:18px;
+  cursor:pointer;color:var(--accent);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+#tocToggle:hover{background:var(--zh-bg)}
+
+/* ---------- 主内容 ---------- */
+main{margin-left:300px;max-width:900px;padding:24px 40px 96px}
+.chapter-head{border-bottom:2px solid var(--accent);padding-bottom:12px;margin-bottom:28px}
+.chapter-head .chap-label{color:var(--accent);font-weight:700;font-size:15px;
+  text-transform:uppercase;letter-spacing:.08em}
+.chapter-head h1{margin:6px 0 4px;font-size:30px}
+.chapter-head .chap-sub{color:#6b7280;margin:0;font-size:18px}
+
+/* ---------- 中英对照段落 ---------- */
+p.en{margin:14px 0;transition:background .15s}
+p.en:hover{background:#eef4ff;border-radius:8px;cursor:pointer}
+/* 中英对照模式下：中文段默认显示，紧跟英文段下方 */
+p.zh{display:block;background:var(--zh-bg);border-left:4px solid var(--zh-border);
+  border-radius:0 8px 8px 0;padding:10px 16px;margin:6px 0 14px}
+p.zh.hide{display:none}
+/* 列表项中文与 p.zh 同规格 */
+li .zh{display:block;background:var(--zh-bg);border-left:4px solid var(--zh-border);
+  border-radius:0 8px 8px 0;padding:10px 16px;margin:6px 0 12px}
+li .zh.hide{display:none}
+/* 行内标题的中文对照（紧跟英文之后，灰色小字） */
+.zh-inline{color:#6b7280;font-weight:400;margin-left:8px}
+
+/* ---------- 代码块 ---------- */
+pre{background:var(--code-bg);color:var(--code-ink);border-radius:8px;
+  padding:14px 16px;overflow-x:auto;font:13.5px/1.6 "SF Mono",Menlo,Consolas,monospace}
+code{font-family:"SF Mono",Menlo,Consolas,monospace}
+p code,li code{background:#fde9f3;color:#be185d;border-radius:4px;
+  padding:1px 6px;font-size:.9em}
+
+/* ---------- 表格 ---------- */
+table{border-collapse:collapse;width:100%;margin:14px 0}
+th,td{border:1px solid #d1d5db;padding:8px 12px;text-align:left;font-size:16px}
+th{background:#f1f5f9}
+
+/* ---------- 图片 ---------- */
+figure{margin:20px 0}
+figure img{max-width:100%;height:auto;border:1px solid #e5e7eb;border-radius:8px}
+figcaption{color:#6b7280;font-size:15px;margin-top:8px}
+
+/* ---------- 页码标记 ---------- */
+.page-mark{margin:26px 0 6px;padding-top:8px;border-top:1px dashed #d1d5db;
+  color:#9ca3af;font-size:13px;text-align:right}
+
+/* ---------- 分页按钮 ---------- */
+nav.pager{display:flex;margin-top:44px;border-top:1px solid #e5e7eb;padding-top:18px}
+nav.pager a{flex:1;text-align:center;padding:12px 8px;text-decoration:none;
+  color:var(--ink);border-radius:8px;font-size:16px}
+nav.pager a:hover{background:var(--zh-bg);color:var(--accent)}
+nav.pager a.disabled{opacity:.4;pointer-events:none}
+nav.pager a.center{font-weight:700}
+
+/* ---------- 右下角模式切换按钮 ---------- */
+#modeBtn{position:fixed;right:20px;bottom:20px;z-index:30;width:52px;height:52px;
+  border:none;border-radius:50%;background:var(--accent);color:#fff;font-size:22px;
+  cursor:pointer;box-shadow:0 4px 14px rgba(37,99,235,.35)}
+#modeBtn:hover{filter:brightness(1.08)}
+#modeTip{position:fixed;right:20px;bottom:80px;z-index:30;background:#111827;
+  color:#fff;font-size:13px;padding:6px 10px;border-radius:6px;display:none}
+#modeBtn:hover + #modeTip{display:block}
+
+/* ---------- 显示模式（body[data-mode]） ---------- */
+body[data-mode="en"] .zh{display:none !important}
+body[data-mode="zh"] .en{display:none !important}
+body[data-mode="zh"] .zh{display:block !important}
+
+/* ---------- 锚点 / 窄屏 ---------- */
+h2,h3{scroll-margin-top:20px}
+@media (max-width:900px){
+  nav#toc{transform:translateX(-300px)}
+  nav#toc.show{transform:translateX(0)}
+  main{margin-left:0;padding:64px 18px 96px}
+  body.toc-open{overflow:hidden}
+}
+</style>
+</head>
+<body data-mode="both">
+<nav id="toc"><h1>目录 / Contents</h1>
+<a class="l1" href="index.html">返回总目录</a>
+<a class="l2" href="#thing-41">Know Your Latencies<span class="zh-inline">了解你的延迟</span></a>
+<a class="l2" href="#thing-42">Learn to Use a NoSQL Database, but Not like an RDBMS<span class="zh-inline">学会用 NoSQL，但别像用 RDBMS 那样用</span></a>
+<a class="l2" href="#thing-43">Let the Robots Enforce the Rules<span class="zh-inline">让机器人来执行规则</span></a>
+<a class="l2" href="#thing-44">Listen to Your Users—but Not Too Much<span class="zh-inline">听用户的——但别全听</span></a>
+<a class="l2" href="#thing-45">Low-Cost Sensors and the Quality of Data<span class="zh-inline">低成本传感器与数据质量</span></a>
+<a class="l2" href="#thing-46">Maintain Your Mechanical Sympathy<span class="zh-inline">保持对机器的同理心</span></a>
+<a class="l2" href="#thing-47">Metadata ≥ Data<span class="zh-inline">元数据 ≥ 数据</span></a>
+<a class="l2" href="#thing-48">Metadata Services as a Core Component of the Data Platform<span class="zh-inline">元数据服务是数据平台的核心组件</span></a>
+<a class="l2" href="#thing-49">Mind the Gap: Your Data Lake Provides No ACID Guarantees<span class="zh-inline">注意差距：你的数据湖不提供 ACID 保证</span></a>
+<a class="l2" href="#thing-50">Modern Metadata for the Modern Data Stack<span class="zh-inline">为现代数据栈准备的现代元数据</span></a>
+</nav>
+<button id="tocToggle" title="折叠 / 展开目录">☰</button>
+<main>
+<header class="chapter-head">
+<span class="chap-label">Chapter 5 of 10</span>
+<h1>Things 41–50: Latency, NoSQL, and Metadata</h1>
+<p class="chap-sub">第 5 章（共 10 章）：延迟、NoSQL 与元数据（第 41–50 篇）</p>
+</header>
+<h2 id="thing-41">41. Know Your Latencies<span class="zh-inline">了解你的延迟</span></h2>
+<p class="en" title="点击显示 / 隐藏中文">Dhruba Borthakur</p>
+<p class="zh">德鲁巴·博塔库尔</p>
+<p class="en" title="点击显示 / 隐藏中文">Every data system has three characteristics that uniquely identify it: the size of the data, the recency of the data, and the latency of queries on that data. You are probably familiar with the first one, but the other two are sometimes an afterthought.</p>
+<p class="zh">每个数据系统都有三个唯一标识它的特征：数据规模、数据新鲜度、以及针对该数据的查询延迟。你大概熟悉第一个，但后两个有时是事后才想到。</p>
+<p class="en" title="点击显示 / 隐藏中文">As a data engineer, I have frequently deployed a big data system for one use case. Then a new user uses the same data system for a different use case and complains, "Oh, my query latencies are slower than my acceptable limit of 500 milliseconds" or "My query is not finding data records that were produced in the most recent 10 seconds."</p>
+<p class="zh">作为数据工程师，我经常为某一个用例部署一套大数据系统。然后新用户把同一套数据系统用在另一个用例上，开始抱怨：“我的查询延迟超过了 500 毫秒的可接受上限”，或者“我的查询查不到最近 10 秒产生的数据记录”。</p>
+<p class="en" title="点击显示 / 隐藏中文">At the very outset of engineering a data system, the three things that I ask myself are as follows:</p>
+<p class="zh">在工程化一个数据系统的最开始，我会问自己三件事：</p>
+<h3 id="thing-41-data">What is my data latency?<span class="zh-inline">我的数据延迟是多少？</span></h3>
+<p class="en" title="点击显示 / 隐藏中文">The data latency can vary widely. An annual budgeting system would be satisfied if it had access to all of last month's data and earlier. Similarly, a daily reporting system will probably be happy if it can get access to the most recent 24 hours of data. An online software-gaming leaderboard application would be satisfied with analyzing data that is produced in the most recent 1 second and earlier.</p>
+<p class="zh">数据延迟的范围可以很广。一个年度预算系统，如果能访问到上个月及更早的数据就满意了。类似地，一个日报系统能拿到最近 24 小时的数据大概就高兴了。一个在线游戏排行榜应用，分析最近 1 秒及更早的数据就够了。</p>
+<h3 id="thing-41-query">What is my query latency?<span class="zh-inline">我的查询延迟是多少？</span></h3>
+<p class="en" title="点击显示 / 隐藏中文">If I am building a daily reporting system, I can afford to build a system that is optimized for overall throughput. The latency of a query could take a few minutes or even a few hours, because I need to produce a set of reports only once every day. On the other hand, a backend application that powers personalized news stories for a reader would typically demand latencies of a few milliseconds, and this data system would need to be engineered to optimize query latency.</p>
+<p class="zh">如果我在建一个日报系统，我可以承受建一个为整体吞吐优化的系统。查询延迟可能是几分钟甚至几小时，因为我每天只需要产出一次报表。反过来，一个为读者驱动个性化新闻的后端应用，通常要求毫秒级延迟，这套数据系统就需要为优化查询延迟而设计。</p>
+<div class="page-mark">— p.103 —</div>
+<h3 id="thing-41-qps">What are my queries per second?<span class="zh-inline">我的每秒查询数是多少？</span></h3>
+<p class="en" title="点击显示 / 隐藏中文">If my data system is powering an application on a mobile device, my queries per second (QPS) would likely be tens or hundreds of concurrent queries. If my data system is used to build a daily reporting system, it will need to support 5 to 10 concurrent queries at most.</p>
+<p class="zh">如果我的数据系统在支撑一个移动设备上的应用，每秒查询数（QPS）可能是几十到几百并发。如果我的数据系统被用来建日报系统，它最多只需要支持 5 到 10 个并发查询。</p>
+<p class="en" title="点击显示 / 隐藏中文">The answers to these three questions determine the type of data system you should use. Data latency is dominated by data pipelines, also called extract, transform, load (ETL) processes. You can use an ETL process to weed out records with bad data or to pregenerate aggregates over time ranges. The ETL process adds latencies to your data, and a shorter pipeline means that you get to query your most recent data.</p>
+<p class="zh">这三个问题的答案决定了你该用哪种数据系统。数据延迟主要由数据管道（也称 ETL 流程）决定。你可以用 ETL 流程过滤掉坏数据记录，或预先生成时间范围内的聚合。ETL 流程会给数据增加延迟，更短的管道意味着你能查到更新的数据。</p>
+<p class="en" title="点击显示 / 隐藏中文">Query latency and QPS are dominated by the database that serves your queries. If you use a key/value store, you will get very low query latencies but will have to implement a larger part of your business logic in your application code. Alternatively, if you use a data warehouse that exposes a SQL API, you can delegate a larger share of your application logic via SQL to the data warehouse, but the latency of your queries will be higher than with a key/value store and you will be limited to 5 or 10 concurrent queries.</p>
+<p class="zh">查询延迟和 QPS 主要由服务查询的数据库决定。如果你用键值存储，查询延迟会非常低，但你得在应用代码里实现更大比例的业务逻辑。反过来，如果你用暴露 SQL API 的数据仓库，可以通过 SQL 把更大份额的应用逻辑委托给数据仓库，但查询延迟会比键值存储高，并发查询也被限制在 5 或 10 个。</p>
+<div class="page-mark">— p.104 —</div>
+<h2 id="thing-42">42. Learn to Use a NoSQL Database, but Not like an RDBMS<span class="zh-inline">学会用 NoSQL，但别像用 RDBMS 那样用</span></h2>
+<p class="en" title="点击显示 / 隐藏中文">Kirk Kirkconnell</p>
+<p class="zh">柯克·柯克康奈尔</p>
+<p class="en" title="点击显示 / 隐藏中文">It keeps happening: I keep reading posts or talking to people who are having problems with NoSQL databases, and so many times they blame the tool. NoSQL databases may no longer be the new kid on the block, but many people still seem to misunderstand when and why to use them.</p>
+<p class="zh">这种事一直在发生：我不断读到帖子、和人聊天，发现他们在 NoSQL 数据库上踩坑，而太多时候他们怪工具。NoSQL 数据库也许不再是新来的，但很多人似乎仍不理解什么时候、为什么该用它们。</p>
+<p class="en" title="点击显示 / 隐藏中文">I am speaking primarily of data modeling with NoSQL databases, especially when it comes to JSON document, wide column, and key/value types of databases. Some people still try to use them just as they did an RDBMS, but perhaps worse. They create a schema in the NoSQL database that is like a relational schema, and then perform what I would call a "naive migration" or "naive database schema." Then they use it as a dumping ground for data, hoping to make sense of it by using a query language to work through the data. At that point, they wonder why the NoSQL database does not perform or scale well, or gets too expensive.</p>
+<p class="zh">我主要说的是 NoSQL 数据库的数据建模，尤其是 JSON 文档、宽列和键值类型的数据库。有些人还是像用 RDBMS 那样用 NoSQL，甚至更糟。他们在 NoSQL 数据库里建一个像关系 schema 的 schema，然后做我所谓的“天真迁移”或“天真数据库 schema”。接着把它当作数据垃圾场，指望用查询语言翻一遍数据就能搞明白。到那时他们就奇怪：为什么 NoSQL 数据库性能不好、扩展不佳、或者太贵了？</p>
+<p class="en" title="点击显示 / 隐藏中文">If you are performing these naive actions, you, too, are most likely failing to understand what these NoSQL databases are optimized for, the trade-offs you are making, the power they bring to the party, and how best to model data for easy access.</p>
+<p class="zh">如果你在做这些天真的事，你很可能也没理解这些 NoSQL 数据库是为优化什么而设计的、你在做什么权衡、它们带来什么威力、以及如何最好地建模数据以便访问。</p>
+<p class="en" title="点击显示 / 隐藏中文">NoSQL databases perform and scale best when your schema is designed to model the application's access patterns, the frequency with which those patterns are called, and the velocity of access. The goal should be to precompute the answers to these access patterns, and only rarely ask questions of the data (ad hoc querying). This is true whether the data is key/value, wide column, or JSON document store.</p>
+<p class="zh">当你的 schema 被设计成对应用访问模式、这些模式被调用的频率、以及访问速度建模时，NoSQL 数据库性能和扩展性最好。目标应当是预计算这些访问模式的答案，只在极少数情况下才向数据提问（即席查询）。无论数据是键值、宽列还是 JSON 文档存储，这一点都成立。</p>
+<p class="en" title="点击显示 / 隐藏中文">Can you ask questions in NoSQL databases? Sure, but that is not where most of them shine. You take a hit on performance, scalability, cost, or a mix of those. The more you try to use a NoSQL database as a general-purpose database, the more you get into the "jack of all trades, master of none" arena that RDBMSs have unfortunately been shoehorned into. For best performance, scalability, and cost, asking questions of your data should be the minority of the requests in OLTP-type NoSQL databases.</p>
+<p class="zh">你能在 NoSQL 数据库里提问吗？当然可以，但那不是它们大多数擅长的地方。你会在性能、扩展性、成本上受损失，或者三者皆有。你越想把 NoSQL 数据库当通用数据库用，就越落入那种“样样通、样样松”的境地——RDBMS 不幸被塞进了这种定位。要获得最佳性能、扩展性和成本，在 OLTP 型 NoSQL 数据库中，向数据提问应当只占请求的少数。</p>
+<div class="page-mark">— p.105 —</div>
+<p class="en" title="点击显示 / 隐藏中文">I propose a seemingly simple task the next time you think about creating a new application with a NoSQL database or migrating from an RDBMS to a NoSQL database. First, document all of that workload's access patterns. What exact data is needed, when, and at what velocity? This should guide you as you create a schema. This schema may be more complex on the surface, but the application can assemble the ID/primary key/partition key so it is not asking questions, but just getting the data efficiently. Next, figure out what questions you need to satisfy with a query. You need to have the right balance of quick and cheap data access for most things, and using queries only when you really need them.</p>
+<p class="zh">下次当你考虑用 NoSQL 数据库新建应用、或从 RDBMS 迁到 NoSQL 时，我建议做一件看似简单的事。首先，把那项工作负载的所有访问模式文档化。到底需要什么数据、什么时候要、以什么速度要？这应当指导你建 schema。这个 schema 表面上可能更复杂，但应用可以自己拼出 ID/主键/分区键，这样它不是在提问，而只是高效地取数。然后，弄清楚你需要用查询满足哪些问题。你需要在“对大多数东西快速廉价地访问数据”和“只在真正需要时才用查询”之间取得正确平衡。</p>
+<p class="en" title="点击显示 / 隐藏中文">If you cannot do these tasks, including documenting all of the application's access patterns ahead of time, a NoSQL database may not be the correct solution for your workload. You might be better off with an RDBMS that allows more flexibility at the expense of scalability.</p>
+<p class="zh">如果你做不到这些事——包括提前文档化应用的所有访问模式——NoSQL 数据库可能不是你工作负载的正确方案。用 RDBMS 可能更好：它以牺牲扩展性为代价，给你更多灵活性。</p>
+<div class="page-mark">— p.106 —</div>
+<h2 id="thing-43">43. Let the Robots Enforce the Rules<span class="zh-inline">让机器人来执行规则</span></h2>
+<p class="en" title="点击显示 / 隐藏中文">Anthony Burdi</p>
+<p class="zh">安东尼·伯迪</p>
+<p class="en" title="点击显示 / 隐藏中文">Dealing with messy inputs is part of our job as data professionals. We don't always have to be pedantic, but asking data producers to structure their inputs in a certain way eases our burden with this not-so-glamorous work.</p>
+<p class="zh">处理乱糟糟的输入是我们数据人的工作一部分。我们不必总是吹毛求疵，但请数据生产方按某种方式结构化他们的输入，能减轻我们这份不太光鲜工作的负担。</p>
+<p class="en" title="点击显示 / 隐藏中文">Great! Now our incoming data is cleaner. But then we realize that our burden just shifted to an interpersonal one: "asking" others to follow specific rules, read docs, and follow processes. For some of us, this is emotionally demanding and may end up making our jobs more difficult than if we just dealt with the messy data ourselves.</p>
+<p class="zh">好！现在进来的数据更干净了。但我们接着意识到，负担只是转移成了人际负担：要“请”别人遵守特定规则、读文档、走流程。对我们有些人来说，这在情感上很消耗，结果可能比我们自己处理乱数据还难。</p>
+<p class="en" title="点击显示 / 隐藏中文">What do we do about it? The same thing we do with every other boring, repetitive, nitpicky, definable task: Pinky, automate it!</p>
+<p class="zh">怎么办？和对待其他任何无聊、重复、吹毛求疵、可定义的任务一样：小不点，把它自动化！</p>
+<p class="en" title="点击显示 / 隐藏中文">Here are a few validation-robot job description ideas:</p>
+<p class="zh">下面是几个校验机器人的岗位说明书构想：</p>
+<ul>
+<li><span class="en" title="点击显示 / 隐藏中文">Use a Google form to capture data or visualization requests and simultaneously ask key questions—for example, what is the problem, why are you requesting it, what is the deliverable, the priority, etc. (See also Sam Bail's wonderful blog post "Just One More Stratification!".) Key bonus: since the robot already asked your standard set of questions, you can start the conversation with the requester wielding some context, or even skip it altogether. Use a drop-down list (yay, validation!) rather than free-form text entry where possible. Double bonus: you can track the types of requests coming in so you can inform the planning and build-out of self-service tools. Extra points: email new requests to your project-tracking software (Jira, Asana, etc.) for automatic inclusion into an "incoming request" backlog to be groomed and prioritized.</span><div class="zh">用 Google 表单收集数据或可视化请求，同时问关键问题——例如问题是什么、为什么要做、交付物是什么、优先级如何等等（另见 Sam Bail 的精彩博客“Just One More Stratification!”）。关键加分：既然机器人已经问过你那套标准问题，你和请求者开聊时手里就有上下文，甚至可以直接跳过寒暄。尽可能用下拉列表（万岁，校验！）而不是自由文本输入。双重加分：你可以追踪进来的请求类型，为自助工具的规划和建设提供依据。额外加分：把新请求通过邮件发到你的项目跟踪软件（Jira、Asana 等），自动进入“新请求”待办池，待梳理和排优先级。</div></li>
+<li><span class="en" title="点击显示 / 隐藏中文">Add a CODEOWNERS file to a repository, defining the data schema or form validation. For example, you may be capturing user profile information in a Django site that will later be used in a cohort analysis. Add a CODEOWNERS entry to ensure someone from the analytics team reviews any changes to the model definitions or form validations. Key bonus: while it is good practice to loop in analytics team members early for any proposed data model design changes, this ensures that at least they have the chance to review and prepare for changes before they are shipped.</span><div class="zh">在仓库里加一个 CODEOWNERS 文件，定义数据 schema 或表单校验。例如，你可能在一个 Django 站点上采集用户档案信息，后续用于队列分析。加一条 CODEOWNERS 条目，确保分析团队有人评审模型定义或表单校验的任何变更。关键加分：虽然任何数据模型设计变更都应尽早让分析团队成员参与，但这至少确保他们有机会在变更上线前评审并做准备。</div></li>
+<li><span class="en" title="点击显示 / 隐藏中文">Add a moat around your analytics pipeline by adding data validation on ingestion. Using a tool like Great Expectations, you can validate the incoming data before it is loaded into the rest of your processing pipeline; for example, as a preprocessing step in your pipeline or when users upload files by using an upload tool like that used at Heineken. Key bonus: even informed, well-intentioned people make mistakes. This ensures issues are caught early and without distracting other team members or affecting downstream products. Double bonus: the analytics team can define what correct data should look like by writing Expectations, and use data docs to share the definition of "correct."</span><div class="zh">在接入时加数据校验，给分析管道挖一条护城河。用 Great Expectations 这类工具，你可以在数据被加载进后续处理管道之前做校验；例如作为管道中的预处理步骤，或用户上传文件时（像喜力用的那种上传工具）。关键加分：即使知情、善意的人也会犯错。这能确保问题被及早发现，而不打扰其他团队成员或影响下游产品。双重加分：分析团队可以通过写 Expectations 来定义正确数据应该长什么样，并用 data docs 共享“正确”的定义。</div></li>
+</ul>
+<p class="en" title="点击显示 / 隐藏中文">In short, adding validation everywhere that you can (within reason!) yields two clear benefits: you get cleaner data, and the computer can be the bad guy. Save your emotional reserves for more important conversations.</p>
+<p class="zh">简而言之，在你能加校验的所有地方（在合理范围内！）都加上，会带来两个明确好处：你得到更干净的数据，而且计算机可以当那个坏人。把你的情绪储备留给更重要的对话吧。</p>
+<div class="page-mark">— p.107 —</div>
+<div class="page-mark">— p.108 —</div>
+<h2 id="thing-44">44. Listen to Your Users—but Not Too Much<span class="zh-inline">听用户的——但别全听</span></h2>
+<p class="en" title="点击显示 / 隐藏中文">Amanda Tomlinson</p>
+<p class="zh">阿曼达·汤姆林森</p>
+<p class="en" title="点击显示 / 隐藏中文">We've all seen the cool infographics, but no one needs to tell a data engineer about the immense and ever-increasing amount of data being generated every day. We're all living it.</p>
+<p class="zh">我们都见过那些酷炫的信息图，但不需要谁来告诉数据工程师每天产生的数据量有多大、还在不断增长。我们就生活在其中。</p>
+<p class="en" title="点击显示 / 隐藏中文">We're extracting it, transforming it, landing it (now considering whether we should maybe have started landing before transforming), cleaning it (what, you're saying we should stop cleaning it?), deciding where and for how long to store it, standing up new infrastructure to handle the sheer volume of it, filtering it, joining it, building KPIs and models from it, creating workflows for it, exposing it, cataloging it, monitoring it (easy enough when we started, but increasingly difficult a few years in). With so much to do and so much demand from our stakeholders, it's not at all surprising that so many data teams, especially those serving internal customers, get so caught up in the technical aspects of data engineering that they forget to consider who their users are and what they actually need. Data is data, right?</p>
+<p class="zh">我们在抽取它、转换它、落地它（现在又在想是不是应该先落地再转换）、清洗它（什么，你说我们不该清洗？）、决定存哪儿存多久、起新基础设施来扛这庞大体量、过滤它、join 它、用它建 KPI 和模型、为它建工作流、暴露它、编目它、监控它（刚开始挺容易，几年后越来越难）。要做的事这么多、业务方需求这么多，难怪那么多数据团队——尤其是服务内部客户的——太沉迷于数据工程的技术层面，忘了想用户是谁、他们到底需要什么。数据就是数据，对吧？</p>
+<p class="en" title="点击显示 / 隐藏中文">Before too long, this will lead to frustration, wasted effort, and a lack of confidence in the data team. Yep, all of the stuff I've listed is hugely important, but it's just as important to realize that not all of your users are the same, and to take a step back and consider what they need from the data you produce and what they need from you.</p>
+<p class="zh">不久之后，这会导致挫败感、白费力气、以及对数据团队失去信心。是的，我列的这些东西都极其重要，但同样重要的是要意识到：你的用户并不都一样，要退一步想一想——他们从你产出的数据里需要什么？他们从你身上需要什么？</p>
+<p class="en" title="点击显示 / 隐藏中文">But you shouldn't cater to their every demand. A certain level of satisfaction comes from delivering requirements and closing tickets, but simply churning out solutions creates long-term problems. A fine balance needs to be struck between delivering what your users need and maintaining a sustainable, scalable data function.</p>
+<p class="zh">但你不应该迎合他们的每一个要求。交付需求、关闭工单会带来一定程度的满足感，但单纯地批量产出解决方案会制造长期问题。需要在“交付用户所需”和“维持一个可持续、可扩展的数据职能”之间取得精妙平衡。</p>
+<p class="en" title="点击显示 / 隐藏中文">For me, this starts with a vision and strategy for the engineering team. If that seems too ambitious, at the very least set some design principles or guardrails. Next, start treating the demands received by your team as nothing more than conversation starters. These are simply insights into what your customers want from you, not fully formed requirements.</p>
+<p class="zh">对我来说，这始于为工程团队制定愿景和战略。如果这看起来太大，至少定一些设计原则或护栏。然后，把团队收到的各种要求只当作对话的开头。它们只是洞察客户想要什么的线索，不是成形的需求。</p>
+<div class="page-mark">— p.109 —</div>
+<p class="en" title="点击显示 / 隐藏中文">To turn them into requirements, you need to dig a bit deeper to understand the problems your customers are trying to solve with your data. Create personas to allow you to understand the various data users and use cases within your organization; look for the commonalities and apply your design principles to allow you to produce data products to serve these. Take ownership of your data and become the expert in serving it up to your users in the right way.</p>
+<p class="zh">要把它们变成需求，你需要挖得更深一些，理解客户想用你的数据解决什么问题。创建用户画像，让你理解组织内形形色色的数据用户和用例；寻找共性，应用你的设计原则，让你产出数据产品来服务这些用户。把你的数据当成自己的孩子，成为以正确方式把它呈献给用户的专家。</p>
+<div class="page-mark">— p.110 —</div>
+<h2 id="thing-45">45. Low-Cost Sensors and the Quality of Data<span class="zh-inline">低成本传感器与数据质量</span></h2>
+<p class="en" title="点击显示 / 隐藏中文">Dr. Shivanand Prabhoolall Guness</p>
+<p class="zh">希万南德·普拉布卢拉尔·古内斯 博士</p>
+<p class="en" title="点击显示 / 隐藏中文">In 2016, I was working on a project with the aim of developing inexpensive air quality monitoring products using low-cost sensors and low-power devices such as Raspberry Pis and Arduinos. So, to begin the project, we ordered sensors and boards to do a proof of concept.</p>
+<p class="zh">2016 年，我在做一个项目，目标是用低成本传感器和低功耗设备（如树莓派和 Arduino）开发便宜的空气质量监测产品。项目开始时，我们订了传感器和板子来做概念验证。</p>
+<p class="en" title="点击显示 / 隐藏中文">Our first issue was with the low-cost sensors. We ordered only the required number of sensors: one particulate matter sensor, one nitrogen oxide sensor, and one ozone sensor for one board. The plan was to set up a couple of monitoring sensors around a site and monitor the air quality for one year. We set up redundancies to protect the data in case the internet was not working, by storing the data on an SD card. After the first couple of weeks of testing, we had a power surge and lost all the data on the SD card. The Raspberry Pi was damaged, but the sensors were reused, as they seemed to be working.</p>
+<p class="zh">第一个问题出在低成本传感器上。我们只订了需要的数量：一块板子配一个颗粒物传感器、一个氮氧化物传感器、一个臭氧传感器。计划是在一个地点周围放几个监测传感器，监测一年空气质量。我们做了冗余保护，万一网络不好就把数据存在 SD 卡上。测试刚开始几周后，一次电源浪涌让 SD 卡上的数据全没了。树莓派坏了，但传感器看起来还能用，就继续用了。</p>
+<p class="en" title="点击显示 / 隐藏中文">The second issue was with the internet. As I said, when it stopped working at the site, all the data was being stored on the SD card. This happened multiple times during our data-capture phase. We reordered the sensors and boards that were damaged, but they took a long time to be delivered, which in turn affected the amount of data we were able to capture. After the initial phase, we also realized that the sensors used during the power surge had been damaged and were giving erroneous output.</p>
+<p class="zh">第二个问题是网络。前面说过，当现场网络中断时，所有数据存在 SD 卡上。这种情况在数据采集阶段发生了好几次。我们重新订购了损坏的传感器和板子，但送货花了很长时间，反过来又影响了我们能采集到的数据量。在最初阶段之后，我们还发现电源浪涌时用的那些传感器其实已经坏了，输出的是错误数据。</p>
+<p class="en" title="点击显示 / 隐藏中文">We learned the following lessons from this project:</p>
+<p class="zh">我们从这个项目中学到以下教训：</p>
+<ul>
+<li><span class="en" title="点击显示 / 隐藏中文">Always buy redundant materials, especially those that cannot be sourced locally.</span><div class="zh">永远买冗余物料，尤其是那些本地买不到的。</div></li>
+<li><span class="en" title="点击显示 / 隐藏中文">Have redundancy for all essential aspects of the project, such as power and internet.</span><div class="zh">为项目所有关键环节做冗余，比如供电和网络。</div></li>
+<li><span class="en" title="点击显示 / 隐藏中文">Never reuse sensors that have been in a power-related incident.</span><div class="zh">永远不要重用经历过电源相关事故的传感器。</div></li>
+<li><span class="en" title="点击显示 / 隐藏中文">Keep an eye on the quality of the data from the very first day.</span><div class="zh">从第一天起就要盯紧数据质量。</div></li>
+</ul>
+<div class="page-mark">— p.111 —</div>
+<p class="en" title="点击显示 / 隐藏中文">The project was a great learning experience, but we had to learn the hard way. In hindsight, if I had to redo this project, I would have run the sensing modules on batteries to avoid power-related issues, bought better-quality sensors to get better-quality results, and had a redundant system to collect all the data from the different sensors locally, instead of storing it on each and every sensor.</p>
+<p class="zh">这个项目是很好的学习经历，但我们是吃了苦头才学到的。事后看，如果重做这个项目，我会用电池给传感模块供电以避免电源问题，买质量更好的传感器以得到更好的结果，并做一个冗余系统在本地汇集不同传感器的数据，而不是存在每个传感器本地。</p>
+<p class="en" title="点击显示 / 隐藏中文">Another potential idea, as the data was already going to the cloud for processing and deploying on a dashboard, would have been to add an abnormality-detection mechanism to inform us of any potential malfunction in the sensors. Because of the problems we encountered, the usable data from our one year of collection was reduced to a period of five months.</p>
+<p class="zh">另一个可能的改进是：既然数据本来就要上云处理并部署到仪表盘，当时就应该加一个异常检测机制，在传感器可能出故障时通知我们。因为遇到的这些问题，我们一年采集下来可用的数据只剩五个月。</p>
+<div class="page-mark">— p.112 —</div>
+<h2 id="thing-46">46. Maintain Your Mechanical Sympathy<span class="zh-inline">保持对机器的同理心</span></h2>
+<p class="en" title="点击显示 / 隐藏中文">Tobias Macey</p>
+<p class="zh">托比亚斯·梅西</p>
+<p class="en" title="点击显示 / 隐藏中文">As a new technologist, you have an endless variety of lessons to learn—everything from the fundamentals of logic, through syntax and software design, and on to building and integrating large distributed systems. After years of practice, ceaseless learning, and inscrutable errors, you will internalize an understanding of more computational errata than you could possibly foresee. In this torrent of information, your perpetual bafflement will be washed away, along with your beginner's mind.</p>
+<p class="zh">作为一名新技术人，你有学不完的功课——从逻辑基础，到语法和软件设计，再到构建和集成大型分布式系统。经过多年实践、不停学习和那些莫名其妙的错误之后，你会把比你能预见的多得多的计算知识内化。在这股信息洪流中，你那种永久的困惑会被冲走，连同你的初心。</p>
+<p class="en" title="点击显示 / 隐藏中文">One thing that will serve you well on every step of your journey is a healthy dose of mechanical sympathy. It is possible to write useful software, build data platforms, or produce valuable analytics without ever understanding all of the underlying infrastructure and computation. However, when something breaks or you run into confusing performance issues, that understanding will prove invaluable.</p>
+<p class="zh">在你旅程的每一步都对你大有助益的，是一份适度的“机械同理心”。你可以在完全不懂底层基础设施和计算的情况下，写出有用的软件、搭出数据平台、产出有价值的分析。然而，当东西坏掉、或你遇到令人困惑的性能问题时，那种理解就会证明其无价。</p>
+<p class="en" title="点击显示 / 隐藏中文">Regardless of your chosen specialization, whether it is data engineering, data science, web development, or any other of an infinite gradation, you will be navigating an endless sea of abstractions. Each layer of indirection brings you further from the hardware that is diligently churning through your demanding instructions and winging your data across the world at light speed.</p>
+<p class="zh">无论你选了哪个专业方向——数据工程、数据科学、Web 开发，还是无数细分中的任何一个——你都将航行在无边无际的抽象之海上。每一层间接都让你离硬件更远一点：那块硬件正在勤恳地咀嚼你苛刻的指令，并以光速把你的数据传遍世界。</p>
+<p class="en" title="点击显示 / 隐藏中文">By considering the physical implementations of how CPUs execute instructions, the way that memory registers are populated and accessed, and the complex dance of network connections, you will gain a greater appreciation for what is possible, what is practical, and when you might want to take a different approach. It is not necessary (nor is it feasible) to become an expert in all of the systems and software that power your specific project. Instead, you should aim to learn just enough about them to understand their limitations and to know what you don't know.</p>
+<p class="zh">通过思考 CPU 如何执行指令的物理实现、内存寄存器如何被填充和访问、以及网络连接那复杂的舞蹈，你会更深刻地理解什么是可能的、什么是现实的、什么时候你可能想换一种做法。要成为支撑你具体项目的所有系统和软件的专家，既无必要也不可行。相反，你应该瞄准的是：对它们了解到足以理解其局限、并知道自己不懂什么。</p>
+<div class="page-mark">— p.113 —</div>
+<p class="en" title="点击显示 / 隐藏中文">For data engineers, some of the foundational principles that will prove most useful are the different access speeds for networked services, hard drives of various types, and system memory. All of these contribute greatly to the concept of data gravity, which will influence your decisions about how and when to move information between systems, or when to leave it in place and bring your computation to the data. It is also helpful to know the difference between computational architectures, such as general-purpose CPUs versus GPUs versus ASICs, and when to leverage each of their capabilities.</p>
+<p class="zh">对数据工程师来说，最有用的一些基础原理包括：网络服务、各类硬盘、系统内存的不同访问速度。这些都极大地塑造了“数据引力”这一概念，它会影响你关于“如何以及何时在系统间搬数据、或者何时把数据留在原地、把计算搬到数据那里”的决策。了解不同计算架构之间的区别也很有帮助——比如通用 CPU、GPU、ASIC 各自的差异，以及什么时候该利用它们各自的能力。</p>
+<p class="en" title="点击显示 / 隐藏中文">At the end of the day, there is always a shiny new tool, or language, or problem, but you will always be well served by the time that you invest in understanding the fundamental principles underlying everything that we do as software professionals.</p>
+<p class="zh">归根结底，总会有闪亮的新工具、新语言、新问题，但你投入时间去理解我们作为软件人所做一切背后的基础原理，总会让你受益。</p>
+<div class="page-mark">— p.114 —</div>
+<h2 id="thing-47">47. Metadata ≥ Data<span class="zh-inline">元数据 ≥ 数据</span></h2>
+<p class="en" title="点击显示 / 隐藏中文">Jonathan Seidman</p>
+<p class="zh">乔纳森·塞德曼</p>
+<p class="en" title="点击显示 / 隐藏中文">My first real experience in the big data world was helping to deploy Apache Hadoop clusters at Orbitz Worldwide, a heavily trafficked online travel site. One of the first things we did was deploy Apache Hive on our clusters and provide access to our developers to start building applications and analyses on top of this infrastructure.</p>
+<p class="zh">我在大数据世界的第一次真正经历，是在 Orbitz Worldwide——一个流量很大的在线旅游网站——帮忙部署 Apache Hadoop 集群。我们做的头几件事之一，就是在集群上部署 Apache Hive，并让开发者能访问，开始在这套基础设施之上构建应用和分析。</p>
+<p class="en" title="点击显示 / 隐藏中文">This was all great, in that it allowed us to unlock tons of value from all of this data we were collecting. After a while, though, we noticed that we ended up with numerous Hive tables that basically represented the same entities. From a resource standpoint, this wasn't that awful, since even in the dark ages of the aughts, storage was pretty cheap. However, our users' time was not cheap, so all the time they spent creating new Hive tables, or searching our existing tables to find the data they needed, was time they weren't spending on getting insights from the data.</p>
+<p class="zh">这一切都很好，让我们能从收集的所有数据中释放大量价值。然而过了一阵，我们注意到最终有一大堆 Hive 表基本上表示同一批实体。从资源角度看，这还不算太糟，因为即使在 2000 年代那个“黑暗时代”，存储也相当便宜。但我们用户的时间不便宜，他们花在新建 Hive 表、或在现有表里搜索所需数据上的每一分钟，都是没有花在从数据中获得洞见的时间。</p>
+<p class="en" title="点击显示 / 隐藏中文">The lesson we learned at Orbitz was that it's a mistake to leave data management planning as an afterthought. Instead, it's best to start planning your data management strategy early, ideally in parallel with any new data initiative or project.</p>
+<p class="zh">我们在 Orbitz 学到的教训是：把数据管理规划当成事后补丁是错误的。相反，最好尽早开始规划你的数据管理战略，理想情况下与任何新的数据倡议或项目并行启动。</p>
+<p class="en" title="点击显示 / 隐藏中文">Having a data management infrastructure that includes things like metadata management isn't only critical for allowing users to perform data discovery and make optimal use of your data. It's also crucial for things like complying with existing and new government regulations around data. It's difficult, for example, to comply with a customer's request to delete their data if you don't know what data you actually have and where it is.</p>
+<p class="zh">拥有一套包含元数据管理的数据管理基础设施，不仅对让用户做数据发现、最优利用你的数据至关重要，对遵守现有和新出台的数据相关法规也至关重要。例如，如果你不知道自己实际有什么数据、存在哪里，就很难满足客户删除其数据的请求。</p>
+<p class="en" title="点击显示 / 隐藏中文">While it's probably relatively straightforward to identify datasets to capture metadata for, and define what that metadata should contain, the bigger challenge can be putting in place processes and tools to capture the metadata and make it available. The fact is, you don't have to find the perfect tool to manage all of your data, and it's possible that no single tool will allow you to effectively manage your data across all your systems. This is definitely a case where even a nonoptimal solution will put you far ahead of having no solution in place.</p>
+<p class="zh">识别要为哪些数据集采集元数据、定义这些元数据应包含什么，可能相对直接；更大的挑战在于建立流程和工具来采集元数据并让它可用。事实是，你不必找到管理所有数据的完美工具，也很可能没有任何单个工具能让你在所有系统间有效管理数据。这种情况下，即便是一个不那么完美的方案，也会让你远远走在“什么方案都没有”的前面。</p>
+<div class="page-mark">— p.115 —</div>
+<p class="en" title="点击显示 / 隐藏中文">Whether you use vendor-provided tools, third-party tools, or even decide to roll your own, the important thing is to have a process and plan in place early, and ensure that you carry that process throughout your data projects.</p>
+<p class="zh">无论你用厂商提供的工具、第三方工具、甚至决定自己造，重要的是尽早建立流程和计划，并确保你把这个流程贯穿于所有数据项目中。</p>
+<p class="en" title="点击显示 / 隐藏中文"><i>1 Thanks to Ted Malaska for some of the ideas that motivated this chapter.</i></p>
+<p class="zh"><i>注 1：感谢 Ted Malaska 启发本章的一些想法。</i></p>
+<div class="page-mark">— p.116 —</div>
+<h2 id="thing-48">48. Metadata Services as a Core Component of the Data Platform<span class="zh-inline">元数据服务是数据平台的核心组件</span></h2>
+<p class="en" title="点击显示 / 隐藏中文">Lohit VijayaRenu</p>
+<p class="zh">洛希特·维贾亚雷努</p>
+<p class="en" title="点击显示 / 隐藏中文">An explosion of unstructured data has introduced new challenges around data discovery, data management, and security for organizations. As the amount of data and the complexity of its usage has increased, considering a unified metadata services as part of your data platform has become even more important. Today, both structured and unstructured data together provide crucial information to derive meaningful business insights. Data engineers should look for the following features in any metadata services they are considering for their organization: discoverability, security control, schema management, and an application interface and service guarantee.</p>
+<p class="zh">非结构化数据的爆炸给组织带来了数据发现、数据管理和安全方面的新挑战。随着数据量和使用复杂度的提升，把统一元数据服务作为数据平台的一部分变得更加重要。今天，结构化和非结构化数据共同提供关键信息，以产出有意义的业务洞见。数据工程师在为组织挑选元数据服务时，应寻找以下特性：可发现性、安全控制、schema 管理、以及应用接口和服务保证。</p>
+<h3 id="thing-48-disc">Discoverability<span class="zh-inline">可发现性</span></h3>
+<p class="en" title="点击显示 / 隐藏中文">The most obvious and common usage of a metadata service is to provide an interface for users to discover data and its partitions. If a data platform has various storage systems, having a common interface for discovering any dataset will help users build generic solutions. Users should have a well-defined interface for querying the dataset and its partitions, which can be translated to an actual physical location by the metadata service. User applications need not hardcode data locations anymore; instead, they can be exposed to interfaces that can help them discover existing and updated data in different storage systems.</p>
+<p class="zh">元数据服务最显而易见、最常见的用法，是提供一个让用户发现数据及其分区的接口。如果数据平台有各种存储系统，有一个发现任何数据集的公共接口会帮助用户构建通用方案。用户应有一个定义良好的接口来查询数据集及其分区，元数据服务可以把它翻译成实际物理位置。用户应用不再需要硬编码数据位置；相反，它们可以暴露在各种接口上，这些接口帮助它们发现不同存储系统中已有的和更新过的数据。</p>
+<h3 id="thing-48-sec">Security Control<span class="zh-inline">安全控制</span></h3>
+<p class="en" title="点击显示 / 隐藏中文">With unified location management, a rich set of security controls can be enforced across the organization. The metadata service should be able to handle authorization rules for the same data across different storage systems. Interfaces to define, update, and enforce security policies should be exposed. The metadata service should act as a data guardian to make sure that policies are never violated. A good metadata service should also have strong auditing features.</p>
+<p class="zh">有了统一的位置管理，组织内就可以施加一整套丰富的安全控制。元数据服务应能处理同一数据在不同存储系统中的授权规则。应暴露用于定义、更新和执行安全策略的接口。元数据服务应扮演数据守护者的角色，确保策略永不被违反。一个好的元数据服务还应有强大的审计功能。</p>
+<div class="page-mark">— p.117 —</div>
+<h3 id="thing-48-schema">Schema Management<span class="zh-inline">Schema 管理</span></h3>
+<p class="en" title="点击显示 / 隐藏中文">The metadata service should provide features for defining and querying the schema associated with the data it manages. A rich schema enables users to build efficient applications. It also provides insights for security enforcers to fine-tune access control and authorization rules on a dataset based on the data content. A good metadata service should also provide schema validation and versioning features.</p>
+<p class="zh">元数据服务应提供定义和查询其所管理数据相关 schema 的功能。丰富的 schema 让用户能构建高效应用。它还为安全执行者提供洞见，以便根据数据内容微调数据集上的访问控制和授权规则。一个好的元数据服务还应提供 schema 校验和版本管理功能。</p>
+<h3 id="thing-48-api">Application Interface and Service Guarantee<span class="zh-inline">应用接口与服务保证</span></h3>
+<p class="en" title="点击显示 / 隐藏中文">Being a critical component, the service should be built and supported to be highly available. The application interface should be easy to use and well defined in order to connect with various libraries and systems. The metadata service should be able to support evolving data models and applications.</p>
+<p class="zh">作为关键组件，该服务应被构建和支持为高可用。应用接口应易用、定义良好，以便连接各种库和系统。元数据服务应能支持不断演进的数据模型和应用。</p>
+<p class="en" title="点击显示 / 隐藏中文">While no single system may provide all these features, data engineers should consider these requirements while choosing one or more services to build their metadata service. Many large organizations are either evolving their existing services or using open source software to support these features.</p>
+<p class="zh">虽然没有任何单个系统能提供所有这些特性，数据工程师在选择一个或多个服务来构建元数据服务时，应考虑这些需求。许多大型组织要么在演进既有服务，要么在用开源软件来支持这些特性。</p>
+<div class="page-mark">— p.118 —</div>
+<h2 id="thing-49">49. Mind the Gap: Your Data Lake Provides No ACID Guarantees<span class="zh-inline">注意差距：你的数据湖不提供 ACID 保证</span></h2>
+<p class="en" title="点击显示 / 隐藏中文">Einat Orr</p>
+<p class="zh">埃纳特·奥尔</p>
+<p class="en" title="点击显示 / 隐藏中文">The modern data lake architecture is based on object storage as the lake, utilizing streaming and replication technologies to pour the data into the lake, and a rich ecosystem of applications that consume data directly from the lake, or use the lake as their deep storage. This architecture is cost-effective and allows high throughput when ingesting or consuming data.</p>
+<p class="zh">现代数据湖架构以对象存储作为湖体，利用流式和复制技术把数据灌进湖里，并有丰富的应用生态直接从湖里消费数据、或把湖作为深层存储。这种架构成本划算，在接入或消费数据时能提供高吞吐。</p>
+<p class="en" title="点击显示 / 隐藏中文">So why is it still extremely challenging to work with data? Here are some reasons:</p>
+<p class="zh">那为什么用数据工作仍然极其困难？下面是一些原因：</p>
+<ul>
+<li><span class="en" title="点击显示 / 隐藏中文">We're missing isolation. The only way to ensure isolation is by using permissions or copying the data. Using permissions reduces our ability to maximize our data's value by allowing access to anyone who may benefit from the data. Copying is not manageable, as you can then lose track of what is where in your lake.</span><div class="zh">我们缺失隔离性。确保隔离的唯一方式是用权限或拷贝数据。用权限会削弱我们最大化数据价值的能力——因为我们想让任何可能从数据中受益的人都能访问。拷贝又无法管理，因为那样你会失去对湖里“什么在哪儿”的追踪。</div></li>
+<li><span class="en" title="点击显示 / 隐藏中文">We have no atomicity—in other words, we can't rely on transactions to be performed safely. For example, there is no native way to guarantee that no one will start reading a collection before it has finished writing.</span><div class="zh">我们没有原子性——换句话说，不能依赖事务被安全执行。例如，没有原生方式保证在一个集合写完之前没人开始读它。</div></li>
+<li><span class="en" title="点击显示 / 隐藏中文">We can't ensure cross-collection consistency (and in some cases, consistency even for a single collection). Denormalizing data in a data lake is common; for example, for performance considerations. In such cases, we may write the same data in two formats, or index it differently, to optimize for two different applications or two different use cases. (Note that this is required since object storage has poor support of secondary indices.) If one of those processes fails while the other succeeds, you get an inconsistent lake, and you risk providing the data consumers an inconsistent view of the world.</span><div class="zh">我们不能保证跨集合一致性（在某些情况下，连单个集合的一致性都保证不了）。在数据湖中反规范化数据很常见，例如出于性能考虑。这种情况下，我们可能把同一份数据写成两种格式、或用不同方式索引，以优化两个不同应用或两个不同用例。（注意这是必需的，因为对象存储对二级索引支持很差。）如果其中一个进程失败而另一个成功，你就得到一个不一致的湖，并可能给数据消费方提供一个不一致的世界观。</div></li>
+</ul>
+<div class="page-mark">— p.119 —</div>
+<ul>
+<li><span class="en" title="点击显示 / 隐藏中文">We have no reproducibility. There is no guarantee that operations involving data + code are reproducible, as data identified in a certain way may change without changing its identity: we can replace an object with an object of the same name, but containing different content.</span><div class="zh">我们没有可复现性。无法保证涉及数据+代码的操作是可复现的，因为以某种方式标识的数据可能在不改变身份的情况下变化：我们可以用同名但内容不同的对象替换一个对象。</div></li>
+<li><span class="en" title="点击显示 / 隐藏中文">We have low manageability. The lineage between datasets and the associations to the code that created them are managed manually or by human-defined and human-configured naming standards.</span><div class="zh">我们的可管理性低。数据集之间的血缘、以及它们与创建它们的代码之间的关联，是靠人工或人定义、人配置的命名标准来管理的。</div></li>
+</ul>
+<p class="en" title="点击显示 / 隐藏中文">How do we work around these limitations? First and foremost, we must know not to expect those guarantees. Once you know what you are in for, you will make sure to put in place the guarantees you need, depending on your requirements and contracts you have with your customers who consume data from the data lake.</p>
+<p class="zh">我们如何绕开这些限制？首先也是最重要的是，你必须知道不要指望那些保证。一旦你知道自己面对的是什么，就会根据你的需求、以及与从数据湖消费数据的客户之间的契约，去建立你需要的保证。</p>
+<p class="en" title="点击显示 / 隐藏中文">In addition, centralized metastores such as the Hive metastore can alleviate the pain of a lack of atomicity and consistency across collections, and versioned data formats such as Hudi can ease the strain of isolation and separation of readers from writers. Frameworks like lakeFS can provide a safe data lake management environment with guarantees of atomicity, consistency, isolation, and durability (ACID), while supporting the use of Hive and Hudi.</p>
+<p class="zh">此外，像 Hive metastore 这样的集中式元存储可以缓解跨集合缺乏原子性和一致性的痛苦，像 Hudi 这样的版本化数据格式可以减轻隔离和读写分离的压力。像 lakeFS 这样的框架可以提供安全的数据湖管理环境，保证原子性、一致性、隔离性、持久性（ACID），同时支持 Hive 和 Hudi。</p>
+<div class="page-mark">— p.120 —</div>
+<h2 id="thing-50">50. Modern Metadata for the Modern Data Stack<span class="zh-inline">为现代数据栈准备的现代元数据</span></h2>
+<p class="en" title="点击显示 / 隐藏中文">Prukalpa Sankar</p>
+<p class="zh">普鲁卡尔帕·桑卡</p>
+<p class="en" title="点击显示 / 隐藏中文">The data world recently converged around the best set of tools for dealing with massive amounts of data, aka the modern data stack. The good? It's super fast, easy to scale up in seconds, and requires little overhead. The bad? It's still a noob at bringing governance, trust, and context to data.</p>
+<p class="zh">数据世界最近收敛于一整套处理海量数据的最佳工具，即现代数据栈。好的一面？它超快、几秒钟就能扩起来、运维开销小。坏的一面？它在给数据带来治理、信任和上下文方面还是个新手。</p>
+<p class="en" title="点击显示 / 隐藏中文">That's where metadata comes in. In the past year, I've spoken to more than 350 data leaders to understand their challenges with traditional solutions and construct a vision for modern metadata in the modern data stack. The four characteristics of modern metadata solutions are introduced here.</p>
+<p class="zh">这就是元数据登场的地方。过去一年里，我和 350 多位数据负责人聊过，了解他们在传统方案上的挑战，并为现代数据栈中的现代元数据构建愿景。下面介绍现代元数据方案的四个特征。</p>
+<h3 id="thing-50-assets">Data Assets > Tables<span class="zh-inline">数据资产 > 表</span></h3>
+<p class="en" title="点击显示 / 隐藏中文">Traditional data catalogs were built on the premise that tables were the only asset that needed to be managed. That's completely different now. BI dashboards, code snippets, SQL queries, models, features, and Jupyter notebooks are all data assets today. The new generation of metadata management needs to be flexible enough to intelligently store and link different types of data assets in one place.</p>
+<p class="zh">传统数据目录建立在“表是唯一需要管理的资产”这一前提上。现在完全不同了。BI 仪表盘、代码片段、SQL 查询、模型、特征、Jupyter notebook，今天都是数据资产。新一代元数据管理需要足够灵活，能在一个地方智能地存储和链接不同类型的数据资产。</p>
+<h3 id="thing-50-visibility">Complete Data Visibility, Not Piecemeal Solutions<span class="zh-inline">完整的数据可见性，而非零敲碎打的方案</span></h3>
+<p class="en" title="点击显示 / 隐藏中文">Earlier data catalogs made significant strides in improving data discovery. However, they didn't give organizations a single source of truth. Information about data assets is usually spread across different places—data-lineage tools, data-quality tools, data-prep tools, and more. Modern metadata solutions should help teams finally achieve the holy grail, a single source of information for every data asset.</p>
+<p class="zh">早期数据目录在改善数据发现方面迈出了大步。然而它们没有给组织一个单一事实源。关于数据资产的信息通常散落在不同地方——数据血缘工具、数据质量工具、数据准备工具等等。现代元数据方案应帮助团队最终达成圣杯：每个数据资产的单一信息源。</p>
+<div class="page-mark">— p.121 —</div>
+<h3 id="thing-50-big">Built for Metadata That Itself Is Big Data<span class="zh-inline">为本身就是大数据的元数据而建</span></h3>
+<p class="en" title="点击显示 / 隐藏中文">We're fast approaching a world in which metadata itself is big data. Processing metadata will help teams understand and trust their data better. The fundamental elasticity of the cloud makes this possible like never before. For example, by parsing through SQL query logs, it's possible to automatically create column-level lineage, assign a popularity score to every data asset, and deduce the potential owners and experts for each asset.</p>
+<p class="zh">我们正在快速接近一个元数据本身就是大数据的世界。处理元数据将帮助团队更好地理解和信任他们的数据。云的基础弹性让这一切前所未有地成为可能。例如，通过解析 SQL 查询日志，可以自动创建列级血缘、为每个数据资产打一个流行度分、并推断每个资产潜在的所有者和专家。</p>
+<h3 id="thing-50-embed">Embedded Collaboration at Its Heart<span class="zh-inline">把内嵌协作放在核心</span></h3>
+<p class="en" title="点击显示 / 隐藏中文">A few years ago, data was primarily consumed by the IT team. Today, data teams are more diverse than ever—data scientists and engineers, business analysts, product managers, and more. Each of these people has their own favorite and diverse data tools, everything from Jupyter to SQL. Because of the fundamental diversity in modern data teams, modern metadata solutions need to integrate seamlessly with teams' daily workflows. This is where the idea of embedded collaboration comes alive.</p>
+<p class="zh">几年前，数据主要由 IT 团队消费。今天，数据团队比以往任何时候都更多元——数据科学家和工程师、业务分析师、产品经理等等。这些人各有各喜欢的五花八门的数据工具，从 Jupyter 到 SQL。由于现代数据团队的这种根本多样性，现代元数据方案需要与团队的日常工作流无缝集成。这就是内嵌协作理念生根发芽的地方。</p>
+<p class="en" title="点击显示 / 隐藏中文">Embedded collaboration is about work happening where you are, with the least amount of friction—like requesting access to data when you get a link, for example, in Google Docs, which the owner can approve from Slack. This can unify dozens of micro-workflows that waste time, frustrate, and fatigue data teams.</p>
+<p class="zh">内嵌协作是指：工作在你所在的地方发生，摩擦最小——比如你在 Google Docs 里拿到一个链接时申请数据访问权限，所有者可以从 Slack 批准。这可以把几十个浪费时间、让人沮丧疲惫的微工作流统一起来。</p>
+<p class="en" title="点击显示 / 隐藏中文">We're at an inflection point in metadata management—a shift from slow, on-premises solutions to a new era, built on the principles of embedded collaboration common in modern tools. While we don't know everything about the future of data catalogs, it's clear that we're about to see modern metadata take its rightful place in the modern data stack.</p>
+<p class="zh">我们正处在元数据管理的拐点——从缓慢的本地部署方案，转向一个建立在现代工具常见的内嵌协作原则之上的新时代。虽然我们不知道数据目录的一切未来，但清楚的是：现代元数据即将在现代数据栈中占据它应有的位置。</p>
+<div class="page-mark">— p.122 —</div>
+
+<nav class="pager"><a class="prev" href="chapter-04.html">← 上一章</a><a class="center" href="index.html">返回目录</a><a class="next" href="chapter-06.html">下一章 →</a></nav>
+</main>
+<button id="modeBtn" title="切换显示模式">🌐</button>
+<div id="modeTip">仅英文 / 仅中文 / 中英对照</div>
+<script>
+(function(){
+  var KEY='bilingual-mode';
+  var modes=['en','zh','both'];
+  var labels={'en':'仅英文','zh':'仅中文','both':'中英对照'};
+  var mode=localStorage.getItem(KEY)||'both';
+  var toc=document.getElementById('toc');
+  var modeBtn=document.getElementById('modeBtn');
+
+  function applyMode(){
+    document.body.dataset.mode=mode;
+    modeBtn.textContent='🌐';
+    modeBtn.title='当前：'+labels[mode]+'，点击切换';
+  }
+  // 点击英文段落：收起/展开其后紧跟的中文块（仅 both 模式下有意义）
+  document.addEventListener('click',function(e){
+    var en=e.target.closest('p.en');
+    if(!en)return;
+    var zh=en.nextElementSibling;
+    if(zh&&zh.classList.contains('zh')){
+      zh.classList.toggle('hide');
+    }else{
+      // li 内的情形：.zh 在 li 内部
+      var z=en.parentElement.querySelector(':scope > .zh');
+      if(z)z.classList.toggle('hide');
+    }
+  });
+  // 🌐 模式循环
+  modeBtn.addEventListener('click',function(){
+    mode=modes[(modes.indexOf(mode)+1)%modes.length];
+    localStorage.setItem(KEY,mode);
+    applyMode();
+  });
+  // 目录折叠
+  var btn=document.getElementById('tocToggle');
+  btn.addEventListener('click',function(){
+    if(window.matchMedia('(max-width:900px)').matches){
+      toc.classList.toggle('show');
+      document.body.classList.toggle('toc-open');
+    }else{
+      toc.classList.toggle('hidden');
+    }
+  });
+  // 窄屏点击目录链接后自动收起抽屉
+  toc.addEventListener('click',function(e){
+    if(e.target.tagName==='A'&&window.matchMedia('(max-width:900px)').matches){
+      toc.classList.remove('show');
+      document.body.classList.remove('toc-open');
+    }
+  });
+  applyMode();
+})();
+</script>
+</body>
+</html>

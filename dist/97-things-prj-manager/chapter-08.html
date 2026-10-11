@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>People, Documents, and Change — 双语阅读</title>
+<style>:root{
+  --accent:#2563eb; --zh-bg:#f0f6ff; --zh-border:#2563eb;
+  --code-bg:#0f172a; --code-ink:#e2e8f0; --ink:#1f2937;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:#faf6f1;color:var(--ink);
+  font:18px/1.7 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+a{color:var(--accent)}
+
+/* ---------- 左侧固定目录 ---------- */
+nav#toc{position:fixed;top:0;left:0;bottom:0;width:300px;overflow-y:auto;
+  background:#fff;border-right:1px solid #e5e7eb;padding:20px 0;
+  transform:translateX(0);transition:transform .25s ease;z-index:20}
+nav#toc.hidden{transform:translateX(-300px)}
+nav#toc h1{font-size:15px;padding:0 20px 8px;color:var(--accent);margin:0}
+nav#toc a{display:block;padding:6px 20px;color:var(--ink);text-decoration:none;
+  font-size:14px;line-height:1.5}
+nav#toc a:hover{background:var(--zh-bg);color:var(--accent)}
+nav#toc a.l1{font-weight:700}
+nav#toc a.l2{font-weight:700}
+nav#toc a.l3{padding-left:40px}
+#tocToggle{position:fixed;top:12px;left:12px;z-index:30;width:40px;height:40px;
+  border:1px solid #e5e7eb;background:#fff;border-radius:8px;font-size:18px;
+  cursor:pointer;color:var(--accent);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+#tocToggle:hover{background:var(--zh-bg)}
+
+/* ---------- 主内容 ---------- */
+main{margin-left:300px;max-width:900px;padding:24px 40px 96px}
+.chapter-head{border-bottom:2px solid var(--accent);padding-bottom:12px;margin-bottom:28px}
+.chapter-head .chap-label{color:var(--accent);font-weight:700;font-size:15px;
+  text-transform:uppercase;letter-spacing:.08em}
+.chapter-head h1{margin:6px 0 4px;font-size:30px}
+.chapter-head .chap-sub{color:#6b7280;margin:0;font-size:18px}
+
+/* ---------- 中英对照段落 ---------- */
+p.en{margin:14px 0;transition:background .15s}
+p.en:hover{background:#eef4ff;border-radius:8px}
+p.zh{display:block;background:var(--zh-bg);border-left:4px solid var(--zh-border);
+  border-radius:0 8px 8px 0;padding:10px 16px;margin:0 0 16px}
+p.zh.show{display:block}
+/* 列表项中文与 p.zh 同规格 */
+li .zh{display:block;background:var(--zh-bg);border-left:4px solid var(--zh-border);
+  border-radius:0 8px 8px 0;padding:8px 14px;margin:6px 0 10px}
+li .zh.show{display:block}
+/* 行内标题的中文对照（紧跟英文之后，灰色小字） */
+.zh-inline{color:#6b7280;font-weight:400;margin-left:8px}
+
+/* ---------- 代码块 ---------- */
+pre{background:var(--code-bg);color:var(--code-ink);border-radius:8px;
+  padding:14px 16px;overflow-x:auto;font:13.5px/1.6 "SF Mono",Menlo,Consolas,monospace}
+code{font-family:"SF Mono",Menlo,Consolas,monospace}
+p code,li code{background:#fde9f3;color:#be185d;border-radius:4px;
+  padding:1px 6px;font-size:.9em}
+
+/* ---------- 表格 ---------- */
+table{border-collapse:collapse;width:100%;margin:14px 0}
+th,td{border:1px solid #d1d5db;padding:8px 12px;text-align:left;font-size:16px}
+th{background:#f1f5f9}
+
+/* ---------- 图片 ---------- */
+figure{margin:20px 0}
+figure img{max-width:100%;height:auto;border:1px solid #e5e7eb;border-radius:8px}
+figcaption{color:#6b7280;font-size:15px;margin-top:8px}
+
+/* ---------- 页码标记 ---------- */
+.page-mark{margin:26px 0 6px;padding-top:8px;border-top:1px dashed #d1d5db;
+  color:#9ca3af;font-size:13px;text-align:right}
+
+/* ---------- 分页按钮 ---------- */
+nav.pager{display:flex;margin-top:44px;border-top:1px solid #e5e7eb;padding-top:18px}
+nav.pager a{flex:1;text-align:center;padding:12px 8px;text-decoration:none;
+  color:var(--ink);border-radius:8px;font-size:16px}
+nav.pager a:hover{background:var(--zh-bg);color:var(--accent)}
+nav.pager a.disabled{opacity:.4;pointer-events:none}
+nav.pager a.center{font-weight:700}
+
+/* ---------- 右下角模式切换按钮 ---------- */
+#modeBtn{position:fixed;right:20px;bottom:20px;z-index:30;width:52px;height:52px;
+  border:none;border-radius:50%;background:var(--accent);color:#fff;font-size:22px;
+  cursor:pointer;box-shadow:0 4px 14px rgba(37,99,235,.35)}
+#modeBtn:hover{filter:brightness(1.08)}
+#modeTip{position:fixed;right:20px;bottom:80px;z-index:30;background:#111827;
+  color:#fff;font-size:13px;padding:6px 10px;border-radius:6px;display:none}
+#modeBtn:hover + #modeTip{display:block}
+
+/* ---------- 显示模式（body[data-mode]） ---------- */
+body[data-mode="en"] .zh{display:none !important}
+body[data-mode="zh"] .en{display:none !important}
+body[data-mode="zh"] .zh{display:block !important}
+
+/* ---------- 锚点 / 窄屏 ---------- */
+h2,h3{scroll-margin-top:20px}
+@media (max-width:900px){
+  nav#toc{transform:translateX(-300px)}
+  nav#toc.show{transform:translateX(0)}
+  main{margin-left:0;padding:64px 18px 96px}
+  body.toc-open{overflow:hidden}
+}
+</style>
+</head>
+<body data-mode="both">
+<nav id="toc"><h1>目录 / Contents</h1>
+<a class="l1" href="index.html">返回总目录</a>
+<a class="l2" href="#tip-71">It's the People, Stupid<span class="zh-inline">是人，不是别的</span></a>
+<a class="l2" href="#tip-72">Documents Are a Means, Not an End<span class="zh-inline">文档是手段，不是目的</span></a>
+<a class="l2" href="#tip-73">Can Earned Value and Velocity Coexist on Reports?<span class="zh-inline">挣值和 velocity 能在报告里共存吗？</span></a>
+<a class="l2" href="#tip-74">Scope Change Happens; Get Used to It<span class="zh-inline">范围变更是常事，习惯就好</span></a>
+<a class="l2" href="#tip-75">Buying Ready-Made Software<span class="zh-inline">购买现成软件</span></a>
+<a class="l2" href="#tip-76">Project Sponsors—Good, Bad, and Ugly<span class="zh-inline">项目发起人——好、坏、丑</span></a>
+<a class="l2" href="#tip-77">Should You Under-Promise, or Over-Deliver?<span class="zh-inline">你该少承诺、还是多交付？</span></a>
+<a class="l2" href="#tip-78">Every Project Manager Is a Contract Administrator<span class="zh-inline">每个项目经理都是合同管理员</span></a>
+<a class="l2" href="#tip-79">Important, but Not Urgent<span class="zh-inline">重要，但不紧急</span></a>
+<a class="l2" href="#tip-80">Teach the Process<span class="zh-inline">教流程</span></a>
+</nav>
+<button id="tocToggle" title="折叠 / 展开目录">☰</button>
+<main>
+<header class="chapter-head">
+<span class="chap-label">Chapter 8 · Tips 71–80</span>
+<h1>People, Documents, and Change</h1>
+<p class="chap-sub">人、文档与变更</p>
+</header>
+<h2 id="tip-71">It's the People, Stupid<span class="zh-inline">是人，不是别的</span></h2>
+<p class="byline"><em>Adrian Wible · New York, New York, U.S.<span class="zh-inline">Adrian Wible · 美国纽约州纽约市</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">NEVER LOSE SIGHT OF THE FACT that the members of your project team are human beings, with aspirations, strengths, constraints, and weaknesses. Your project's success hinges more on team members' attitudes and aptitudes than it does on your Gantt chart wizardry and project tracking prowess. Feel free to manage the project, but don't forget to lead the team. Many of us manage projects in a matrix environment with team members reporting both to us and to a department manager. We do not have human resources (HR) hiring/firing/evaluation responsibility for them. However, don't abdicate responsibility for the care and feeding of the people on the team to managers in the HR or functional hierarchy. Many of those managers get promoted based on technical knowledge of human resources or their departments, not on their ability to inspire people. Your project's success depends on your ability to lead. There are many books available on leadership. Read voraciously. Everyone on your team wants to contribute, learn, and achieve. It may be challenging at times to dig deeply enough to find this desire in some team members, but it's what makes software project management challenging and fun. Hold one-on-one conversations with your team members regularly. Determine what their issues are, ask them for ideas, and give them a voice in the project. Take their input seriously and act on it. Ask your team members what they want to be when they grow up. Seriously. We all have career aspirations. Be the one mentor who cares about their careers. You'll be amazed at how powerful this can be.</p>
+<p class="zh">永远别忽视这个事实：你的项目团队成员是人，有抱负、长处、约束和弱点。你项目的成功更多取决于团队成员的态度和天资，而不是你的甘特图魔法和项目追踪本领。尽管去管理项目，但别忘了领导团队。我们许多人在矩阵环境里管项目，团队成员既向我们汇报、也向部门经理汇报。我们对他们没有人力资源（HR）的招聘/解雇/评估责任。然而，不要把"照顾和喂养团队里的人"的责任推给 HR 或职能层级里的经理。那些经理许多是凭人力资源或部门的技术知识晋升的，不是凭激励人的能力。你项目的成功取决于你的领导力。关于领导力的书很多，如饥似渴地读。你团队里每个人都想贡献、学习、成就。有时在某些成员身上要挖得够深才能找到这种愿望，但这正是软件项目管理既具挑战又有趣的地方。定期和团队成员一对一谈话。弄清他们的问题，请他们出主意，在项目中给他们发言权。认真对待他们的输入并采取行动。问你的团队成员长大后想做什么。说真的。我们都有职业抱负。做那个关心他们职业的导师。你会惊讶这有多强大。</p>
+<div class="page-mark">— p.168 —</div>
+<p class="en" title="点击显示 / 隐藏中文">Be open, honest, and direct with team members. Provide feedback on a regular basis, not just at review time. Focus your feedback on the behavior, not the person. Again, management literature abounds. Study. When you have a performance issue with a team member, apply the CRAM model: Constraints, Resources, Aptitude, and Motivation. Project managers frequently diagnose poor performance as a motivation problem. The CRAM model suggests that motivation is the last issue to consider. A team member may be experiencing constraints in his life that limit his effectiveness. Examples include getting divorced or married, having kids, fighting addiction issues, etc. Team members may not have the resources necessary to contribute at their highest level. Examples include no quality assurance (QA) test environment, or ancient hardware. Perhaps budget constraints limit the ability to establish testing environments or buy licenses for necessary software. Perhaps the domain expertise (business analyst, customer, end-user) is not accessible. Your team member may not be cut out for the role he/she fills. He may not have the programming aptitude necessary for this project. If so, find another project role, if possible. Alternatively, find another team where he can leverage his strengths. Motivation is the last lever to jiggle when a team member has performance issues. It should only be considered once the constraints, resources, and aptitude problems have been addressed. Be a leader and connect with the individual human beings who comprise your team. The results may surprise you.</p>
+<p class="zh">对团队成员开放、诚实、直接。定期反馈，不只是在评审时。把反馈聚焦在行为上，不是人。再说一遍，管理文献汗牛充栋，去研读。当你和团队成员有绩效问题时，应用 CRAM 模型：约束 Constraints、资源 Resources、天资 Aptitude、动机 Motivation。项目经理常把差绩效诊断为动机问题。CRAM 模型建议动机是最后才考虑的问题。团队成员可能正经历生活中的约束，限制了他的效率。例子包括离婚或结婚、生孩子、与成瘾问题作斗争等。团队成员可能没有以最高水平贡献所需的资源。例子包括没有质量保证（QA）测试环境、或老旧硬件。也许预算约束限制了建立测试环境或购买必要软件许可的能力。也许领域专家（业务分析师、客户、终端用户）接触不到。你的团队成员也许不适合他/她担任的角色。他可能没有这个项目所需的编程天资。如果是，可能的话给他找另一个项目角色。或者，找一个他能发挥长处的团队。当团队成员有绩效问题时，动机是最后才拨弄的杠杆。只有在约束、资源和天资问题都解决后，才考虑它。做一个领导者，与构成你团队的一个个具体的人建立连接。结果可能让你惊讶。</p>
+<div class="page-mark">— p.169 —</div>
+<h2 id="tip-72">Documents Are a Means, Not an End<span class="zh-inline">文档是手段，不是目的</span></h2>
+<p class="byline"><em>Patrick Kua · London, UK<span class="zh-inline">Patrick Kua · 英国伦敦</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">EISENHOWER ONCE SAID, "PLANS ARE WORTHLESS. Planning is essential." Successful project managers understand how to reap the benefits from planning without the overhead of meticulously updating their plans in minute detail. They actively use documents to help spark meaningful conversations, not as the replacement for all communication methods, or worse yet, as a way of pointing out when people breach an agreement. Planning and tracking will remain essential activities for a project manager, though always framed in the context of achieving a particular goal. Many organizations (incorrectly) measure project managers on how well they stick to a plan, or how thoroughly a particular set of documents has been completed, distributed, and archived. In organizations that misunderstand planning, project managers are asked, "How accurately did you meet the plan?" Beware of enterprises that ask this micromanagement-centered question instead of the more important question, "Did you deliver the most value in the desired timeframe?" Value may be judged as achieving the right goal within a given budget, delighting customers, or exceeding expectations. With the wrong yardstick in hand, sometimes it's all too easy to forget what the end goal truly is intended to be. Focusing on just developing plans and the perfect set of documents creates a false sense of progress and accomplishment. It implies that the execution of the plan is the easy part and that the plans are accurate, both of which are hardly ever the case.</p>
+<p class="zh">艾森豪威尔说过："计划毫无价值，规划必不可少。"成功的项目经理懂得如何从规划中获益，而不必承担把计划细节更新到分钟的开销。他们主动用文档激发有意义的对话，不是用文档替代所有沟通方式，更糟的是，不是用文档来指出人们何时违反了约定。规划和跟踪仍是项目经理的基本活动，但永远放在"达成特定目标"的语境里。许多组织（错误地）用项目经理多坚持计划、或一套特定文档完成、分发、归档得多彻底来衡量他们。在误解规划的组织里，项目经理被问："你多准确地按计划完成？"要警惕那些企业问这种微观管理中心的问题，而不是更重要的问题："你在期望的时间框内交付了最大价值吗？"价值可以被判断为在给定预算内达成正确目标、让客户满意、或超出预期。手里拿错了标尺，有时太容易忘记最终目标真正是什么。只聚焦于制定计划和完美的文档集，会制造一种虚假的进步和成就感。它暗示计划的执行是容易部分、计划是准确的——这两点几乎都不成立。</p>
+<div class="page-mark">— p.170 —</div>
+<p class="en" title="点击显示 / 隐藏中文">I have seen project managers try to force everyone participating in the project to keep to the activities and schedule recorded in the original plan. They fail to realize that, as they recognize changing conditions, it would be more useful to lead the team in replanning activities based on the new circumstances. Plans and documents contain essential information for a business to meet its goals. However, the plans and documents by themselves are actually quite useless. They need people to act upon the results they highlight and for someone to convey the information they contain to other parties who would then benefit from the knowledge. Therefore, it is always important to consider what is the right level of information to be passed on and what is the best method for delivering the information to other parties concerned with the outcome of this project. Documents are often the poorest choices to convey important data. The richest level of communication is face-to-face. Project managers also have the unenviable job of maintaining the delicate balance between the overhead need to meet traceability or auditing requirements and other non-document-centric activities that ultimately add value to a project. Successful project managers do just enough planning, capture just enough detail, realize that issues will invariably arise as the project progresses, and recognize when plans need to change because of new or unanticipated needs. They remember that the documents from the planning process are the means to a well-run project, not an end in and of themselves.</p>
+<p class="zh">我见过项目经理试图强迫项目中每个人遵守原计划记录的活动和进度。他们没意识到，既然认识到情况在变，更有用的是带领团队根据新情况重新规划活动。计划和文档包含企业达成目标所需的基本信息。然而，计划和文档本身其实相当无用。它们需要人根据它们标出的结果采取行动，需要有人把它们包含的信息传达给其他能从中受益的相关方。因此，考虑该传递什么层级的信息、以及把信息传达给关注本项目结果的其他方的最佳方法，总是重要的。文档常常是传达重要数据最差的选择。最丰富的沟通是面对面。项目经理还有一份不讨好的工作：在满足可追溯性或审计要求的开销、与最终为项目增加价值的其他非文档中心活动之间，维持微妙平衡。成功的项目经理只做刚好够的规划，捕获刚好够的细节，认识到问题会随项目推进不可避免地出现，并识别何时因新的或未预见的需要而需要改计划。他们记得规划过程的文档是把项目运行好的手段，不是目的本身。</p>
+<div class="page-mark">— p.171 —</div>
+<h2 id="tip-73">Can Earned Value and Velocity Coexist on Reports?<span class="zh-inline">挣值和 velocity 能在报告里共存吗？</span></h2>
+<p class="byline"><em>Barbee Davis, MA, PHR, PMP · Omaha, Nebraska, U.S.<span class="zh-inline">Barbee Davis（MA, PHR, PMP）· 美国内布拉斯加州奥马哈</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">SOFTWARE DEVELOPERS ARE INCREASINGLY CERTAIN that a more agile, flexible approach to creating software is the best way to produce high-quality, working features that solve customer problems and provide business value. However, project management offices (PMOs) are continuing to develop procedures and train project managers on more traditional approaches that work successfully in many non-information technology areas of the corporation. Is there a way to blend the reporting between the two factions, so that upper management can have matching metrics from both areas? Yes. Sort of. If you are new to earned value, it is a numeric tracking of progress and the business value of that progress on a weekly, monthly, or quarterly basis. In an over-simplistic explanation, ignoring the cost factors, the project manager (and other stakeholders) define requirements and estimate the amount of time it will take to do the work of the project. These estimates are converted into a schedule. Let's say the reporting time period was one week and the project team estimated it could do 40 predefined tasks in that week. Friday afternoon, the team reports its actual progress. If it got all the tasks finished in those 40 hours, it "earned" 40 hours worth of value (EV). It had estimated, or planned, 40 hours' worth of value (PV). EV-PV=SV, or schedule variance. In this case, the team had zero schedule variance. However, if the team got behind, the schedule would be behind and other workers down the line would need to be alerted. If the team finished early, the original estimates might be excessive, and incoming materials or other project participants would need to know that their tasks may start earlier than anticipated. Remember, the scope (work) of the project has already been set. The agile term velocity means measuring the productivity of a developer. It is used to allow that person to undertake an estimated amount of work for an upcoming week, not to exceed the amount of work s/he completed last week. However, since this developer is only being compared to himself and his last week's choices, rather than a long-term schedule, there is no need to reschedule the work of others. Further, the tasks for this week may be easier, have fewer bugs, or be more familiar to the programmer. In the software development project, the functionality of the end product has not been set in stone. So if the velocity isn't as fast as originally estimated, the scope (amount of features delivered) can shrink. The software project manager who is rolling reports from the software development project in with marketing, manufacturing, and training issues needs a reporting metric. The simplest approach is to give information technology a block of time (and a corresponding payroll amount) to work on the software. On the reports, show five weeks of time, for example. When your IT team submits weekly software reports, have it also submit the features/stories completed for you to convert to task names and enter into the report after the fact. Now those tasks can be updated to show that they are 100% complete as planned. This allows traditional reports to show agile progress.</p>
+<p class="zh">软件开发越来越确信，更敏捷、更灵活的造软件方式，是产出高质量、可用功能、解决客户问题、提供业务价值的最佳途径。然而，项目管理办公室（PMO）仍在继续开发流程、培训项目经理使用更传统的方法——这些方法在公司许多非 IT 领域行之有效。有没有办法融合两派的报告，让上层管理能从两个领域拿到匹配的指标？有。大概吧。如果你刚接触挣值，它是对进展及该进展业务价值的按周、按月或按季度的数值跟踪。极度简化地解释（忽略成本因素），项目经理（和其他相关方）定义需求、估算做项目工作需要多少时间。这些估算被转换成进度。假设报告周期是一周，项目团队估算那周能做 40 个预定义任务。周五下午，团队报告实际进展。如果在那 40 小时里完成了所有任务，它"挣到"了 40 小时价值（EV）。它估算/计划了 40 小时价值（PV）。EV-PV=SV，即进度偏差。这种情况下团队进度偏差为零。然而，如果团队落后了，进度就落后，下游其他工作者需要被提醒。如果团队提前完成，原始估算可能过宽，进来的物料或其他项目参与者需要知道他们的任务可能比预期早开始。记住，项目范围（工作）已经定了。敏捷术语 velocity 指衡量开发的生产力。它用于让那个人承担下一周估算量的工作，不超过他/她上周完成的工作量。然而，因为这个开发只和他自己及上周的选择比，而不是和长期进度比，没有必要重新安排别人的工作。而且，这周的任务可能更容易、bug 更少、或程序员更熟悉。在软件开发项目中，最终产品的功能没有被钉死。所以如果 velocity 不如原估那么快，范围（交付功能量）可以收缩。把软件开发项目报告与营销、制造和培训事项合并的软件项目经理需要一个报告指标。最简单的办法是给 IT 一块时间（和相应的薪酬金额）来做软件。报告上显示，比如，五周时间。当你的 IT 团队提交每周软件报告时，让它同时提交完成的功能/故事，你事后把它们转成任务名录进报告。现在这些任务可以更新为按计划 100% 完成。这让传统报告能展示敏捷进展。</p>
+<div class="page-mark">— p.172 —</div>
+<div class="page-mark">— p.173 —</div>
+<h2 id="tip-74">Scope Change Happens; Get Used to It<span class="zh-inline">范围变更是常事，习惯就好</span></h2>
+<p class="byline"><em>Pavel Simsa, PMP · Bellevue, Washington, U.S.<span class="zh-inline">Pavel Simsa（PMP）· 美国华盛顿州贝尔维尤</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">IF THERE IS ONE THING that distinguishes a software development project from other project types, it is how, inevitably, scope changes occur. Not that it never happens in other places, but I can't think of another industry with such a constantly fluctuating scope. You know projects are governed by the triple constraint: cost, time, and scope: Cost. If your project is in trouble, throwing in extra money or resources rarely helps. If you double the number of diggers, you'll probably get your trench dug in just slightly more than half the time. But if you double the number of software developers, hoping to get the project back on track, it will probably do more harm than good. You will create huge confusion over who owns what code and how things need to be done. So cost needs to stay the same. Time. There's always "The Date." It is not the delivery date indicated in your original schedule. Nobody officially mentions it out loud, but if you are developing a big security product that is scheduled to release in November, there is a likely chance you will get to keep your job even if your delivery slips until January. Secretly, the team knows "The Date" is February, for example, "at the time of the international Black Hat security conference where new releases are announced." You have some flexibility surrounding your delivery time, but only a small amount. Time is constrained. Scope. What remains to change is the scope. Oddly enough, scope is one of the most flexible constraints, especially when developing commercial software, rather than software built and customized for a specific customer. The reason is simple. Every new software product has "must have" and "nice to have" features and functionality. The "nice to have" features typically outnumber the "must have" features several times over.</p>
+<p class="zh">如果说有一件事把软件开发项目和其他项目类型区分开，那就是范围不可避免地会变化。不是说别的地方从不发生，但我想不出另一个行业有如此不断波动的范围。你知道项目受三重约束支配：成本、时间、范围：成本。如果你的项目陷入麻烦，砸额外钱或资源很少有用。如果挖沟人数翻倍，你大概能在略多于一半的时间里挖好沟。但如果把软件开发人数翻倍、希望让项目重回正轨，那可能弊大于利。你会在"谁拥有哪段代码、事情该怎么做"上制造巨大混乱。所以成本要保持不变。时间。总有"那个日子"。它不是你原进度上写的交付日。没人正式大声提它，但如果你在开发一个计划 11 月发布的大型安全产品，很可能即使交付滑到 1 月你还能保住工作。私下里，团队知道"那个日子"是 2 月，比如"在国际黑帽安全大会发布新版本的时候"。你在交付时间上有一些灵活度，但只有一点点。时间是约束的。范围。剩下能变的就是范围。奇怪的是，范围是最灵活的约束之一，尤其在开发商业软件、而不是为特定客户定制软件时。原因很简单。每个新软件产品都有"必须有"和"有了更好"的功能。"有了更好"的功能通常比"必须有"的多出好几倍。</p>
+<div class="page-mark">— p.174 —</div>
+<p class="en" title="点击显示 / 隐藏中文">Fortunately, the "nice to have" items are also the easiest to eliminate. If you are building a skyscraper, you can't announce in the middle of the project, "In order to get this project back on track, we'll only build 40 stories on this building, rather than the 60 stories the architectural plans show. We can add the other 20 later, when we have the time." With software, it's relatively easy to say, "Change of plans—we'll support only two operating systems in Release One. Later, we can add the other two we originally planned to support." It's not an ideal solution, so what can be done to avoid it? Honestly speaking, probably nothing. It's the nature of software development projects. However, what you can do is to plan your scope concretely. Identify the "nice to have" features and their dependencies from the beginning. The dependencies are important. Removing a "nice to have" feature may otherwise also change the development architectures linked to a "must have." If you plan possible scope reductions from the beginning, it will make your decision about what to cut and how to cut it easier, should it become necessary.</p>
+<p class="zh">幸运的是，"有了更好"的项也最容易砍掉。如果你在建摩天大楼，你不能在项目中途宣布："为了让项目重回正轨，这栋楼我们只建 40 层，而不是建筑图上画的 60 层。其他 20 层以后有空再加。"对软件，说"计划变了——第一版我们只支持两个操作系统。以后再加原本计划支持的另外两个"相对容易。这不是理想方案，那能做什么来避免？老实说，大概什么都做不了。这是软件开发项目的本性。然而，你能做的是具体地规划范围。从一开始就识别"有了更好"的功能及其依赖。依赖很重要。否则砍掉一个"有了更好"的功能，可能也会改变与"必须有"相连的开发架构。如果你从一开始就计划可能的缩减，当必要时，你决定砍什么、怎么砍会更容易。</p>
+<div class="page-mark">— p.175 —</div>
+<h2 id="tip-75">Buying Ready-Made Software<span class="zh-inline">购买现成软件</span></h2>
+<p class="byline"><em>Ernani Marques da Silva, MBA, PMP, PgMP · Mairipora, Sao Paulo, Brazil<span class="zh-inline">Ernani Marques da Silva（MBA, PMP, PgMP）· 巴西圣保罗马伊里波朗</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">CURRENTLY, IT IS VERY COMMON AND USEFUL to buy software that is ready-made—ready to be tested, implemented, and used out of the box. Why? Such software allows organizations to leverage their efficiency and optimize their effectiveness by cutting time spent in the developmental and implementation phases. In this kind of purchase, you are not only buying the software, but the know-how of the company that wrote the software. Of course, each organization has its own procedures, policies, and legacy software (e.g., accounting systems, security software, etc.). Therefore, new software often has to be customized in order to support the company policies and procedures, and to integrate the programs with previously installed legacy systems. In many cases, the vendor will capture the knowledge for that customization during the presales process. This is the point where the major problems may arise. Even if you follow a very detailed procurement process, it is very complicated to determine whether certain functionalities (e.g., formulas, data entry screens, integration with legacy software, etc.) inherent in the new application will work as business/product area requirements intended. Once the procurement process is complete, the contract is signed, and the project plan is approved and in implementation, issues can pop up during the testing phase. The troubles can be related to the customization or, in the worst-case scenario, related to the functionality that the software was assumed to have based on the demo. It is very important to follow specific steps before the contract is signed: 1. Prepare a very detailed checklist regarding the company's software needs. 2. Visit the company and prepare a due diligence report. 3. Prepare a vendor evaluation report, test cases, and test plan. 4. Make sure the test case is completed and documented. 5. Follow the test plan/cases before the contract is signed. The gaps, and the plan by which these gaps will be bridged, should be understood and approved by both companies. After this process is carefully followed and documented, you will have very clear information by which to determine which software should be purchased, the estimated time required for software customization, and the actual associated costs. You will save money and time in the long run. It sounds as if a lot of time will be spent before the vendor is selected and the contract is signed. Yes, but it is better to invest this time rather than waiting until the software is in your hands to be installed. If too many incompatibilities are discovered during testing—or, worst-case scenario, after the software is already deployed to the final user—costs will skyrocket. To recap, when your company decides to buy ready-made software, spend more time identifying the real need and researching the functional and technical details of the software chosen before purchasing. Use this approach whether the software provider is well known or new to you, and whether the software is a low-impact desktop application or a more crucial server-side application that could bring the company to its knees.</p>
+<p class="zh">目前，买现成软件——开箱即可测试、实施、使用——非常普遍且有用。为什么？这种软件让组织通过减少开发和实施阶段的时间来利用效率、优化效果。在这种购买中，你不仅买软件，也买写软件公司的专业知识。当然，每个组织有自己的流程、政策和遗留软件（如会计系统、安全软件等）。因此，新软件常常必须定制，以支持公司政策流程、并把程序与先前安装的遗留系统集成。许多情况下，供应商会在售前过程中捕获定制所需知识。主要问题可能就出在这里。即使你走一个非常详细的采购流程，要确定新应用固有的某些功能（如公式、数据录入屏、与遗留软件集成等）是否按业务/产品领域需求预期那样工作，也非常复杂。采购流程完成、合同签署、项目计划批准并进入实施后，问题可能在测试阶段冒出来。麻烦可能与定制有关，或在最坏情况下，与软件原本（根据演示）被假设具有的功能有关。合同签署前遵循特定步骤非常重要：1）准备一份关于公司软件需求的非常详细的检查清单；2）拜访公司、准备尽职调查报告；3）准备供应商评估报告、测试用例和测试计划；4）确保测试用例完成并记录；5）合同签署前按测试计划/用例执行。差距、以及弥合这些差距的计划，应被两家公司理解和批准。仔细遵循并记录这个过程后，你将有非常清晰的信息来决定该买哪个软件、定制软件所需的估计时间、以及实际相关成本。长远看你会省钱省时。听起来选供应商、签合同前要花很多时间。是的，但投入这些时间比等到软件到手要装才发现问题好。如果测试中发现太多不兼容——或最坏情况下，软件已部署给最终用户后——成本会飙升。总结：当你的公司决定买现成软件时，在购买前花更多时间识别真实需求、研究所选软件的功能和技术细节。无论软件提供商是知名还是你不熟悉的，无论软件是低影响桌面应用还是可能让公司跪下的关键服务器端应用，都用这种方法。</p>
+<div class="page-mark">— p.176 —</div>
+<div class="page-mark">— p.177 —</div>
+<h2 id="tip-76">Project Sponsors—Good, Bad, and Ugly<span class="zh-inline">项目发起人——好、坏、丑</span></h2>
+<p class="byline"><em>Jorge Gelabert, PMP · Berlin, Connecticut, U.S.<span class="zh-inline">Jorge Gelabert（PMP）· 美国康涅狄格州柏林</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">EVERY PROJECT NEEDS A SPONSOR—usually the person who initiated the project and is responsible for providing the financial resources to successfully complete it. Typically, this is someone high in the organization who will champion the project and step in when the software project manager faces company challenges beyond his control. The larger the project, the greater the importance of a strong sponsor. In my experience, sponsors come in three flavors: good, bad, and ugly. It is important to recognize each type and know how to deal with it. The worst type of sponsorship is "ugly." These sponsors are usually assigned. Therefore, they have no personal investment in what the project is delivering or its intended use. Such a sponsor tends not to listen to the project manager and instead focuses on arbitrary due dates set by those who have assigned him/her to the project. Benign neglect is common. Assigned project sponsors may change frequently, so there is no continuity. Spotting this type of sponsorship is easy; addressing the problem is not. The software project manager must work with the sponsor and respond to his/her desires. Often this is at odds with making the project successful. One answer can be to find a surrogate sponsor, a person or group who will benefit from the deliverables of the project and who may be able to provide the assistance typically provided by a sponsor. Alternately, the project manager can ask others with influence to intervene on their behalf with the current sponsor. Your success will depend heavily on how well you, the project manager, are networked within the organization.</p>
+<p class="zh">每个项目都需要一个发起人——通常是发起项目、负责提供财务资源以成功完成项目的人。典型地，这是组织里的高层，会为项目撑腰，并在软件项目经理遇到他无法控制的公司层面挑战时介入。项目越大，强发起人的重要性越大。以我的经验，发起人有三种味道：好、坏、丑。识别每种类型并知道如何应对很重要。最糟的赞助类型是"丑"。这些发起人通常是被指派的。因此，他们对项目交付什么、预期用途没有个人投入。这样的发起人往往不听项目经理的，而专注于指派他/她来项目的人定的任意截止日。善意忽视很常见。被指派的项目发起人可能频繁更换，因此没有连续性。识别这种赞助类型容易；解决问题不容易。软件项目经理必须与发起人合作、回应他/她的愿望。这常常与让项目成功相矛盾。一个答案是找一个替代发起人——一个会从项目交付物中受益、并能提供发起人通常提供的帮助的人或群体。或者，项目经理可以请有影响力的人替自己向现任发起人说情。你的成功将很大程度上取决于你作为项目经理在组织内的关系网有多广。</p>
+<div class="page-mark">— p.178 —</div>
+<p class="en" title="点击显示 / 隐藏中文">The "bad" sponsor can hinder a project in different ways. He or she may become involved in routine matters typically handled by the project manager, interact directly with team members, and make inappropriate project decisions—usurping the role of project manager and confusing the team. He/she may be a weak sponsor, fail to provide needed resources, become overburdened with other efforts, or not have time to provide guidance for the project. Prevent "bad" sponsor problems by developing clearly defined sponsor roles and responsibilities up front. In the case of the intrusive sponsors, providing them a "job description" of their role may get them to modify their behavior. With weak sponsors, knowing what is expected may make them realize they can't fulfill that role, and you may get a better sponsor assigned to the project. The ideal situation is having a "good" sponsor. Good sponsors understand their role and responsibilities and behave accordingly. These are the project champions who provide resources, assist when needed, and support the project manager in his/her decisions. It's a company executive who is personally invested in the project success. Whether "good," "bad," or "ugly," it is your responsibility as software project manager to manage the sponsor, just as you manage the project. Keep the sponsor well informed, involve him/her only when necessary, and avoid allowing the sponsor to take control of the project. Learn to recognize the sponsor types and prepare accordingly.</p>
+<p class="zh">「坏」发起人可以用不同方式阻碍项目。他/她可能卷入通常由项目经理处理的日常事务、直接与团队成员互动、做出不当的项目决策——篡夺项目经理角色、让团队困惑。他/她可能是弱发起人，提供不了所需资源、被其他工作压得喘不过气、或没有时间指导项目。通过前期制定清晰的发起人角色和职责来预防"坏"发起人问题。对侵入型发起人，给他们一份角色"职位描述"可能让他们改变行为。对弱发起人，知道期望可能让他们意识到自己履行不了那个角色，你可能得到一个更好的发起人被指派到项目。理想情况是有一个"好"发起人。好发起人理解自己的角色和职责并相应行事。他们是为项目提供资源、需要时协助、支持项目经理决策的拥护者。是一个个人投入项目成功的公司高管。无论"好""坏"还是"丑"，作为软件项目经理，管理发起人和管理项目一样是你的责任。让发起人充分知情，只在必要时让他/她参与，避免让发起人控制项目。学会识别发起人类型并相应准备。</p>
+<div class="page-mark">— p.179 —</div>
+<h2 id="tip-77">Should You Under-Promise, or Over-Deliver?<span class="zh-inline">你该少承诺、还是多交付？</span></h2>
+<p class="byline"><em>Joe Zenevitch · New York, New York, U.S.<span class="zh-inline">Joe Zenevitch · 美国纽约州纽约市</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">AT THE END OF THE PROJECT, deliver less than you said you would, and you are a bad software project manager. Deliver more than you said you would, and you're the hero. Actually, you should strive to deliver exactly what you promised. No more, no less. New project managers, eager to please, let business people/customers continue to add features, even as the team's capacity to deliver them shrinks. The business people, thinking that the project manager has things under control, take advantage of this opening, and the onslaught of new features continues. Afraid to show weakness, the green PMs just sweat it out and hope they can deliver. But as the project end date draws near, it may become obvious that the features list will not be finished. The process of cutting features, not necessarily the newest additions, grudgingly begins. The formerly happy business people are now planning the termination, or at least the post-release punishment, of the project manager. The experienced PMs know that they are going to have to be firm from day one. Anything that resembles a new feature, or a change in scope, will be met with pushback from the PM. He/she reminds the business owners that only so many features will fit into each release. If something new comes up, it must be deferred to a future release or substituted for a planned feature. The experienced PM avoids "High-Medium-Low" categorizations, as customers may mark everything a "High." They prefer a prioritized list of features based on business value. A good PM reminds the business owners that features at the bottom of the priority list may not get done this release if delays are encountered. These rules serve as an annoyance to the business owners, especially those who haven't learned that ramming in features won't work. Over time, they get used to the process and come to accept it as a fact of project life.</p>
+<p class="zh">项目结束时，交付比承诺的少，你就是个坏软件项目经理。交付比承诺的多，你就是英雄。实际上，你应该努力恰好交付你承诺的。不多不少。新项目经理急于讨好，让业务人员/客户继续加功能，即使团队交付它们的能力在收缩。业务人员以为项目经理一切尽在掌控，利用这个开口，新功能的猛攻持续。怕显露出软弱，青涩的项目经理只能硬扛、希望自己能交付。但随着项目结束日临近，功能清单完不成可能变得明显。砍功能的过程（不一定是最新加的）不情愿地开始。原本高兴的业务人员现在开始计划开除项目经理，或至少发布后惩罚他。有经验的项目经理知道从第一天起就得坚定。任何像新功能或范围变更的东西，都会遭到项目经理的推回。他/她提醒业务负责人，每个发布只能装下这么多功能。如果冒出新东西，必须推迟到未来发布或替换一个计划功能。有经验的项目经理避免"高-中-低"分类，因为客户可能把所有东西都标成"高"。他们更喜欢基于业务价值的优先功能清单。好项目经理提醒业务负责人，如果遇到延期，优先级清单底部的功能这个发布可能做不完。这些规则让业务负责人恼火，尤其那些还没学会硬塞功能行不通的。久而久之，他们习惯这个过程，把它当作项目生活的一个事实接受。</p>
+<p class="note" style="font-size:14px;color:#6b7280;">* Release: At the end of a predefined work period, one or more iterations, the goal is to have the feature(s)—working code—of the software available for demonstration to the customer, or perhaps for actual use by a limited user group. This delivery of completed features is called a release in agile programming.<span class="zh-inline">* 发布：在预定义工作周期（一个或多个迭代）结束时，目标是让软件的功能（可工作的代码）可向客户演示，或供有限用户群实际使用。这种完成功能的交付在敏捷编程中叫发布。</span></p>
+<div class="page-mark">— p.180 —</div>
+<p class="en" title="点击显示 / 隐藏中文">Of course, the experienced PM expects that changes are going to happen during the course of the project, and has built contingency time into the plan. This contingency is held close to the vest, sometimes not being revealed to the customer or even the team. It is managed like a precious resource, and only features that survive the pushback battle get to eat into it. When this does happen, the business owner is usually thankful that the PM finally obliged him. In the final days of development, if contingency remains, the PM might even opt to "open the reserves" and produce a few extra features. Some business owners might question why they couldn't have them earlier, but in most cases they are happy to receive a few extra, unexpected things. Now the PM stands at the end of the release. The team has delivered on what it said it would. Sometimes it has provided extras. The business owner is happy, the team is happy, and the PM's reputation is intact. Let the end-of-release festivities begin.</p>
+<p class="zh">当然，有经验的项目经理预期项目过程中会发生变更，并在计划里建了应急时间。这个应急藏得很紧，有时不告诉客户、甚至不告诉团队。它像珍贵资源一样被管理，只有在推回战斗中幸存的功能才能动用它。真发生时，业务负责人通常会感激项目经理终于答应了他。在开发最后几天，如果应急还有剩，项目经理甚至可能选择"打开储备"，多做几个功能。有些业务负责人可能质疑为什么不能早一点做，但大多数情况下他们很高兴收到几个额外、意外的东西。现在项目经理站在发布终点。团队交付了它说要交付的。有时还多给了。业务负责人高兴，团队高兴，项目经理的声誉完好无损。让发布结束的庆祝开始吧。</p>
+<div class="page-mark">— p.181 —</div>
+<h2 id="tip-78">Every Project Manager Is a Contract Administrator<span class="zh-inline">每个项目经理都是合同管理员</span></h2>
+<p class="byline"><em>Fabio Teixeira de Melo, PMP · Coatzacoalcos, Veracruz, Mexico<span class="zh-inline">Fabio Teixeira de Melo（PMP）· 墨西哥韦拉克鲁斯州科阿察科尔科斯</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">AS THE PROJECT MANAGER, you are responsible for change control. You put together a process for documenting requests and performing the changes. But how can you control changes when you are not aware that they happened? The client's team members will have direct contact with their peers in your team. Trying to satisfy the client, or being unaware of contractual obligations, a team member can agree to an extra training session, or even implement a change to the software, and forget to inform you—or alert you when it is too late. Some of those changes may be innocuous, but others could bring problems. For instance, silently altering part of the software features means the change may remain unmentioned in the software manual. This could lead to rewrites, reprinting, etc., with all the associated (an unbilled) time and cost. One might feel tempted to prohibit interaction between members of the client's and the contractor's project teams, but that can jeopardize communication. Contracts don't cover whether or not the client has the right to talk to your team members. And how can a project manager control whether the team members and the client are in contact? To avoid undocumented changes being performed, every team member should be familiar with the contract, including aspects of scope, time, and each party's rights and dues. They should be prepared to analyze the client's requests when preparing a contract perspective and know how to alert everyone to future changes. This requires that the change control and handling process be documented, and that team members be familiar with it.</p>
+<p class="zh">作为项目经理，你负责变更控制。你搭了一个记录请求、执行变更的流程。但如果你不知道变更发生了，怎么控制？客户的团队成员会和你团队里的同伴直接接触。为了让客户满意、或没意识到合同义务，一个团队成员可能答应额外一次培训，甚至实现对软件的一处变更，然后忘了通知你——或等提醒你时已经太晚。有些变更可能无害，但另一些会带来问题。例如，悄悄改了部分软件功能，意味着软件手册里可能不提这个变更。这可能导致重写、重印等，以及所有相关（未计费）的时间和成本。有人可能想禁止客户和承包商项目团队成员间互动，但那会危及沟通。合同不覆盖客户是否有权和你团队成员说话。项目经理又怎么控制团队成员和客户是否在接触？为避免未记录的变更被执行，每个团队成员都应熟悉合同，包括范围、时间、以及各方权利和义务方面。他们应准备好从合同角度分析客户请求，并知道如何提醒大家未来的变更。这要求变更控制和处理流程被记录、团队成员熟悉它。</p>
+<div class="page-mark">— p.182 —</div>
+<p class="en" title="点击显示 / 隐藏中文">A workshop is a very effective tool to provide team members with knowledge about the most important contract aspects and the change control process. Hold this training at the very beginning. Alternately, you may want to include a session about the subject in your internal kick-off meeting agenda. Either way, you should make sure that every project team member is informed. Special attention must be given to third parties working for the project, such as providers, suppliers, or subcontractors. Controlling the client's access to them is difficult and delicate, and in some cases they may have an independent business relationship with your client. It is not uncommon to see a subcontractor accept a client's request, perform it, and send the bill to you, the main contractor. The best way to deal with this kind of problem is to avoid it. Talk to your providers and suggest that they inform people involved in your project about the contractual aspects of your relationship both with them and with the client. And introduce them to your change control process. Remember: the success of a project is measured primarily by client satisfaction. The point is not to deny changes, but to control them. All your team members have to do about this is to detect a potential change and inform you through your change control process. This allows you to control the relationship with the client and to satisfy their needs without sacrificing time and cost.</p>
+<p class="zh">工作坊是向团队成员传授最重要合同方面和变更控制流程知识的非常有效的工具。在最开始办这个培训。或者，你可以在内部启动会议程里加一个关于这个主题的环节。无论哪种方式，你都应确保每个项目团队成员都知情。必须特别关注为项目工作的第三方，如提供商、供应商或分包商。控制客户接触他们既困难又微妙，某些情况下他们可能和你的客户有独立业务关系。看到分包商接受客户请求、执行、然后把账单寄给你（主承包商）并不少见。处理这类问题的最好办法是避免它。和你的提供商谈谈，建议他们告知项目参与者你与他们、以及与客户关系的合同方面。把他们介绍给你的变更控制流程。记住：项目成功主要用客户满意度衡量。关键不是拒绝变更，而是控制变更。你的团队成员在这件事上要做的，只是发现潜在变更、通过你的变更控制流程通知你。这让你能控制与客户的关系、在不牺牲时间和成本的情况下满足他们的需要。</p>
+<div class="page-mark">— p.183 —</div>
+<h2 id="tip-79">Important, but Not Urgent<span class="zh-inline">重要，但不紧急</span></h2>
+<p class="byline"><em>Alex Miller · Ballwin, Missouri, U.S.<span class="zh-inline">Alex Miller · 美国密苏里州鲍尔温</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">THE PERSONAL PRODUCTIVITY CLASSIC The 7 Habits of Highly Effective People, by Stephen Covey (Free Press), categorizes activities along a vertical axis, importance, and a horizontal axis, urgency. We now have four possible combinations: 1. Important and Urgent: Velociraptor attack. 2. Important, but Not Urgent: Preparing future product strategy; reworking a problematic part of the product. 3. Not Important, but Urgent: Neighbor calling to borrow some sugar. 4. Not Important, and Not Urgent: YouTube; surfing the Web. Let's examine how to maximize our effectiveness. Consider the Not Important, Not Urgent tasks (#4) first. Most of these activities (the ones you might categorize as "slacking off") can simply be dropped. These activities are, by definition, not important (so why are you doing them?) and not urgent (so they can surely wait). If category 4 activities are mandated by your company, you should be asking your boss why you must do them. Smart managers don't want people doing unimportant work. We should also strive to reduce the occurrence of Not Important, but Urgent activities (#3). One technique is to ask the source of the event to contact you in a way that lets you deal with the event at a time of your choosing. Another technique is to alter your environment to avoid being interrupted. Phone calls and email are often treated as urgent, regardless of their importance. Use voice mail or email filters to reduce the urgency of these tools.</p>
+<p class="zh">Stephen Covey 的个人效率经典《高效能人士的七个习惯》（Free Press）把活动按纵轴重要性、横轴紧急性分类。我们有四种可能组合：1）重要且紧急：迅猛龙袭击；2）重要但不紧急：准备未来产品战略；重做产品有问题的部分；3）不重要但紧急：邻居打电话借糖；4）不重要也不紧急：YouTube；上网。我们来看看如何最大化效率。先看不重要、不紧急的任务（#4）。这些活动大多数（你可能归类为"摸鱼"的）可以直接砍掉。这些活动按定义不重要（那你为什么在做？）也不紧急（那它们当然可以等）。如果第 4 类活动是你公司强制要求的，你该问老板为什么必须做。聪明的经理不希望人做不重要的工作。我们还应努力减少不重要但紧急的活动（#3）的发生。一个技巧是让事件来源以一种让你能在自己选择的时间处理事件的方式联系你。另一个技巧是改变你的环境以避免被打断。电话和邮件常被当作紧急的，不管它们重要与否。用语音信箱或邮件过滤器降低这些工具的紧急性。</p>
+<p class="note" style="font-size:14px;color:#6b7280;">* Velociraptor: A small, carnivorous dinosaur characterized as a great threat to humans in Steven Spielberg's science fiction thriller Jurassic Park.<span class="zh-inline">* 迅猛龙：一种小型食肉恐龙，在斯皮尔伯格科幻惊悚片《侏罗纪公园》中被刻画为对人类的巨大威胁。</span></p>
+<div class="page-mark">— p.184 —</div>
+<p class="en" title="点击显示 / 隐藏中文">Important and Urgent activities (#1) generally must be handled as they occur. However, you should work to install systems (risk prevention) that address the cause of these events. For example, if bugs are causing a system to fail in production, you should analyze the cause of these bugs and institute quality controls to prevent them from occurring again. The best way to reduce the important and urgent events is to institute feedback loops that address the root cause of these occurrences. The Important, but Not Urgent activities (#2) are the most important things you can do in your job. This is where you do knowledge work and produce value. If you did 25% more of these activities, your boss would give you a raise. As a software project manager, you are in a unique position to focus the work of your entire team on the Important, but Not Urgent activities. Your job is to buffer your team from meaningless tasks (#4) and Urgent, but Not Important, requests from other teams (#3). You, as the manager, have the power to say no to these requests. Do them yourself, hire a lackey to do them, or just say no! Your team can't ignore Important and Urgent activities (#1), but if your team spends all its time fighting fires, then you need to fix the faulty wires causing those fires (#2). You might not see the benefits immediately, but over time your team will spend more and more time doing the Important, but Not Urgent, activities that make or break a project.</p>
+<p class="zh">重要且紧急的活动（#1）通常必须在发生时处理。然而，你应努力建立系统（风险预防）来解决这些事件的原因。例如，如果 bug 导致系统在生产中失败，你应分析这些 bug 的原因、建立质量控制防止它们再发生。减少重要紧急事件的最好办法，是建立反馈回路解决这些事件的根本原因。重要但不紧急的活动（#2）是你工作中能做的最重要的事。这是你做知识工作、产生价值的地方。如果你多做 25% 这类活动，你老板会给你加薪。作为软件项目经理，你处在一个独特位置，能把整个团队的工作聚焦在重要但不紧急的活动上。你的工作是把团队与无意义任务（#4）、以及其他团队提出的紧急但不重要请求（#3）隔离开。作为经理，你有权对这些请求说不。自己做、雇个跟班做，或者直接说不！你的团队不能忽视重要且紧急的活动（#1），但如果你的团队把所有时间都用来救火，那你需要去修导致这些火灾的故障电线（#2）。你可能不会立刻看到好处，但随着时间推移，你的团队会把越来越多时间花在那些决定项目成败的重要但不紧急活动上。</p>
+<div class="page-mark">— p.185 —</div>
+<h2 id="tip-80">Teach the Process<span class="zh-inline">教流程</span></h2>
+<p class="byline"><em>Richard Sheridan · Ann Arbor, Michigan, U.S.<span class="zh-inline">Richard Sheridan · 美国密歇根州安娜堡</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">FOR A PROCESS TO BE TRULY EFFECTIVE there must be a common understanding of the process among all stakeholders. One of the ways we make sure this happens at my organization is to teach formal classes in our processes to all stakeholders involved in a project. The stakeholders include the project sponsors, perhaps some key users, the project managers, the developers, the designers, and the quality assurance specialists. And, we teach them the process together in the same class setting. We require our clients to take a class in our process during the course of their project. The reason? We want to ensure that the sponsors of the project understand how to steer the team in an effective manner. We combat unrealistic expectations with a commonly understood agile process that incorporates weekly estimating, planning, and show and tell. Sponsors are taught our estimating practice so that they know how to treat our estimates (estimates are not fixed-price bids). They are taught a simple planning technique that chooses scope based on these estimates and is cross-checked with business value. They actively participate in weekly "Show and Tells," which ensure that misunderstandings are exposed as quickly as possible. Once, I was teaching a class in our process and I called on two of our developers in the class to explain the rules of accountability around estimating. I stated, "Ted and Kealy, you will never be punished at this company for missing an estimate." I then turned to our project manager in the class and said, "Lisa, you understand that you are not to pressure or punish our developers if they miss their estimates." I then faced the paying client in the room and explained, "And Jen, you understand that if we go over our estimate, you will pay more for the work?</p>
+<p class="zh">要让一个流程真正有效，所有相关方必须对流程有共同理解。我们组织确保这一点的方法之一，是给项目涉及的所有相关方开我们流程的正式课程。相关方包括项目发起人、也许一些关键用户、项目经理、开发、设计师和质量保证专家。而且我们在同一课堂里一起教他们流程。我们要求客户在项目过程中参加我们流程的课程。为什么？我们想确保项目发起人理解如何有效地驾驭团队。我们用一个共同理解的、结合每周估算、规划和展示讲述的敏捷流程，来对抗不切实际的期望。教发起人我们的估算实践，让他们知道如何对待我们的估算（估算不是固定价投标）。教他们一个简单的规划技巧：基于这些估算选范围、并与业务价值交叉核对。他们积极参加每周的"展示讲述"，确保误解被尽快暴露。有一次，我在教流程课，叫班里两个开发上来解释估算的问责规则。我说："Ted 和 Kealy，在这家公司你们绝不会因为估错被惩罚。"然后我转向班里的项目经理说："Lisa，你明白如果开发估错，你不能给他们压力或惩罚他们。"然后我面对房间里付费的客户解释："那 Jen，你明白如果我们超了估算，你会为工作付更多钱？</p>
+<div class="page-mark">— p.186 —</div>
+<p class="en" title="点击显示 / 隐藏中文">Of course, at this point, I have two developers who think I'm tricking them and a client who's ready to cancel the project! I then explain the last "rule" of accountability around estimating. "Kealy, Ted, the one thing I need from you both is that as soon as you think you are going to blow an estimate, speak up and tell your project manager. And Lisa, as software project manager, you can have a discussion about the task with them to ensure that they haven't changed the scope of the task since the estimate was created. If, in fact, the estimate will be missed, you must then call the client and ask them what they want to do." Finally, I turned to our client. "Jen, here's what you get out of all this. More aggressive estimates, more work in less time since the estimating environment is a trusting one, and dedicated team members who enjoy striving to meet their own estimates. However, you must be willing to accept that every once in a while, we'll make a mistake. And when we do, we'll inform you before we've spent all the money." Teaching the process is a powerful empowerment tool!</p>
+<p class="zh">当然，这时我有两个开发觉得我在耍他们，还有一个客户准备取消项目！然后我解释估算问责的最后一条"规则"。"Kealy、Ted，我对你们俩的唯一要求是：一旦觉得自己要估爆了，立刻说出来，告诉你们的项目经理。而 Lisa，作为软件项目经理，你可以和他们讨论任务，确保自估算做出后任务范围没变。如果确实要估爆了，你必须打电话给客户，问他们想怎么办。"最后我转向我们的客户："Jen，你从中得到的是：更进取的估算、因为估算是信任环境而在更短时间里做更多工作、以及喜欢努力达成自己估算的投入团队成员。然而，你必须愿意接受：我们偶尔会犯错。而当我们犯错时，我们会在花光所有钱之前通知你。"教流程是一个强大的赋权工具！</p>
+<div class="page-mark">— p.187 —</div>
+
+<nav class="pager"><a class="prev" href="chapter-07.html">← 上一章</a><a class="center" href="index.html">返回目录</a><a class="next" href="chapter-09.html">下一章 →</a></nav>
+</main>
+<button id="modeBtn" title="切换显示模式">🌐</button>
+<div id="modeTip">仅英文 / 仅中文 / 中英对照</div>
+<script>
+(function(){
+  var KEY='bilingual-mode';
+  var modes=['en','zh','both'];
+  var labels={'en':'仅英文','zh':'仅中文','both':'中英对照'};
+  var mode=localStorage.getItem(KEY)||'both';
+  var toc=document.getElementById('toc');
+  var modeBtn=document.getElementById('modeBtn');
+
+  function applyMode(){
+    document.body.dataset.mode=mode;
+    modeBtn.textContent=mode==='en'?'🌐':(mode==='zh'?'🌐':'🌐');
+    modeBtn.title='当前：'+labels[mode]+'，点击切换';
+    // 点击展开的中文块在切走再切回时保留展开态（不强制清 .show）
+  }
+  // 点击英文段落：展开/收起其后紧跟的中文块（仅 both 模式下有意义）
+  document.addEventListener('click',function(e){
+    var en=e.target.closest('p.en');
+    if(!en)return;
+    var zh=en.nextElementSibling;
+    if(zh&&zh.classList.contains('zh')){
+      zh.classList.toggle('show');
+    }else{
+      // li 内的情形：.zh 在 li 内部
+      var z=en.parentElement.querySelector(':scope > .zh');
+      if(z)z.classList.toggle('show');
+    }
+  });
+  // 🌐 模式循环
+  modeBtn.addEventListener('click',function(){
+    mode=modes[(modes.indexOf(mode)+1)%modes.length];
+    localStorage.setItem(KEY,mode);
+    applyMode();
+  });
+  // 目录折叠
+  var btn=document.getElementById('tocToggle');
+  btn.addEventListener('click',function(){
+    if(window.matchMedia('(max-width:900px)').matches){
+      toc.classList.toggle('show');
+      document.body.classList.toggle('toc-open');
+    }else{
+      toc.classList.toggle('hidden');
+    }
+  });
+  // 窄屏点击目录链接后自动收起抽屉
+  toc.addEventListener('click',function(e){
+    if(e.target.tagName==='A'&&window.matchMedia('(max-width:900px)').matches){
+      toc.classList.remove('show');
+      document.body.classList.remove('toc-open');
+    }
+  });
+  applyMode();
+})();
+</script>
+</body>
+</html>

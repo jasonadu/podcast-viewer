@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 35 章 Get Deployment Right on Day One — 97 Things EMK</title>
+<style>
+:root {
+  --accent: #2563eb;
+  --zh-bg: #f0f6ff;
+  --zh-border: #2563eb;
+  --code-bg: #0f172a;
+  --code-ink: #e2e8f0;
+  --ink: #1f2937;
+  --bg: #faf6f1;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 1.8;
+}
+/* TOC sidebar */
+nav#toc {
+  position: fixed; left: 0; top: 0; width: 300px; height: 100vh;
+  background: #fff; border-right: 1px solid #e5e7eb;
+  overflow-y: auto; padding: 20px 0;
+  transition: transform 0.25s ease;
+  z-index: 100;
+}
+nav#toc h2 {
+  font-size: 16px; padding: 8px 20px; color: var(--accent);
+  border-bottom: 1px solid #e5e7eb; margin-bottom: 8px;
+}
+nav#toc a {
+  display: block; padding: 5px 20px; color: #374151;
+  text-decoration: none; font-size: 13px; line-height: 1.4;
+  border-left: 3px solid transparent;
+}
+nav#toc a:hover { background: var(--zh-bg); }
+nav#toc a.active {
+  background: var(--zh-bg); border-left-color: var(--accent);
+  color: var(--accent); font-weight: 600;
+}
+nav#toc a.l1 { font-weight: 600; padding-top: 10px; }
+nav#toc a.l2 { padding-left: 40px; font-size: 12.5px; }
+/* hamburger */
+#menu-btn {
+  position: fixed; top: 12px; left: 12px; z-index: 200;
+  background: var(--accent); color: #fff; border: none;
+  width: 40px; height: 40px; border-radius: 8px;
+  font-size: 20px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+/* main content */
+main {
+  margin-left: 300px; max-width: 900px;
+  padding: 60px 40px 80px;
+}
+body.toc-hidden nav#toc { transform: translateX(-300px); }
+body.toc-hidden main { margin-left: 0; }
+/* headings */
+h1 { font-size: 28px; margin-bottom: 8px; color: #111827; line-height: 1.3; }
+h1 .zh-title { display: block; font-size: 20px; color: var(--accent); margin-top: 6px; font-weight: 500; }
+.author { color: #6b7280; font-style: italic; margin-bottom: 30px; font-size: 15px; }
+h2 { font-size: 22px; margin: 36px 0 12px; color: #111827; scroll-margin-top: 20px; }
+h2 .zh-sub { display: block; font-size: 16px; color: var(--accent); font-weight: 500; margin-top: 4px; }
+/* paragraphs */
+p.en { margin: 14px 0; cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: background 0.15s; }
+p.en:hover { background: #e8f0fe; }
+p.en::after {
+  content: ' 点击显示/隐藏中文';
+  font-size: 12px; color: #9ca3af; font-weight: normal;
+  opacity: 0; transition: opacity 0.15s;
+}
+p.en:hover::after { opacity: 1; }
+p.zh {
+  background: var(--zh-bg);
+  border-left: 4px solid var(--zh-border);
+  border-radius: 0 8px 8px 0;
+  padding: 10px 16px;
+  margin: 8px 0 14px;
+  display: none;
+}
+/* list */
+ul, ol { margin: 14px 0 14px 28px; }
+li { margin: 6px 0; }
+li .en { cursor: pointer; }
+li .zh {
+  background: var(--zh-bg);
+  border-left: 4px solid var(--zh-border);
+  border-radius: 0 6px 6px 0;
+  padding: 6px 12px;
+  margin: 4px 0;
+  display: none;
+  font-size: 16px;
+}
+/* page marker */
+.page-marker {
+  text-align: center; margin: 28px 0; color: #9ca3af;
+  font-size: 13px; letter-spacing: 2px;
+  border-top: 1px dashed #d1d5db;
+  padding-top: 12px;
+}
+/* figure */
+figure { margin: 24px 0; text-align: center; }
+figure img { max-width: 100%; border: 1px solid #e5e7eb; border-radius: 8px; }
+figcaption { font-size: 13px; color: #6b7280; margin-top: 8px; }
+figcaption .zh { display: block; color: var(--accent); }
+/* code */
+pre {
+  background: var(--code-bg); color: var(--code-ink);
+  padding: 16px; border-radius: 8px; overflow-x: auto;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13.5px; line-height: 1.6; margin: 16px 0;
+}
+code {
+  background: #fce7f3; color: #be185d;
+  padding: 2px 6px; border-radius: 4px;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+/* table */
+table { border-collapse: collapse; margin: 16px 0; width: 100%; }
+th, td { border: 1px solid #d1d5db; padding: 8px 12px; text-align: left; }
+th { background: #f1f5f9; font-weight: 600; }
+/* pager */
+.pager {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 60px; padding-top: 24px; border-top: 1px solid #e5e7eb;
+}
+.pager a {
+  flex: 1; text-align: center; padding: 12px;
+  background: #fff; border: 1px solid #d1d5db; border-radius: 8px;
+  text-decoration: none; color: var(--ink); font-size: 14px;
+  transition: all 0.15s;
+}
+.pager a:hover:not(.disabled) { background: var(--accent); color: #fff; border-color: var(--accent); }
+.pager a.disabled { opacity: 0.4; pointer-events: none; }
+/* floating lang button */
+#lang-btn {
+  position: fixed; bottom: 24px; right: 24px; z-index: 200;
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--accent); color: #fff; border: none;
+  font-size: 24px; cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  display: flex; align-items: center; justify-content: center;
+}
+#lang-label {
+  position: fixed; bottom: 82px; right: 20px; z-index: 200;
+  background: #1f2937; color: #fff; padding: 4px 10px;
+  border-radius: 6px; font-size: 12px; display: none;
+}
+/* mode: en-only -> hide all .zh; zh-only -> hide all .en */
+body.mode-en p.zh, body.mode-en li .zh { display: none !important; }
+body.mode-en p.en::after { display: none; }
+body.mode-zh p.en, body.mode-zh li .en { display: none !important; }
+body.mode-zh p.zh, body.mode-zh li .zh { display: block !important; }
+body.mode-both p.zh { /* controlled by JS toggle */ }
+/* narrow screen */
+@media (max-width: 900px) {
+  nav#toc { transform: translateX(-300px); }
+  nav#toc.show { transform: translateX(0); }
+  main { margin-left: 0; padding: 60px 20px 80px; }
+}
+</style>
+</head>
+<body>
+<button id="menu-btn" title="目录">☰</button>
+<nav id="toc">
+<h2>97 Things Every Eng Manager Should Know</h2>
+<a href="index.html" class="l1">📖 首页</a>
+<a href="front-matter.html" class="l1">📋 前言 / 版权</a>
+<a href="#" class="l1" style="color:#9ca3af">—— 97 篇 ——</a>
+<a href="chapter-01.html" class="l1">1. Advanced PeopleOps—One-on-One Retrospectives</a>
+<a href="chapter-02.html" class="l1">2. Answer These 10 Questions to Understand Whether You'…</a>
+<a href="chapter-03.html" class="l1">3. Avoiding Traps in Manager READMEs</a>
+<a href="chapter-04.html" class="l1">4. Building Effective Roadmaps</a>
+<a href="chapter-05.html" class="l1">5. Busy Isn't Better</a>
+<a href="chapter-06.html" class="l1">6. Career Conversations as an Engineering Manager</a>
+<a href="chapter-07.html" class="l1">7. Career Development for Startup Engineers</a>
+<a href="chapter-08.html" class="l1">8. Communicating with Executives</a>
+<a href="chapter-09.html" class="l1">9. Communication as Craft</a>
+<a href="chapter-10.html" class="l1">10. Connect "The What" to "The Why"</a>
+<a href="chapter-11.html" class="l1">11. Continuous Kindness</a>
+<a href="chapter-12.html" class="l1">12. Culture Is What You Do When the Unexpected Happens</a>
+<a href="chapter-13.html" class="l1">13. Dealing with Uncertainty</a>
+<a href="chapter-14.html" class="l1">14. Define Your Culture Before It Defines Itself</a>
+<a href="chapter-15.html" class="l1">15. Delivering Feedback</a>
+<a href="chapter-16.html" class="l1">16. Developing Communication Patterns</a>
+<a href="chapter-17.html" class="l1">17. Distributed Teams Are Founded on Explicit Communicat…</a>
+<a href="chapter-18.html" class="l1">18. Do Less, Lead More</a>
+<a href="chapter-19.html" class="l1">19. Don't Be the S--- Umbrella</a>
+<a href="chapter-20.html" class="l1">20. Don't Elevate the Means Beyond the End</a>
+<a href="chapter-21.html" class="l1">21. Don't Look for A Players</a>
+<a href="chapter-22.html" class="l1">22. Don't Just Evaluate Candidates on Skills</a>
+<a href="chapter-23.html" class="l1">23. Engineering Productivity</a>
+<a href="chapter-24.html" class="l1">24. Like This? Really?</a>
+<a href="chapter-25.html" class="l1">25. Everyone Can Lead with Leverage</a>
+<a href="chapter-26.html" class="l1">26. Fire Them!</a>
+<a href="chapter-27.html" class="l1">27. The First Two Questions to Ask When Your Team Is Str…</a>
+<a href="chapter-28.html" class="l1">28. The Five Whys of Organizational Design</a>
+<a href="chapter-29.html" class="l1">29. Focus on Growth to Improve Employee Engagement</a>
+<a href="chapter-30.html" class="l1">30. Followership</a>
+<a href="chapter-31.html" class="l1">31. Forecasting with Less Effort and More Accuracy</a>
+<a href="chapter-32.html" class="l1">32. The Four Layers of Communication in a Functional Team</a>
+<a href="chapter-33.html" class="l1">33. The Four-Letter Word That Makes My Blood Boil</a>
+<a href="chapter-34.html" class="l1">34. Friday Wins and a Case Study in Ritual Design</a>
+<a href="chapter-35.html" class="l1 active">35. Get Deployment Right on Day One</a>
+<a href="chapter-36.html" class="l1">36. Good Process Is Evolved, Not Designed</a>
+<a href="chapter-37.html" class="l1">37. A Good Standup</a>
+<a href="chapter-38.html" class="l1">38. Ground Rules in Meetings</a>
+<a href="chapter-39.html" class="l1">39. Help Yourself to Better One-on-Ones</a>
+<a href="chapter-40.html" class="l1">40. How Do Individual Contributors Get Stuck?</a>
+<a href="chapter-41.html" class="l1">41. How to Be Discerning Without Being Invalidating</a>
+<a href="chapter-42.html" class="l1">42. How to Conduct an Autonomy-Support Meeting</a>
+<a href="chapter-43.html" class="l1">43. How to Help Your New Grad Engineer Navigate Work</a>
+<a href="chapter-44.html" class="l1">44. How to Share Decisions for Strong Execution</a>
+<a href="chapter-45.html" class="l1">45. Improve Your Decision Making with Mental Models</a>
+<a href="chapter-46.html" class="l1">46. Interviewing Engineers: Going Beyond Technical Skills</a>
+<a href="chapter-47.html" class="l1">47. Introduce an Engineering Ladder</a>
+<a href="chapter-48.html" class="l1">48. Leadership Is About Responsibility, Not Authority</a>
+<a href="chapter-49.html" class="l1">49. Leading Through Rapid Change Is Normal</a>
+<a href="chapter-50.html" class="l1">50. Making Your New Team Feel Like a Team</a>
+<a href="chapter-51.html" class="l1">51. Manage Complexity with Diversity</a>
+<a href="chapter-52.html" class="l1">52. Management Is a Different Set of APIs</a>
+<a href="chapter-53.html" class="l1">53. Manager Handoffs</a>
+<a href="chapter-54.html" class="l1">54. Managers and Culture</a>
+<a href="chapter-55.html" class="l1">55. Monuments and Hamburgers</a>
+<a href="chapter-56.html" class="l1">56. Navigating the Bumpy Road from Engineer to Manager</a>
+<a href="chapter-57.html" class="l1">57. The New Way to Manage by Walking Around</a>
+<a href="chapter-58.html" class="l1">58. Not Everyone Wants to Be a People Manager</a>
+<a href="chapter-59.html" class="l1">59. On Accountability</a>
+<a href="chapter-60.html" class="l1">60. On the Elusiveness of Time in Tracking Progress</a>
+<a href="chapter-61.html" class="l1">61. Onboard People, Not Technology</a>
+<a href="chapter-62.html" class="l1">62. Onboarding Beyond Codelabs</a>
+<a href="chapter-63.html" class="l1">63. Own the Narrative</a>
+<a href="chapter-64.html" class="l1">64. The Path to Change: Facts and Feelings</a>
+<a href="chapter-65.html" class="l1">65. People Leave Bad Managers, Not Bad Jobs—Right?</a>
+<a href="chapter-66.html" class="l1">66. Performance Is an Ongoing Conversation</a>
+<a href="chapter-67.html" class="l1">67. Physician, Heal Thyself!</a>
+<a href="chapter-68.html" class="l1">68. Political Capital and the Favor Economy</a>
+<a href="chapter-69.html" class="l1">69. Prioritize Building Relationships with Your Peers</a>
+<a href="chapter-70.html" class="l1">70. Priority Exceptions</a>
+<a href="chapter-71.html" class="l1">71. The Product Manager's Concerns</a>
+<a href="chapter-72.html" class="l1">72. Projects for Which Agile Is Inappropriate</a>
+<a href="chapter-73.html" class="l1">73. Reconciliation Loops</a>
+<a href="chapter-74.html" class="l1">74. "Remote"</a>
+<a href="chapter-75.html" class="l1">75. Risk Budgets: Five Choices Between Your Team and Fai…</a>
+<a href="chapter-76.html" class="l1">76. Safety First!</a>
+<a href="chapter-77.html" class="l1">77. Scale Communication Through Writing</a>
+<a href="chapter-78.html" class="l1">78. Scaling Management by Giving Up Control</a>
+<a href="chapter-79.html" class="l1">79. Six Tips for a New Manager</a>
+<a href="chapter-80.html" class="l1">80. Stop Your Team from Bikeshedding, and Saying "Bikesh…</a>
+<a href="chapter-81.html" class="l1">81. Taking On Inclusion</a>
+<a href="chapter-82.html" class="l1">82. Team Stability Matters</a>
+<a href="chapter-83.html" class="l1">83. Three Questions to Avoid, and Three Questions to Ask…</a>
+<a href="chapter-84.html" class="l1">84. Three Ways to Be the Manager Your Report Needs</a>
+<a href="chapter-85.html" class="l1">85. To Code or Not to Code</a>
+<a href="chapter-86.html" class="l1">86. Transparency Takes More Than an Open Door</a>
+<a href="chapter-87.html" class="l1">87. The Triangle of Self-Organization</a>
+<a href="chapter-88.html" class="l1">88. Trust Is a Powerful Leadership Tool</a>
+<a href="chapter-89.html" class="l1">89. Using Six-Page Documents to Close Decisions</a>
+<a href="chapter-90.html" class="l1">90. WELCOME, {HUMAN}!—Writing Onboarding READMEs</a>
+<a href="chapter-91.html" class="l1">91. What I Wished I Knew Before I Started Managing a Rem…</a>
+<a href="chapter-92.html" class="l1">92. Why a Good Boss Likes It When People Complain</a>
+<a href="chapter-93.html" class="l1">93. Why You Can't Manage Humans Like They're Software</a>
+<a href="chapter-94.html" class="l1">94. Why Your Programmer Just Wants to Code</a>
+<a href="chapter-95.html" class="l1">95. Willpower of Leadership</a>
+<a href="chapter-96.html" class="l1">96. Yes, Code Wins Arguments. But Why? And How to Be Pol…</a>
+<a href="chapter-97.html" class="l1">97. Your Job Is Not to Be Liked</a>
+<a href="closing.html" class="l1">✓ 后记 / 作者</a>
+</nav>
+<main>
+<h1>第 35 章 Get Deployment Right on Day One<span class="zh-title">第一天就把部署做对</span></h1>
+<p class="author">James Turnbull <span style="color:var(--accent)">/ 詹姆斯·特恩布尔</span></p>
+<figure><img src="data:image/jpeg;base64,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" alt="" style="max-width:200px"></figure><div class="page-marker">— 第 105 页 —</div><p class="en">Deployment gets the code you and your team have written out into the world. Any system you've written that isn't deployed and in front of a user isn't generating value. It's also not giving you feedback about your product and how it helps your users. Hence, getting deployment going is one of the first things most engineering teams (even if that's just you on day one!) do when they begin to build a product.</p>
+<p class="zh">部署把你和团队写的代码送到世界上。任何你写了但没部署、没在用户面前的系统都不产生价值。它也不会给你关于产品和它如何帮助用户的反馈。因此，让部署跑起来是大多数工程团队（即使第一天只有你一个人！）开始构建产品时最先做的事之一。</p><p class="en">Like most items constructed at the start of a company or product's life, we often create the fastest, simplest solution hack as our deployment system: "I just need something that works, and I'll worry about making it better later." This is a mistake.</p>
+<p class="zh">就像公司或产品生命初期构建的大多数东西一样，我们经常用最快最简单的 hack 作为部署系统：「我只需要能跑的东西，以后再改进。」这是个错误。</p><p class="en">The system that gets your code from your engineers to the customer is the most crucial piece of engineering tooling you'll build—ever.</p>
+<p class="zh">把你的代码从工程师送到客户手里的系统，是你将构建的最关键的工程工具——有史以来。</p><p class="en">The capabilities, quality, and performance of your deployment system directly correlate to the speed to market of your product, both in generating value and addressing user feedback and issues. Not only this, your deployment frequency and outcomes represent one of the (rare) early measurements of engineering velocity and quality. If your product or business partners are complaining about things moving too slow, this is one of the first places you should look. Finally, getting code in front of users and seeing your product in action makes your engineers happy.</p>
+<p class="zh">你的部署系统的能力、质量和性能直接关系到产品上市速度，包括产生价值和处理用户反馈与问题。不仅如此，你的部署频率和结果代表了工程速度和质量的（稀有）早期衡量指标之一。如果你的产品或业务伙伴抱怨事情进展太慢，这是你应该首先看的地方之一。最后，把代码放到用户面前、看到产品在运行让工程师快乐。</p><p class="en">You might get a lot of pressure to develop features and not spend time on this kind of tooling, as a manager you need to make sure that you have given the team room to develop this tooling.</p>
+<p class="zh">你可能面临很多压力要开发功能而不是花时间在这种工具上，作为经理你需要确保给团队空间来开发这种工具。</p><div class="page-marker">— 第 106 页 —</div><h2>Building That Deployment System<span class="zh-sub">构建那个部署系统</span></h2><p class="en">When you build that crucial first deployment system, you need to build upon the appropriate principles: what can be summarized as "CI/CD," or Continuous Integration/Continuous Delivery:</p>
+<p class="zh">当你构建那个关键的第一个部署系统时，你需要基于正确的原则：可以总结为「CI/CD」，即持续集成/持续交付：</p><ul><li><span class="en">Everybody should be able to deploy.</span><span class="zh">每个人都应该能部署。</span></li><li><span class="en">Deployment should be automatic and continuous.</span><span class="zh">部署应该是自动且持续的。</span></li></ul><p class="en">You can then scale your deployment system instead of refactoring it every time your organization scales. This comes with some risk of premature optimization but I believe that risk is outweighed by the rewards: faster deployment, enhanced developer happiness, and faster speed to market. Let's look at each principle.</p>
+<p class="zh">然后你可以扩展你的部署系统而不是每次组织扩展时重构它。这带有一些过早优化的风险，但我相信回报超过了风险：更快的部署、更强的开发者幸福感、更快的上市速度。让我们看看每个原则。</p><h2>Everyone Should Be Able to Deploy<span class="zh-sub">每个人都应该能部署</span></h2><p class="en">Everyone on your team should be able to deploy (Figure 35-1). A good deployment system should be continuous and not gated. Deployment systems triggered by intermediaries, "approvers," or small groups, like QA teams, are inherently hamstrung. First, this model removes a developer's ownership of the deployment of their code and its outcomes. Worse, it sometimes transfers ownership of the code that is being deployed, disconnecting an engineer from the reality of the systems for which they write code. Second, these models are slow by design. They exist to put roadblocks in the way of your code being deployed.</p>
+<p class="zh">你团队里每个人都应该能部署（图 35-1）。一个好的部署系统应该是持续的、不设门槛的。由中间人、「审批者」或像 QA 团队这样的小群体触发的部署系统天生就有缺陷。首先，这个模式剥夺了开发者对自己代码部署及其结果的所有权。更糟的是，它有时转移了被部署代码的所有权，让工程师和他们写代码的系统的现实脱节。其次，这些模式天生就慢。它们存在的目的就是在你的代码部署路上放路障。</p><div class="page-marker">— 第 107 页 —</div><p class="en">Figure 35-1. Every team member must have the ability to deploy</p>
+<p class="zh">图 35-1：每个团队成员都必须有部署能力（图示）</p><h2>Deployment Should Be Automatic and Continuous<span class="zh-sub">部署应该是自动且持续的</span></h2><p class="en">Code sitting in repositories or in branches is also not adding value. Any deployment process should optimize for putting the system into use as fast as possible. My preference has always been to automatically deploy to production any code merged to "master," as demonstrated in Figure 35-2.</p>
+<p class="zh">放在仓库或分支里的代码也不产生价值。任何部署流程都应该优化为尽快让系统投入使用。我一直的偏好是自动部署任何合并到「master」的代码到生产环境，如图 35-2 所示。</p><p class="en">Figure 35-2. Automatically deploying from "master" to production</p>
+<p class="zh">图 35-2：从「master」自动部署到生产环境（图示）</p><div class="page-marker">— 第 108 页 —</div><p class="en">There has also always been a lot of debate over how to manage development and code branching processes to get that code merged. Again, my personal preference has always been to make use of GitHub flow, which states:</p>
+<p class="zh">关于如何管理开发和代码分支流程来合并代码也一直有很多争论。同样，我个人的偏好一直是使用 GitHub flow，它规定：</p><ol><li><span class="en">The "master" branch can always be deployed.</span><span class="zh">「master」分支随时可以部署。</span></li><li><span class="en">Everything is branched off "master" and named for a feature or issue.</span><span class="zh">一切从「master」切分支，以功能或 issue 命名。</span></li><li><span class="en">Do your work on that branch locally and regularly push your work upstream to the server.</span><span class="zh">在那个分支上本地工作，定期把工作推到服务器。</span></li><li><span class="en">Merge by opening a pull request, having it reviewed, and then merging it to "master."</span><span class="zh">通过开 Pull Request、评审、然后合并到「master」来合并。</span></li><li><span class="en">Automatically deploy "master."</span><span class="zh">自动部署「master」。</span></li></ol><p class="en">Figure 35-3. Deploying using a "master" branch</p>
+<p class="zh">图 35-3：用「master」分支部署（图示）</p><p class="en">With the GitHub flow, we optimize for small, short-lived branches to reduce the risk of merge conflicts and disruption and to increase the velocity of code being pushed and deployed. Your commit-to-deploy time is another good, early measure of your team's development velocity.</p>
+<p class="zh">用 GitHub flow，我们优化小而短命的分支来减少合并冲突和中断的风险，提高代码推送和部署的速度。你的提交到部署时间是另一个好的早期团队开发速度衡量指标。</p><p class="en">If you are worried about interdependencies or features being developed over longer time frames—for example, in stages—you can make use of feature flags to hide features that aren't ready for prime time or not yet complete. Feature flags also encourage early user and integration testing. They additionally provide your engineers with a sense that a feature is evolving and work is progressing rather than being stuck in a long-lived branch.</p>
+<p class="zh">如果你担心相互依赖或跨更长时间框架开发的功能——例如分阶段——你可以用 feature flag 来隐藏还没准备好上线或还没完成的功能。Feature flag 还鼓励早期用户和集成测试。它们还让工程师感觉功能在演进、工作在推进，而不是卡在一个长命分支里。</p><div class="page-marker">— 第 109 页 —</div><p class="en">If you do have to put in an approval process to satisfy compliance or regulatory requirements, the GitHub flow allows you to lock off the "master" branch from direct pushes and require approvals on pull requests.</p>
+<p class="zh">如果你确实需要加审批流程来满足合规或监管要求，GitHub flow 允许你锁定「master」分支禁止直接 push，要求 PR 审批。</p><h2>Deployment FTW<span class="zh-sub">部署万岁</span></h2><p class="en">After you have a deployment system that provides everyone on your team the ability to deploy automatically and continuously, the return on investment will be tangible and measurable. If your deployment system meets these two objectives, you're building on a good foundation that will allow you to scale as your team and company grow.</p>
+<p class="zh">当你有了一个让团队每个人都能自动持续部署的系统后，投资回报将是有形且可衡量的。如果你的部署系统满足这两个目标，你就在一个好的基础上构建，这个基础将让你随着团队和公司成长而扩展。</p>
+
+    <div class="pager">
+      <a href="chapter-34.html">第34章 →</a>
+      <a href="index.html">目录</a>
+      <a href="chapter-36.html">第36章 →</a>
+    </div>
+</main>
+<button id="lang-btn" title="切换语言模式">🌐</button>
+<div id="lang-label"></div>
+<script>
+(function(){
+  // toggle TOC
+  document.getElementById('menu-btn').addEventListener('click', function(){
+    var body = document.body;
+    if (window.innerWidth <= 900) {
+      document.getElementById('toc').classList.toggle('show');
+    } else {
+      body.classList.toggle('toc-hidden');
+    }
+  });
+  // close TOC on link click (narrow)
+  document.querySelectorAll('nav#toc a').forEach(function(a){
+    a.addEventListener('click', function(){
+      if (window.innerWidth <= 900) {
+        document.getElementById('toc').classList.remove('show');
+      }
+    });
+  });
+  // click English paragraph toggles its zh
+  document.addEventListener('click', function(e){
+    var p = e.target.closest('p.en');
+    if (p) {
+      var zh = p.nextElementSibling;
+      if (zh && zh.classList.contains('zh')) {
+        zh.style.display = (zh.style.display === 'block') ? 'none' : 'block';
+      }
+    }
+    var liEn = e.target.closest('li .en');
+    if (liEn) {
+      var liZh = liEn.nextElementSibling;
+      if (liZh && liZh.classList.contains('zh')) {
+        liZh.style.display = (liZh.style.display === 'block') ? 'none' : 'block';
+      }
+    }
+  });
+  // language mode cycle: both -> en-only -> zh-only -> both
+  var modes = ['mode-both', 'mode-en', 'mode-zh'];
+  var labels = {'mode-both':'中英对照', 'mode-en':'仅英文', 'mode-zh':'仅中文'};
+  var saved = localStorage.getItem('book-lang-mode') || 'mode-both';
+  document.body.classList.add(saved);
+  var btn = document.getElementById('lang-btn');
+  var label = document.getElementById('lang-label');
+  function showLabel(){
+    label.textContent = labels[document.body.classList.contains('mode-zh') ? 'mode-zh' :
+      document.body.classList.contains('mode-en') ? 'mode-en' : 'mode-both'];
+    label.style.display = 'block';
+    setTimeout(function(){ label.style.display = 'none'; }, 1200);
+  }
+  btn.addEventListener('click', function(){
+    var cur = 0;
+    for (var i=0;i<modes.length;i++){ if(document.body.classList.contains(modes[i])) cur=i; }
+    document.body.classList.remove(modes[cur]);
+    var next = (cur+1) % modes.length;
+    document.body.classList.add(modes[next]);
+    localStorage.setItem('book-lang-mode', modes[next]);
+    showLabel();
+  });
+  showLabel();
+})();
+</script>
+</body>
+</html>

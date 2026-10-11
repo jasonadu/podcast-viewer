@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 70 章 Priority Exceptions — 97 Things EMK</title>
+<style>
+:root {
+  --accent: #2563eb;
+  --zh-bg: #f0f6ff;
+  --zh-border: #2563eb;
+  --code-bg: #0f172a;
+  --code-ink: #e2e8f0;
+  --ink: #1f2937;
+  --bg: #faf6f1;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 1.8;
+}
+/* TOC sidebar */
+nav#toc {
+  position: fixed; left: 0; top: 0; width: 300px; height: 100vh;
+  background: #fff; border-right: 1px solid #e5e7eb;
+  overflow-y: auto; padding: 20px 0;
+  transition: transform 0.25s ease;
+  z-index: 100;
+}
+nav#toc h2 {
+  font-size: 16px; padding: 8px 20px; color: var(--accent);
+  border-bottom: 1px solid #e5e7eb; margin-bottom: 8px;
+}
+nav#toc a {
+  display: block; padding: 5px 20px; color: #374151;
+  text-decoration: none; font-size: 13px; line-height: 1.4;
+  border-left: 3px solid transparent;
+}
+nav#toc a:hover { background: var(--zh-bg); }
+nav#toc a.active {
+  background: var(--zh-bg); border-left-color: var(--accent);
+  color: var(--accent); font-weight: 600;
+}
+nav#toc a.l1 { font-weight: 600; padding-top: 10px; }
+nav#toc a.l2 { padding-left: 40px; font-size: 12.5px; }
+/* hamburger */
+#menu-btn {
+  position: fixed; top: 12px; left: 12px; z-index: 200;
+  background: var(--accent); color: #fff; border: none;
+  width: 40px; height: 40px; border-radius: 8px;
+  font-size: 20px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+/* main content */
+main {
+  margin-left: 300px; max-width: 900px;
+  padding: 60px 40px 80px;
+}
+body.toc-hidden nav#toc { transform: translateX(-300px); }
+body.toc-hidden main { margin-left: 0; }
+/* headings */
+h1 { font-size: 28px; margin-bottom: 8px; color: #111827; line-height: 1.3; }
+h1 .zh-title { display: block; font-size: 20px; color: var(--accent); margin-top: 6px; font-weight: 500; }
+.author { color: #6b7280; font-style: italic; margin-bottom: 30px; font-size: 15px; }
+h2 { font-size: 22px; margin: 36px 0 12px; color: #111827; scroll-margin-top: 20px; }
+h2 .zh-sub { display: block; font-size: 16px; color: var(--accent); font-weight: 500; margin-top: 4px; }
+/* paragraphs */
+p.en { margin: 14px 0; cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: background 0.15s; }
+p.en:hover { background: #e8f0fe; }
+p.en::after {
+  content: ' 点击显示/隐藏中文';
+  font-size: 12px; color: #9ca3af; font-weight: normal;
+  opacity: 0; transition: opacity 0.15s;
+}
+p.en:hover::after { opacity: 1; }
+p.zh {
+  background: var(--zh-bg);
+  border-left: 4px solid var(--zh-border);
+  border-radius: 0 8px 8px 0;
+  padding: 10px 16px;
+  margin: 8px 0 14px;
+  display: none;
+}
+/* list */
+ul, ol { margin: 14px 0 14px 28px; }
+li { margin: 6px 0; }
+li .en { cursor: pointer; }
+li .zh {
+  background: var(--zh-bg);
+  border-left: 4px solid var(--zh-border);
+  border-radius: 0 6px 6px 0;
+  padding: 6px 12px;
+  margin: 4px 0;
+  display: none;
+  font-size: 16px;
+}
+/* page marker */
+.page-marker {
+  text-align: center; margin: 28px 0; color: #9ca3af;
+  font-size: 13px; letter-spacing: 2px;
+  border-top: 1px dashed #d1d5db;
+  padding-top: 12px;
+}
+/* figure */
+figure { margin: 24px 0; text-align: center; }
+figure img { max-width: 100%; border: 1px solid #e5e7eb; border-radius: 8px; }
+figcaption { font-size: 13px; color: #6b7280; margin-top: 8px; }
+figcaption .zh { display: block; color: var(--accent); }
+/* code */
+pre {
+  background: var(--code-bg); color: var(--code-ink);
+  padding: 16px; border-radius: 8px; overflow-x: auto;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13.5px; line-height: 1.6; margin: 16px 0;
+}
+code {
+  background: #fce7f3; color: #be185d;
+  padding: 2px 6px; border-radius: 4px;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+/* table */
+table { border-collapse: collapse; margin: 16px 0; width: 100%; }
+th, td { border: 1px solid #d1d5db; padding: 8px 12px; text-align: left; }
+th { background: #f1f5f9; font-weight: 600; }
+/* pager */
+.pager {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 60px; padding-top: 24px; border-top: 1px solid #e5e7eb;
+}
+.pager a {
+  flex: 1; text-align: center; padding: 12px;
+  background: #fff; border: 1px solid #d1d5db; border-radius: 8px;
+  text-decoration: none; color: var(--ink); font-size: 14px;
+  transition: all 0.15s;
+}
+.pager a:hover:not(.disabled) { background: var(--accent); color: #fff; border-color: var(--accent); }
+.pager a.disabled { opacity: 0.4; pointer-events: none; }
+/* floating lang button */
+#lang-btn {
+  position: fixed; bottom: 24px; right: 24px; z-index: 200;
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--accent); color: #fff; border: none;
+  font-size: 24px; cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  display: flex; align-items: center; justify-content: center;
+}
+#lang-label {
+  position: fixed; bottom: 82px; right: 20px; z-index: 200;
+  background: #1f2937; color: #fff; padding: 4px 10px;
+  border-radius: 6px; font-size: 12px; display: none;
+}
+/* mode: en-only -> hide all .zh; zh-only -> hide all .en */
+body.mode-en p.zh, body.mode-en li .zh { display: none !important; }
+body.mode-en p.en::after { display: none; }
+body.mode-zh p.en, body.mode-zh li .en { display: none !important; }
+body.mode-zh p.zh, body.mode-zh li .zh { display: block !important; }
+body.mode-both p.zh { /* controlled by JS toggle */ }
+/* narrow screen */
+@media (max-width: 900px) {
+  nav#toc { transform: translateX(-300px); }
+  nav#toc.show { transform: translateX(0); }
+  main { margin-left: 0; padding: 60px 20px 80px; }
+}
+</style>
+</head>
+<body>
+<button id="menu-btn" title="目录">☰</button>
+<nav id="toc">
+<h2>97 Things Every Eng Manager Should Know</h2>
+<a href="index.html" class="l1">📖 首页</a>
+<a href="front-matter.html" class="l1">📋 前言 / 版权</a>
+<a href="#" class="l1" style="color:#9ca3af">—— 97 篇 ——</a>
+<a href="chapter-01.html" class="l1">1. Advanced PeopleOps—One-on-One Retrospectives</a>
+<a href="chapter-02.html" class="l1">2. Answer These 10 Questions to Understand Whether You'…</a>
+<a href="chapter-03.html" class="l1">3. Avoiding Traps in Manager READMEs</a>
+<a href="chapter-04.html" class="l1">4. Building Effective Roadmaps</a>
+<a href="chapter-05.html" class="l1">5. Busy Isn't Better</a>
+<a href="chapter-06.html" class="l1">6. Career Conversations as an Engineering Manager</a>
+<a href="chapter-07.html" class="l1">7. Career Development for Startup Engineers</a>
+<a href="chapter-08.html" class="l1">8. Communicating with Executives</a>
+<a href="chapter-09.html" class="l1">9. Communication as Craft</a>
+<a href="chapter-10.html" class="l1">10. Connect "The What" to "The Why"</a>
+<a href="chapter-11.html" class="l1">11. Continuous Kindness</a>
+<a href="chapter-12.html" class="l1">12. Culture Is What You Do When the Unexpected Happens</a>
+<a href="chapter-13.html" class="l1">13. Dealing with Uncertainty</a>
+<a href="chapter-14.html" class="l1">14. Define Your Culture Before It Defines Itself</a>
+<a href="chapter-15.html" class="l1">15. Delivering Feedback</a>
+<a href="chapter-16.html" class="l1">16. Developing Communication Patterns</a>
+<a href="chapter-17.html" class="l1">17. Distributed Teams Are Founded on Explicit Communicat…</a>
+<a href="chapter-18.html" class="l1">18. Do Less, Lead More</a>
+<a href="chapter-19.html" class="l1">19. Don't Be the S--- Umbrella</a>
+<a href="chapter-20.html" class="l1">20. Don't Elevate the Means Beyond the End</a>
+<a href="chapter-21.html" class="l1">21. Don't Look for A Players</a>
+<a href="chapter-22.html" class="l1">22. Don't Just Evaluate Candidates on Skills</a>
+<a href="chapter-23.html" class="l1">23. Engineering Productivity</a>
+<a href="chapter-24.html" class="l1">24. Like This? Really?</a>
+<a href="chapter-25.html" class="l1">25. Everyone Can Lead with Leverage</a>
+<a href="chapter-26.html" class="l1">26. Fire Them!</a>
+<a href="chapter-27.html" class="l1">27. The First Two Questions to Ask When Your Team Is Str…</a>
+<a href="chapter-28.html" class="l1">28. The Five Whys of Organizational Design</a>
+<a href="chapter-29.html" class="l1">29. Focus on Growth to Improve Employee Engagement</a>
+<a href="chapter-30.html" class="l1">30. Followership</a>
+<a href="chapter-31.html" class="l1">31. Forecasting with Less Effort and More Accuracy</a>
+<a href="chapter-32.html" class="l1">32. The Four Layers of Communication in a Functional Team</a>
+<a href="chapter-33.html" class="l1">33. The Four-Letter Word That Makes My Blood Boil</a>
+<a href="chapter-34.html" class="l1">34. Friday Wins and a Case Study in Ritual Design</a>
+<a href="chapter-35.html" class="l1">35. Get Deployment Right on Day One</a>
+<a href="chapter-36.html" class="l1">36. Good Process Is Evolved, Not Designed</a>
+<a href="chapter-37.html" class="l1">37. A Good Standup</a>
+<a href="chapter-38.html" class="l1">38. Ground Rules in Meetings</a>
+<a href="chapter-39.html" class="l1">39. Help Yourself to Better One-on-Ones</a>
+<a href="chapter-40.html" class="l1">40. How Do Individual Contributors Get Stuck?</a>
+<a href="chapter-41.html" class="l1">41. How to Be Discerning Without Being Invalidating</a>
+<a href="chapter-42.html" class="l1">42. How to Conduct an Autonomy-Support Meeting</a>
+<a href="chapter-43.html" class="l1">43. How to Help Your New Grad Engineer Navigate Work</a>
+<a href="chapter-44.html" class="l1">44. How to Share Decisions for Strong Execution</a>
+<a href="chapter-45.html" class="l1">45. Improve Your Decision Making with Mental Models</a>
+<a href="chapter-46.html" class="l1">46. Interviewing Engineers: Going Beyond Technical Skills</a>
+<a href="chapter-47.html" class="l1">47. Introduce an Engineering Ladder</a>
+<a href="chapter-48.html" class="l1">48. Leadership Is About Responsibility, Not Authority</a>
+<a href="chapter-49.html" class="l1">49. Leading Through Rapid Change Is Normal</a>
+<a href="chapter-50.html" class="l1">50. Making Your New Team Feel Like a Team</a>
+<a href="chapter-51.html" class="l1">51. Manage Complexity with Diversity</a>
+<a href="chapter-52.html" class="l1">52. Management Is a Different Set of APIs</a>
+<a href="chapter-53.html" class="l1">53. Manager Handoffs</a>
+<a href="chapter-54.html" class="l1">54. Managers and Culture</a>
+<a href="chapter-55.html" class="l1">55. Monuments and Hamburgers</a>
+<a href="chapter-56.html" class="l1">56. Navigating the Bumpy Road from Engineer to Manager</a>
+<a href="chapter-57.html" class="l1">57. The New Way to Manage by Walking Around</a>
+<a href="chapter-58.html" class="l1">58. Not Everyone Wants to Be a People Manager</a>
+<a href="chapter-59.html" class="l1">59. On Accountability</a>
+<a href="chapter-60.html" class="l1">60. On the Elusiveness of Time in Tracking Progress</a>
+<a href="chapter-61.html" class="l1">61. Onboard People, Not Technology</a>
+<a href="chapter-62.html" class="l1">62. Onboarding Beyond Codelabs</a>
+<a href="chapter-63.html" class="l1">63. Own the Narrative</a>
+<a href="chapter-64.html" class="l1">64. The Path to Change: Facts and Feelings</a>
+<a href="chapter-65.html" class="l1">65. People Leave Bad Managers, Not Bad Jobs—Right?</a>
+<a href="chapter-66.html" class="l1">66. Performance Is an Ongoing Conversation</a>
+<a href="chapter-67.html" class="l1">67. Physician, Heal Thyself!</a>
+<a href="chapter-68.html" class="l1">68. Political Capital and the Favor Economy</a>
+<a href="chapter-69.html" class="l1">69. Prioritize Building Relationships with Your Peers</a>
+<a href="chapter-70.html" class="l1 active">70. Priority Exceptions</a>
+<a href="chapter-71.html" class="l1">71. The Product Manager's Concerns</a>
+<a href="chapter-72.html" class="l1">72. Projects for Which Agile Is Inappropriate</a>
+<a href="chapter-73.html" class="l1">73. Reconciliation Loops</a>
+<a href="chapter-74.html" class="l1">74. "Remote"</a>
+<a href="chapter-75.html" class="l1">75. Risk Budgets: Five Choices Between Your Team and Fai…</a>
+<a href="chapter-76.html" class="l1">76. Safety First!</a>
+<a href="chapter-77.html" class="l1">77. Scale Communication Through Writing</a>
+<a href="chapter-78.html" class="l1">78. Scaling Management by Giving Up Control</a>
+<a href="chapter-79.html" class="l1">79. Six Tips for a New Manager</a>
+<a href="chapter-80.html" class="l1">80. Stop Your Team from Bikeshedding, and Saying "Bikesh…</a>
+<a href="chapter-81.html" class="l1">81. Taking On Inclusion</a>
+<a href="chapter-82.html" class="l1">82. Team Stability Matters</a>
+<a href="chapter-83.html" class="l1">83. Three Questions to Avoid, and Three Questions to Ask…</a>
+<a href="chapter-84.html" class="l1">84. Three Ways to Be the Manager Your Report Needs</a>
+<a href="chapter-85.html" class="l1">85. To Code or Not to Code</a>
+<a href="chapter-86.html" class="l1">86. Transparency Takes More Than an Open Door</a>
+<a href="chapter-87.html" class="l1">87. The Triangle of Self-Organization</a>
+<a href="chapter-88.html" class="l1">88. Trust Is a Powerful Leadership Tool</a>
+<a href="chapter-89.html" class="l1">89. Using Six-Page Documents to Close Decisions</a>
+<a href="chapter-90.html" class="l1">90. WELCOME, {HUMAN}!—Writing Onboarding READMEs</a>
+<a href="chapter-91.html" class="l1">91. What I Wished I Knew Before I Started Managing a Rem…</a>
+<a href="chapter-92.html" class="l1">92. Why a Good Boss Likes It When People Complain</a>
+<a href="chapter-93.html" class="l1">93. Why You Can't Manage Humans Like They're Software</a>
+<a href="chapter-94.html" class="l1">94. Why Your Programmer Just Wants to Code</a>
+<a href="chapter-95.html" class="l1">95. Willpower of Leadership</a>
+<a href="chapter-96.html" class="l1">96. Yes, Code Wins Arguments. But Why? And How to Be Pol…</a>
+<a href="chapter-97.html" class="l1">97. Your Job Is Not to Be Liked</a>
+<a href="closing.html" class="l1">✓ 后记 / 作者</a>
+</nav>
+<main>
+<h1>第 70 章 Priority Exceptions<span class="zh-title">优先级例外</span></h1>
+<p class="author">Beau Lebens <span style="color:var(--accent)">/ 博·莱本斯</span></p>
+<div class="page-marker">— 第 196 页 —</div><p class="en">Constantly changing priorities and surprise projects erode team morale and leave everyone unsure of whether they're working on the most important thing, or whether they'll ever get to finish anything. Even though being adaptable and flexible is critical for most teams, it's always important to have some kind of roadmap and approach to prioritization and planning work. There are many different ways to plan and prioritize your work; what's important is that when priorities change—and they will change—you acknowledge that change and adapt quickly.</p>
+<p class="zh">不断变化的优先级和意外项目侵蚀团队士气，让每个人不确定是否在做最重要的事，或者是否能完成任何事。虽然适应力和灵活性对大多数团队至关重要，但有某种路线图和优先级排序与计划工作的方法总是重要的。计划和排优先级的方式有很多；重要的是当优先级改变时——它们会改变——你承认那个变化并快速适应。</p><p class="en">If you don't clearly acknowledge the change in plans, your team can start to question the point of the plan in the first place. They'll begin to wonder whether they are expected to do this new thing and the old thing, or just the new thing, or because the new thing is not in the plan, perhaps the team should actually ignore it? Don't leave room for interpretation. Clearly set expectations and make sure you communicate unambiguously what is being asked of them. Sometimes, your team needs to be given clear "permission" to really work on this new thing, and delay or drop the old thing.</p>
+<p class="zh">如果你不清楚地承认计划的变化，你的团队会开始质疑计划的意义。他们会开始想，是要做新事和旧事，还是只做新事，或者因为新事不在计划里，团队其实应该忽略它？不要留下解释空间。清楚地设定期望，确保你不含糊地沟通对他们的要求。有时候，你的团队需要被明确「允许」真正做这个新事，推迟或放弃旧事。</p><p class="en">On my teams, we use a process we call a Priority Exception to clearly address a major change in our plans. This process is used when we had a plan of work, and for some reason something not on that plan jumps to the next most important thing for us to work on. The goal is to acknowledge the change, clearly communicate the impact this change will have on existing work, and critically, highlight why it is so important that it should disrupt our plan. We use this template to ensure the right information is always included, and we distribute the details to everyone on the team (and any other relevant stakeholders).</p>
+<p class="zh">在我的团队里，我们用一个叫「优先级例外」的流程来清楚处理计划中的重大变化。这个流程用于当我们有工作计划，但因为某些原因计划外的事情跳到我们要做的下一个最重要的事。目标是承认变化、清楚沟通这个变化对现有工作的影响、以及关键地强调为什么它重要到应该打乱我们的计划。我们用这个模板确保总是包含正确信息，把细节分发给团队每个人（和任何其他相关利益相关者）。</p><h2>What New Thing Is Happening?<span class="zh-sub">发生了什么新事？</span></h2><p class="en">Right at the outset, we outline the new work at a high level so that we all know what we're talking about. We link out to our project management system or code tracker for further details. This section includes which individuals or teams will be required for the new work.</p>
+<p class="zh">一开始，我们高层次地概述新工作，这样我们都在谈什么。我们链接到项目管理系统或代码追踪器看更多细节。这部分包括新工作需要哪些个人或团队。</p><div class="page-marker">— 第 197 页 —</div><h2>What Existing Thing Is Being Delayed?<span class="zh-sub">什么现有事被推迟？</span></h2><p class="en">Next, we specify what work we're putting on hold or slowing down because of this new work, or how we're creating capacity to work on it. We try to include details on the expected impact of our delay; If we can put a number on it, this is where it goes. Lost revenue? Delayed launch? Losing more users? Be specific.</p>
+<p class="zh">接下来，我们明确因为这个新工作我们在搁置或放慢什么工作，或者我们怎么创造容量来做它。我们尽量包括延迟的预期影响的细节；如果能量化数字，就放在这里。收入损失？延迟发布？失去更多用户？要具体。</p><h2>Why Is the New Thing More Important?<span class="zh-sub">为什么新事更重要？</span></h2><p class="en">This helps head off questions about why we had to "drop everything" to work on something unexpected. This should clearly demonstrate why the new work is more important or more urgent than the planned work. You should be able to clearly illustrate why it offsets the impact of the delayed work (as previously detailed).</p>
+<p class="zh">这有助于预先回答为什么我们必须「放下一切」去做意外的事。这应该清楚展示为什么新工作比计划工作更重要或更紧急。你应该能清楚说明为什么它抵消了被推迟工作的影响（如前详述）。</p><h2>How Did This Come About?<span class="zh-sub">这怎么发生的？</span></h2><p class="en">As a form of mini-retrospective, this is a chance to highlight why this work was such a surprise. It's an opportunity to learn and avoid surprises in the future, or come up with other mitigation strategies, depending on what happened.</p>
+<p class="zh">作为一种小型回顾，这是一个强调为什么这个工作这么意外的机会。这是学习和避免未来意外、或根据发生的事情想出其他缓解策略的机会。</p><h2>Timeline<span class="zh-sub">时间线</span></h2><p class="en">We set a clear timeline covering any wind-down of current work, transition to the new work, and expected completion or progress milestones. Because Priority Exceptions often come with an external deadline, we make sure that is clearly communicated, as well.</p>
+<p class="zh">我们设一个清楚的时间线，涵盖当前工作的收尾、过渡到新工作、以及预期完成或进度里程碑。因为优先级例外通常伴随着外部截止日期，我们也确保清楚沟通那个。</p><p class="en">Priority Exceptions are a useful, lightweight tool for communicating changes in priorities, and for learning how to reduce priority-thrash over time. Teams have appreciated the clarity that Priority Exceptions bring to otherwise potentially confusing times, and the clear permission they give to delay work in favor of something more important.</p>
+<p class="zh">优先级例外是一个有用、轻量的工具，用于沟通优先级变化、以及学习如何随时间减少优先级抖动。团队欣赏优先级例外给本来可能混乱的时期带来的清晰，以及它们给予的为更重要的事推迟工作的明确许可。</p>
+
+    <div class="pager">
+      <a href="chapter-69.html">第69章 →</a>
+      <a href="index.html">目录</a>
+      <a href="chapter-71.html">第71章 →</a>
+    </div>
+</main>
+<button id="lang-btn" title="切换语言模式">🌐</button>
+<div id="lang-label"></div>
+<script>
+(function(){
+  // toggle TOC
+  document.getElementById('menu-btn').addEventListener('click', function(){
+    var body = document.body;
+    if (window.innerWidth <= 900) {
+      document.getElementById('toc').classList.toggle('show');
+    } else {
+      body.classList.toggle('toc-hidden');
+    }
+  });
+  // close TOC on link click (narrow)
+  document.querySelectorAll('nav#toc a').forEach(function(a){
+    a.addEventListener('click', function(){
+      if (window.innerWidth <= 900) {
+        document.getElementById('toc').classList.remove('show');
+      }
+    });
+  });
+  // click English paragraph toggles its zh
+  document.addEventListener('click', function(e){
+    var p = e.target.closest('p.en');
+    if (p) {
+      var zh = p.nextElementSibling;
+      if (zh && zh.classList.contains('zh')) {
+        zh.style.display = (zh.style.display === 'block') ? 'none' : 'block';
+      }
+    }
+    var liEn = e.target.closest('li .en');
+    if (liEn) {
+      var liZh = liEn.nextElementSibling;
+      if (liZh && liZh.classList.contains('zh')) {
+        liZh.style.display = (liZh.style.display === 'block') ? 'none' : 'block';
+      }
+    }
+  });
+  // language mode cycle: both -> en-only -> zh-only -> both
+  var modes = ['mode-both', 'mode-en', 'mode-zh'];
+  var labels = {'mode-both':'中英对照', 'mode-en':'仅英文', 'mode-zh':'仅中文'};
+  var saved = localStorage.getItem('book-lang-mode') || 'mode-both';
+  document.body.classList.add(saved);
+  var btn = document.getElementById('lang-btn');
+  var label = document.getElementById('lang-label');
+  function showLabel(){
+    label.textContent = labels[document.body.classList.contains('mode-zh') ? 'mode-zh' :
+      document.body.classList.contains('mode-en') ? 'mode-en' : 'mode-both'];
+    label.style.display = 'block';
+    setTimeout(function(){ label.style.display = 'none'; }, 1200);
+  }
+  btn.addEventListener('click', function(){
+    var cur = 0;
+    for (var i=0;i<modes.length;i++){ if(document.body.classList.contains(modes[i])) cur=i; }
+    document.body.classList.remove(modes[cur]);
+    var next = (cur+1) % modes.length;
+    document.body.classList.add(modes[next]);
+    localStorage.setItem('book-lang-mode', modes[next]);
+    showLabel();
+  });
+  showLabel();
+})();
+</script>
+</body>
+</html>

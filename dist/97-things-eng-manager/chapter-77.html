@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 77 章 Scale Communication Through Writing — 97 Things EMK</title>
+<style>
+:root {
+  --accent: #2563eb;
+  --zh-bg: #f0f6ff;
+  --zh-border: #2563eb;
+  --code-bg: #0f172a;
+  --code-ink: #e2e8f0;
+  --ink: #1f2937;
+  --bg: #faf6f1;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 1.8;
+}
+/* TOC sidebar */
+nav#toc {
+  position: fixed; left: 0; top: 0; width: 300px; height: 100vh;
+  background: #fff; border-right: 1px solid #e5e7eb;
+  overflow-y: auto; padding: 20px 0;
+  transition: transform 0.25s ease;
+  z-index: 100;
+}
+nav#toc h2 {
+  font-size: 16px; padding: 8px 20px; color: var(--accent);
+  border-bottom: 1px solid #e5e7eb; margin-bottom: 8px;
+}
+nav#toc a {
+  display: block; padding: 5px 20px; color: #374151;
+  text-decoration: none; font-size: 13px; line-height: 1.4;
+  border-left: 3px solid transparent;
+}
+nav#toc a:hover { background: var(--zh-bg); }
+nav#toc a.active {
+  background: var(--zh-bg); border-left-color: var(--accent);
+  color: var(--accent); font-weight: 600;
+}
+nav#toc a.l1 { font-weight: 600; padding-top: 10px; }
+nav#toc a.l2 { padding-left: 40px; font-size: 12.5px; }
+/* hamburger */
+#menu-btn {
+  position: fixed; top: 12px; left: 12px; z-index: 200;
+  background: var(--accent); color: #fff; border: none;
+  width: 40px; height: 40px; border-radius: 8px;
+  font-size: 20px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+/* main content */
+main {
+  margin-left: 300px; max-width: 900px;
+  padding: 60px 40px 80px;
+}
+body.toc-hidden nav#toc { transform: translateX(-300px); }
+body.toc-hidden main { margin-left: 0; }
+/* headings */
+h1 { font-size: 28px; margin-bottom: 8px; color: #111827; line-height: 1.3; }
+h1 .zh-title { display: block; font-size: 20px; color: var(--accent); margin-top: 6px; font-weight: 500; }
+.author { color: #6b7280; font-style: italic; margin-bottom: 30px; font-size: 15px; }
+h2 { font-size: 22px; margin: 36px 0 12px; color: #111827; scroll-margin-top: 20px; }
+h2 .zh-sub { display: block; font-size: 16px; color: var(--accent); font-weight: 500; margin-top: 4px; }
+/* paragraphs */
+p.en { margin: 14px 0; cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: background 0.15s; }
+p.en:hover { background: #e8f0fe; }
+p.en::after {
+  content: ' 点击显示/隐藏中文';
+  font-size: 12px; color: #9ca3af; font-weight: normal;
+  opacity: 0; transition: opacity 0.15s;
+}
+p.en:hover::after { opacity: 1; }
+p.zh {
+  background: var(--zh-bg);
+  border-left: 4px solid var(--zh-border);
+  border-radius: 0 8px 8px 0;
+  padding: 10px 16px;
+  margin: 8px 0 14px;
+  display: none;
+}
+/* list */
+ul, ol { margin: 14px 0 14px 28px; }
+li { margin: 6px 0; }
+li .en { cursor: pointer; }
+li .zh {
+  background: var(--zh-bg);
+  border-left: 4px solid var(--zh-border);
+  border-radius: 0 6px 6px 0;
+  padding: 6px 12px;
+  margin: 4px 0;
+  display: none;
+  font-size: 16px;
+}
+/* page marker */
+.page-marker {
+  text-align: center; margin: 28px 0; color: #9ca3af;
+  font-size: 13px; letter-spacing: 2px;
+  border-top: 1px dashed #d1d5db;
+  padding-top: 12px;
+}
+/* figure */
+figure { margin: 24px 0; text-align: center; }
+figure img { max-width: 100%; border: 1px solid #e5e7eb; border-radius: 8px; }
+figcaption { font-size: 13px; color: #6b7280; margin-top: 8px; }
+figcaption .zh { display: block; color: var(--accent); }
+/* code */
+pre {
+  background: var(--code-bg); color: var(--code-ink);
+  padding: 16px; border-radius: 8px; overflow-x: auto;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13.5px; line-height: 1.6; margin: 16px 0;
+}
+code {
+  background: #fce7f3; color: #be185d;
+  padding: 2px 6px; border-radius: 4px;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+/* table */
+table { border-collapse: collapse; margin: 16px 0; width: 100%; }
+th, td { border: 1px solid #d1d5db; padding: 8px 12px; text-align: left; }
+th { background: #f1f5f9; font-weight: 600; }
+/* pager */
+.pager {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 60px; padding-top: 24px; border-top: 1px solid #e5e7eb;
+}
+.pager a {
+  flex: 1; text-align: center; padding: 12px;
+  background: #fff; border: 1px solid #d1d5db; border-radius: 8px;
+  text-decoration: none; color: var(--ink); font-size: 14px;
+  transition: all 0.15s;
+}
+.pager a:hover:not(.disabled) { background: var(--accent); color: #fff; border-color: var(--accent); }
+.pager a.disabled { opacity: 0.4; pointer-events: none; }
+/* floating lang button */
+#lang-btn {
+  position: fixed; bottom: 24px; right: 24px; z-index: 200;
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--accent); color: #fff; border: none;
+  font-size: 24px; cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  display: flex; align-items: center; justify-content: center;
+}
+#lang-label {
+  position: fixed; bottom: 82px; right: 20px; z-index: 200;
+  background: #1f2937; color: #fff; padding: 4px 10px;
+  border-radius: 6px; font-size: 12px; display: none;
+}
+/* mode: en-only -> hide all .zh; zh-only -> hide all .en */
+body.mode-en p.zh, body.mode-en li .zh { display: none !important; }
+body.mode-en p.en::after { display: none; }
+body.mode-zh p.en, body.mode-zh li .en { display: none !important; }
+body.mode-zh p.zh, body.mode-zh li .zh { display: block !important; }
+body.mode-both p.zh { /* controlled by JS toggle */ }
+/* narrow screen */
+@media (max-width: 900px) {
+  nav#toc { transform: translateX(-300px); }
+  nav#toc.show { transform: translateX(0); }
+  main { margin-left: 0; padding: 60px 20px 80px; }
+}
+</style>
+</head>
+<body>
+<button id="menu-btn" title="目录">☰</button>
+<nav id="toc">
+<h2>97 Things Every Eng Manager Should Know</h2>
+<a href="index.html" class="l1">📖 首页</a>
+<a href="front-matter.html" class="l1">📋 前言 / 版权</a>
+<a href="#" class="l1" style="color:#9ca3af">—— 97 篇 ——</a>
+<a href="chapter-01.html" class="l1">1. Advanced PeopleOps—One-on-One Retrospectives</a>
+<a href="chapter-02.html" class="l1">2. Answer These 10 Questions to Understand Whether You'…</a>
+<a href="chapter-03.html" class="l1">3. Avoiding Traps in Manager READMEs</a>
+<a href="chapter-04.html" class="l1">4. Building Effective Roadmaps</a>
+<a href="chapter-05.html" class="l1">5. Busy Isn't Better</a>
+<a href="chapter-06.html" class="l1">6. Career Conversations as an Engineering Manager</a>
+<a href="chapter-07.html" class="l1">7. Career Development for Startup Engineers</a>
+<a href="chapter-08.html" class="l1">8. Communicating with Executives</a>
+<a href="chapter-09.html" class="l1">9. Communication as Craft</a>
+<a href="chapter-10.html" class="l1">10. Connect "The What" to "The Why"</a>
+<a href="chapter-11.html" class="l1">11. Continuous Kindness</a>
+<a href="chapter-12.html" class="l1">12. Culture Is What You Do When the Unexpected Happens</a>
+<a href="chapter-13.html" class="l1">13. Dealing with Uncertainty</a>
+<a href="chapter-14.html" class="l1">14. Define Your Culture Before It Defines Itself</a>
+<a href="chapter-15.html" class="l1">15. Delivering Feedback</a>
+<a href="chapter-16.html" class="l1">16. Developing Communication Patterns</a>
+<a href="chapter-17.html" class="l1">17. Distributed Teams Are Founded on Explicit Communicat…</a>
+<a href="chapter-18.html" class="l1">18. Do Less, Lead More</a>
+<a href="chapter-19.html" class="l1">19. Don't Be the S--- Umbrella</a>
+<a href="chapter-20.html" class="l1">20. Don't Elevate the Means Beyond the End</a>
+<a href="chapter-21.html" class="l1">21. Don't Look for A Players</a>
+<a href="chapter-22.html" class="l1">22. Don't Just Evaluate Candidates on Skills</a>
+<a href="chapter-23.html" class="l1">23. Engineering Productivity</a>
+<a href="chapter-24.html" class="l1">24. Like This? Really?</a>
+<a href="chapter-25.html" class="l1">25. Everyone Can Lead with Leverage</a>
+<a href="chapter-26.html" class="l1">26. Fire Them!</a>
+<a href="chapter-27.html" class="l1">27. The First Two Questions to Ask When Your Team Is Str…</a>
+<a href="chapter-28.html" class="l1">28. The Five Whys of Organizational Design</a>
+<a href="chapter-29.html" class="l1">29. Focus on Growth to Improve Employee Engagement</a>
+<a href="chapter-30.html" class="l1">30. Followership</a>
+<a href="chapter-31.html" class="l1">31. Forecasting with Less Effort and More Accuracy</a>
+<a href="chapter-32.html" class="l1">32. The Four Layers of Communication in a Functional Team</a>
+<a href="chapter-33.html" class="l1">33. The Four-Letter Word That Makes My Blood Boil</a>
+<a href="chapter-34.html" class="l1">34. Friday Wins and a Case Study in Ritual Design</a>
+<a href="chapter-35.html" class="l1">35. Get Deployment Right on Day One</a>
+<a href="chapter-36.html" class="l1">36. Good Process Is Evolved, Not Designed</a>
+<a href="chapter-37.html" class="l1">37. A Good Standup</a>
+<a href="chapter-38.html" class="l1">38. Ground Rules in Meetings</a>
+<a href="chapter-39.html" class="l1">39. Help Yourself to Better One-on-Ones</a>
+<a href="chapter-40.html" class="l1">40. How Do Individual Contributors Get Stuck?</a>
+<a href="chapter-41.html" class="l1">41. How to Be Discerning Without Being Invalidating</a>
+<a href="chapter-42.html" class="l1">42. How to Conduct an Autonomy-Support Meeting</a>
+<a href="chapter-43.html" class="l1">43. How to Help Your New Grad Engineer Navigate Work</a>
+<a href="chapter-44.html" class="l1">44. How to Share Decisions for Strong Execution</a>
+<a href="chapter-45.html" class="l1">45. Improve Your Decision Making with Mental Models</a>
+<a href="chapter-46.html" class="l1">46. Interviewing Engineers: Going Beyond Technical Skills</a>
+<a href="chapter-47.html" class="l1">47. Introduce an Engineering Ladder</a>
+<a href="chapter-48.html" class="l1">48. Leadership Is About Responsibility, Not Authority</a>
+<a href="chapter-49.html" class="l1">49. Leading Through Rapid Change Is Normal</a>
+<a href="chapter-50.html" class="l1">50. Making Your New Team Feel Like a Team</a>
+<a href="chapter-51.html" class="l1">51. Manage Complexity with Diversity</a>
+<a href="chapter-52.html" class="l1">52. Management Is a Different Set of APIs</a>
+<a href="chapter-53.html" class="l1">53. Manager Handoffs</a>
+<a href="chapter-54.html" class="l1">54. Managers and Culture</a>
+<a href="chapter-55.html" class="l1">55. Monuments and Hamburgers</a>
+<a href="chapter-56.html" class="l1">56. Navigating the Bumpy Road from Engineer to Manager</a>
+<a href="chapter-57.html" class="l1">57. The New Way to Manage by Walking Around</a>
+<a href="chapter-58.html" class="l1">58. Not Everyone Wants to Be a People Manager</a>
+<a href="chapter-59.html" class="l1">59. On Accountability</a>
+<a href="chapter-60.html" class="l1">60. On the Elusiveness of Time in Tracking Progress</a>
+<a href="chapter-61.html" class="l1">61. Onboard People, Not Technology</a>
+<a href="chapter-62.html" class="l1">62. Onboarding Beyond Codelabs</a>
+<a href="chapter-63.html" class="l1">63. Own the Narrative</a>
+<a href="chapter-64.html" class="l1">64. The Path to Change: Facts and Feelings</a>
+<a href="chapter-65.html" class="l1">65. People Leave Bad Managers, Not Bad Jobs—Right?</a>
+<a href="chapter-66.html" class="l1">66. Performance Is an Ongoing Conversation</a>
+<a href="chapter-67.html" class="l1">67. Physician, Heal Thyself!</a>
+<a href="chapter-68.html" class="l1">68. Political Capital and the Favor Economy</a>
+<a href="chapter-69.html" class="l1">69. Prioritize Building Relationships with Your Peers</a>
+<a href="chapter-70.html" class="l1">70. Priority Exceptions</a>
+<a href="chapter-71.html" class="l1">71. The Product Manager's Concerns</a>
+<a href="chapter-72.html" class="l1">72. Projects for Which Agile Is Inappropriate</a>
+<a href="chapter-73.html" class="l1">73. Reconciliation Loops</a>
+<a href="chapter-74.html" class="l1">74. "Remote"</a>
+<a href="chapter-75.html" class="l1">75. Risk Budgets: Five Choices Between Your Team and Fai…</a>
+<a href="chapter-76.html" class="l1">76. Safety First!</a>
+<a href="chapter-77.html" class="l1 active">77. Scale Communication Through Writing</a>
+<a href="chapter-78.html" class="l1">78. Scaling Management by Giving Up Control</a>
+<a href="chapter-79.html" class="l1">79. Six Tips for a New Manager</a>
+<a href="chapter-80.html" class="l1">80. Stop Your Team from Bikeshedding, and Saying "Bikesh…</a>
+<a href="chapter-81.html" class="l1">81. Taking On Inclusion</a>
+<a href="chapter-82.html" class="l1">82. Team Stability Matters</a>
+<a href="chapter-83.html" class="l1">83. Three Questions to Avoid, and Three Questions to Ask…</a>
+<a href="chapter-84.html" class="l1">84. Three Ways to Be the Manager Your Report Needs</a>
+<a href="chapter-85.html" class="l1">85. To Code or Not to Code</a>
+<a href="chapter-86.html" class="l1">86. Transparency Takes More Than an Open Door</a>
+<a href="chapter-87.html" class="l1">87. The Triangle of Self-Organization</a>
+<a href="chapter-88.html" class="l1">88. Trust Is a Powerful Leadership Tool</a>
+<a href="chapter-89.html" class="l1">89. Using Six-Page Documents to Close Decisions</a>
+<a href="chapter-90.html" class="l1">90. WELCOME, {HUMAN}!—Writing Onboarding READMEs</a>
+<a href="chapter-91.html" class="l1">91. What I Wished I Knew Before I Started Managing a Rem…</a>
+<a href="chapter-92.html" class="l1">92. Why a Good Boss Likes It When People Complain</a>
+<a href="chapter-93.html" class="l1">93. Why You Can't Manage Humans Like They're Software</a>
+<a href="chapter-94.html" class="l1">94. Why Your Programmer Just Wants to Code</a>
+<a href="chapter-95.html" class="l1">95. Willpower of Leadership</a>
+<a href="chapter-96.html" class="l1">96. Yes, Code Wins Arguments. But Why? And How to Be Pol…</a>
+<a href="chapter-97.html" class="l1">97. Your Job Is Not to Be Liked</a>
+<a href="closing.html" class="l1">✓ 后记 / 作者</a>
+</nav>
+<main>
+<h1>第 77 章 Scale Communication Through Writing<span class="zh-title">通过写作扩展沟通</span></h1>
+<p class="author">Saul Diez-Guerra <span style="color:var(--accent)">/ 索尔·迪亚斯-格拉</span></p>
+<figure><img src="data:image/jpeg;base64,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" alt="" style="max-width:200px"></figure><div class="page-marker">— 第 213 页 —</div><p class="en">One of the most difficult challenges in scaling any sort of large human endeavor is effective written communication; other than pushing the limits of technology, there isn't any challenge more troublesome and pricklier. The complexity of our team's interactions grows exponentially with the number of teammates, in a perverse application of the network effect. As soon as we are lucky enough to hire and grow our team beyond a handful of people, misunderstandings and conflict invariably appear. Most problems in the workplace can be boiled down to interpersonal problems, and the only way out of them, or at least around them, is effective communication.</p>
+<p class="zh">在扩展任何大型人类事业时，最困难的挑战之一是有效的书面沟通；除了推动技术极限，没有更麻烦和棘手的挑战。我们团队交互的复杂性随队友数量指数增长，这是网络效应的一个反常应用。一旦我们幸运地招人和增长团队超过几个人，误解和冲突不可避免地出现。工作场所的大多数问题可以归结为人际问题，唯一出路——或至少绕过的方式——是有效沟通。</p><p class="en">To make matters worse, the modern team demands that people work together with colleagues on different schedules, in different buildings, time zones, and even cultures and countries. As your organization grows, it silently drifts into meeting madness and—if you are lucky—its communication patterns turn asynchronous. Left unchecked, these patterns end up taking all sorts of shapes and forms: from the management consulting habit of turning everything into an informational slide deck, to protracted email chains sent to questionable listservs, or laissez-faire internal wikis that become the Wild Wild West.</p>
+<p class="zh">更糟的是，现代团队要求人们和不同日程、不同大楼、时区甚至文化和国家的同事一起工作。随着组织成长，它悄悄漂进会议疯狂——如果你幸运——沟通模式变成异步的。不加约束，这些模式最终采取各种形状和形式：从管理咨询把一切变成信息幻灯片的习惯，到发到可疑邮件列表的冗长邮件链，或变成荒野西部的自由放任内部 wiki。</p><p class="en">After you declare meeting bankruptcy and decide that you don't want to let the communication jungle continue to grow unchecked, the work begins by having everyone involved pause and actively acknowledge the shape of the beast: human, asynchronous, written communication is difficult. A great degree of human communication is nonverbal, be it body language, intonation, or even just the use of silence. There's conflicting scientific literature as to what the extent is of the nonverbal importance, but percentages aside we can all likely agree that it is intuitively important because we all have experienced its absence at times.</p>
+<p class="zh">在你宣布会议破产、决定不让沟通丛林继续 unchecked 生长后，工作从让每个相关的人停下来、积极承认这个野兽的形状开始：人类、异步、书面沟通是困难的。很大程度的人类沟通是非语言的，无论是肢体语言、语调，甚至只是沉默的使用。关于非语言重要性的程度有相互矛盾的科学文献，但除了百分比我们都可能同意它直觉上很重要，因为我们都有时经历过它的缺席。</p><div class="page-marker">— 第 214 页 —</div><p class="en">To draw a pithy analogy, our favorite music is often made up of words, song, and dance, but when writing to our colleagues we can only count on our words alone, and oftentimes we won't reach the lyrical abilities of our favorite artist (or their songwriter). With that in mind, everyone needs to put extraordinary care in their writing. As a group, you should foster a culture of appreciation for great writing by celebrating and encouraging it as well as providing resources for everyone to learn. This all takes effort, but it's effort that pays off: great writing compels great thinking, and mindful communication prevents haste and waste.</p>
+<p class="zh">打一个精炼的比方，我们最喜欢的音乐经常由词、歌和舞组成，但当给同事写信时我们只能靠我们的词，而且很多时候我们达不到最喜欢的艺术家（或他们的词曲作者）的抒情能力。记住这一点，每个人都需要在写作上格外用心。作为一个群体，你应该培养一种欣赏好写作的文化，通过庆祝和鼓励它以及提供学习资源。这一切都需要努力，但这是有回报的努力：好写作迫使好思考，用心的沟通防止匆忙和浪费。</p><p class="en">Alas, writing well is challenging to master and difficult to keep up: effective prose takes time and effort. Buying the team the time to focus on writing by demanding memos to be written and shared ahead of time, by prioritizing written addresses to the company from leadership or instituting periodic, and public updates from every department slowly breeds a culture that values and cares about the written word. And although we get everyone to focus on their writing, it is key to deploy the appropriate technical tools to store and share everyone's output, and to establish best practices around using them. Given how much energy goes into every piece, try to focus on persistent venues, such as intranet posts or internal wikis, over ephemeral means such as email or Slack. You will also get more mileage out of your words if you share them with entire groups of people (say, a company-wide Google Doc memo) instead of individuals (a Slack PM or an email to an individual who will indubitably archive your words in days, if not hours or minutes).</p>
+<p class="zh">唉，写好东西是难以掌握和坚持的：有效的散文需要时间和精力。通过要求备忘录提前写好和分享、优先考虑领导给公司的书面讲话、或建立每个部门定期公开更新，来给团队买时间专注写作，慢慢培养重视和关心书面文字的文化。虽然我们让每个人专注写作，部署合适的技术工具来存储和分享每个人的产出、以及建立使用它们的最佳实践是关键。考虑到每件作品投入的精力，尽量聚焦持久场所，如内网帖子或内部 wiki，而不是临时手段如邮件或 Slack。如果你把话分享给整群人（比如全公司 Google Doc 备忘录）而不是个人（Slack 私信或发给个人的邮件，那个人毫无疑问会在几天内归档你的话，如果不是几小时或几分钟的话），你的话也会走得更远。</p><p class="en">In short, prioritizing public and persistent outlets over private and ephemeral will not only get every writer a much larger bang for their buck, but it will also advance the communication cause and the written word culture across the team.</p>
+<p class="zh">简而言之，优先公共和持久渠道而非私人和临时的，不仅让每个写作者的投入产出比大得多，也会推进团队的沟通事业和书面文字文化。</p>
+
+    <div class="pager">
+      <a href="chapter-76.html">第76章 →</a>
+      <a href="index.html">目录</a>
+      <a href="chapter-78.html">第78章 →</a>
+    </div>
+</main>
+<button id="lang-btn" title="切换语言模式">🌐</button>
+<div id="lang-label"></div>
+<script>
+(function(){
+  // toggle TOC
+  document.getElementById('menu-btn').addEventListener('click', function(){
+    var body = document.body;
+    if (window.innerWidth <= 900) {
+      document.getElementById('toc').classList.toggle('show');
+    } else {
+      body.classList.toggle('toc-hidden');
+    }
+  });
+  // close TOC on link click (narrow)
+  document.querySelectorAll('nav#toc a').forEach(function(a){
+    a.addEventListener('click', function(){
+      if (window.innerWidth <= 900) {
+        document.getElementById('toc').classList.remove('show');
+      }
+    });
+  });
+  // click English paragraph toggles its zh
+  document.addEventListener('click', function(e){
+    var p = e.target.closest('p.en');
+    if (p) {
+      var zh = p.nextElementSibling;
+      if (zh && zh.classList.contains('zh')) {
+        zh.style.display = (zh.style.display === 'block') ? 'none' : 'block';
+      }
+    }
+    var liEn = e.target.closest('li .en');
+    if (liEn) {
+      var liZh = liEn.nextElementSibling;
+      if (liZh && liZh.classList.contains('zh')) {
+        liZh.style.display = (liZh.style.display === 'block') ? 'none' : 'block';
+      }
+    }
+  });
+  // language mode cycle: both -> en-only -> zh-only -> both
+  var modes = ['mode-both', 'mode-en', 'mode-zh'];
+  var labels = {'mode-both':'中英对照', 'mode-en':'仅英文', 'mode-zh':'仅中文'};
+  var saved = localStorage.getItem('book-lang-mode') || 'mode-both';
+  document.body.classList.add(saved);
+  var btn = document.getElementById('lang-btn');
+  var label = document.getElementById('lang-label');
+  function showLabel(){
+    label.textContent = labels[document.body.classList.contains('mode-zh') ? 'mode-zh' :
+      document.body.classList.contains('mode-en') ? 'mode-en' : 'mode-both'];
+    label.style.display = 'block';
+    setTimeout(function(){ label.style.display = 'none'; }, 1200);
+  }
+  btn.addEventListener('click', function(){
+    var cur = 0;
+    for (var i=0;i<modes.length;i++){ if(document.body.classList.contains(modes[i])) cur=i; }
+    document.body.classList.remove(modes[cur]);
+    var next = (cur+1) % modes.length;
+    document.body.classList.add(modes[next]);
+    localStorage.setItem('book-lang-mode', modes[next]);
+    showLabel();
+  });
+  showLabel();
+})();
+</script>
+</body>
+</html>

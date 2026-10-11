@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scope, Alignment, and Teamwork — 双语阅读</title>
+<style>:root{
+  --accent:#2563eb; --zh-bg:#f0f6ff; --zh-border:#2563eb;
+  --code-bg:#0f172a; --code-ink:#e2e8f0; --ink:#1f2937;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:#faf6f1;color:var(--ink);
+  font:18px/1.7 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+a{color:var(--accent)}
+
+/* ---------- 左侧固定目录 ---------- */
+nav#toc{position:fixed;top:0;left:0;bottom:0;width:300px;overflow-y:auto;
+  background:#fff;border-right:1px solid #e5e7eb;padding:20px 0;
+  transform:translateX(0);transition:transform .25s ease;z-index:20}
+nav#toc.hidden{transform:translateX(-300px)}
+nav#toc h1{font-size:15px;padding:0 20px 8px;color:var(--accent);margin:0}
+nav#toc a{display:block;padding:6px 20px;color:var(--ink);text-decoration:none;
+  font-size:14px;line-height:1.5}
+nav#toc a:hover{background:var(--zh-bg);color:var(--accent)}
+nav#toc a.l1{font-weight:700}
+nav#toc a.l2{font-weight:700}
+nav#toc a.l3{padding-left:40px}
+#tocToggle{position:fixed;top:12px;left:12px;z-index:30;width:40px;height:40px;
+  border:1px solid #e5e7eb;background:#fff;border-radius:8px;font-size:18px;
+  cursor:pointer;color:var(--accent);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+#tocToggle:hover{background:var(--zh-bg)}
+
+/* ---------- 主内容 ---------- */
+main{margin-left:300px;max-width:900px;padding:24px 40px 96px}
+.chapter-head{border-bottom:2px solid var(--accent);padding-bottom:12px;margin-bottom:28px}
+.chapter-head .chap-label{color:var(--accent);font-weight:700;font-size:15px;
+  text-transform:uppercase;letter-spacing:.08em}
+.chapter-head h1{margin:6px 0 4px;font-size:30px}
+.chapter-head .chap-sub{color:#6b7280;margin:0;font-size:18px}
+
+/* ---------- 中英对照段落 ---------- */
+p.en{margin:14px 0;transition:background .15s}
+p.en:hover{background:#eef4ff;border-radius:8px}
+p.zh{display:block;background:var(--zh-bg);border-left:4px solid var(--zh-border);
+  border-radius:0 8px 8px 0;padding:10px 16px;margin:0 0 16px}
+p.zh.show{display:block}
+/* 列表项中文与 p.zh 同规格 */
+li .zh{display:block;background:var(--zh-bg);border-left:4px solid var(--zh-border);
+  border-radius:0 8px 8px 0;padding:8px 14px;margin:6px 0 10px}
+li .zh.show{display:block}
+/* 行内标题的中文对照（紧跟英文之后，灰色小字） */
+.zh-inline{color:#6b7280;font-weight:400;margin-left:8px}
+
+/* ---------- 代码块 ---------- */
+pre{background:var(--code-bg);color:var(--code-ink);border-radius:8px;
+  padding:14px 16px;overflow-x:auto;font:13.5px/1.6 "SF Mono",Menlo,Consolas,monospace}
+code{font-family:"SF Mono",Menlo,Consolas,monospace}
+p code,li code{background:#fde9f3;color:#be185d;border-radius:4px;
+  padding:1px 6px;font-size:.9em}
+
+/* ---------- 表格 ---------- */
+table{border-collapse:collapse;width:100%;margin:14px 0}
+th,td{border:1px solid #d1d5db;padding:8px 12px;text-align:left;font-size:16px}
+th{background:#f1f5f9}
+
+/* ---------- 图片 ---------- */
+figure{margin:20px 0}
+figure img{max-width:100%;height:auto;border:1px solid #e5e7eb;border-radius:8px}
+figcaption{color:#6b7280;font-size:15px;margin-top:8px}
+
+/* ---------- 页码标记 ---------- */
+.page-mark{margin:26px 0 6px;padding-top:8px;border-top:1px dashed #d1d5db;
+  color:#9ca3af;font-size:13px;text-align:right}
+
+/* ---------- 分页按钮 ---------- */
+nav.pager{display:flex;margin-top:44px;border-top:1px solid #e5e7eb;padding-top:18px}
+nav.pager a{flex:1;text-align:center;padding:12px 8px;text-decoration:none;
+  color:var(--ink);border-radius:8px;font-size:16px}
+nav.pager a:hover{background:var(--zh-bg);color:var(--accent)}
+nav.pager a.disabled{opacity:.4;pointer-events:none}
+nav.pager a.center{font-weight:700}
+
+/* ---------- 右下角模式切换按钮 ---------- */
+#modeBtn{position:fixed;right:20px;bottom:20px;z-index:30;width:52px;height:52px;
+  border:none;border-radius:50%;background:var(--accent);color:#fff;font-size:22px;
+  cursor:pointer;box-shadow:0 4px 14px rgba(37,99,235,.35)}
+#modeBtn:hover{filter:brightness(1.08)}
+#modeTip{position:fixed;right:20px;bottom:80px;z-index:30;background:#111827;
+  color:#fff;font-size:13px;padding:6px 10px;border-radius:6px;display:none}
+#modeBtn:hover + #modeTip{display:block}
+
+/* ---------- 显示模式（body[data-mode]） ---------- */
+body[data-mode="en"] .zh{display:none !important}
+body[data-mode="zh"] .en{display:none !important}
+body[data-mode="zh"] .zh{display:block !important}
+
+/* ---------- 锚点 / 窄屏 ---------- */
+h2,h3{scroll-margin-top:20px}
+@media (max-width:900px){
+  nav#toc{transform:translateX(-300px)}
+  nav#toc.show{transform:translateX(0)}
+  main{margin-left:0;padding:64px 18px 96px}
+  body.toc-open{overflow:hidden}
+}
+</style>
+</head>
+<body data-mode="both">
+<nav id="toc"><h1>目录 / Contents</h1>
+<a class="l1" href="index.html">返回总目录</a>
+<a class="l2" href="#tip-51">The Importance of the Project Scope Statement<span class="zh-inline">项目范围说明书的重要性</span></a>
+<a class="l2" href="#tip-52">Align Vision and Expected Outcome<span class="zh-inline">对齐愿景与预期成果</span></a>
+<a class="l2" href="#tip-53">Alice Doesn't Live Here Anymore<span class="zh-inline">爱丽丝不住在这里了</span></a>
+<a class="l2" href="#tip-54">Avoiding Contract Disputes<span class="zh-inline">避免合同纠纷</span></a>
+<a class="l2" href="#tip-55">You Get What You Measure<span class="zh-inline">你衡量什么，就得到什么</span></a>
+<a class="l2" href="#tip-56">Don't Fall into the "Not Invented Here" Syndrome<span class="zh-inline">别得「非此处发明」综合征</span></a>
+<a class="l2" href="#tip-57">Favor the Now Over the Soon<span class="zh-inline">现在胜于马上</span></a>
+<a class="l2" href="#tip-58">Speed Is Life; More Is Better<span class="zh-inline">速度即生命；越多越好</span></a>
+<a class="l2" href="#tip-59">Building the Morale on Your Team<span class="zh-inline">建设团队士气</span></a>
+<a class="l2" href="#tip-60">A Project Depends on Teamwork<span class="zh-inline">项目依赖团队协作</span></a>
+</nav>
+<button id="tocToggle" title="折叠 / 展开目录">☰</button>
+<main>
+<header class="chapter-head">
+<span class="chap-label">Chapter 6 · Tips 51–60</span>
+<h1>Scope, Alignment, and Teamwork</h1>
+<p class="chap-sub">范围、对齐与团队协作</p>
+</header>
+<h2 id="tip-51">The Importance of the Project Scope Statement<span class="zh-inline">项目范围说明书的重要性</span></h2>
+<p class="byline"><em>Kim Heldman, PMP · Lakewood, Colorado, U.S.<span class="zh-inline">Kim Heldman（PMP）· 美国科罗拉多州莱克伍德</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">IF THE PROJECT PLAN IS THE HEARTBEAT of a solid project management methodology, the scope statement is the breath. The scope statement details the vision of the project. It describes the goals and deliverables, and documents what a successful conclusion to the project looks like. Unfortunately, many stakeholders have little interest in going through the exercise of writing a scope statement. Even further, while most project managers do take the time to create a well-rounded scope statement, they often archive it before the signatures are dry and never look at it again. It's important to keep checking back with the scope statement throughout the project to make certain you're delivering what the customer is expecting.</p>
+<p class="zh">如果项目计划是一套扎实项目管理方法论的心跳，范围说明书就是呼吸。范围说明书详述项目愿景，描述目标和交付物，记录项目成功收尾长什么样。不幸的是，许多相关方没什么兴趣走过写范围说明书这一遭。更进一步，虽然大多数项目经理确实会花时间写一份周全的范围说明书，但他们常在签名未干时就把它归档，再也不看。在整个项目过程中不断对照范围说明书，确保你交付的正是客户期待的，这很重要。</p>
+<p class="en" title="点击显示 / 隐藏中文">One of my favorite analogies, and I use it often with my customer base, is the remodel story. Imagine you have hired a contractor to finish the basement. The question is, do you give the contractor direction or do you let him decide what the layout will look like? Sure, the contractor will likely have some ideas on layout, how big the rooms should be, and where the plumbing already exists. But what if you want two bedrooms, a three-quarter bath, and a game room, but the contractor builds one bedroom, a full bath, and a family room with a full bar? Not at all close to what you were thinking. And therein lies the importance of the scope statement. It is the project blueprint. It describes the characteristics of the finished product or service of the project. Without it, you might build one bedroom when your stakeholder is expecting two. The scope statement helps you manage stakeholder expectations. More than once, I have been knee-deep in the project life cycle, usually after a few key deliverables are in prototype stage, and had a stakeholder say, "I thought we were getting two bedrooms." This is where the scope statement comes to the rescue. You certainly don't want to wield it as though it is a weapon, but it is a great way to gently remind your stakeholders what they agreed to back at the beginning of the project.</p>
+<p class="zh">我最喜欢的类比之一（我常对客户用）是装修故事。想象你雇了个承包商来装修地下室。问题是：你给承包商指示，还是让他自己决定布局？当然，承包商可能对布局、房间大小、现有管道位置有想法。但如果你想要两间卧室、一个四分之三卫生间、一个游戏室，而承包商建了一间卧室、一个全卫、一个带吧台的家庭娱乐室呢？和你想的差太远。这就是范围说明书的重要性所在。它是项目蓝图，描述项目最终产品或服务的特征。没有它，相关方期待两间卧室，你可能建了一间。范围说明书帮你管理相关方期望。不止一次，我深陷项目生命周期中（通常在几个关键交付物进入原型阶段后），有相关方说："我以为我们会有两间卧室。"这时范围说明书就来救场。你当然不想把它当武器挥舞，但它是温和提醒相关方"项目开始时你们同意了什么"的好办法。</p>
+<div class="page-mark">— p.128 —</div>
+<p class="en" title="点击显示 / 隐藏中文">It's a good idea to periodically review your scope statement with your stakeholders. Project status meetings or steering committee meetings are a logical place to conduct this review. Devote some time every other meeting, or at intervals that make sense given the size and scope of your project, to reviewing the deliverables listed in the scope statement. If you're conducting regular status meetings, you're likely doing this to some extent already. Status meetings typically address the work accomplished last period, and the anticipated work to be completed during the next work period. Occasionally take the time to go beyond the next work period and remind everyone of the key deliverables that are scheduled to be delivered later in the project. Regularly reviewing the project scope statement can increase your chances for a successful project and keep your stakeholder's expectations aligned with the goals of the project.</p>
+<p class="zh">定期和相关方一起回顾范围说明书是个好主意。项目状态会或指导委员会会议是做这件事的合理场合。每隔一次会议，或按项目大小和范围合理的间隔，花点时间回顾范围说明书里列的交付物。如果你在开常规状态会，可能已经在某种程度上这样做了。状态会通常讨论上一周期完成的工作、下一工作周期预期完成的工作。偶尔花点时间跳出下一周期，提醒大家项目后期计划交付的关键交付物。定期回顾项目范围说明书能提高项目成功的概率，让相关方期望与项目目标保持一致。</p>
+<div class="page-mark">— p.129 —</div>
+<h2 id="tip-52">Align Vision and Expected Outcome<span class="zh-inline">对齐愿景与预期成果</span></h2>
+<p class="byline"><em>David Diaz Castillo, MBA, PMP · Panama City, Panama<span class="zh-inline">David Diaz Castillo（MBA, PMP）· 巴拿马巴拿马城</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">SOFTWARE DEVELOPMENT PROJECTS are very challenging, because needs and expectations are not always well defined. The work of a software project manager is to make sure that the following items are in place: The main project purpose is well defined. Everybody understands why this project is being undertaken. The impact for the three Ps (people, processes, and platforms) is clear. The needs and expectations are included in the requirements documents. Determine what items are in scope or out of scope, then communicate this to the team. The software project manager needs to align team members with the vision and the expected outcomes, and master these three additional points: 1. Business view. Why is this project the solution? (What problem or opportunity is this project going to solve, or how will this add value to the organization?) 2. SMART view. What should the software do? (Make it Specific, Measurable, Agreed upon, Realistic, and possible to do within the Time constraint.) 3. Subjective view. What does the end-user think the system will do? (Capture expectations and perceptions from the end-users during the initiating phase.)</p>
+<p class="zh">软件开发项目非常有挑战，因为需求和期望并不总是被良好定义。软件项目经理的工作是确保以下事项到位：项目主要目的被良好定义；每个人都理解为什么做这个项目；对三个 P（人员 people、流程 processes、平台 platforms）的影响清晰；需求和期望被写进需求文档；确定哪些事项在范围内、哪些在范围外，然后传达给团队。软件项目经理需要让团队成员对齐愿景和预期成果，并掌握另外三点：1）业务视角。为什么这个项目是解决方案？（这个项目要解决什么问题或机会，或如何为组织增加价值？）2）SMART 视角。软件应该做什么？（让它具体 Specific、可衡量 Measurable、达成一致 Agreed upon、现实 Realistic、并能在时间约束内完成 Time。）3）主观视角。终端用户认为系统会做什么？（在启动阶段捕获终端用户的期望和感知。）</p>
+<p class="en" title="点击显示 / 隐藏中文">Point #1. When coding begins, the programming team and the software project manager focus on the functionality and the technical part of the project, not the main reason that the organization is funding this endeavor. Future misunderstandings, pitfalls, and errors in the decisions we make happen because the team is not constantly reminded of the real business problem to be solved. The benefits that this project should bring to the organization are not always at the forefront. To avoid this pitfall, the project manager needs to crystallize the purpose, assumptions, constraints, and risks for the project. Point #2. The technical and functional objective of the project must be clear enough for all team members to grasp, including the project sponsor. The outcomes have to be aligned with the strategic objectives of the business area that eventually will become the owner of the system. Point #3. The software project manager should identify what end-users expect. How do they think this new application is going to help them in their day-to-day work? The project manager must be clear on these benefits and expectations and communicate them to the development team to get its buy-in. With that clarity, he/she can move forward to convey the advantages accurately to the end-users and help them form a realistic vision of the end software product.</p>
+<p class="zh">第一点。编码开始后，编程团队和软件项目经理聚焦于项目的功能和技术部分，而不是组织资助这件事的主要原因。未来的误解、陷阱和我们决策中的错误，都源于团队没有被不断提醒要解决的真实业务问题。这个项目应给组织带来的收益并不总是在最前线。为避免这个陷阱，项目经理需要让项目的目的、假设、约束和风险具体化。第二点。项目的技术和功能目标必须清晰到所有团队成员（包括项目发起人）都能把握。成果必须与最终将成为系统所有者的业务领域的战略目标对齐。第三点。软件项目经理应识别终端用户的期望。他们认为这个新应用会如何帮助他们的日常工作？项目经理必须清楚这些收益和期望，并传达给开发团队以获得认同。有了这种清晰，他/她才能继续向终端用户准确传达优势，帮助他们对最终软件产品形成现实的愿景。</p>
+<div class="page-mark">— p.130 —</div>
+<p class="en" title="点击显示 / 隐藏中文">With this detailed grasp of project purpose and benefit, on-the-fly decisions become easier. And, as the software project manager really knows what the users expect and what the system is intended to do, he/she is able to evaluate change control submissions more effectively. This prevents misdirection or tangents occurring during the project execution phase. We as project managers should discipline ourselves to truly understand both the technical project requirements and the business value the project is intended to provide. With this knowledge, we will be prepared to create better software results and manage uncertainty in a professional way throughout the project life cycle.</p>
+<p class="zh">有了对项目目的和收益的详细把握，临时决策变得更容易。而且，因为软件项目经理真正知道用户期待什么、系统打算做什么，他/她能更有效地评估变更控制提交。这防止项目执行阶段出现错误导向或离题。作为项目经理，我们应训练自己真正同时理解技术项目需求和项目意图提供的业务价值。有了这些知识，我们将准备好创造更好的软件成果，并在整个项目生命周期中以专业方式管理不确定性。</p>
+<div class="page-mark">— p.131 —</div>
+<h2 id="tip-53">Alice Doesn't Live Here Anymore<span class="zh-inline">爱丽丝不住在这里了</span></h2>
+<p class="byline"><em>Barbee Davis, MA, PHR, PMP · Omaha, Nebraska, U.S.<span class="zh-inline">Barbee Davis（MA, PHR, PMP）· 美国内布拉斯加州奥马哈</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">CURRENT DISCUSSIONS AMONG SOFTWARE DEVELOPERS tend to revolve around the best programming language, systems architecture, operating platform, or project methodology. No one seems to notice that one of our team members, Alice, doesn't live here anymore. Where does Alice live now, and how will it affect our software development plans? She may live in India, where English is often trained phonetically, perhaps by a script. Plan to allow extra time, or use written exchanges, to give Alice the best chance to perform her part of the development, undaunted by the language barrier. Alice may live in Africa. With a smaller pool of technical talent, people may be more important than projects to her employer. Technology may be limited, so don't assume 24-hour email, phone, and Internet connectivity. Perhaps Alice has a wonderful job in a developing country. If she doesn't respond right away on conference calls, she may be experiencing a 30-second satellite delay between when you talk and when she hears your words. You'll get the same gap with her answers or comments. School yourself in the decision-making differences you may encounter with team members from Japan. Anticipate more respect for age and experience. Alice's youth may make it inappropriate or offensive for her to speak up. Japanese team members may also expect group consensus before any information from the meeting is captured in writing.</p>
+<p class="zh">软件开发之间当下的讨论，往往围绕最好的编程语言、系统架构、操作平台或项目方法论。似乎没人注意到，我们团队的一位成员爱丽丝已经不住在这里了。爱丽丝现在住哪？这会如何影响我们的软件开发计划？她可能住在印度，那里的英语常常是按音标、也许跟着剧本练出来的。计划留出额外时间，或用书面交流，让爱丽丝最有机会完成她那部分开发，不被语言障碍吓退。爱丽丝可能住在非洲。那里技术人才池更小，对她雇主来说，人可能比项目更重要。技术可能有限，所以别假设她有 24 小时邮件、电话和互联网连接。也许爱丽丝在一个发展中国家有份好工作。如果她在电话会议上不立刻回应，她可能正经历你说话和她听到之间 30 秒的卫星延迟。她的回答或评论也会有同样的间隔。好好了解你可能遇到的日本团队成员在决策上的差异。预期他们更尊重年龄和经验。爱丽丝年轻，开口发言可能不合适或冒犯。日本团队成员也可能期待在会议信息被书面记录之前先达成群体共识。</p>
+<div class="page-mark">— p.132 —</div>
+<p class="en" title="点击显示 / 隐藏中文">If you have many Alices in multiple remote locations, you will need to carefully research numerous small issues to allow your team to function smoothly: What are the union agreements where Alice works? Are her working hours different? Can she work overtime or weekends, come in early, or work through lunch hours or breaks? When do the holidays occur in the country where Alice lives? You'll want to plan any important group meetings with everyone's convenience in mind. You wouldn't ask an American employee to come in on Christmas morning. What are the accounting practices in Alice's homeland? Do your reporting cycles coincide with payroll cycles in other places? Is there any unexpected data export control? Some places in Europe exert tight control over data transmissions. You may be able to send information to Alice, but can she send you data in return? Customer service practices may vary from country to country. If Alice is customer-facing, be sure she knows your team's service standards and quality expectations. If you are frustrated by a lack of voice mail, consider that several developing countries feel that it is an automated machine that takes a person's much-needed job. Be respectful when you find cultural differences regarding technology. Do you always expect Alice to come in during the middle of the night to accommodate your 9 a.m. meeting every Tuesday? Respect all team members by looking for the least distasteful meeting times, or rotate the unpleasant times among all locations. We are fortunate to have the brilliant minds and insightful viewpoints of a virtual team. Be sure to use this bounty respectfully.</p>
+<p class="zh">如果你有许多爱丽丝分布在多个远程地点，你需要仔细研究无数小问题，让团队顺利运转：爱丽丝工作地的工会协议是什么？她的工作时间不同吗？她能加班、周末来、早到、或午餐和休息时间继续工作吗？爱丽丝所在国的节假日是什么时候？安排任何重要群会时要考虑大家的方便。你不会要求美国员工圣诞节早上来上班。爱丽丝祖国的会计惯例是什么？你的报告周期和其他地方的发薪周期重合吗？有没有意料外的数据出口管制？欧洲有些地方对数据传输控制严格。你也许能给爱丽丝发信息，但她能回传数据吗？客户服务惯例因国而异。如果爱丽丝面向客户，确保她知道你团队的服务标准和质量期望。如果你因为没有语音信箱而沮丧，想想几个发展中国家认为语音信箱是抢走一个人急需工作的自动机器。当你发现技术方面的文化差异时，请保持尊重。你总是指望爱丽丝半夜起床来迁就你每周二早上 9 点的会议吗？尊重所有团队成员，选择大家最不难受的会议时间，或在所有地点间轮换那些不舒服的时段。我们很幸运拥有虚拟团队的聪明头脑和深刻观点。请务必带着尊重使用这份馈赠。</p>
+<div class="page-mark">— p.133 —</div>
+<h2 id="tip-54">Avoiding Contract Disputes<span class="zh-inline">避免合同纠纷</span></h2>
+<p class="byline"><em>Jorge Gelabert, PMP · Berlin, Connecticut, U.S.<span class="zh-inline">Jorge Gelabert（PMP）· 美国康涅狄格州柏林</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">PROJECT MANAGERS WHO HAVE BEEN CERTIFIED as Project Management Professionals (PMP)® are familiar with the various types of contracts. They know that the type of contract to use depends not only on the products and services being purchased, but also on the level of risk they and the seller are willing to assume. What they may not always be aware of is that even the best contract does not guarantee that disputes will not arise. Well-defined requirements are an obvious way of avoiding those possible conflicts. If the contract clearly defines what is expected, both parties will agree on what the deliverables will be. However, well-defined requirements are not always a reality in the world of project management. Some sellers (your sales team) may underbid a proposal with the expectation that the inevitable changes orders from the customer will allow them to recover the profit margin they are losing in order to get the business. Even when projects are bid well and there is a firm, well-defined agreement as to the project scope, changes may arise that both parties must address. These, and any number of other unique scenarios, can become possible areas of dispute. So what can the project manager do? Approach the project with a mindset that the customer is a partner, not an adversary. If both the seller (you) and buyer (your customer) are invested in the success of the project, disagreements that arise can be easily and amicably resolved. If each side is too focused on its own interests, small disagreements can evolve into major conflicts and derail a project.</p>
+<p class="zh">获得 PMP 认证的项目经理熟悉各种合同类型。他们知道用哪种合同不仅取决于采购的产品和服务，也取决于他们和卖方愿意承担的风险水平。他们未必总是意识到的是：即使最好的合同也不能保证不出现纠纷。定义良好的需求是避免这些可能冲突的明显方法。如果合同清晰定义了期望，双方就会对交付物是什么达成一致。然而，在项目管理世界里，定义良好的需求并不总是现实。有些卖方（你的销售团队）可能低价竞标，指望客户不可避免的变更单能让他们补回为拿到业务而损失的利润空间。即使项目投标良好、对项目范围有坚定而明确的协议，双方也可能遇到必须处理的变更。这些以及无数其他独特情形，都可能成为争议领域。那项目经理能做什么？以"客户是伙伴、不是对手"的心态对待项目。如果卖方（你）和买方（你的客户）都投入于项目成功，出现的分歧就能轻松、友好地解决。如果每方都太盯着自己的利益，小分歧会演变成大冲突，让项目脱轨。</p>
+<div class="page-mark">— p.134 —</div>
+<p class="en" title="点击显示 / 隐藏中文">When disagreements arise, work to resolve them in such a way that both parties come out as winners. Even when the contract supports your position, negotiate. While you may feel that you would be proven right in a court of law, the damage to the relationship, and the obvious stalemate of the project while the case is being resolved, will impact the ultimate success of the project. While there may be situations when pursuing a legal option is all that is left, it should be a last resort. The best way to avoid possible conflicts is to be fair when negotiating the contract. For example, if the contract has penalties, make sure it includes bonuses as well. Both parties need to feel they have an equal chance to win and lose. Even with a fixed-price contract, it may be better to renegotiate than to have the buyers (your customers) walk away from the project because they feel they have more to lose by completing the project than by abandoning it. Also, beware of the bid that feels too good to be true. If your sales team is not presenting a competitive bid, it may mean that your buyers do not fully understand what is required to complete the work of the project. Once they become aware that they are overpaying, they will likely try to renegotiate, or walk away.</p>
+<p class="zh">分歧出现时，努力以双方都成为赢家的方式解决。即使合同支持你的立场，也要谈判。虽然你觉得在法庭上会被证明是对的，但对关系的损害、以及案件解决期间项目明显的僵局，都会影响项目的最终成功。虽然有时诉诸法律是唯一剩下的选项，但它应该是最后手段。避免可能冲突的最好办法，是谈判合同时公平。例如，如果合同有罚则，确保它也包含奖励。双方都需要感到自己赢和输的机会均等。即使是固定价合同，重新谈判也可能比让买方（你的客户）放弃项目更好——因为他们觉得完成项目比放弃损失更大。另外，警惕那种好得不像真的投标。如果你的销售团队没有拿出有竞争力的报价，可能意味着买方没有完全理解完成项目工作需要什么。一旦他们意识到自己付多了，很可能会试图重新谈判，或者走人。</p>
+<div class="page-mark">— p.135 —</div>
+<h2 id="tip-55">You Get What You Measure<span class="zh-inline">你衡量什么，就得到什么</span></h2>
+<p class="byline"><em>Naresh Jain · Malad, Mumbai, India<span class="zh-inline">Naresh Jain · 印度孟买马拉德</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">IT IS A WELL-KNOWN FACT that if you measure the wrong things, you encourage wrong behavior. Software teams suffer daily because their managers are tracking and measuring them against the wrong parameters. For example, measuring how many hours someone works encourages team members to clock in longer hours. Studies show that working longer hours does not necessarily produce better results. In most cases, it actually results in poorer work quality. Similarly, measuring and focusing on the team's velocity (amount of functionality completed by the team in a time span) encourages more work to be done faster, but does not necessarily ensure the most important/critical work is being chosen. Therefore, this approach does not solve the real business problem of completing software development both quickly and bug-free. Focusing on how many bugs the testers report encourages the testers to report more bugs, but not necessarily to report issues with maximum business impact. If developers are measured based on how many bugs are filed against them, testers can become their enemy. This leads to unnecessary team tensions. In my experience, more software, done faster, does not mean successful software. Rapid software development is good for getting feedback quickly, but building real products needs a lot more than just development speed.</p>
+<p class="zh">这是一个众所周知的事实：如果你衡量错误的东西，你就在鼓励错误的行为。软件团队每天都在受苦，因为他们的经理用错误的参数跟踪和衡量他们。例如，衡量某人工作多少小时，会鼓励团队成员打卡更长时间。研究表明，工作更长时间不一定产生更好结果。大多数情况下，它实际上导致更差的工作质量。类似地，衡量并关注团队的 velocity（团队在一段时间内完成的功能量），会鼓励更快地做更多工作，但不一定确保选的是最重要/关键的工作。因此，这种方法解决不了"既快又无 bug 地完成软件开发"这个真正的业务问题。关注测试员报告多少 bug，会鼓励测试员报告更多 bug，但不一定报告业务影响最大的问题。如果根据针对开发提交了多少 bug 来衡量开发，测试员会成为他们的敌人。这导致不必要的团队紧张。以我的经验，更多软件、做得更快，并不意味着成功的软件。快速软件开发有利于快速获得反馈，但建造真正的产品需要的远不止开发速度。</p>
+<div class="page-mark">— p.136 —</div>
+<p class="en" title="点击显示 / 隐藏中文">Often when I visit dysfunctional teams, it turns out that the teams were measured using the wrong parameters. Hence the team adapted and optimized itself for those poorly chosen parameters. Lacking the understanding of the project's purpose or vision led to team members defining their own success criteria and measuring themselves against their own respective, disconnected, dysfunctional parameters. Incorrect measurement does more harm than good. Good project managers ensure that everyone on the team really understands what success means. They help build a common vision and shared understanding within the team. They encourage team collaboration by building win-win situations, so that each team member has the same focus and is working toward the common goals. They help the team identify what really needs to be measured. The secret sauce of successful projects is in using metrics as a means to an end and not as a deliverable in their own right. I find if I try to measure 10 different things at once, it gets very confusing and distracting for the team. Limiting myself to measuring two or three parameters at a time, however, is very effective. These two to three parameters should be unanimously decided by the team based on current issues hurting the team, or on risks that the team feels will impact it in the near future. Once the issue is resolved or the risk is mitigated, the team should remove the old checks and replace them with new items added to its metrics. A team that does not periodically change its metrics is symptomatic of a bigger problem. Be sure that what you are measuring is of value, and know that it may change during the project. You get what you measure, so be sure you are measuring the right things.</p>
+<p class="zh">我拜访失调团队时，常常发现团队是用错误参数衡量的。于是团队为那些选错的参数调整和优化了自己。缺乏对项目目的或愿景的理解，导致团队成员自己定义成功标准，用各自孤立、失调的参数衡量自己。错误的衡量弊大于利。好的项目经理确保团队每个人真正理解成功意味着什么。他们帮团队建立共同愿景和共享理解。他们通过打造双赢局面鼓励团队协作，让每个成员有相同焦点、朝共同目标努力。他们帮团队识别真正需要衡量什么。成功项目的秘诀在于：把指标当作达到目的的手段，而不是把指标本身当作交付物。我发现如果一次试图衡量 10 件不同的事，团队会非常困惑和分心。然而，一次只衡量两三个参数非常有效。这两三个参数应由团队基于当前伤害团队的问题、或团队认为近期会影响自己的风险，一致决定。问题解决或风险减轻后，团队应移除旧检查、换上新指标。一个不周期性改变指标的团队，是更大问题的征兆。确保你衡量的东西有价值，并知道它在项目中可能变化。你衡量什么就得到什么，所以确保你衡量的是对的东西。</p>
+<div class="page-mark">— p.137 —</div>
+<h2 id="tip-56">Don't Fall into the "Not Invented Here" Syndrome<span class="zh-inline">别得「非此处发明」综合征</span></h2>
+<p class="byline"><em>Dr. Paul Giammalvo, CDT, CCE, MScPM · Jakarta, Indonesia<span class="zh-inline">Paul Giammalvo 博士（CDT, CCE, MScPM）· 印度尼西亚雅加达</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">PROJECT MANAGEMENT is nothing more than a set of processes, and when integrated and combined, these processes result in a methodology. And those processes/methodologies have nearly unlimited application. There are five sets or groups of processes associated with project management: Initiation. Those processes that authorize or recognize that a project exists. Planning. Those processes that enable us to identify what needs to be done and how to go about doing it. Executing. The actual execution of processes identified in the planning phase to produce results. Monitoring and Controlling. Those processes where we assess whether the project is progressing in accordance with the plan. Closing. Those processes that identify whether what we did was done on time, within the allocated budget, and in substantial conformance to the specifications so that the project achieved the results for which it was undertaken. The information technology sector has been particularly reluctant to look at what others are doing in project management. It doesn't appear to adapt or adopt "best practices" from those sectors that are more advanced or mature in order to increase the success rate of IT projects.</p>
+<p class="zh">项目管理不过是一组过程，当它们被整合组合时，就形成方法论。这些过程/方法论的应用几乎无限。项目管理相关的过程有五组：启动——授权或承认项目存在的过程；规划——让我们识别要做什么、怎么做的过程；执行——实际执行规划阶段识别出的过程以产生结果；监控——评估项目是否按计划进展的过程；收尾——识别我们做的事是否按时、在分配预算内、并基本符合规格，从而使项目达到其被启动所要达成结果的过程。IT 行业尤其不愿看别人在项目管理上做什么。它似乎不会从那些更先进或成熟的行业借鉴"最佳实践"来提高 IT 项目的成功率。</p>
+<div class="page-mark">— p.138 —</div>
+<p class="en" title="点击显示 / 隐藏中文">The two great sectors to use as benchmarks are medicine and commercial aircraft piloting. Why? Because both medicine and commercial airline piloting embody project management into their delivery systems. For medicine it is each operation or procedure, and for commercial airline piloting it is each flight from point A to point B. But more importantly from the perspective of IT, the comparative success rate in both medicine and commercial flight is extremely enviable. So what practices do medicine and commercial aircraft piloting have that IT does not? First, there is the near-total authority of the doctor/pilot in making decisions. The flip side of that is people in these positions assume total accountability, both financial and professional. In the case of commercial pilots, they risk their own lives if they make a mistake. Second, neither medicine or commercial piloting accepts "average" practices. PMI's PMBOK® Guide states that the project management body of knowledge represents those skills, tools, and techniques that are "generally recognized as good practice." Third, project management as implemented in the fields of medicine and commercial airlines is not a standalone methodology. It exists, and is successful, largely because project management is fully and inextricably linked with asset management (departments that are responsible for the allocation and use of organizational assets to fund projects) and operations management (departments that generate revenues for an organization by handling its day-to-day work). Information technology projects cannot be successful in any organization without asset management providing adequate organizational resources, and operations management, as an internal customer, having realistic expectations. Software project managers need to be willing to look outside their own IT world and learn what has been successful in other applications of project management, especially medicine and commercial airline piloting, which enjoy significantly higher success rates than do IT projects.</p>
+<p class="zh">两个可作标杆的伟大行业是医学和商用飞机驾驶。为什么？因为医学和商用航空驾驶都把项目管理体现在它们的交付系统中。医学里是每次手术或操作，商用航空驾驶里是每次从 A 点到 B 点的飞行。但从 IT 视角更重要的是，医学和商业飞行的相对成功率都极其令人羡慕。那医学和商用飞机驾驶有哪些 IT 没有的做法？第一，医生/飞行员在决策上有近乎绝对的权威。另一面是这些职位的人承担完全的责任——财务上和职业上。对商用飞行员来说，犯错时他们押上的是自己的生命。第二，医学和商业驾驶都不接受"平均"做法。PMI 的 PMBOK® 指南指出，项目管理知识体系代表那些"被普遍认为是良好实践"的技能、工具和技术。第三，医学和商业航空领域实施的项目管理不是一套独立方法论。它之所以存在并成功，很大程度上是因为项目管理与资产管理（负责分配和使用组织资产为项目提供资金的部门）和运营管理（通过处理日常工作为组织产生收入的部门）完全且不可分割地联系在一起。没有资产管理提供充足组织资源、没有运营管理作为内部客户抱有现实期望，IT 项目在任何组织里都不可能成功。软件项目经理需要愿意跳出自己的 IT 世界，学习项目管理在其他应用中什么成功了——尤其医学和商用航空驾驶，它们的成功率远高于 IT 项目。</p>
+<div class="page-mark">— p.139 —</div>
+<h2 id="tip-57">Favor the Now Over the Soon<span class="zh-inline">现在胜于马上</span></h2>
+<p class="byline"><em>Scott Davis · Broomfield, Colorado, U.S.<span class="zh-inline">Scott Davis · 美国科罗拉多州布鲁姆菲尔德</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">ONE OF MY FAVORITE SAYINGS IS, "Exaggeration is a million times worse than understatement." The project management variation on this is, "Now is a million times better than soon, and a gazillion times better than later." If you're in the software development industry, you're familiar with the "vaporware" phenomenon—software that is endlessly talked about but never actually delivered. We can plan the software. We can discuss the features it will have. But software that you can touch, run, and interact with is a million times better than a Word document full of requirements. This means hurry up and write the software—now! The prototype you put together will instantly give you feedback about usability. Worried about performance? How can you optimize performance without the software? Agile software methodologies favor now, over soon, by focusing on quick iterations. Often they span no more than a week or two. The idea is to get software written and in front of the user as quickly as possible. If users like what they see, you have an immediate victory. More importantly, if they don't like what they see, you have failed fast. A quick success is only a hundred times better than a late success, but a quick failure is a million times better than a late failure. It gives you time to rethink, readjust, and rewrite the software sooner rather than later. A failure one week before the ship date can be a showstopper. A failure early in the process gets forgotten by the time the software actually goes live.</p>
+<p class="zh">我最喜欢的一句话是："夸张比轻描淡写糟糕一百万倍。"项目管理版本是："现在比马上好一百万倍，比以后好无数倍。"如果你在软件开发行业，你熟悉"雾件"现象——被无尽谈论却从未真正交付的软件。我们可以规划软件，可以讨论它会有什么功能。但你能触摸、运行、交互的软件，比一份写满需求的 Word 文档好一百万倍。这就是说：赶紧把软件写出来——现在！你拼出来的原型会立刻给你关于可用性的反馈。担心性能？没有软件你怎么优化性能？敏捷软件方法论聚焦快速迭代，把"现在"置于"马上"之上。迭代通常不超过一两周。理念是尽快把软件写出来、放到用户面前。如果用户喜欢看到的，你立刻就赢了。更重要的是，如果他们不喜欢，你就快速失败了。快速成功只比迟到的成功好一百倍，但快速失败比迟到的失败好一百万倍。它让你有时间重新思考、重新调整、尽早重写软件。发布日前一周的失败可能是致命的。过程早期的失败，到软件真正上线时早被忘了。</p>
+<div class="page-mark">— p.140 —</div>
+<p class="en" title="点击显示 / 隐藏中文">If the software language or framework that you are using doesn't let you roll out new features in a matter of seconds or minutes, then the tool you are using is part of the problem. If compiling your code takes hours instead of minutes or seconds, you will be less likely to build early and often. These friction points in the software development put you at a distinct competitive disadvantage. Many of the top websites that you use on a daily basis can roll out new features in as little as 30 minutes. They are also industry leaders because of the quality of the software they produce quickly. They test their code incessantly. Do they wait until the end of the software development life cycle to write their unit and integration tests? Nope. They write them now. Test-first and test-driven methodologies are "de rigeur" in top software development shops, because if testing is important, it is important enough to do now. It is not that planning isn't a crucial part of successful software projects. Just do your planning based on modern software practices and expectations. Methodologies that date back to a time when code was written out in longhand, meticulously transferred to punch cards, and then hand-carried in a shoebox to a system administrator don't translate well to an era where software is easy, free, and instantaneous. We are in the era of the now, and your processes should be adjusted accordingly.</p>
+<p class="zh">如果你用的软件语言或框架不能让你在几秒或几分钟内推出新功能，那你用的工具就是问题的一部分。如果编译代码要花几小时而不是几分钟或几秒，你就不太可能早构建、常构建。软件开发中的这些摩擦点让你处于明显竞争劣势。你日常用的许多顶级网站能在短短 30 分钟内推出新功能。它们之所以是行业领导者，也因为它们快速产出的软件质量。它们不停地测试代码。它们会等到软件开发生命周期末尾才写单元和集成测试吗？不会。它们现在就写。测试优先和测试驱动方法论在顶级软件公司是"标配"，因为如果测试重要，它就重要到现在就做。不是说规划不是成功软件项目的关键部分。只是要基于现代软件实践和期待做规划。那些可以追溯到"代码手写、仔细转成打孔卡、再用鞋盒抱给系统管理员"时代的方法论，不能很好地翻译到一个软件简单、免费、即时的时代。我们处在现在的时代，你的流程应相应调整。</p>
+<div class="page-mark">— p.141 —</div>
+<h2 id="tip-58">Speed Is Life; More Is Better<span class="zh-inline">速度即生命；越多越好</span></h2>
+<p class="byline"><em>Matt "Boom" Daniel · Coopersburg, Pennsylvania, U.S.<span class="zh-inline">Matt「Boom」Daniel · 美国宾夕法尼亚州库珀斯堡</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">SPEED IS LIFE; MORE IS BETTER" is a common rallying cry in the jet-fighter community. Imagine the participants, and it is easy to hear, "Gotta go fast!" Right? "Everything must be done with immense speed!" Right? "Get there now, get away now!" Right? There is no denying that in the daily flying life of fighter pilots, speed is a fundamental need. (Mav and Goose said so in the movie Top Gun, so it must be true.) But is it always true that speed is life and more is better? In a classic one-on-one dogfight engagement, it is a viable tactic to go very slowly to minimize your turn radius. You turn in a circle with a smaller circumference, forcing your opponent to fly in a larger circle and end up in front of your aircraft so you have a better firing position. You "live inside his circle." This is true control, as both aircraft are flying at the speed of a major league fastball while executing this choreography. Scientific studies prove the advantage of optimal, rather than excessive, speed for specific moves, tactics, and delivery profiles. Optimal speed, not maximum speed, is the goal. So, once specific needs or tactics are chosen, speed is only a key metric. But more important is how you choose to use that energy (speed). Venturing outside of the fighter-pilot world to that of business, does the first company to launch a new technology always win? If the goal is to have a survivable, relevant product or service, then the answer is, at best, "maybe.</p>
+<p class="zh">「速度即生命；越多越好」是喷气式战斗机圈子里常见的口号。想象一下参与者，很容易听到："得飞快点！"对吧？"一切都必须以极快速度完成！"对吧？"现在赶到，现在脱离！"对吧？不可否认，在战斗机飞行员的日常飞行生活中，速度是基本需要。（《壮志凌云》里 Mav 和 Goose 这么说过，所以一定是真的。）但速度即生命、越多越好总是对的吗？在经典一对一狗斗中，飞得很慢以最小化转弯半径是一种可行战术。你转一个周长更小的圈，迫使对手飞更大的圈，最后落到你机头前方，让你获得更好的射击位置。你"活在他的圈里"。这才是真正的控制——因为两机在做这套动作时都飞着大联盟快球的速度。科学研究证明，对特定动作、战术和投放剖面而言，最优速度而非过度速度才占优。目标是最优速度，不是最大速度。所以，一旦选定具体需求或战术，速度只是一个关键指标。更重要的是你选择如何使用那股能量（速度）。走出战斗机飞行员世界到商业世界，第一个推出新技术的公司总赢吗？如果目标是拥有一个可存活、相关的产品或服务，那答案充其量是"也许"。</p>
+<p class="note" style="font-size:14px;color:#6b7280;">* Dogfight: In aviation history, a dogfight is a style of wartime aerial combat where two opposing forces engage in battles in the air. Emerging in World War I, dogfights between two planes were exchanges of gunfire and accompanying avoidance maneuvers.<span class="zh-inline">* 狗斗：在航空史上，狗斗是一种战时空战样式，两支对立力量在空中交战。一战中出现的双机狗斗是交火伴随机动规避。</span></p>
+<div class="page-mark">— p.142 —</div>
+<p class="en" title="点击显示 / 隐藏中文">Being the first to market (speed) may not matter at all in your organization's business plan. The technology world is replete with examples of first-comers who washed out, or fell victim to too much focus on energy (speed), and not enough on energy management (applying that speed only when it served a business function): Communications satellites. Iridium (a global satellite-phone technology) was outsold by easier, cheaper communication systems that became more accessible to the average person. VCRs (Videocassette recorders). The Betamax recorder, developed before the Video Home System (VHS), was a superior product that was first to market. The technology became obsolete when the company refused to cross-license its products, services, and spin-offs. PDAs (Personal digital assistants). Apple Computer's Apple Newton digital assistant, although early to market, was ultimately surpassed in sales by the interactive Palm phones. TV-to-Web. WebTV was an early, innovative product that used a television for a display rather than a computer monitor. It just never caught on. Ask yourself, how do you as a software project manager balance speed to release with ensuring long-term relevance? What are the tools or practices you use to make sure that your new solution does not fall victim to obsolescence? Do you have a "speed is life; more is better" focus? Is it a strength, or is it a weakness? In your environment, what does speed represent? What does energy management mean to your project team?</p>
+<p class="zh">第一个上市（速度）在你组织的商业计划里可能根本不重要。技术世界里满是先驱者失败的例子，或者他们过度关注能量（速度）、而对能量管理（只在速度服务于业务功能时才用它）关注不足：通信卫星——铱星（一种全球卫星电话技术）被更简单、更便宜、普通人更易获得的通信系统卖过了；录像机——Betamax 录像机比 VHS 早开发，是更早上市的 superior 产品，但当公司拒绝交叉授权其产品、服务和衍生品时，技术过时了；PDA——苹果 Newton 数字助手虽上市早，最终销量被交互式 Palm 手机超越；电视转网络——WebTV 是早期创新产品，用电视而非电脑显示器做显示，就是没流行起来。问问你自己：作为软件项目经理，你如何平衡发布速度与确保长期相关性？你用什么工具或做法确保新解决方案不沦为过时的牺牲品？你有"速度即生命、越多越好"的焦点吗？这是优势还是劣势？在你的环境里，速度代表什么？能量管理对你的项目团队意味着什么？</p>
+<div class="page-mark">— p.143 —</div>
+<h2 id="tip-59">Building the Morale on Your Team<span class="zh-inline">建设团队士气</span></h2>
+<p class="byline"><em>David Bock · Reston, Virginia, U.S.<span class="zh-inline">David Bock · 美国弗吉尼亚州赖斯顿</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">A MAJOR ROLE FOR THE SOFTWARE PROJECT MANAGER is to create a work environment that fosters the growth of team morale. Here are some tips to help you start that process: Give your team some control over the direction of the project. Do you talk with your team frequently? Do you regularly seek out its input? Can someone make a suggestion, or bring a complaint to you, and feel like you will actively work to effect a change because of it? Defend your team against "the bureaucracy." Every organization has its share of rules, and one of your jobs is to apply them in context. "In context" means that, when appropriate, you will defend your team. When a corporate memo comes out with rules banning cubicle decorations, will you argue with management so Bill can keep his Rubik's cube collection on display? Even if you lose, the team's morale will benefit. Look for ways to improve the work environment. I knew an engineer who worked in a cubicle next to a window. But, according to the company organizational chart, he didn't warrant a window office. Corporate solution? The cubicles were reconfigured so that the window in his workspace was blocked. Rather than argue with the "furniture police," a good manager would be the first person to start moving those cubicle walls to uncover that window. Make your team feel like a team. One team had a Player of the Week award that changed hands at the team meeting each week. Russ might say, "I'm giving Mary the team player award because she worked late Thursday night. I was late getting her the documentation, but thanks to her efforts, we still finished the iteration Friday morning." The next week, Mary would recognize another team member's contribution and pass along the award.</p>
+<p class="zh">软件项目经理的一个主要角色，是创造一个促进团队士气成长的工作环境。以下是一些帮你启动这个过程的建议：给团队一些对项目方向的控制权。你常和团队谈吗？你定期征求他们的意见吗？有人向你提建议或投诉，会觉得你会因此积极推动改变吗？保护团队免受"官僚主义"。每个组织都有一堆规则，你的工作之一是按情境应用它们。"按情境"意味着，适当的时候你会保护团队。当一份公司备忘录出来禁止工位装饰时，你会和管理层争取，让 Bill 能继续展示他的魔方收藏吗？即使输了，团队士气也会受益。找办法改善工作环境。我认识一个工程师，在靠窗的工位隔间工作。但按公司组织架构图，他不配拥有靠窗办公室。公司的解决方案？重新布置隔间，把他工位的窗户挡住。好经理不会和"家具警察"争论，而是第一个动手挪开那些隔间墙、露出那扇窗。让团队感觉像个团队。有个团队设了"本周最佳队员"奖，每周团队会议上交接。Russ 可能说："我把团队球员奖给 Mary，因为她周四晚加班了。我晚给了她文档，但靠她的努力，我们周五早上还是完成了迭代。"下周，Mary 会表彰另一位成员的贡献，把奖传下去。</p>
+<div class="page-mark">— p.144 —</div>
+<ul>
+<li><span class="en" title="点击显示 / 隐藏中文">Respect the work-life balance. It is all right to demand overtime from people occasionally, but if you are going to take time from their lives, you need to give some back. Your employees shouldn't be afraid to schedule a morning doctor's appointment or attend a child's afternoon recital, especially after they've worked late to meet a deadline.</span><div class="zh">尊重工作与生活的平衡。偶尔要求加班没关系，但如果你要占用他们生活中的时间，就得还一些回来。你的员工不应害怕安排早上看医生或参加孩子下午的演出，尤其在他们为赶截止日加过晚班之后。</div></li>
+<li><span class="en" title="点击显示 / 隐藏中文">Understand how cause and effect shapes morale. When you merely try to recreate what motivated you or others on past teams, you may be missing the key elements. If you ask yourself, 'What can I do to improve working conditions of my team?' and actually work to make those changes, morale will usually improve.</span><div class="zh">理解因果如何塑造士气。当你只是试图复刻过去团队里激励你或他人的东西时，你可能错过了关键要素。如果你问自己「我能做什么改善团队的工作条件？」并真的去推动这些改变，士气通常会提升。</div></li>
+<li><span class="en" title="点击显示 / 隐藏中文">Make sure your activities are visible. You are a team member, too, so the team should be aware of the work you are doing for it. It is easy to distrust a manager who is always behind a closed door, and easy to follow one who is openly, visibly working for the good of the team.</span><div class="zh">确保你的活动可见。你也是团队成员，所以团队应知道你在为他们做什么。大家很容易不信任一个总关着门的经理，也很容易追随一个公开、 visibly 为团队利益工作的经理。</div></li>
+</ul>
+<p class="en" title="点击显示 / 隐藏中文">In your organization there will be unique opportunities to improve morale. Consciously look for them and take advantage of them. If they work, share them with others.</p>
+<p class="zh">在你的组织里，会有改善士气的独特机会。有意识地找它们、利用它们。如果奏效，分享给别人。</p>
+<div class="page-mark">— p.145 —</div>
+<h2 id="tip-60">A Project Depends on Teamwork<span class="zh-inline">项目依赖团队协作</span></h2>
+<p class="byline"><em>Lelio Varella, PMP · Tijuca, Rio de Janeiro, Brazil<span class="zh-inline">Lelio Varella（PMP）· 巴西里约热内卢蒂茹卡</span></em></p>
+<p class="en" title="点击显示 / 隐藏中文">A PROJECT IS AN ENDEAVOR OF A MULTIDISCIPLINARY NATURE. It can be seen as a collective effort, jointly performed by people of great diversity. Once deployed according to their own unique skills and competencies, and properly coordinated, team members are able to produce major results and fulfill the expectations of the project's stakeholders. If we look to an information technology solution development project, for example, we may identify different participant activity and group categories: Activities. Business Processes Review, Information Technology Solutions and Services Definition, Products and Services Development, and New Processes and Services Activation. Groups. Client Business Area Team, Information Technology Department Team, and Outside Service Providers Team. Project activities are work units requiring the participation of individuals from different groups within the organization, and eventually participants from external organizations, such as vendors and service providers. These groups are formed by people with different centers of knowledge and competence who, in practice, manage and/or carry out the project activities. The members of each group are usually involved in a set of unique activities within the project. To work effectively and produce a positive result in the project environment, the allocation of responsibilities should tie directly to individuals and not to the departments or organizations to which people belong. These responsibility assignments should be documented in the project plan. Depending on their own abilities, and on the nature of the activity, each individual can act simultaneously in various roles during a project. An individual may act as a leader in one situation and a participant in another.</p>
+<p class="zh">项目是一项多学科性质的工作。它可被看作由高度多样化的人共同执行的集体努力。一旦按各自独特技能和能力部署、并得到恰当协调，团队成员就能产出重大成果、满足项目相关方的期望。以一个 IT 解决方案开发项目为例，我们可以识别出不同的参与者活动和群体类别：活动——业务流程评审、IT 解决方案与服务定义、产品与服务开发、新流程与服务启用；群体——客户业务领域团队、IT 部门团队、外部服务提供商团队。项目活动是需要组织内不同群体个人参与、最终还需要外部组织（如供应商和服务提供商）参与的工作单元。这些群体由拥有不同知识和能力中心的人组成，他们在实践中管理和/或执行项目活动。每个群体的成员通常参与项目中一组独特活动。要在项目环境中有效工作并产出积极结果，责任分配应直接落到个人，而不是人所属的部门或组织。这些责任分配应记录在项目计划中。根据个人能力和活动性质，一个人在项目中可以同时扮演多种角色。他在一种情形下是领导，在另一种情形下是参与者。</p>
+<div class="page-mark">— p.146 —</div>
+<p class="en" title="点击显示 / 隐藏中文">The overall participation and contribution to the project results from each group is measured by the collective sets of activities the group's members complete. Whereas individual responsibilities may be shown in a responsibility matrix, a joint vision of the activities and overall responsibilities of each group participating in the project is necessary as well. In every project, there are diversities involved, nowhere more obviously than in software development projects. Teamwork depends on two key principles that need to coexist and work together to allow success: delegation and responsibility. Delegation should follow the pattern documented in the project's work breakdown structure. Split the work to be done. Then split the assignments to get the work done accordingly. This is the only viable way for human beings to understand, execute, and manage really big projects. To delegate you need to take into consideration the adequate combination of technical and managerial competencies required for each task. Once you've delegated, do not interfere. As the software project manager, you are needed to monitor, give support, and ask about results. In doing so, you will provide motivation, earn respect, and foster team member "response-ability." "Response-ability" includes taking full responsibility. Remember this when delegating, as well as when accepting assignments. Match the person's skills and abilities to the task. Once leadership, delegation, and responsibility are in place, each supports the other. Better results are almost guaranteed. And this leads to project success.</p>
+<p class="zh">每个群体对项目结果的整体参与和贡献，由该群体成员完成的活动集合来衡量。个人责任可以显示在责任矩阵中，但对参与项目的每个群体的活动和整体责任，也需要一个共同愿景。每个项目都涉及多样性，软件开发项目里尤为明显。团队协作依赖两条需要共存、协同才能带来成功的关键原则：授权和责任。授权应遵循项目工作分解结构中记录的模式。把要做的工作拆开，再相应拆分任务把工作做完。这是人类理解、执行和管理真正大项目的唯一可行方式。授权时需要考虑每项任务所需的技术和管理能力的恰当组合。一旦授权，不要干涉。作为软件项目经理，你需要监控、提供支持、询问结果。这样做时，你会提供动力、赢得尊重、并培养团队成员的"响应力"。"响应力"包括承担全部责任。授权时、以及接受任务时都记住这点。让个人的技能和能力与任务匹配。一旦领导、授权和责任到位，它们互相支撑。更好的结果几乎是必然的。而这通向项目成功。</p>
+<div class="page-mark">— p.147 —</div>
+
+<nav class="pager"><a class="prev" href="chapter-05.html">← 上一章</a><a class="center" href="index.html">返回目录</a><a class="next" href="chapter-07.html">下一章 →</a></nav>
+</main>
+<button id="modeBtn" title="切换显示模式">🌐</button>
+<div id="modeTip">仅英文 / 仅中文 / 中英对照</div>
+<script>
+(function(){
+  var KEY='bilingual-mode';
+  var modes=['en','zh','both'];
+  var labels={'en':'仅英文','zh':'仅中文','both':'中英对照'};
+  var mode=localStorage.getItem(KEY)||'both';
+  var toc=document.getElementById('toc');
+  var modeBtn=document.getElementById('modeBtn');
+
+  function applyMode(){
+    document.body.dataset.mode=mode;
+    modeBtn.textContent=mode==='en'?'🌐':(mode==='zh'?'🌐':'🌐');
+    modeBtn.title='当前：'+labels[mode]+'，点击切换';
+    // 点击展开的中文块在切走再切回时保留展开态（不强制清 .show）
+  }
+  // 点击英文段落：展开/收起其后紧跟的中文块（仅 both 模式下有意义）
+  document.addEventListener('click',function(e){
+    var en=e.target.closest('p.en');
+    if(!en)return;
+    var zh=en.nextElementSibling;
+    if(zh&&zh.classList.contains('zh')){
+      zh.classList.toggle('show');
+    }else{
+      // li 内的情形：.zh 在 li 内部
+      var z=en.parentElement.querySelector(':scope > .zh');
+      if(z)z.classList.toggle('show');
+    }
+  });
+  // 🌐 模式循环
+  modeBtn.addEventListener('click',function(){
+    mode=modes[(modes.indexOf(mode)+1)%modes.length];
+    localStorage.setItem(KEY,mode);
+    applyMode();
+  });
+  // 目录折叠
+  var btn=document.getElementById('tocToggle');
+  btn.addEventListener('click',function(){
+    if(window.matchMedia('(max-width:900px)').matches){
+      toc.classList.toggle('show');
+      document.body.classList.toggle('toc-open');
+    }else{
+      toc.classList.toggle('hidden');
+    }
+  });
+  // 窄屏点击目录链接后自动收起抽屉
+  toc.addEventListener('click',function(e){
+    if(e.target.tagName==='A'&&window.matchMedia('(max-width:900px)').matches){
+      toc.classList.remove('show');
+      document.body.classList.remove('toc-open');
+    }
+  });
+  applyMode();
+})();
+</script>
+</body>
+</html>

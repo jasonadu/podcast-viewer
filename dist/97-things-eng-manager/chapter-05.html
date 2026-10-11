@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 5 章 Busy Isn't Better — 97 Things EMK</title>
+<style>
+:root {
+  --accent: #2563eb;
+  --zh-bg: #f0f6ff;
+  --zh-border: #2563eb;
+  --code-bg: #0f172a;
+  --code-ink: #e2e8f0;
+  --ink: #1f2937;
+  --bg: #faf6f1;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 1.8;
+}
+/* TOC sidebar */
+nav#toc {
+  position: fixed; left: 0; top: 0; width: 300px; height: 100vh;
+  background: #fff; border-right: 1px solid #e5e7eb;
+  overflow-y: auto; padding: 20px 0;
+  transition: transform 0.25s ease;
+  z-index: 100;
+}
+nav#toc h2 {
+  font-size: 16px; padding: 8px 20px; color: var(--accent);
+  border-bottom: 1px solid #e5e7eb; margin-bottom: 8px;
+}
+nav#toc a {
+  display: block; padding: 5px 20px; color: #374151;
+  text-decoration: none; font-size: 13px; line-height: 1.4;
+  border-left: 3px solid transparent;
+}
+nav#toc a:hover { background: var(--zh-bg); }
+nav#toc a.active {
+  background: var(--zh-bg); border-left-color: var(--accent);
+  color: var(--accent); font-weight: 600;
+}
+nav#toc a.l1 { font-weight: 600; padding-top: 10px; }
+nav#toc a.l2 { padding-left: 40px; font-size: 12.5px; }
+/* hamburger */
+#menu-btn {
+  position: fixed; top: 12px; left: 12px; z-index: 200;
+  background: var(--accent); color: #fff; border: none;
+  width: 40px; height: 40px; border-radius: 8px;
+  font-size: 20px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+/* main content */
+main {
+  margin-left: 300px; max-width: 900px;
+  padding: 60px 40px 80px;
+}
+body.toc-hidden nav#toc { transform: translateX(-300px); }
+body.toc-hidden main { margin-left: 0; }
+/* headings */
+h1 { font-size: 28px; margin-bottom: 8px; color: #111827; line-height: 1.3; }
+h1 .zh-title { display: block; font-size: 20px; color: var(--accent); margin-top: 6px; font-weight: 500; }
+.author { color: #6b7280; font-style: italic; margin-bottom: 30px; font-size: 15px; }
+h2 { font-size: 22px; margin: 36px 0 12px; color: #111827; scroll-margin-top: 20px; }
+h2 .zh-sub { display: block; font-size: 16px; color: var(--accent); font-weight: 500; margin-top: 4px; }
+/* paragraphs */
+p.en { margin: 14px 0; cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: background 0.15s; }
+p.en:hover { background: #e8f0fe; }
+p.en::after {
+  content: ' 点击显示/隐藏中文';
+  font-size: 12px; color: #9ca3af; font-weight: normal;
+  opacity: 0; transition: opacity 0.15s;
+}
+p.en:hover::after { opacity: 1; }
+p.zh {
+  background: var(--zh-bg);
+  border-left: 4px solid var(--zh-border);
+  border-radius: 0 8px 8px 0;
+  padding: 10px 16px;
+  margin: 8px 0 14px;
+  display: none;
+}
+/* list */
+ul, ol { margin: 14px 0 14px 28px; }
+li { margin: 6px 0; }
+li .en { cursor: pointer; }
+li .zh {
+  background: var(--zh-bg);
+  border-left: 4px solid var(--zh-border);
+  border-radius: 0 6px 6px 0;
+  padding: 6px 12px;
+  margin: 4px 0;
+  display: none;
+  font-size: 16px;
+}
+/* page marker */
+.page-marker {
+  text-align: center; margin: 28px 0; color: #9ca3af;
+  font-size: 13px; letter-spacing: 2px;
+  border-top: 1px dashed #d1d5db;
+  padding-top: 12px;
+}
+/* figure */
+figure { margin: 24px 0; text-align: center; }
+figure img { max-width: 100%; border: 1px solid #e5e7eb; border-radius: 8px; }
+figcaption { font-size: 13px; color: #6b7280; margin-top: 8px; }
+figcaption .zh { display: block; color: var(--accent); }
+/* code */
+pre {
+  background: var(--code-bg); color: var(--code-ink);
+  padding: 16px; border-radius: 8px; overflow-x: auto;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13.5px; line-height: 1.6; margin: 16px 0;
+}
+code {
+  background: #fce7f3; color: #be185d;
+  padding: 2px 6px; border-radius: 4px;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+/* table */
+table { border-collapse: collapse; margin: 16px 0; width: 100%; }
+th, td { border: 1px solid #d1d5db; padding: 8px 12px; text-align: left; }
+th { background: #f1f5f9; font-weight: 600; }
+/* pager */
+.pager {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 60px; padding-top: 24px; border-top: 1px solid #e5e7eb;
+}
+.pager a {
+  flex: 1; text-align: center; padding: 12px;
+  background: #fff; border: 1px solid #d1d5db; border-radius: 8px;
+  text-decoration: none; color: var(--ink); font-size: 14px;
+  transition: all 0.15s;
+}
+.pager a:hover:not(.disabled) { background: var(--accent); color: #fff; border-color: var(--accent); }
+.pager a.disabled { opacity: 0.4; pointer-events: none; }
+/* floating lang button */
+#lang-btn {
+  position: fixed; bottom: 24px; right: 24px; z-index: 200;
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--accent); color: #fff; border: none;
+  font-size: 24px; cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  display: flex; align-items: center; justify-content: center;
+}
+#lang-label {
+  position: fixed; bottom: 82px; right: 20px; z-index: 200;
+  background: #1f2937; color: #fff; padding: 4px 10px;
+  border-radius: 6px; font-size: 12px; display: none;
+}
+/* mode: en-only -> hide all .zh; zh-only -> hide all .en */
+body.mode-en p.zh, body.mode-en li .zh { display: none !important; }
+body.mode-en p.en::after { display: none; }
+body.mode-zh p.en, body.mode-zh li .en { display: none !important; }
+body.mode-zh p.zh, body.mode-zh li .zh { display: block !important; }
+body.mode-both p.zh { /* controlled by JS toggle */ }
+/* narrow screen */
+@media (max-width: 900px) {
+  nav#toc { transform: translateX(-300px); }
+  nav#toc.show { transform: translateX(0); }
+  main { margin-left: 0; padding: 60px 20px 80px; }
+}
+</style>
+</head>
+<body>
+<button id="menu-btn" title="目录">☰</button>
+<nav id="toc">
+<h2>97 Things Every Eng Manager Should Know</h2>
+<a href="index.html" class="l1">📖 首页</a>
+<a href="front-matter.html" class="l1">📋 前言 / 版权</a>
+<a href="#" class="l1" style="color:#9ca3af">—— 97 篇 ——</a>
+<a href="chapter-01.html" class="l1">1. Advanced PeopleOps—One-on-One Retrospectives</a>
+<a href="chapter-02.html" class="l1">2. Answer These 10 Questions to Understand Whether You'…</a>
+<a href="chapter-03.html" class="l1">3. Avoiding Traps in Manager READMEs</a>
+<a href="chapter-04.html" class="l1">4. Building Effective Roadmaps</a>
+<a href="chapter-05.html" class="l1 active">5. Busy Isn't Better</a>
+<a href="chapter-06.html" class="l1">6. Career Conversations as an Engineering Manager</a>
+<a href="chapter-07.html" class="l1">7. Career Development for Startup Engineers</a>
+<a href="chapter-08.html" class="l1">8. Communicating with Executives</a>
+<a href="chapter-09.html" class="l1">9. Communication as Craft</a>
+<a href="chapter-10.html" class="l1">10. Connect "The What" to "The Why"</a>
+<a href="chapter-11.html" class="l1">11. Continuous Kindness</a>
+<a href="chapter-12.html" class="l1">12. Culture Is What You Do When the Unexpected Happens</a>
+<a href="chapter-13.html" class="l1">13. Dealing with Uncertainty</a>
+<a href="chapter-14.html" class="l1">14. Define Your Culture Before It Defines Itself</a>
+<a href="chapter-15.html" class="l1">15. Delivering Feedback</a>
+<a href="chapter-16.html" class="l1">16. Developing Communication Patterns</a>
+<a href="chapter-17.html" class="l1">17. Distributed Teams Are Founded on Explicit Communicat…</a>
+<a href="chapter-18.html" class="l1">18. Do Less, Lead More</a>
+<a href="chapter-19.html" class="l1">19. Don't Be the S--- Umbrella</a>
+<a href="chapter-20.html" class="l1">20. Don't Elevate the Means Beyond the End</a>
+<a href="chapter-21.html" class="l1">21. Don't Look for A Players</a>
+<a href="chapter-22.html" class="l1">22. Don't Just Evaluate Candidates on Skills</a>
+<a href="chapter-23.html" class="l1">23. Engineering Productivity</a>
+<a href="chapter-24.html" class="l1">24. Like This? Really?</a>
+<a href="chapter-25.html" class="l1">25. Everyone Can Lead with Leverage</a>
+<a href="chapter-26.html" class="l1">26. Fire Them!</a>
+<a href="chapter-27.html" class="l1">27. The First Two Questions to Ask When Your Team Is Str…</a>
+<a href="chapter-28.html" class="l1">28. The Five Whys of Organizational Design</a>
+<a href="chapter-29.html" class="l1">29. Focus on Growth to Improve Employee Engagement</a>
+<a href="chapter-30.html" class="l1">30. Followership</a>
+<a href="chapter-31.html" class="l1">31. Forecasting with Less Effort and More Accuracy</a>
+<a href="chapter-32.html" class="l1">32. The Four Layers of Communication in a Functional Team</a>
+<a href="chapter-33.html" class="l1">33. The Four-Letter Word That Makes My Blood Boil</a>
+<a href="chapter-34.html" class="l1">34. Friday Wins and a Case Study in Ritual Design</a>
+<a href="chapter-35.html" class="l1">35. Get Deployment Right on Day One</a>
+<a href="chapter-36.html" class="l1">36. Good Process Is Evolved, Not Designed</a>
+<a href="chapter-37.html" class="l1">37. A Good Standup</a>
+<a href="chapter-38.html" class="l1">38. Ground Rules in Meetings</a>
+<a href="chapter-39.html" class="l1">39. Help Yourself to Better One-on-Ones</a>
+<a href="chapter-40.html" class="l1">40. How Do Individual Contributors Get Stuck?</a>
+<a href="chapter-41.html" class="l1">41. How to Be Discerning Without Being Invalidating</a>
+<a href="chapter-42.html" class="l1">42. How to Conduct an Autonomy-Support Meeting</a>
+<a href="chapter-43.html" class="l1">43. How to Help Your New Grad Engineer Navigate Work</a>
+<a href="chapter-44.html" class="l1">44. How to Share Decisions for Strong Execution</a>
+<a href="chapter-45.html" class="l1">45. Improve Your Decision Making with Mental Models</a>
+<a href="chapter-46.html" class="l1">46. Interviewing Engineers: Going Beyond Technical Skills</a>
+<a href="chapter-47.html" class="l1">47. Introduce an Engineering Ladder</a>
+<a href="chapter-48.html" class="l1">48. Leadership Is About Responsibility, Not Authority</a>
+<a href="chapter-49.html" class="l1">49. Leading Through Rapid Change Is Normal</a>
+<a href="chapter-50.html" class="l1">50. Making Your New Team Feel Like a Team</a>
+<a href="chapter-51.html" class="l1">51. Manage Complexity with Diversity</a>
+<a href="chapter-52.html" class="l1">52. Management Is a Different Set of APIs</a>
+<a href="chapter-53.html" class="l1">53. Manager Handoffs</a>
+<a href="chapter-54.html" class="l1">54. Managers and Culture</a>
+<a href="chapter-55.html" class="l1">55. Monuments and Hamburgers</a>
+<a href="chapter-56.html" class="l1">56. Navigating the Bumpy Road from Engineer to Manager</a>
+<a href="chapter-57.html" class="l1">57. The New Way to Manage by Walking Around</a>
+<a href="chapter-58.html" class="l1">58. Not Everyone Wants to Be a People Manager</a>
+<a href="chapter-59.html" class="l1">59. On Accountability</a>
+<a href="chapter-60.html" class="l1">60. On the Elusiveness of Time in Tracking Progress</a>
+<a href="chapter-61.html" class="l1">61. Onboard People, Not Technology</a>
+<a href="chapter-62.html" class="l1">62. Onboarding Beyond Codelabs</a>
+<a href="chapter-63.html" class="l1">63. Own the Narrative</a>
+<a href="chapter-64.html" class="l1">64. The Path to Change: Facts and Feelings</a>
+<a href="chapter-65.html" class="l1">65. People Leave Bad Managers, Not Bad Jobs—Right?</a>
+<a href="chapter-66.html" class="l1">66. Performance Is an Ongoing Conversation</a>
+<a href="chapter-67.html" class="l1">67. Physician, Heal Thyself!</a>
+<a href="chapter-68.html" class="l1">68. Political Capital and the Favor Economy</a>
+<a href="chapter-69.html" class="l1">69. Prioritize Building Relationships with Your Peers</a>
+<a href="chapter-70.html" class="l1">70. Priority Exceptions</a>
+<a href="chapter-71.html" class="l1">71. The Product Manager's Concerns</a>
+<a href="chapter-72.html" class="l1">72. Projects for Which Agile Is Inappropriate</a>
+<a href="chapter-73.html" class="l1">73. Reconciliation Loops</a>
+<a href="chapter-74.html" class="l1">74. "Remote"</a>
+<a href="chapter-75.html" class="l1">75. Risk Budgets: Five Choices Between Your Team and Fai…</a>
+<a href="chapter-76.html" class="l1">76. Safety First!</a>
+<a href="chapter-77.html" class="l1">77. Scale Communication Through Writing</a>
+<a href="chapter-78.html" class="l1">78. Scaling Management by Giving Up Control</a>
+<a href="chapter-79.html" class="l1">79. Six Tips for a New Manager</a>
+<a href="chapter-80.html" class="l1">80. Stop Your Team from Bikeshedding, and Saying "Bikesh…</a>
+<a href="chapter-81.html" class="l1">81. Taking On Inclusion</a>
+<a href="chapter-82.html" class="l1">82. Team Stability Matters</a>
+<a href="chapter-83.html" class="l1">83. Three Questions to Avoid, and Three Questions to Ask…</a>
+<a href="chapter-84.html" class="l1">84. Three Ways to Be the Manager Your Report Needs</a>
+<a href="chapter-85.html" class="l1">85. To Code or Not to Code</a>
+<a href="chapter-86.html" class="l1">86. Transparency Takes More Than an Open Door</a>
+<a href="chapter-87.html" class="l1">87. The Triangle of Self-Organization</a>
+<a href="chapter-88.html" class="l1">88. Trust Is a Powerful Leadership Tool</a>
+<a href="chapter-89.html" class="l1">89. Using Six-Page Documents to Close Decisions</a>
+<a href="chapter-90.html" class="l1">90. WELCOME, {HUMAN}!—Writing Onboarding READMEs</a>
+<a href="chapter-91.html" class="l1">91. What I Wished I Knew Before I Started Managing a Rem…</a>
+<a href="chapter-92.html" class="l1">92. Why a Good Boss Likes It When People Complain</a>
+<a href="chapter-93.html" class="l1">93. Why You Can't Manage Humans Like They're Software</a>
+<a href="chapter-94.html" class="l1">94. Why Your Programmer Just Wants to Code</a>
+<a href="chapter-95.html" class="l1">95. Willpower of Leadership</a>
+<a href="chapter-96.html" class="l1">96. Yes, Code Wins Arguments. But Why? And How to Be Pol…</a>
+<a href="chapter-97.html" class="l1">97. Your Job Is Not to Be Liked</a>
+<a href="closing.html" class="l1">✓ 后记 / 作者</a>
+</nav>
+<main>
+<h1>第 5 章 Busy Isn't Better<span class="zh-title">忙不等于更好</span></h1>
+<p class="author">Colleen Johnson <span style="color:var(--accent)">/ 科琳·约翰逊</span></p>
+<figure><img src="data:image/jpeg;base64,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" alt="" style="max-width:200px"></figure><div class="page-marker">— 第 26 页 —</div><p class="en">As managers, we are asked to spend a lot of our time making sure that our people stay busy. Busy producing new features, busy fixing bugs, busy addressing technical debt, busy figuring out what will keep us busy next. We track our team's capacity in spreadsheets down to the hour, trying to account for how much of each day is spent in meetings or forecast who will become available next. There's pressure on us to make sure that no one is idle. Ever.</p>
+<p class="zh">作为经理，我们被要求花大量时间确保团队成员一直很忙。忙着做新功能、忙着修 bug、忙着处理技术债、忙着找出接下来什么能让我们继续忙。我们在电子表格里把团队产能精确到小时来追踪，试图算出每天有多少时间在开会，或者预测谁接下来会有空。我们承受着压力，要确保没有人闲着。永远不要有人闲着。</p><p class="en">Some of this pressure comes from appearance. We don't want it to seem like our team isn't pulling its weight or contributing its fair share. Some of this pressure also comes from the need to plan and estimate. We are always looking to account for each hour of the day so that we can accurately predict our team's output. Unfortunately, the closer we get to maxing out our capacity, the worse our output gets.</p>
+<p class="zh">这种压力一部分来自面子。我们不想让人觉得团队没有尽力、没有做出应有的贡献。一部分压力来自计划和预估的需要。我们总想把一天的每一小时都算清楚，好准确预测团队的产出。不幸的是，我们越接近产能上限，产出质量就越差。</p><p class="en">Development requires research time. I'm willing to guess that every engineer on your team cannot crank out code all day without having to look up examples or investigate their approach. This isn't a bad thing! You want to make sure that they have time to explore best practices, understand new libraries, and dig in to new technologies. Without this time, your team will be making guesses and introducing defects.</p>
+<p class="zh">开发需要研究时间。我敢打赌，你团队里没有哪个工程师能整天不停写代码而不需要查例子或研究方法。这不是坏事！你需要确保他们有时间探索最佳实践、理解新库、钻研新技术。没有这个时间，你的团队就会在瞎猜、在引入缺陷。</p><p class="en">Development requires the ability to respond to unplanned work. As much as we try to isolate our teams from interruptions, they are big part of the job. This is not just dealing with production issues or hotfixes, but also answering questions or participating in team meetings.</p>
+<p class="zh">开发需要应对计划外工作的能力。尽管我们努力让团队免受干扰，但干扰本来就是工作的重要组成部分。这不只是处理生产问题或紧急修复，还包括回答问题、参加团队会议。</p><p class="en">Give your team members slack in their day to respond to things as they come up. Without this space, your team will constantly be stopping work on something to address an urgent request or high priority.</p>
+<p class="zh">给团队成员的日程留一些余量，让他们能应对突发情况。没有这个空间，你的团队会不断地正在做的事情停下来，去处理紧急请求或高优先级任务。</p><p class="en">Development requires a sustainable pace. When the amount of work your team has in progress changes wildly from day to day, we create chaos. The team sees a giant pile of work ahead of it and rushes to get through it in order to hit a date or milestone.</p>
+<p class="zh">开发需要可持续的节奏。当团队在途工作量每天大幅波动时，我们就是在制造混乱。团队看到眼前一大堆工作，就会为了赶某个日期或里程碑而狂奔。</p><div class="page-marker">— 第 27 页 —</div><p class="en">Teams need to work at a pace that doesn't give them anxiety to come to work each day. Without this flow, your team will be stressed out always trying to rush to "catch up."</p>
+<p class="zh">团队需要以一种每天来上班不会感到焦虑的节奏工作。没有这种流畅感，你的团队会压力巨大，永远在试图「赶上进度」。</p><p class="en">When we manage our team toward 100% of its capacity, the reality looks more like 120% or more. Our teams end up working in a state of being constantly overburdened without the time to do its job well. Team members feel rushed and unhappy with the quality of what they are producing and end up filling in their free time to do the learning that work will not allow. We add more to this imbalance when new requests come to the team, taking its attention away from its work yet again and moving the target on what is most important to complete.</p>
+<p class="zh">当我们按 100% 产能来管理团队时，现实往往变成了 120% 甚至更多。我们的团队最终处于长期超负荷状态，没有时间把工作做好。团队成员感到仓促，对产出质量不满意，最终只能用自己的空闲时间来做工作不允许他们做的学习。当新需求加到团队身上时，这种失衡更加严重——注意力再次被从手头工作上移开，「什么最重要」的靶子又被移动了。</p><p class="en">Our goal in all of this is creating a consistent flow of work for our team. Flow from an engineering team's perspective means the time that it takes for work to move through our system. Your role as the team's manager is to build an environment in which flow can exist. Create space for your team. Give it the room to breathe; room to learn; room to respond. Provide it with room to enjoy what it does. You'll have a happier team that is more excited to contribute high-quality code and can absorb new requests without smashing a printer.</p>
+<p class="zh">我们这一切的目标是为团队创造持续的工作流。从工程团队的角度看，流就是工作流过我们系统所需的时间。你作为经理的角色是构建一个让流能够存在的环境。给团队创造空间。给它呼吸的空间、学习的空间、应对的空间。给它享受工作的空间。你会拥有一个更快乐的团队，更有热情地贡献高质量代码，也能在不砸打印机的情况下吸收新需求。</p>
+
+    <div class="pager">
+      <a href="chapter-04.html">第4章 →</a>
+      <a href="index.html">目录</a>
+      <a href="chapter-06.html">第6章 →</a>
+    </div>
+</main>
+<button id="lang-btn" title="切换语言模式">🌐</button>
+<div id="lang-label"></div>
+<script>
+(function(){
+  // toggle TOC
+  document.getElementById('menu-btn').addEventListener('click', function(){
+    var body = document.body;
+    if (window.innerWidth <= 900) {
+      document.getElementById('toc').classList.toggle('show');
+    } else {
+      body.classList.toggle('toc-hidden');
+    }
+  });
+  // close TOC on link click (narrow)
+  document.querySelectorAll('nav#toc a').forEach(function(a){
+    a.addEventListener('click', function(){
+      if (window.innerWidth <= 900) {
+        document.getElementById('toc').classList.remove('show');
+      }
+    });
+  });
+  // click English paragraph toggles its zh
+  document.addEventListener('click', function(e){
+    var p = e.target.closest('p.en');
+    if (p) {
+      var zh = p.nextElementSibling;
+      if (zh && zh.classList.contains('zh')) {
+        zh.style.display = (zh.style.display === 'block') ? 'none' : 'block';
+      }
+    }
+    var liEn = e.target.closest('li .en');
+    if (liEn) {
+      var liZh = liEn.nextElementSibling;
+      if (liZh && liZh.classList.contains('zh')) {
+        liZh.style.display = (liZh.style.display === 'block') ? 'none' : 'block';
+      }
+    }
+  });
+  // language mode cycle: both -> en-only -> zh-only -> both
+  var modes = ['mode-both', 'mode-en', 'mode-zh'];
+  var labels = {'mode-both':'中英对照', 'mode-en':'仅英文', 'mode-zh':'仅中文'};
+  var saved = localStorage.getItem('book-lang-mode') || 'mode-both';
+  document.body.classList.add(saved);
+  var btn = document.getElementById('lang-btn');
+  var label = document.getElementById('lang-label');
+  function showLabel(){
+    label.textContent = labels[document.body.classList.contains('mode-zh') ? 'mode-zh' :
+      document.body.classList.contains('mode-en') ? 'mode-en' : 'mode-both'];
+    label.style.display = 'block';
+    setTimeout(function(){ label.style.display = 'none'; }, 1200);
+  }
+  btn.addEventListener('click', function(){
+    var cur = 0;
+    for (var i=0;i<modes.length;i++){ if(document.body.classList.contains(modes[i])) cur=i; }
+    document.body.classList.remove(modes[cur]);
+    var next = (cur+1) % modes.length;
+    document.body.classList.add(modes[next]);
+    localStorage.setItem('book-lang-mode', modes[next]);
+    showLabel();
+  });
+  showLabel();
+})();
+</script>
+</body>
+</html>

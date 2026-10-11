@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 66 章 Performance Is an Ongoing Conversation — 97 Things EMK</title>
+<style>
+:root {
+  --accent: #2563eb;
+  --zh-bg: #f0f6ff;
+  --zh-border: #2563eb;
+  --code-bg: #0f172a;
+  --code-ink: #e2e8f0;
+  --ink: #1f2937;
+  --bg: #faf6f1;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 1.8;
+}
+/* TOC sidebar */
+nav#toc {
+  position: fixed; left: 0; top: 0; width: 300px; height: 100vh;
+  background: #fff; border-right: 1px solid #e5e7eb;
+  overflow-y: auto; padding: 20px 0;
+  transition: transform 0.25s ease;
+  z-index: 100;
+}
+nav#toc h2 {
+  font-size: 16px; padding: 8px 20px; color: var(--accent);
+  border-bottom: 1px solid #e5e7eb; margin-bottom: 8px;
+}
+nav#toc a {
+  display: block; padding: 5px 20px; color: #374151;
+  text-decoration: none; font-size: 13px; line-height: 1.4;
+  border-left: 3px solid transparent;
+}
+nav#toc a:hover { background: var(--zh-bg); }
+nav#toc a.active {
+  background: var(--zh-bg); border-left-color: var(--accent);
+  color: var(--accent); font-weight: 600;
+}
+nav#toc a.l1 { font-weight: 600; padding-top: 10px; }
+nav#toc a.l2 { padding-left: 40px; font-size: 12.5px; }
+/* hamburger */
+#menu-btn {
+  position: fixed; top: 12px; left: 12px; z-index: 200;
+  background: var(--accent); color: #fff; border: none;
+  width: 40px; height: 40px; border-radius: 8px;
+  font-size: 20px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+/* main content */
+main {
+  margin-left: 300px; max-width: 900px;
+  padding: 60px 40px 80px;
+}
+body.toc-hidden nav#toc { transform: translateX(-300px); }
+body.toc-hidden main { margin-left: 0; }
+/* headings */
+h1 { font-size: 28px; margin-bottom: 8px; color: #111827; line-height: 1.3; }
+h1 .zh-title { display: block; font-size: 20px; color: var(--accent); margin-top: 6px; font-weight: 500; }
+.author { color: #6b7280; font-style: italic; margin-bottom: 30px; font-size: 15px; }
+h2 { font-size: 22px; margin: 36px 0 12px; color: #111827; scroll-margin-top: 20px; }
+h2 .zh-sub { display: block; font-size: 16px; color: var(--accent); font-weight: 500; margin-top: 4px; }
+/* paragraphs */
+p.en { margin: 14px 0; cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: background 0.15s; }
+p.en:hover { background: #e8f0fe; }
+p.en::after {
+  content: ' 点击显示/隐藏中文';
+  font-size: 12px; color: #9ca3af; font-weight: normal;
+  opacity: 0; transition: opacity 0.15s;
+}
+p.en:hover::after { opacity: 1; }
+p.zh {
+  background: var(--zh-bg);
+  border-left: 4px solid var(--zh-border);
+  border-radius: 0 8px 8px 0;
+  padding: 10px 16px;
+  margin: 8px 0 14px;
+  display: none;
+}
+/* list */
+ul, ol { margin: 14px 0 14px 28px; }
+li { margin: 6px 0; }
+li .en { cursor: pointer; }
+li .zh {
+  background: var(--zh-bg);
+  border-left: 4px solid var(--zh-border);
+  border-radius: 0 6px 6px 0;
+  padding: 6px 12px;
+  margin: 4px 0;
+  display: none;
+  font-size: 16px;
+}
+/* page marker */
+.page-marker {
+  text-align: center; margin: 28px 0; color: #9ca3af;
+  font-size: 13px; letter-spacing: 2px;
+  border-top: 1px dashed #d1d5db;
+  padding-top: 12px;
+}
+/* figure */
+figure { margin: 24px 0; text-align: center; }
+figure img { max-width: 100%; border: 1px solid #e5e7eb; border-radius: 8px; }
+figcaption { font-size: 13px; color: #6b7280; margin-top: 8px; }
+figcaption .zh { display: block; color: var(--accent); }
+/* code */
+pre {
+  background: var(--code-bg); color: var(--code-ink);
+  padding: 16px; border-radius: 8px; overflow-x: auto;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13.5px; line-height: 1.6; margin: 16px 0;
+}
+code {
+  background: #fce7f3; color: #be185d;
+  padding: 2px 6px; border-radius: 4px;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+/* table */
+table { border-collapse: collapse; margin: 16px 0; width: 100%; }
+th, td { border: 1px solid #d1d5db; padding: 8px 12px; text-align: left; }
+th { background: #f1f5f9; font-weight: 600; }
+/* pager */
+.pager {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 60px; padding-top: 24px; border-top: 1px solid #e5e7eb;
+}
+.pager a {
+  flex: 1; text-align: center; padding: 12px;
+  background: #fff; border: 1px solid #d1d5db; border-radius: 8px;
+  text-decoration: none; color: var(--ink); font-size: 14px;
+  transition: all 0.15s;
+}
+.pager a:hover:not(.disabled) { background: var(--accent); color: #fff; border-color: var(--accent); }
+.pager a.disabled { opacity: 0.4; pointer-events: none; }
+/* floating lang button */
+#lang-btn {
+  position: fixed; bottom: 24px; right: 24px; z-index: 200;
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--accent); color: #fff; border: none;
+  font-size: 24px; cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  display: flex; align-items: center; justify-content: center;
+}
+#lang-label {
+  position: fixed; bottom: 82px; right: 20px; z-index: 200;
+  background: #1f2937; color: #fff; padding: 4px 10px;
+  border-radius: 6px; font-size: 12px; display: none;
+}
+/* mode: en-only -> hide all .zh; zh-only -> hide all .en */
+body.mode-en p.zh, body.mode-en li .zh { display: none !important; }
+body.mode-en p.en::after { display: none; }
+body.mode-zh p.en, body.mode-zh li .en { display: none !important; }
+body.mode-zh p.zh, body.mode-zh li .zh { display: block !important; }
+body.mode-both p.zh { /* controlled by JS toggle */ }
+/* narrow screen */
+@media (max-width: 900px) {
+  nav#toc { transform: translateX(-300px); }
+  nav#toc.show { transform: translateX(0); }
+  main { margin-left: 0; padding: 60px 20px 80px; }
+}
+</style>
+</head>
+<body>
+<button id="menu-btn" title="目录">☰</button>
+<nav id="toc">
+<h2>97 Things Every Eng Manager Should Know</h2>
+<a href="index.html" class="l1">📖 首页</a>
+<a href="front-matter.html" class="l1">📋 前言 / 版权</a>
+<a href="#" class="l1" style="color:#9ca3af">—— 97 篇 ——</a>
+<a href="chapter-01.html" class="l1">1. Advanced PeopleOps—One-on-One Retrospectives</a>
+<a href="chapter-02.html" class="l1">2. Answer These 10 Questions to Understand Whether You'…</a>
+<a href="chapter-03.html" class="l1">3. Avoiding Traps in Manager READMEs</a>
+<a href="chapter-04.html" class="l1">4. Building Effective Roadmaps</a>
+<a href="chapter-05.html" class="l1">5. Busy Isn't Better</a>
+<a href="chapter-06.html" class="l1">6. Career Conversations as an Engineering Manager</a>
+<a href="chapter-07.html" class="l1">7. Career Development for Startup Engineers</a>
+<a href="chapter-08.html" class="l1">8. Communicating with Executives</a>
+<a href="chapter-09.html" class="l1">9. Communication as Craft</a>
+<a href="chapter-10.html" class="l1">10. Connect "The What" to "The Why"</a>
+<a href="chapter-11.html" class="l1">11. Continuous Kindness</a>
+<a href="chapter-12.html" class="l1">12. Culture Is What You Do When the Unexpected Happens</a>
+<a href="chapter-13.html" class="l1">13. Dealing with Uncertainty</a>
+<a href="chapter-14.html" class="l1">14. Define Your Culture Before It Defines Itself</a>
+<a href="chapter-15.html" class="l1">15. Delivering Feedback</a>
+<a href="chapter-16.html" class="l1">16. Developing Communication Patterns</a>
+<a href="chapter-17.html" class="l1">17. Distributed Teams Are Founded on Explicit Communicat…</a>
+<a href="chapter-18.html" class="l1">18. Do Less, Lead More</a>
+<a href="chapter-19.html" class="l1">19. Don't Be the S--- Umbrella</a>
+<a href="chapter-20.html" class="l1">20. Don't Elevate the Means Beyond the End</a>
+<a href="chapter-21.html" class="l1">21. Don't Look for A Players</a>
+<a href="chapter-22.html" class="l1">22. Don't Just Evaluate Candidates on Skills</a>
+<a href="chapter-23.html" class="l1">23. Engineering Productivity</a>
+<a href="chapter-24.html" class="l1">24. Like This? Really?</a>
+<a href="chapter-25.html" class="l1">25. Everyone Can Lead with Leverage</a>
+<a href="chapter-26.html" class="l1">26. Fire Them!</a>
+<a href="chapter-27.html" class="l1">27. The First Two Questions to Ask When Your Team Is Str…</a>
+<a href="chapter-28.html" class="l1">28. The Five Whys of Organizational Design</a>
+<a href="chapter-29.html" class="l1">29. Focus on Growth to Improve Employee Engagement</a>
+<a href="chapter-30.html" class="l1">30. Followership</a>
+<a href="chapter-31.html" class="l1">31. Forecasting with Less Effort and More Accuracy</a>
+<a href="chapter-32.html" class="l1">32. The Four Layers of Communication in a Functional Team</a>
+<a href="chapter-33.html" class="l1">33. The Four-Letter Word That Makes My Blood Boil</a>
+<a href="chapter-34.html" class="l1">34. Friday Wins and a Case Study in Ritual Design</a>
+<a href="chapter-35.html" class="l1">35. Get Deployment Right on Day One</a>
+<a href="chapter-36.html" class="l1">36. Good Process Is Evolved, Not Designed</a>
+<a href="chapter-37.html" class="l1">37. A Good Standup</a>
+<a href="chapter-38.html" class="l1">38. Ground Rules in Meetings</a>
+<a href="chapter-39.html" class="l1">39. Help Yourself to Better One-on-Ones</a>
+<a href="chapter-40.html" class="l1">40. How Do Individual Contributors Get Stuck?</a>
+<a href="chapter-41.html" class="l1">41. How to Be Discerning Without Being Invalidating</a>
+<a href="chapter-42.html" class="l1">42. How to Conduct an Autonomy-Support Meeting</a>
+<a href="chapter-43.html" class="l1">43. How to Help Your New Grad Engineer Navigate Work</a>
+<a href="chapter-44.html" class="l1">44. How to Share Decisions for Strong Execution</a>
+<a href="chapter-45.html" class="l1">45. Improve Your Decision Making with Mental Models</a>
+<a href="chapter-46.html" class="l1">46. Interviewing Engineers: Going Beyond Technical Skills</a>
+<a href="chapter-47.html" class="l1">47. Introduce an Engineering Ladder</a>
+<a href="chapter-48.html" class="l1">48. Leadership Is About Responsibility, Not Authority</a>
+<a href="chapter-49.html" class="l1">49. Leading Through Rapid Change Is Normal</a>
+<a href="chapter-50.html" class="l1">50. Making Your New Team Feel Like a Team</a>
+<a href="chapter-51.html" class="l1">51. Manage Complexity with Diversity</a>
+<a href="chapter-52.html" class="l1">52. Management Is a Different Set of APIs</a>
+<a href="chapter-53.html" class="l1">53. Manager Handoffs</a>
+<a href="chapter-54.html" class="l1">54. Managers and Culture</a>
+<a href="chapter-55.html" class="l1">55. Monuments and Hamburgers</a>
+<a href="chapter-56.html" class="l1">56. Navigating the Bumpy Road from Engineer to Manager</a>
+<a href="chapter-57.html" class="l1">57. The New Way to Manage by Walking Around</a>
+<a href="chapter-58.html" class="l1">58. Not Everyone Wants to Be a People Manager</a>
+<a href="chapter-59.html" class="l1">59. On Accountability</a>
+<a href="chapter-60.html" class="l1">60. On the Elusiveness of Time in Tracking Progress</a>
+<a href="chapter-61.html" class="l1">61. Onboard People, Not Technology</a>
+<a href="chapter-62.html" class="l1">62. Onboarding Beyond Codelabs</a>
+<a href="chapter-63.html" class="l1">63. Own the Narrative</a>
+<a href="chapter-64.html" class="l1">64. The Path to Change: Facts and Feelings</a>
+<a href="chapter-65.html" class="l1">65. People Leave Bad Managers, Not Bad Jobs—Right?</a>
+<a href="chapter-66.html" class="l1 active">66. Performance Is an Ongoing Conversation</a>
+<a href="chapter-67.html" class="l1">67. Physician, Heal Thyself!</a>
+<a href="chapter-68.html" class="l1">68. Political Capital and the Favor Economy</a>
+<a href="chapter-69.html" class="l1">69. Prioritize Building Relationships with Your Peers</a>
+<a href="chapter-70.html" class="l1">70. Priority Exceptions</a>
+<a href="chapter-71.html" class="l1">71. The Product Manager's Concerns</a>
+<a href="chapter-72.html" class="l1">72. Projects for Which Agile Is Inappropriate</a>
+<a href="chapter-73.html" class="l1">73. Reconciliation Loops</a>
+<a href="chapter-74.html" class="l1">74. "Remote"</a>
+<a href="chapter-75.html" class="l1">75. Risk Budgets: Five Choices Between Your Team and Fai…</a>
+<a href="chapter-76.html" class="l1">76. Safety First!</a>
+<a href="chapter-77.html" class="l1">77. Scale Communication Through Writing</a>
+<a href="chapter-78.html" class="l1">78. Scaling Management by Giving Up Control</a>
+<a href="chapter-79.html" class="l1">79. Six Tips for a New Manager</a>
+<a href="chapter-80.html" class="l1">80. Stop Your Team from Bikeshedding, and Saying "Bikesh…</a>
+<a href="chapter-81.html" class="l1">81. Taking On Inclusion</a>
+<a href="chapter-82.html" class="l1">82. Team Stability Matters</a>
+<a href="chapter-83.html" class="l1">83. Three Questions to Avoid, and Three Questions to Ask…</a>
+<a href="chapter-84.html" class="l1">84. Three Ways to Be the Manager Your Report Needs</a>
+<a href="chapter-85.html" class="l1">85. To Code or Not to Code</a>
+<a href="chapter-86.html" class="l1">86. Transparency Takes More Than an Open Door</a>
+<a href="chapter-87.html" class="l1">87. The Triangle of Self-Organization</a>
+<a href="chapter-88.html" class="l1">88. Trust Is a Powerful Leadership Tool</a>
+<a href="chapter-89.html" class="l1">89. Using Six-Page Documents to Close Decisions</a>
+<a href="chapter-90.html" class="l1">90. WELCOME, {HUMAN}!—Writing Onboarding READMEs</a>
+<a href="chapter-91.html" class="l1">91. What I Wished I Knew Before I Started Managing a Rem…</a>
+<a href="chapter-92.html" class="l1">92. Why a Good Boss Likes It When People Complain</a>
+<a href="chapter-93.html" class="l1">93. Why You Can't Manage Humans Like They're Software</a>
+<a href="chapter-94.html" class="l1">94. Why Your Programmer Just Wants to Code</a>
+<a href="chapter-95.html" class="l1">95. Willpower of Leadership</a>
+<a href="chapter-96.html" class="l1">96. Yes, Code Wins Arguments. But Why? And How to Be Pol…</a>
+<a href="chapter-97.html" class="l1">97. Your Job Is Not to Be Liked</a>
+<a href="closing.html" class="l1">✓ 后记 / 作者</a>
+</nav>
+<main>
+<h1>第 66 章 Performance Is an Ongoing Conversation<span class="zh-title">绩效是持续的对话</span></h1>
+<p class="author">Ines Sombra <span style="color:var(--accent)">/ 伊内丝·松布拉</span></p>
+<figure><img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAsICAoIBwsKCQoNDAsNERwSEQ8PESIZGhQcKSQrKigkJyctMkA3LTA9MCcnOEw5PUNFSElIKzZPVU5GVEBHSEX/2wBDAQwNDREPESESEiFFLicuRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUX/wAARCAEsASwDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDmaKWiqEJRS0UDEpaKKACiloxQAlFLRigBKOtA5+lBOBQAwsR0wPXPasfUNRJbyoScDqR3qTU77bmGI/MeprLRDjJJJPU0CYhXPUlj6Co3Yr0wPYVM3C9gP51XdgxwOT7UgBWkc5HbrQ7kng/rV+0tWaIhkPNSPoVwRuRcj2rPnSepoqba0Rnx4x945qYJ6k0smnXdvk7DgdcU2KZj8rcH9a0TTM3FrceF7ZwPeo5LfPK8H0NOkBVQQf0piyNnB6/zpiLNpqU9r8rHzEB6HqK37e6juU3RsD6juK5oqJBgfe7ZpsTy20m+NtrD9aB3OupKpWGoJdR/3XH3l/wq9mgYlLRS4pgJRilooASkp1JQAhppp1JigBtIRTqSkAwim4qSm4oAkopaKBCUUUUDCloooAKKWigApCO1LSd6AEPX2qjqF4tvF1wzdB7VauZVijJb05rm7mQ3FwZGOcGgQ3cWcs3LHmnEnGM/hTAeMjjNOEbSDYg5JC0hbjUSS7lEcKlu1dXonhUgiSYfN71o6BoMdtChIy55PFdfa2wQDArgrYhvSJ6FKgormkZkGhQptwg47471oQ6RCFK7Ota0cGasxwHPH6VgouRu52OcuPDkE+SVwfVetc7rHgdWVpIMbu3GK9L8jPc017YMOa0SnHZmTlGW54Ld2Mto7RXClXHfsazXGxsH7vpXtuueGrfUrdlZcNjg91+leR63pdxpN0Ybpcr1Vx3FdlKrzaPc5KlLl1Wxng//AK6dJ86/SoQSDx1FLvz0NbmAqO0UiyRkq6nNdLp94l3FleGHBBrmA21uP8iprS5eznEkZ+UnBHqKBnWgYpajglE0SyKchhmpOtMYUUtJQAlFLRQA00lLSGgBKSlpDSAaaSnGm4oAkooooAKKKWgBKKWjFABS0UUAFI3SnVT1O5+zWjMD8x+UfWgDJ1O682fygcqvXB71RJAwAeTyaYGy+T0zSK2SWPSgkfIRvVR0HAre8O2QuLtSR8qZY/0rnFbLFj1Fd/4Mtf8AQ2mYcMcZrCvLlgzehHmmjrNPtwByMGtiCMZFUbVfatOIcCvMjqz0JMuRoMCrATI4/WoYV7GrSp6V1xWhzSYzZg9TQVGKk2jvQU44q7EXKkqjNc74j0C31myeGQbX6o+PumundfUflVOZAc1jJNao1i76Hz1f2U2mX0tpcrtkjOD7jsRVMkhs16x448OjU7Q3Nuo+1QDjH8Q9K8nbIPI5HrXZSqc68zlqQ5GPBBUjuBwaAcpz0pgPcdqchw2DWpkbGi3vlsYJDwTkZroODzXFI5jlVweldXaT+ZAjk5Ujn2poaLPSlo6ikB7elMBaQ06kNADaQ06m0AJSGnUlADaSlNJSAfRS0UAJS0YooAKKWigBKWijFACdK57W7gvdLGOkY5+tb07+VEWPauPnkMs7sTyzZoAYTheKQnCAUMeeelNzmkIUHFer+Golj0uCMdkGfr1ryuFDJMi9ckV6r4cOYQPSuPFbJHZhVuzqLaLpjpWpDEeMcCuYk8SQ2xIRCwHcd6qz+PWt1wlsWP6VjTpmk5HfRoF5OM1MDXm9v8Rjv/fW4Hpg11emeIoNQt1ljPDdq3vbcy5W9jcPTmlY9qhil8xcCmzybQcmnzaXJtrYeSDnmq0oDA1zGueKxpwPlYZueK5b/hPtVmlIiiXb6Bc1HxbGluXc7+4g3Ag968h8beH20y/N1Ev+jzHnHRWrr4PE+qXKjfAOPRarXuopqkUljfxlUmBX5xgqexqYJwldFSXPGzPLwcGnHJIYdaddW72l1JBIPnjYqaaBkH6ZruRwvQOq+9bmhTh1MRPtzWEGx+dWLK4NtcqwPGeaYjsF4HJ9qce2PWo4pBIDgH15qQDnB9aoYtFLxSUAJim4p9IaAGUhpxpKAGmkpxptICTFGKWigBKXFFFACYopaXFMBKKXFHSkBm6rL5drIQeCMc1y38VbevzYRIweWbcRWH6mkAhOTQOn1pKUUgL2lRebeoD6iuzgkupAbKyBy/3yvXHpXLaDFunZiMhVNd/ocIsoPPkAEkpzn0HpXNVfvHZRi3GyLdvodrawebdsHdRxuOAtPGnveD/Q9OmdD/GseFP4nrWBqGuXWoamtnpW1pt2A7AEJ7/X37VV06a+vJr6VNYP+icvJPeiJpDz9xSDnp39qqFJvVsUqqg7I3pNBjEnlXMHlyHorptP/wBenWlidLcmFyobtnjNX7fVp20q1l1I/wBoaTdKGS5C7ZYD/tD1HqKsXNuRDHLGy3FtJ92ZD+WaipCyNac1PodDpU/mIoznAqe/bYpNZWillADDkVp6v/x7MR6VlG/IRJWmcHdaKt9fyPIcqTgDHSrdp4fiYmKztml2febIVQfdj3qzAixpLc3swgtoxl3J657D3rH1/Vb+70Ge6tUaz0uEhI41GHmJPU+grWnT5tyqlRQ2NFoY9Ok2tJYsw6ot0ob9QB+tMvLey1NHhliaKZRnawww9P8A9dcDOml/2paRWl1NfRTECcyQeU0bHA+U5ycc1alnvNC1L7A9yXiRgYnbnbn+hrSVJL4TKNbmfvIyfFGnPZXoLNu3DAb1rEVsGuy8Sxvdae0zjLLgg1xfSrpu8dTKtHlkO6GjdyD3puetKORWhidVpspkto26jGDg9DWiucfMT+Nc3oV5slaF8bHHX0NdJGfk5PNNDHfw0tIARinUwG0hpaKAG0lLSUANNJTjSUgH0UtFACUuKKWmAmKWiigApkpwmO5OKfUU2VjL55HTNIDldXl829b0UYGaonhB7mpLl99xI3qaiPQUgEpfWkpaQHVeGbbdFnHLsFFehzabIbP92CW29R2rlvC0IWztzjneTXpVoBLGFP41wSleZ6UPcgjzvw7pjWOrTyzxu8gyMqR39qil8FQT6m7xXirAzEhJIHLKTnpjg/nXoV1o4MomhCq47gAH8c0sNjcZ/elAB0xyatVJXIdODRFptsllpcGnxJmCJdoMi5Le5Ge9PGnpbgi2VY1fBZEGF+uPX3rThtWAGOBSTgRADuetOXvLUmPu6IrW0QtwM1YvJPMt+eRiqskhLhfWrE6FrNgO4qL9EVbqzPjtI5AqyoHVTlQRnB9aL6CKe2a2mCPA4wY5uhpbWfkA/Q1p+QsqcqGU+tOMtNBSVnqcZJ4asLe4hltbWGFoslSXZwD6gZrO1PRlvZUd3Mku4cquBXdSaHayZPl7f9xiM0kWj20B3LEAR3ySfzobmxx5ErHJXukLPpUkDZJK4Ga8juYWt7iSJxhkYqRXvt/Go+7xXkHjWzFvrRlQYEwyfqKqhJqTTJxEbx5jnOwp8YzmmVJF94jsa7DhH28hguAewNdfaybo1K8g8j29q4+RSsmT161u6XMGj8vnI5GD29KaA293Y9aXqM9/SoIuODzn1qaPoQR3pjFxSGn000AJSGlpKAGmm0802kBJRS4opiExS0UUAFFFLQMac9MVVv32QsT2HarZ4P4Vl6q/7hx6nFIDlpOXP1NI3Wg8saHHzn61IDaUUeppKAPSNAmCW9uoPavQbGdQi+teU+Grne0SE16Ppr7sA1581aR6kbSgmdLCwfGauLEuOlZ9v0FaCNxW0Tmn5AwxkDgVkX7bWOTWuTz1rF1P/XKD900qmwU9yrCxknHpW0Ys2vsRWDHf26Xe13APatufUYIrEsWAGOpNZwtrc0mnpZHOysbe929ieK6KzbMYz0rljqEF5dOEYEeo9a6OwlVoBg1MNGXUWhoHFVpj1p7P+VV5m4NayZjFGTqD4BNeVeN2DzIfRuPyr0nV5wiHmvKfFk/mXaKDwCTSo6zNa2lI549qliHU+1RdatR4CD8ia7jzR8o+UH+7UtlI0LiRedvb1FM6wnI6H+lFvhWKt0PWmI6mF450Vh0YZqWPlSfWs3SZtoEbY4JGa1F5jX3plDuopKXHcUUANNIacaQ0AMNJTjSUgJKMUtFMQlFLRigBKXFLS0ARvwM1jar8sDtxweK2pv8AVkY5PSsHVuImUdmxSYHPkYakbrT8ZHHtTCDSAQDNHel6U+OPzGI9s0Aa+hzGKRGHZsGvStLvQZBnvXl1gfLuADxurtLGcp5bA8Vx1463PQw0rxsek28+VFXkuAF61ycGoMsO4k4A9KsQPd3MmHJjU87Ry2Pf0rGNRmkqd9zoXvBnAOTWHr0s725ktxukQ5x6irgCwptT/wDXSbN/UU5SbJilHU87kt9T+1DUBd5jzloGXA+lW7zUWvLbyY5sE8DJ6e9dymmRzEhlBB61CnhizSbeIVznPSqV30L54o4Cx0y9sp2YXck4kPCDoK73TWkjhA6Ee9TvpqRPwgHFNz5LcdB1qJXvdi5k1ZFhrzbw/BqCa644pJpopkOcEjtWTcOI13Ix2nOPb2qJSY4xTM3WrreWANeZa6++9/D+td3ekyGRyeOlcBq3zagR6DFdOHWpjiXokUe2PxqxF/q8E4waj2ZkAFTRrhSPeuw4B8Q8xGBP8P8AKkB5PqaIumQeORSE5HHXNMRpWbgTHjh1/Wt2Fsqn4YrnbYkpn0NbkADIpDEcD6UDLhyBR2pqjJBB7c5p45WmMSkNKaSgBpptONNpATUUUUxBS4opaAEopaO2aAI5MdecDmue1Zh5c7A5y+B+lb1ywRGPtiuc1YbIkUfxH+vWkwMuMUzo5z6GrEajDZqF0PmY7YzSAYqk5q/aRfOD6g4P4VWiXLHjirPm7E28cZwaaExrzbZ4mB+6cGuz07DwpXBSPuyR3Oa7Hw9d+ZAgJ54rmxC0udeFdnY7awRR5WRklhWldrPBaebAjvjLMqDljWdbH9yGXjaQc10ts4aLPBzXDDVnZN2PP/8AhP4dxjW3mdwdpGMYPpUx8V6y8Jng0944FbaX2E89MV0ep6LafaftiQIJRgthR82PX/GrVjrNuAY5osMW3HaMiumMYEXqbxjc5iz8VasJWiNtP5o5KeUcgfSr58Z3DKUSFzKOqiPJH4V2cV9YSTGVWAdlALFSCQKQfYEuJZ1Cb5ANxC8nFaci6Ml1n1pnnU/i3VpizQwyYU7T+76H3qnfeKNbsSwvbXbjGdyY69K9Fmv7O2ilCQMd7lj8uAT+P0rmNau01uUQeWux+CAMn86lxgt2aRdWe0UkZHhy+vPEV75gheKGMfNKMgH2re1aEW9qnXLSsefpWtpdnFp9msUShVA7VlazIJblEHRVJP41zzt0BNuVjAuodlozN12g15zdEPfTv6HivRvEE6wWR56LXnH3o5HJ5Y8104Zbs5sU9kNjQeYme55pTgOR/tCpolGRgjIqsXJyf9sV1nEOQ8Y9GNI3ykgjBpqN8x/3v605z82M+ooAu2eGVgDg+nrWtZFlQo3Y4wf0rHsSPOAJ+U8VrRHY64Gc5B/DpQM0oj1BJz/OpT71XjcEgZIxjiplPsaYw5pDTjSUAMNJTjSUAS0U7FGKCRtLS0UDE74ozjrSkVGzYPHPqKAKV78yEjOF647nNc9qMoecKDnbxxW3fSbITlueoUVzMjM8rZOe1JgSqAEHv3qKc46d6mX5gT6DgVDP96hiRJbgPH/SiZgI8nqeabATsY56Uknzt83QfoKAIX4Cj2zWpod55MuwnHpWVIcvzRE5SQMvUVnJcysaQlyu565pd2HthznjBrobC5/dYrzzw1qCyhVZq7W3faeOhrzJLlkendSjc23fzY+OorNksYpiTja/txUsUxzirPlhucdarmFG8dipAl1aH5Msvvg1O13fYO2MficVcitd2MVOdPGM5Oa1TlbQTqK+piS211ef69to9mpI7KO2ACAbvWth7QKMZqs8YXJ71Em+o+dtWGmURxYz0rn7iXfcux9a0LuYJnnFcxqWoLBFIc4zWestBxVtTn/Fmo+a3kKfvHH4VzzDEeznPBoluDfaiZDnaOn0oVssxI78f5/KvTpR5Y2PNqz55XHlSoDexqmuScf7VW3O1Dx0YjP5VUThs+9aMyDOHGfWpJM72+pOPxqE9eep5p7t8xxSAmgfaQR6it8P5gD47A1zcZyAPfFb9qxa2Q9kyCc9KaGakZBiPQjmpgPu/SqdkRJEo6EHDVd6AcdDTGFNNONIaAGmm040lAE9FFFAgpMUtLQA0rkVWmJwV/iPQk9qtHioHTMgYk8ZoAxdXZYkSNevViT1rADAk56E5rS1iffMDk8gkf0rKXl1qQLwOIicY7Cq8vXnsKkJ3MqjoOaay7mYDsMc02IZEc5Uck0O4VcZz/WnKAoIX8TUMgJb3NIBnXk96EHz07GDjsKSPiQUmUjT0+4e0mV16dxXoGl6qk8KkNzXn8CZFW7e6kspNyk7e4rkqQ5jtpT5dHseqQXA3Ahu9bNu4YAmvNNO8QAgBjXWaZrUciYLCublcXqdGklodbCuSDVlpFA255rDj1MYG1uKm+0qxzurVVEloYypu+peuCAMis+4kAU0ye/VE+Zq53VNdSND83SolK70NIw0K+s36whhnmvPNb1Np2MSMcdzVvWNYe6cqh/Gudl6810UadtWYVql1ZElqNqM3sRUyfeOegqvCcgr0HSrir+73jqzE4/z7V2I4WR3DNtHp8386hX5WXj+LJp83IX8f50EfKCB2/WgCEcsM0pGAc04qFkI9qBlgeKQDolGR7kGtfTiSGXPDjv61kxrnHscVfspPKlwSfX8aYGzYnbNIBjGavnIPPes2AiO4b0OGxWjkkKfbg0yhSeehoNGNpAHSg0ANNNNONNoAsUU7FJigQlGM0tHQ/hQA3HJxVK+kIhkIyMjH51dPTnvzWRrExWRI84P3vpjvQBzuosGu2RD8qfL/jVRSd31pS+Sx9TTeg5qQJ0YjcQM9s9qRWLkjOF7471DuJXGflHanKSoznFAFkY4HT0HemuQATTEIA5zk/mafL93nj2FMRAgLs3rjNEf+tFPt/8AXjHcEUKuJiPSpexS3NW3XjPappIwVpLQZUVZePjgfhXK3qdaWhmFXjbKEg1ZttTmgYckH2pxjDUxoPanoxq62NmHxHcIB8xx71YXxTcAcMK57aRQOKjkiae0kbdx4lmlHJOfasO6vpro4JIFIVJoCYqlFLYzlOUtysyYFUpuDWo8eBk9ayrj79aw3MJ7CRDPfqQK1AgwpzkIp/A1lRttIPpzWlCc2pdjyw4Hr2/z9a3RgytcDAT3RT+ZNSqASoHcDmo52DnGeAAv5f5NPUcIe3tQAwjMjnPoKagw3/AqlIB3EnGTnFVlc4B+tAFmOPbI3PQ59qkibDgnqDuHv6imZ+ff6jmlI5IFMDbikDMjdMdAe/tWnCwaMc5wMVhWMxcAcFl7eorVtmJLYGOhxQNFzHFIaBIO/wAp96TOT7daBiGkpSw9abkeooAtUUuKMUEiUjDIp1IaBkcjBSCeo5GO9ctrU+6Z+cuFCn2/zmujnf5HPfoDXI30qsZZMcu+F+gpMDP+6T7UnWgnPNOA496kBKQHvRjgmgUDJ7ddzgkZpZn3scHIH606IfLsXqRk+wpsi7Yx78mmSJbjMwJ9cU5sC6OOlMgOJl+tTyj/AEtvwpPYpbmpZDgYrQ2cd6z7QbcelbEQBXB5Fccnqd0Nig0fPpS7CByKtTW+PmQ/hUakYwRilcqxXMfc1GUHpV7g+9IUGM5p3BopeWccCgRgc1bZcjCimiIAZboKdybFGZeKxbn/AFtbl2eCBxkViXIwwrWnuYVCDODmrUcuZEzyqjGO1VsUq9Md63OckJJwSepqaN/lHqOahKnAGMYANGdrY9qALEpx8ox6VWGRgGpC27eT/c/XrUR5J+lAFlCDGG9OCKl3bcHrjr9KrQvt4b7r8H2pQ5VsHt1piJ452huPMQ8ntWpb6qkcmZVKZ68cVjSLlRtPfj60QXUkTZB6dQe9A0dZHcwSrlWDZ5wKlWXAPUj19K52K7t3AzEAx7rxVhbiIj93MyN7H+lAG0XV84wQKMK3NYdrfGKeYyMxGR8yj+lasdxHKgYbWz3zQM1cUUtLjJwOvpVEiYqOQAKTjJHNX4dLvrjHlWsrZ77cD9a0rXwhe3BP2kpAhGOu4/lQFzhtYmMFnkjc7HA54FcixLHrXsPiTwhaWugPcFXlkiZDudugLAHivIJUKMT6k/oalgncaVwAevJpAec05zwuOh7U0ckUhjmQqB6Hmm5xzV2SEiNHK8E7ePpVLhWGecHmgC/DH5alSfmIGfbNQz9MDoKXJALn7zc/SopW4PPPSgQW43Tr9c1cZQ95Jj1qCyX5y5H3Rip7YH7Vk/xVMvhLj8RrWkeVA/KtSFTjHcVFZ25K5A9D+FasNtvGQCCOtcM5HfBaFVk3DkVEUXowrV+zE8EVVuLUqKzUjWxU8iM9B+tAiQZ4pdkg4ANLsfHSruFiGQADiq7En6DoKvfZnbkimNZt5eR+NNMhoxLkZJJ/E1jXIx+ddFdR/KQBk98Vz94pEmK6Ke5y1CsDinbsngU00nIroOYlII7dB1po7c0g5FGOPp60ASsMjgduajU4YZqSNg3B+U9M054D1xx6jpQA1BkFD36U1mz1+8O9OCn6HtihgHHPDUACTFRjGVPb0pSQ5yh56+9RfMpwRUgiZ08xY32+o6CgBpbA5HPel3ArgA/jTTgcYYmkYk9QAPQUATwzvETsYjPUetTi92gA7c1njIooA93sPBU0qJJeS+XnkxqMnH1rprHQbOwUeTAob+8Rlj+NawGaXFO5NiuIB6U7yR6VPijFK4WMHxLZG70C/t0zveFiuPUcj+VfP+u6edPv5YWXCSYnhbsVYZ/z9K+mpEDAivNNc8Kw6ulxpDbYb+yzLZSHpJCxyFPsDlfbAphseM0q9c+nNXLzT7jTryS1vIWimTgo3XNVxHw36UijpNP07+04DEhwVX5D/t9c/lx+Nc7e2z2t1JHIjIVYgqeoPcfhWlpuvTaZDsQEYJO4DJ/WqeoahJql2biUfM33jnJPFNkq9yvvwoyenSoScn2pcgmrFrbiaQZxsHLGkUWLePbAvq3NXdPtxJqUSnOxiR+lUpbhVuAHX92OOO1dHoMdtcSyztOkYGEi553dc1lVdjakkzf02waNiGHfDL6fT2rZi07Iyo2sKmsIzKFcgb+jAetbMUAzyOorgtzHXexgmzcH7mRTDZhuGQ/jXRvagjimC0GMYB+tLkZXOc2dPQ9h+FJ/Z6L/AAj8RXSfY1zyv5UG1Qfw0crD2hzMlkxQhE7dTVWXTHmbachB1IrrHtxz61VvpbewtzNcSxwxAcs7YFNJoOc4nUrIQQtsQgAZJzXFTx75dx43NtArpfEPi23uUkt9PjLhuPNYYH4DrXNabE11forcnaTz7A12UoSS1OSrNPYpyYB+tJtyMjpTrgfvAB6CmK5Q9AR3B710HON6U4ZxUh2OMqM+xPI/xpoAz/FQA0Nj/wCvUqTlRgMR7dqQoCuR09hzUZHoKAJzIW6YH0NNYk1BSr1oAkI545Perun3cljIsqZaIn50yQrex9PrVby8gFSSakhdowSoGDwQehoEei6HoGgeJ7eWYR+XMOsSEgr/AI0+5+E0E/zWN9JGc8pMmfyriLKa4tJ0udLmeFxzgNyp9P8A9ddvo/xIRV+z69CwcEYmQdPcjr+VUTqc/q3w11rTAWjjW8iA5a3GWH/Aev5Zrn49Iu3XMSB1zgkcYPofevdbXxnpF4uftdsI8cOZAM/hVe8g8K6hctcXbae8r9Wdhk/lSsFztBwKXFNpwpFBRS0UANxWLr+ky3iw3liVTULUkxFuFkU/ejb2P6HBrbpCKAPJvGljB4h0T+0IImjvrJtk0TD54/VGH6g9K8xhXEjxse2RX0H4i8NLqT/a7KX7LqAAXzAMrIB/C47j9RXifiLQ7/Rb5ZLu28reScpyhOecH+lMS7GFJHgso7VraF4WuNbDPbzRAJ94E8j8Kx5JG8wkfTmrmk3k9pexy2rssoYYAbG72PqKBu9joLjwI9nCxll3MOyg1jW1gQlx5bgxQqXeTHHHau71HxENU0+103TIiNWvj5TI3/LBejE/09s1q+IvDFn4b+HN6sQDSLGoaTHLsWAJpkpvqeNO4kfPQH1NT2Vzcafcx3Fs+yZMkHANVdpzUgJ49RU7l7bHpXh74gWbMsWpx/ZWbrKgzGT6kdR+teg2dzb3kSy200c0ZGd0bBh+lfOy1atLy5sZBLaXEkEn96Jyp/SsXRXQ1VV9T6J2gjikEdef/DvxTqOqajPYajcNcr5XmRu4G5SCARnv1r0cCsnGzsaqV1chMY71i6x4k0jRsi8vY1kH/LFPmf8AIdPxrX1GX7Np1zMG2mOJ2DemAea+dGZpCXclmbliTkk+pqoQUtyJTcTu9W+Jkzho9KtBED/y1n+ZvwUcD8c1xN/qV5qc3nX1zJO/Yu2cfQdB+FQYpMVvGCjsYuTe40jit7wlHG+qu74BEJCg+pwP6msIiu08BaBFrFvqjyZDwCPy3H8JJP8AhVol7HI6pb/Z7vbznnOexzVa4iKMD2bkVveKLN7e9YOoRt2Sv1A6e1Z5iM+ny/L80QD59B0P9KLAnoZfIp28nr+dPZcxBxzjg1H1GKQx8bbXyKkkjRhuQkH09Kr5xUodW+9waAGEdqbipSnGRzUZ60AOR2XoamSXccYGT39arjGR/Wn7cdeCKALkM0iOHhYxuvdTzW7Z3GnzrjVtNaZSctdWxwR/vL2NY9oisY5thO04fnAI6da77SfCTzSPPp1y0Enlq6GM4JU9QfXB/CmSzGPhKG4VrvQruKaMciC5AbP44wPxxSR3jWaCCbw/FvXqYZGVT745rsLXTI9Pk+06lbNHKpLG+sMow93Qc/oRViWWe5kaW2hivIW+5N5KEsPc5HP4UCPRFpw6UxafSKQtFFJQAUGiigBjDNYPiTQ4Na06W2nAww4burdiK6DFRyJkUCZ8v6vpk2nXk0My7JI32Mp459R7GoB5ZjSTowO11Pf3FeofFqxtYbe3uioF277MkD5lAJ/SuB0Tw5e67Oy26gbFBLMDjJ6Amgd9D0L4X+H57eY6rdAeZPF+7DDlVz+mR/Ktz4sTiDwSYs4M9xGn5Et/Sui0Gyaz023imfzJ0RQ7/wB44/lXE/Ge526dpVtnl5nkx/urj/2amJHkGKMU6igYAU6kpRQB2fwxH/FSyHIGID368ivZAK8g+F0YfXrkkdLf/wBmFevEmMD5SR3I6iuafxM6IfCjA8cXJtPCOpODgtF5Y/4EQP614Sa9d+KV4qeG4YUbP2i4UfgoJ/wryKtaWxnU3E7UUUVoZiHkZ71658IrTOg6rLn/AFsyrx/srn+teR4r2/4TRrH4Od8D95cyHOPTA/pQBieOdIElqH2AvAwO7+IKCQR+oNcJ4h0W40W4lRwRGw+R8cMD1FexeLLVXV1PCzQyJ0/ixkf+g1geKraPWPA1u8aeZfSyRQRgD5mkB2n+RpkLQ8hggaZhEpOXGQMdT6VAVwa3LzTZ7RN2xo5IcE9iD2P0OKzLvbNMZUGBINxA7N3FTYu5VxSqhYHHOO1GO9XdLhFxdpF1L8YFAyngjkHI9qacmrN1avaXkkDjDIxFMh/16o+ACcEkdKAIOnWpVOccc9M1PdWb287Iy4IzSW6xvHLGwCvjKH3HagDR0iaO1lIuULRPwfTHf9K9H8HeILSIWttNKqtG5Qsx42kYJz7kKfzryeFxuXJb5jjrXTeG7G6vbuN7CESyROMqzYB4zzyPT170yWj211tJXWUXEIPVNsi5qI6dpzu0j2to7udzOQAWPqapaYsSQIb3RVjkGc+XH5mPz+b8s1pJd2KIAsMsY/u+S4/TFAjXWn0xafSKQlJ3pT0pBQA6kpaY27sB+JoAdWHr/iG20WAmaUCVh8kSKZJH+ijmtC4tJLggNcSIndYvlz+PX8qr2uj2GnM0lvbIJm+9Kfmdvqx5NAmeQ63o2s63cLqerRvArqTHDIcvtXkkgcL24r0DwloC6TokEZQCaQeZKR3Y1uT2K3MwklUFQpUgjsatQptQL3XimIkgTaAK8e+Md15viOyth0gtd34sx/wFezIuBXgHxJuvtfjrUMdIdkI/BRn9SaRSOVopaWmAlFFFAHefCkZ168/69x/6EK9exxXkPwo/5GC7/wCvf/2YV6+TgVzz+I3jsjyn4szj7bp1uBjCPI2PcgD+Rrzuuw+Jdx5/i10zkQwxp9Ccsf51x5raCtEym7sKTtS0lUSJXvnwyh8vwHY5GPMMj/XLmvBBxX0T4Gi8nwPpC/8ATuG/PJ/rSYEfjHMeks8RzICNg9cc/lxXP+GwmpauYFUNY6VuCMDnMz43E/Qbh9WNbXi65cWaWdqoe+vf9HhBGdqtw7n8KZ4M0waVafZMANEuxiOhIJyfqTTJ6kHirwlHqls4gULcBSYmxgZ7qfY/zrwy7t3s7qSGVGRo5CrK3Ueor6kkiDrg+leOfFbQVhnXVIgQ0pCyjHU44b9MflRuPY85mhMMg3D5Wos7hrG+hnQ4aGQOD9Dmumt9F/tjwxJeQHM1qMsnquf5jmuZaL5wr5BHFIaZ1HjG2jGurNHgCZUdivTJHb8MViarYG38uUL8rjGccHtU39pSXcUEF0cvAqojHuFPH6V0OswQN4fErFVREXaCeSxxwPpj9arcnY5p77zhE0pBbYFZu5xx/ICqUqcqy8ZJpioQwJzj0qxnP9B60ihttAXljVFLNngCvVfhzoz2tpJdOCXlfH0ArF8HaIr2jXW0mWUeXGx7Z4J/AZNes6Zp6WWnRRIuAFHB6/jQK5ai6Din/TP50sacU8pSAevSnU1elOoGNc8UL0pHpV6UB1HU0mnU2gBDk0mzPWniloCxGVpAnOakNJQAvQV8x65d/b9f1K6zkTXMjA+244/SvpXUJGh065kQ4ZInYH3CmvltDlAT1PNCGFFLSUxBS0UUAd38Kf8AkO3h/wCncf8AoQr1yQ4WvJvhQP8Aic3x/wCmC/8AoVesS8Yrmn8TN4bI8C8W3P2rxVqkmcj7Qyj6L8v9KxqsXzmS/uXblmmcn/vo1XroWxi9wooopiEPQ19JeHY/s/hHTEf5dlnHkt0Hyivm90HlE+xr6Ll/5FmKD/ln/Z5Yj1wgwPpzQBBoto+oX0+t3X/LY+XZp/chHRvq3X6H3q5Yoo1K+C9VlwfxAb+taFqqrZ26qAFEagAduKq6Z88t4xA3G6cE/TAH6CkI0AxxyK4r4o2+7wdcSYA2Op564yOK7bpXE/FSVk8GzKuP3k0aE+xOT/KhAzjfhRl7vULGQHy3hVyCOxOP61keLNEjstRDRJtV4g5HbglTj8RXa+FrSKz8cokC7Vk0pS3uQygVS+IUSLYJKFG/y5ef+BL/AI00J7nAWemfb7iSI5BWMyBh7D/HFTS/aG0pEuGMkKkMGz7DH86g0vUZ7SYPEVyyFSCMjBBqOa7leCO3JAjQbgB3OMc0xlWSMmbK8jrUtnYyX93HBHnLNyewFORQ6ljwR6V6V4C0W0DRXGwmQjOTg96QzpfC2iiztoWkXBVdqJ/dHv7nv+ArrSP3dQxRquMDFWP4KQhsX3aeaSL7goPWgZ//2Q==" alt="" style="max-width:200px"></figure><div class="page-marker">— 第 187 页 —</div><p class="en">What can you do when a goal is realistic, conversations are happening, and a person is still not performing as expected in their role? A performance improvement plan (PIP) is not the only course of action. There are many strategies to address performance challenges sooner, and they greatly depend on the cause of the problem—a specific event versus something systemic.</p>
+<p class="zh">当目标现实、对话在进行、但一个人仍然没有按角色预期表现时，你能做什么？绩效改进计划 (PIP) 不是唯一的行动方案。有很多策略可以更早解决绩效挑战，它们很大程度上取决于问题的原因——特定事件还是系统性问题。</p><h2>Event-Based Behavior<span class="zh-sub">基于事件的行为</span></h2><p class="en">Events like a breakup, family changes, illness, and more challenge us all and make it difficult to focus on work. It's your responsibility as a leader to create space for life to happen and expect that there might always be something going on in your organization. Here are some things you may want to try in this situation:</p>
+<p class="zh">像分手、家庭变化、疾病这样的事件挑战我们所有人，让我们难以专注工作。作为领导，你的责任是为生活留出空间，预期组织中可能总有些事情在发生。以下是你在这种情况下可能想尝试的事情：</p><ul><li><span class="en">Use your one-on-ones to discuss what is happening in your report's life, provide time off, or explore the possibility of a leave. Remind your report that they can take advantage of the company's counseling resources (if you have this benefit).</span><span class="zh">用你的一对一讨论下属生活中发生的事，提供休假，或探讨请假的可能。提醒下属他们可以利用公司的心理咨询资源（如果你们有这个福利）。</span></li><li><span class="en">Have a notion of how much the current situation is affecting your direct report's goals so that you can help course correct after things settle down. I like to keep an achievement log for myself and all of my direct reports and use it to frame our discussions. We make sure that we note big wins and accomplishments, and then I compare them to the objectives that I know my report wants to achieve. If there's already enough progress in a specific area, the temporary slowdown is not as impactful.</span><span class="zh">了解当前情况对下属目标的影响有多大，这样在事情平息后你可以帮助纠偏。我喜欢为自己和所有下属维护成就日志，用它来框定我们的讨论。我们确保记录重大胜利和成就，然后和我知道下属想达成的目标比较。如果某个特定领域已经有足够进展，暂时的减速就没那么大影响。</span></li></ul><p class="en">Ultimately, you might not be able to do much about what's causing diminished performance in this case. But you can weather the storm together and remember where true north is so you can get back there when it passes.</p>
+<p class="zh">最终，在这种情况下你可能对导致绩效下降的原因做不了太多。但你可以一起度过风暴，记住正北在哪里，这样当它过去时你能回到那里。</p><div class="page-marker">— 第 188 页 —</div><h2>Systemic Behavior<span class="zh-sub">系统性行为</span></h2><p class="en">There can be many reasons why underperformance becomes systemic, and the way you address them is very much aligned with the nature of the problem. Here are a few strategies that you might want to try when performance suffers:</p>
+<p class="zh">表现不佳变成系统性的原因可能很多，你处理它们的方式和问题的本质非常一致。以下是当绩效受影响时你可能想尝试的一些策略：</p><p class="en">Inability to follow through: Try some lightweight goal setting, training, mentorship, rescoping of work. Provide the option of extra program management support (if you have it). Use your one-on-ones to assess together how well different approaches are working and to promptly communicate blockers.</p>
+<p class="zh">无法贯彻到底：尝试轻量目标设定、培训、导师指导、重新界定工作范围。提供额外项目管理支持的选项（如果有）。用你的一对一一起评估不同方法效果如何、及时沟通阻碍。</p><p class="en">Team dynamics getting in the way: Look at your team processes, current staffing needs, work demands, and so on and make adjustments. For example, if work can't be completed due to code reviews being difficult to come by, have the team prioritize reviews above new work to unblock peers. Or if your code review cycles are too long, you can help the team articulate a shared criteria around good reviews. A shared language might help your team avoid pedantic arguments that consume too much review time.</p>
+<p class="zh">团队动态碍事：看你的团队流程、当前人员需求、工作需求等并做调整。例如，如果因为代码评审难得到而工作无法完成，让团队把评审优先于新工作以解锁同事。或者如果你的代码评审周期太长，你可以帮团队阐明好评审的共同标准。共同语言可能帮团队避免消耗太多评审时间的迂腐争论。</p><p class="en">Lack of motivation or when problems have become stale: If possible, add variety to your report's responsibilities, like mentoring junior engineers on the domain they are experts in so that they can take over the tasks that have become so monotonous. You might want to look into resetting job responsibilities to broaden the scope. Have this person assist in areas that are different, or maybe even facilitate a move to a different project.</p>
+<p class="zh">缺乏动力或问题已经变陈旧：如果可能，给下属的责任增加多样性，比如让他们在自己是专家的领域指导初级工程师，这样他们可以接管变得单调的任务。你可能想研究重置工作职责以拓宽范围。让这个人在不同领域协助，或者甚至促进转到不同项目。</p><p class="en">Constant exhaustion: Keep an eye out for your team's workload and emergency interventions. A team who has been performing heroics keeping a system up won't be able to sustain regular performance expectations and is well deserving of some rest. Keep track of on-call rotations, incidents, number of alerts firing, and prioritize their remediations. Fixing the root cause of operational exhaustion is paramount.</p>
+<p class="zh">持续疲惫：留意团队的工作量和紧急干预。一个一直在英雄般保持系统运行的团队无法维持常规绩效预期，非常值得休息一下。跟踪值班轮班、事件、触发的警报数量，优先修复它们。修复运维疲惫的根本原因至关重要。</p><div class="page-marker">— 第 189 页 —</div><p class="en">Goals being unclear: It's difficult to be enthusiastic about a task that comes out of the blue and seems arbitrary. By clarifying objectives and contextualizing work within business needs, you can help your reports understand why something needs to be done. Sometimes, clarification of the business goal can even result in a more efficient solution with greater team buy-in.</p>
+<p class="zh">目标不清晰：对一个突然出现、看起来武断的任务很难热情。通过澄清目标和把工作放到业务需求上下文中，你可以帮下属理解为什么需要做某事。有时候，澄清业务目标甚至可以带来更高效的解决方案和更大的团队认同。</p><p class="en">Lastly, there is a special case of systemic behavior from which it is extremely difficult to recover. When a working relationship turns adversarial, it is very rare that things will get better, no matter how much you try. You have my sympathy if you're ever in this spot. It's one of the most difficult and demoralizing times for a leader. Here are some things to explore when performance suffers due to an adversarial relationship with your direct report:</p>
+<p class="zh">最后，有一种系统性行为的特殊情况极难恢复。当工作关系变成对抗性的，事情很少会变好，无论你怎么尝试。如果你遇到这种情况，我同情你。这是领导最困难和最令人沮丧的时期之一。当绩效因和下属的对抗性关系受影响时，以下是一些要探索的事情：</p><ul><li><span class="en">Reach out to your HR person and ask for guidance.</span><span class="zh">联系你的 HR 寻求指导。</span></li><li><span class="en">Hone in your conflict navigation skills. Attend workshops for having difficult conversations, providing effective feedback, etc.</span><span class="zh">磨练你的冲突导航技能。参加关于困难对话、有效反馈等的工作坊。</span></li><li><span class="en">Prepare for your one-on-ones; you might even want to have the main points written down to make sure you phrase things well.</span><span class="zh">准备你的一对一；你甚至可能想把要点写下来以确保措辞得当。</span></li><li><span class="en">Consider having one-on-ones mediated by someone from HR if things are really bad.</span><span class="zh">如果情况真的很糟，考虑让 HR 的人调解一对一。</span></li><li><span class="en">Don't neglect your self-care, this situation will drain you and very much stress you out.</span><span class="zh">不要忽视自我关怀，这种情况会耗尽你、让你压力很大。</span></li></ul><p class="en">And, most important, don't put off taking action. When things are not going well set a kind and reasonable resolution time in your mind, try everything you can to improve things, and if things don't get better stick to your decision date. Reach out to HR and explore your company's formal processes for termination. It's very difficult to end a working relationship but you owe it to your team to not put off the decision.</p>
+<p class="zh">而且最重要的是，不要推迟采取行动。当事情不顺利时，在心里设定一个善意合理的解决时间，尽你所能改善，如果事情没变好，坚持你的决定日期。联系 HR 探索公司的正式解雇流程。结束工作关系非常困难，但你欠团队一个不推迟决定。</p><p class="en">To sum up, many causes can affect an individual's performance. Taking the time to diagnose them allows you to better respond and support your direct reports. Even though some things might be beyond your control, you have the advantage of sharing a common goal: the growth and nurturing of their career.</p>
+<p class="zh">总结，很多原因会影响个人绩效。花时间诊断它们让你能更好回应和支持下属。虽然有些事情可能超出你的控制，但你有共同目标的优势：他们职业的成长和培养。</p>
+
+    <div class="pager">
+      <a href="chapter-65.html">第65章 →</a>
+      <a href="index.html">目录</a>
+      <a href="chapter-67.html">第67章 →</a>
+    </div>
+</main>
+<button id="lang-btn" title="切换语言模式">🌐</button>
+<div id="lang-label"></div>
+<script>
+(function(){
+  // toggle TOC
+  document.getElementById('menu-btn').addEventListener('click', function(){
+    var body = document.body;
+    if (window.innerWidth <= 900) {
+      document.getElementById('toc').classList.toggle('show');
+    } else {
+      body.classList.toggle('toc-hidden');
+    }
+  });
+  // close TOC on link click (narrow)
+  document.querySelectorAll('nav#toc a').forEach(function(a){
+    a.addEventListener('click', function(){
+      if (window.innerWidth <= 900) {
+        document.getElementById('toc').classList.remove('show');
+      }
+    });
+  });
+  // click English paragraph toggles its zh
+  document.addEventListener('click', function(e){
+    var p = e.target.closest('p.en');
+    if (p) {
+      var zh = p.nextElementSibling;
+      if (zh && zh.classList.contains('zh')) {
+        zh.style.display = (zh.style.display === 'block') ? 'none' : 'block';
+      }
+    }
+    var liEn = e.target.closest('li .en');
+    if (liEn) {
+      var liZh = liEn.nextElementSibling;
+      if (liZh && liZh.classList.contains('zh')) {
+        liZh.style.display = (liZh.style.display === 'block') ? 'none' : 'block';
+      }
+    }
+  });
+  // language mode cycle: both -> en-only -> zh-only -> both
+  var modes = ['mode-both', 'mode-en', 'mode-zh'];
+  var labels = {'mode-both':'中英对照', 'mode-en':'仅英文', 'mode-zh':'仅中文'};
+  var saved = localStorage.getItem('book-lang-mode') || 'mode-both';
+  document.body.classList.add(saved);
+  var btn = document.getElementById('lang-btn');
+  var label = document.getElementById('lang-label');
+  function showLabel(){
+    label.textContent = labels[document.body.classList.contains('mode-zh') ? 'mode-zh' :
+      document.body.classList.contains('mode-en') ? 'mode-en' : 'mode-both'];
+    label.style.display = 'block';
+    setTimeout(function(){ label.style.display = 'none'; }, 1200);
+  }
+  btn.addEventListener('click', function(){
+    var cur = 0;
+    for (var i=0;i<modes.length;i++){ if(document.body.classList.contains(modes[i])) cur=i; }
+    document.body.classList.remove(modes[cur]);
+    var next = (cur+1) % modes.length;
+    document.body.classList.add(modes[next]);
+    localStorage.setItem('book-lang-mode', modes[next]);
+    showLabel();
+  });
+  showLabel();
+})();
+</script>
+</body>
+</html>
