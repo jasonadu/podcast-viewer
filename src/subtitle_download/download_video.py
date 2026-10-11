@@ -12,6 +12,10 @@
   里取 (不联网), 归档中已有就立刻 [SKIP]; ② 其余条目 (播放列表展开后)
   解析完再统一判定, 同样打印 [SKIP]. 已归档的既不占用 worker 名额,
   也不会拖到下载阶段才发现"归档中已存在".
+- 解析缓存: [2/4] 每成功解析一个 URL 立即追加写入 <output-dir>/parse_cache.jsonl
+  (JSONL 每行一条). 断网/中断后重跑, 已解析的 URL 直接 [CACHE] 命中, 不再联网
+  (单视频解析约 30~55s/个, 全部重来很耗时). 默认有效期 7 天 (--parse-cache-ttl
+  调整, 0=永不过期), --no-parse-cache 完全禁用 (强制刷新播放列表条目时用).
 - 进度可见性: 4 个阶段 ([1/4]~[4/4]) 都有编号进度; 解析/下载这类阻塞步骤
   超过 HEARTBEAT_INTERVAL 秒会打印"仍在进行 + 已用时间 + 临时文件大小"心跳;
   yt-dlp 的 info/warning/error 会带 worker 标签转发出来.
@@ -32,8 +36,11 @@
   --output-dir DIR         输出目录 (默认 ./videos)
   --aria2c PATH            自定义 aria2c 路径
   --cookies FILE / --cookies-from-browser chrome   年龄限制/会员视频
+  --no-parse-cache         禁用解析缓存 (每个 URL 重新联网解析)
+  --parse-cache-ttl DAYS   解析缓存有效期天数 (默认 7, 0=永不过期)
 """
 import argparse
+import json
 import os
 import random
 import re
@@ -55,6 +62,10 @@ ARIA2C_MIN_SPLIT = "1M"    # 最小分块大小
 DEFAULT_WORKERS = 2
 DEFAULT_OUTPUT_DIR = "videos"
 DEFAULT_QUALITY = 1080
+# 解析缓存文件 (存放于 output-dir, JSONL 每行一条): [2/4] 阶段的断点续传
+PARSE_CACHE_FILENAME = 'parse_cache.jsonl'
+# 解析缓存默认有效期 (天), 过期后重新联网解析; 0 = 永不过期
+DEFAULT_PARSE_CACHE_TTL_DAYS = 7
 
 # 任务启动随机间隔 (秒), 错峰减轻 429
 START_JITTER = (3, 8)
@@ -70,6 +81,11 @@ HEARTBEAT_INTERVAL = 15
 TEMP_SUFFIXES = ('.part', '.ytdl', '.aria2', '.temp')
 # 归档行格式为 '<extractor_key> <video_id>', 缺省按 youtube 处理
 DEFAULT_IE_KEY = 'youtube'
+# 允许 yt-dlp 拉取的远程组件: YouTube n/sig JS 挑战求解脚本 (ejs:github, 官方推荐)
+# 与 deno 运行时的 npm 依赖 (ejs:npm). 不启用时 yt-dlp 只能用内置旧版求解脚本,
+# 会报 "n challenge solving failed" 进而触发 "The page needs to be reloaded" 错误.
+# 求解脚本首次下载后写入 yt-dlp 缓存, 之后无需重复联网.
+REMOTE_COMPONENTS = ('ejs:github', 'ejs:npm')
 # yt-dlp 的高频噪音行 (分片/进度重绘), 进度由我们自己的进度行与心跳负责
 _NOISE_PREFIXES = ('[hls @', '[dash @')
 # 从 URL 里直接取 YouTube 视频 id (纯字符串操作, 不联网)
@@ -276,6 +292,7 @@ def expand_playlist(url: str, cookies_opts: dict, label: str = '') -> list:
         'skip_download': True,
         'socket_timeout': 20,     # 网络不通时尽快失败, 不要无限等待 (同 youtube_list.py)
         'retries': 3,
+        'remote_components': list(REMOTE_COMPONENTS),   # 允许拉取 JS 挑战求解脚本
         **cookies_opts,
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -442,6 +459,93 @@ def split_archived(tasks: list, archive: ArchiveIndex) -> tuple:
     return pending, archived, unchecked
 
 
+# ---------------------------------------------------------------------------
+# 解析结果缓存: 断网/中断后重跑时, [2/4] 阶段已解析成功的 URL 不必重新联网
+# ---------------------------------------------------------------------------
+class ParseCache:
+    """[2/4] 解析结果缓存 (JSONL 追加写, 每行一条).
+
+    - 键: 原始 URL; 值: expand_playlist 返回的 items 列表 (播放列表整体缓存).
+    - 每个 URL 解析成功后立即追加一行, 中断/断网最多丢失最后一个未写入的条目,
+      重跑时命中的 URL 直接 [CACHE] 复用, 不再联网.
+    - 有效期 ttl_days 天 (0 = 永不过期): 播放列表会随时间新增条目, 过期后
+      自动重新解析; 需要立即强制刷新时用 --no-parse-cache.
+    - 读取时丢弃损坏行 (例如上次写入中断留下的半行) 与过期条目,
+      并顺带重写压缩文件, 防止其无限增长.
+    """
+
+    def __init__(self, cache_path, ttl_days=DEFAULT_PARSE_CACHE_TTL_DAYS):
+        self.path = cache_path
+        self.ttl_days = max(0.0, float(ttl_days or 0))
+        self._entries = {}          # url -> {'ts': float, 'items': list}
+        self._load()
+
+    def _load(self):
+        if not os.path.isfile(self.path):
+            return
+        now = time.time()
+        dropped = 0
+        try:
+            with open(self.path, encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        entry = json.loads(line)
+                        url = entry['url']
+                        items = entry['items']
+                        ts = float(entry['ts'])
+                    except (ValueError, KeyError, TypeError):
+                        dropped += 1
+                        continue
+                    if (not url or not isinstance(items, list)
+                            or (self.ttl_days and now - ts > self.ttl_days * 86400)):
+                        dropped += 1
+                        continue
+                    self._entries[url] = {'ts': ts, 'items': items}
+        except OSError as e:
+            log(f"[WARN]  读取解析缓存失败 {self.path}: {clip(e)}")
+            return
+        if dropped:
+            try:
+                self._rewrite()
+                log(f"[info]   └ 解析缓存清理 {dropped} 条过期/损坏记录")
+            except OSError as e:
+                log(f"[WARN]  重写解析缓存失败 {self.path}: {clip(e)}")
+
+    def _rewrite(self):
+        with open(self.path, 'w', encoding='utf-8') as f:
+            for url, entry in self._entries.items():
+                f.write(json.dumps(
+                    {'url': url, 'ts': entry['ts'], 'items': entry['items']},
+                    ensure_ascii=False) + '\n')
+
+    @property
+    def count(self):
+        return len(self._entries)
+
+    def get_items(self, url):
+        """命中返回 items 列表 (已过滤非法条目), 未命中/全部非法返回 None."""
+        entry = self._entries.get(url)
+        if not entry:
+            return None
+        items = [t for t in entry['items']
+                 if isinstance(t, dict) and t.get('url') and t.get('name')]
+        return items or None
+
+    def add(self, url, items):
+        entry = {'url': url, 'ts': time.time(), 'items': items}
+        self._entries[url] = entry
+        try:
+            # 追加写 + flush: 中断最多损坏半行, 读取时会被安全丢弃
+            with open(self.path, 'a', encoding='utf-8') as f:
+                f.write(json.dumps(entry, ensure_ascii=False) + '\n')
+                f.flush()
+        except OSError as e:
+            log(f"[WARN]  写入解析缓存失败 {self.path}: {clip(e)}")
+
+
 def build_ydl_opts(args, archive_path: str, aria2c: str) -> dict:
     """构建 yt-dlp 选项, 使用 aria2c 作为外部下载器."""
     if args.audio_only:
@@ -463,6 +567,7 @@ def build_ydl_opts(args, archive_path: str, aria2c: str) -> dict:
         'fragment_retries': 3,
         'noplaylist': True,   # 每个任务只下载单个视频 (播放列表已提前展开)
         'download_archive': archive_path,   # 归档, 中断后重跑自动跳过
+        'remote_components': list(REMOTE_COMPONENTS),   # 允许拉取 JS 挑战求解脚本
         # 注意: logger / progress_hooks 在 download_one 里按任务注入 (带 worker 标签)
     }
 
@@ -603,6 +708,11 @@ def main():
                         help='Netscape 格式 cookies 文件')
     parser.add_argument('--cookies-from-browser', default='',
                         help='从浏览器取 cookies, 如 chrome / firefox / edge')
+    parser.add_argument('--no-parse-cache', action='store_true',
+                        help='禁用解析缓存: [2/4] 阶段每个 URL 都重新联网解析')
+    parser.add_argument('--parse-cache-ttl', type=float, metavar='DAYS',
+                        default=DEFAULT_PARSE_CACHE_TTL_DAYS,
+                        help=f'解析缓存有效期天数 (默认 {DEFAULT_PARSE_CACHE_TTL_DAYS:g}, 0=永不过期)')
     args = parser.parse_args()
 
     t_all = time.time()
@@ -639,14 +749,28 @@ def main():
     archive_path = archive_path_for(args)
     archive = ArchiveIndex(archive_path)
     log(f"[info]   └ 归档文件: {archive_path} (已有 {archive.count} 条记录)")
+
+    # 解析缓存: [2/4] 阶段断点续传, 断网重跑时已解析的 URL 直接命中
+    if args.no_parse_cache:
+        parse_cache = None
+        log("[info]   └ 解析缓存: 已禁用 (--no-parse-cache)")
+    else:
+        parse_cache_path = os.path.join(args.output_dir, PARSE_CACHE_FILENAME)
+        parse_cache = ParseCache(parse_cache_path, args.parse_cache_ttl)
+        ttl_desc = (f"{args.parse_cache_ttl:g} 天"
+                    if args.parse_cache_ttl > 0 else "永久")
+        log(f"[info]   └ 解析缓存: {parse_cache_path} "
+            f"({parse_cache.count} 条, 有效期 {ttl_desc})")
+
     log(f"[info] [1/4] 完成, 用时 {fmt_duration(time.time() - t_all)}")
 
     # ---- [2/4] 解析输入 (归档中已有的先跳过, 零请求) ----
     log(f"[info] [2/4] 解析输入: {len(urls)} 个 URL "
-        f"(归档中已存在的会先跳过, 不联网解析)")
+        f"(归档已存在或解析缓存命中的不联网)")
     t_stage = time.time()
     tasks = []
     skipped_urls = []
+    n_cache = 0
     for i, url in enumerate(urls, 1):
         tag = f"({i}/{len(urls)})"
         # 单个视频的 id 就在 URL 里 → 归档中已有的话连元数据请求都省掉
@@ -654,6 +778,18 @@ def main():
         if vid and not is_playlist_url(url) and archive.is_archived(vid, 'Youtube', url):
             log(f"[SKIP]  {tag} {url} (归档中已存在, 未联网解析)")
             skipped_urls.append(url)
+            continue
+        # 解析缓存: 之前成功解析过 (含上一次中断前的) → 直接复用, 不联网
+        cached_items = parse_cache.get_items(url) if parse_cache else None
+        if cached_items:
+            if len(cached_items) > 1:
+                log(f"[CACHE] {tag} {clip(url, 60)} "
+                    f"(命中解析缓存: 播放列表 {len(cached_items)} 个视频)")
+            else:
+                log(f"[CACHE] {tag} {clip(url, 60)} "
+                    f"(命中解析缓存: {clip(cached_items[0]['name'], 60)})")
+            tasks.extend(cached_items)
+            n_cache += 1
             continue
         log(f"[info] 解析 {tag}: {url}")
         t0 = time.time()
@@ -670,6 +806,8 @@ def main():
             log(f"[info]   └ 单个视频: {clip(items[0]['name'], 60)} "
                 f"(用时 {fmt_duration(time.time() - t0)})")
         tasks.extend(items)
+        if parse_cache:
+            parse_cache.add(url, items)
 
     if not tasks:
         if skipped_urls:
@@ -678,8 +816,9 @@ def main():
             return 0
         log('[info] 没有可下载的任务.')
         return 1
+    cache_desc = f", 解析缓存命中 {n_cache} 个" if n_cache else ''
     log(f"[info] [2/4] 完成: 待检查 {len(tasks)} 个视频, "
-        f"归档跳过 {len(skipped_urls)} 个 URL, "
+        f"归档跳过 {len(skipped_urls)} 个 URL{cache_desc}, "
         f"用时 {fmt_duration(time.time() - t_stage)}")
 
     # ---- [3/4] 归档预检查: 在线程池启动之前把"已下载"筛掉 ----

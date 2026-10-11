@@ -56,10 +56,15 @@ uv run python -m subtitle_download.download_video -f urls.txt -w 2           # �
 uv run python -m subtitle_download.download_video "https://www.youtube.com/playlist?list=..."  # 播放列表
 uv run python -m subtitle_download.download_video <URL> --audio-only         # 提取 mp3
 
+.venv\Scripts\activate
+
 python -m subtitle_download.download_video -f data\youtube-list.txt
 python -m subtitle_download.download_video -f data\airflow_summit_2026.txt
 
 python -m subtitle_download.download_video https://www.youtube.com/watch?list=PLzwJJv8h-iciW53inSOkQA4mkG8TuQAUh
+
+# if authentication is required. export cookies by chrome extention.
+python -m subtitle_download.download_video -f data\youtube-list.txt --cookies data\www.youtube.com_cookies.txt
 ```
 
 - 引擎：yt-dlp 元数据 + aria2c 16 连接分块下载，ffmpeg 合并音视频（三者均已就位）。
