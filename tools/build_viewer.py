@@ -24,6 +24,11 @@ TPL = ROOT / "tools" / "viewer_template.html"
 OUT = ROOT / "dist" / "se_radio_viewer.html"
 DATA_OUT = ROOT / "dist" / "se_radio_data.json"
 SUBTITLES_DIR = ROOT / "subtitles"
+if not SUBTITLES_DIR.is_dir():
+    # 兼容字幕被移动到 data/subtitles 的布局
+    _alt = ROOT / "data" / "subtitles"
+    if _alt.is_dir():
+        SUBTITLES_DIR = _alt
 
 DEFAULT_CAT = "practice"
 
