@@ -8,6 +8,7 @@
 用法:
   python -m subtitle_download.main
 """
+import argparse
 import glob
 import json
 import os
@@ -106,11 +107,33 @@ def convert_stray_vtt_to_srt(output_dir: str):
         print(f'已转换: {os.path.basename(srt_path)}')
 
 
+def parse_cookies_opts(cookies: str = '', cookies_from_browser: str = '') -> dict:
+    """解析 cookie 选项, 返回 yt-dlp 选项 dict.
+
+    Args:
+        cookies: Netscape 格式 cookies 文件路径
+        cookies_from_browser: 从浏览器取 cookies, 如 chrome / firefox / edge
+    """
+    if cookies:
+        return {'cookiefile': cookies}
+    if cookies_from_browser:
+        return {'cookiesfrombrowser': (cookies_from_browser,)}
+    return {}
+
+
 # ---------------------------------------------------------------------------
 # 原有单视频下载接口 (保留供外部调用)
 # ---------------------------------------------------------------------------
-def download_subtitle_lib(video_url: str, sub_langs=None, output_dir="./subtitles"):
-    """下载单个视频的字幕 (原有接口, 保留兼容)。"""
+def download_subtitle_lib(video_url: str, sub_langs=None, output_dir="./subtitles", proxy: str | None = None, cookies: str = '') -> None:
+    """下载单个视频的字幕 (原有接口, 保留兼容).
+
+    Args:
+        video_url: 视频 URL
+        sub_langs: 要下载的字幕语言列表
+        output_dir: 字幕输出目录
+        proxy: 可选代理地址（如 "http://127.0.0.1:8899"），经本代理访问目标站点
+        cookies: Netscape 格式 cookies 文件路径（可选）
+    """
     if sub_langs is None:
         sub_langs = ["en"]
     os.makedirs(output_dir, exist_ok=True)
@@ -123,6 +146,10 @@ def download_subtitle_lib(video_url: str, sub_langs=None, output_dir="./subtitle
         'convertsubtitles': 'srt',
         'outtmpl': os.path.join(output_dir, '%(title)s.%(ext)s'),
     }
+    if proxy:
+        ydl_opts['proxy'] = proxy
+    if cookies:
+        ydl_opts['cookiefile'] = cookies
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download([video_url])
 
@@ -237,6 +264,7 @@ def download_one(task: dict) -> dict:
     srt_path = task['srt_path']
     srt_name = task['srt_name']
     base = os.path.splitext(srt_path)[0]
+    cookies = task.get('cookies', '')
 
     ydl_opts = {
         'skip_download': True,
@@ -247,6 +275,8 @@ def download_one(task: dict) -> dict:
         'quiet': True,
         'no_warnings': True,
     }
+    if cookies:
+        ydl_opts.update(parse_cookies_opts(cookies))
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -290,10 +320,21 @@ def download_one(task: dict) -> dict:
 
 
 def main():
+    parser = argparse.ArgumentParser(description='多线程 YouTube 字幕下载器')
+    parser.add_argument('--cookies', default='',
+                        help='Netscape 格式 cookies 文件 (年龄限制/会员视频)')
+    parser.add_argument('--cookies-from-browser', default='',
+                        help='从浏览器取 cookies, 如 chrome / firefox / edge')
+    args = parser.parse_args()
+
     print('[info] 加载数据文件...')
     entries = parse_up_txt(UP_TXT_PATH)
     index_map = load_json_index(JSON_PATH)
     print(f'[info] up.txt: {len(entries)} 条, JSON: {len(index_map)} 条')
+
+    cookies_opts = parse_cookies_opts(args.cookies, args.cookies_from_browser)
+    if cookies_opts:
+        print(f'[info]   └ cookies: {args.cookies or args.cookies_from_browser}')
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -331,6 +372,7 @@ def main():
             'url': url,
             'srt_path': srt_path,
             'srt_name': srt_name,
+            'cookies': args.cookies or args.cookies_from_browser,
         })
 
     print(f'[info] 待下载: {len(tasks)} 条, 已存在跳过: {skipped_exists}, '
